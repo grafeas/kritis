@@ -11,5 +11,5 @@
 
 .PHONY: test
 test:
-	./check-fmt.sh
-	./test.sh
+	./hack/check-fmt.sh
+	./hack/test.sh
