@@ -82,3 +82,37 @@ func resolveTagsToDigests(images []string) (map[string]string, error) {
 	}
 	return resolvedImages, nil
 }
+
+// recursiveReplaceImage recursively replaces image:tag to the corresponding image@sha256:digest
+func recursiveReplaceImage(i interface{}, replacements map[string]string) interface{} {
+	switch t := i.(type) {
+	case yaml.MapSlice:
+		// For each MapItem in the MapSlice, we want to replace any images and replace
+		for index, mapItem := range t {
+			replacedMapItem := recursiveReplaceImage(mapItem, replacements)
+			t[index] = replacedMapItem.(yaml.MapItem)
+		}
+		return t
+	case yaml.MapItem:
+		if val, ok := t.Value.(string); ok {
+			if t.Key.(string) == "image" {
+				if img, present := replacements[val]; present {
+					t.Value = img
+				}
+			}
+			return t
+		}
+		return yaml.MapItem{
+			Key:   t.Key,
+			Value: recursiveReplaceImage(t.Value, replacements),
+		}
+	case []interface{}:
+		// Since []interface is actually []yaml.MapSlice, for each mapSlice, recursively replace images and replace
+		for index, mapSlice := range t {
+			replacedMapSlice := recursiveReplaceImage(mapSlice, replacements)
+			t[index] = replacedMapSlice
+		}
+		return t
+	}
+	return nil
+}

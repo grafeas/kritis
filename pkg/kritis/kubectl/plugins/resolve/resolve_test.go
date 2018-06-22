@@ -16,6 +16,7 @@ limitations under the License.
 package resolve
 
 import (
+	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"gopkg.in/yaml.v2"
 	"sort"
@@ -119,4 +120,71 @@ func Test_resolveTagsToDigests(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
+}
+
+func Test_recursiveReplaceImage(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		yaml         interface{}
+		replacements map[string]string
+		expected     interface{}
+	}{
+		{
+			name: "replace one image",
+			yaml: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "image",
+					Value: "image:tag",
+				},
+			},
+			replacements: map[string]string{
+				"image:tag": "image:digest",
+			},
+			expected: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "image",
+					Value: "image:digest",
+				},
+			},
+		},
+		{
+			name: "replace some images",
+			yaml: formatMapSlice([]string{"image:tag", "something", "image:tag2"}),
+			replacements: map[string]string{
+				"image:tag":  "image:digest",
+				"image:tag2": "image:digest2",
+			},
+			expected: formatMapSlice([]string{"image:digest", "something", "image:digest2"}),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := recursiveReplaceImage(test.yaml, test.replacements)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+		})
+	}
+}
+
+func formatMapSlice(args []string) yaml.MapSlice {
+	y := fmt.Sprintf(`apiVersion: v1
+		kind: Pod
+		metadata:
+		  name: test
+		spec:
+		  containers:
+		  - name: tag
+			image: %s
+			env: 
+			  key: ENV
+			  value: ENV_VALUE
+			moreImages:
+			  image: %s
+		  - name: digest
+			image: %s
+		`, args[0], args[1], args[2])
+
+	m := yaml.MapSlice{}
+	yaml.Unmarshal([]byte(y), &m)
+	return m
 }
