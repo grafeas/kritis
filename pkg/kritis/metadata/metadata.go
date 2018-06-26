@@ -14,13 +14,12 @@ limitations under the License.
 package metadata
 
 type Metadata interface {
-	GetClient()
-	GetNotes()
+	// Get Package Vulnerabilites
 	GetVulnerabilities(project string, containerImage string) []Vulnerability
 }
 
 type Vulnerability struct {
 	Severity        string
-	hasFixAvailable bool
+	HasFixAvailable bool
 	CVE             string
 }

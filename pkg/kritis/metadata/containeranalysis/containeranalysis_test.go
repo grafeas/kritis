@@ -14,30 +14,66 @@ limitations under the License.
 package containeranalysis
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
-// func TestGetVulnerabilityFromOccurence(t *testing.T) {
-// 	vulnerability := containeranalysispb.VulnerabilityType_VulnerabilityDetails{
-// 		Severity: "LOW",
-// 		PackageIssue: VulnerabilityType_PackageIssue{
-// 			AffectedLocation: VulnerabilityType_VulnerabilityLocation{
-// 				CpeUri:  "cpe:/o:debian:debian_linux:7",
-// 				Package: "openssl",
-// 			},
-// 		},
-// 	}
-// }
+var tcGetVuln = []struct {
+	name        string
+	severity    containeranalysispb.VulnerabilityType_Severity
+	fixKind     containeranalysispb.VulnerabilityType_Version_VersionKind
+	noteName    string
+	expectedVul metadata.Vulnerability
+}{
+	{"fix available", containeranalysispb.VulnerabilityType_LOW,
+		containeranalysispb.VulnerabilityType_Version_MAXIMUM,
+		"CVE-1",
+		metadata.Vulnerability{
+			CVE:             "CVE-1",
+			Severity:        "LOW",
+			HasFixAvailable: false,
+		},
+	},
+	{"fix not available", containeranalysispb.VulnerabilityType_MEDIUM,
+		containeranalysispb.VulnerabilityType_Version_NORMAL,
+		"CVE-2",
+		metadata.Vulnerability{
+			CVE:             "CVE-2",
+			Severity:        "MEDIUM",
+			HasFixAvailable: true,
+		},
+	},
+}
 
-func TestGetVulnerabilities(t *testing.T) {
-	d, err := GetClient()
-	if err != nil {
-		t.Fatal("Could not initialize the client")
+func TestGetVulnerabilityFromOccurence(t *testing.T) {
+	for _, tc := range tcGetVuln {
+		t.Run(tc.name, func(t *testing.T) {
+			vulnDetails := &containeranalysispb.Occurrence_VulnerabilityDetails{
+				VulnerabilityDetails: &containeranalysispb.VulnerabilityType_VulnerabilityDetails{
+					Severity: tc.severity,
+					PackageIssue: []*containeranalysispb.VulnerabilityType_PackageIssue{
+						&containeranalysispb.VulnerabilityType_PackageIssue{
+							AffectedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{},
+							FixedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{
+								Version: &containeranalysispb.VulnerabilityType_Version{
+									Kind: tc.fixKind,
+								},
+							},
+						},
+					},
+				}}
+			occ := &containeranalysispb.Occurrence{
+				NoteName: tc.noteName,
+				Details:  vulnDetails,
+			}
+
+			actualVuln := GetVulnerabilityFromOccurence(occ)
+			if !reflect.DeepEqual(actualVuln, tc.expectedVul) {
+				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
+			}
+		})
 	}
-	vuln, err := d.GetVulnerabilities("tejaldesai-personal", "https://gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
-	if err != nil {
-		t.Fatal("Could not initialize the client")
-	}
-	fmt.Println(vuln)
 }
