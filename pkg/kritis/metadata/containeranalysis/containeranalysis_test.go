@@ -55,7 +55,7 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 				VulnerabilityDetails: &containeranalysispb.VulnerabilityType_VulnerabilityDetails{
 					Severity: tc.severity,
 					PackageIssue: []*containeranalysispb.VulnerabilityType_PackageIssue{
-						&containeranalysispb.VulnerabilityType_PackageIssue{
+						{
 							AffectedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{},
 							FixedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{
 								Version: &containeranalysispb.VulnerabilityType_Version{
