@@ -26,7 +26,7 @@ import (
 func Execute() error {
 	// TODO (priyawadhwa): fill in this function
 	//	1. Resolve relative paths in files to absolute paths
-	//  2. Get tagged images using recursiveGetTaggedImages
+	//	2. Get tagged images using recursiveGetTaggedImages
 	// 	3. Resolve tagged images using resolveTagsToDigests
 	//	4. Write recursive function to replace images
 	//	5. Print to STDOUT
