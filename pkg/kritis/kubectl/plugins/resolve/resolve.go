@@ -26,7 +26,7 @@ import (
 func Execute() error {
 	// TODO (priyawadhwa): fill in this function
 	//	1. Resolve relative paths in files to absolute paths
-	//  2. Get tagged images using recursiveGetTaggedImages
+	//	2. Get tagged images using recursiveGetTaggedImages
 	// 	3. Resolve tagged images using resolveTagsToDigests
 	//	4. Write recursive function to replace images
 	//	5. Print to STDOUT
@@ -81,4 +81,38 @@ func resolveTagsToDigests(images []string) (map[string]string, error) {
 		resolvedImages[image] = digestName
 	}
 	return resolvedImages, nil
+}
+
+// recursiveReplaceImage recursively replaces image:tag to the corresponding image@sha256:digest
+func recursiveReplaceImage(i interface{}, replacements map[string]string) interface{} {
+	switch t := i.(type) {
+	case yaml.MapSlice:
+		// For each MapItem in the MapSlice, we want to replace any images and replace
+		for index, mapItem := range t {
+			replacedMapItem := recursiveReplaceImage(mapItem, replacements)
+			t[index] = replacedMapItem.(yaml.MapItem)
+		}
+		return t
+	case yaml.MapItem:
+		if val, ok := t.Value.(string); ok {
+			if t.Key.(string) == "image" {
+				if img, present := replacements[val]; present {
+					t.Value = img
+				}
+			}
+			return t
+		}
+		return yaml.MapItem{
+			Key:   t.Key,
+			Value: recursiveReplaceImage(t.Value, replacements),
+		}
+	case []interface{}:
+		// Since []interface is actually []yaml.MapSlice, for each mapSlice, recursively replace images and replace
+		for index, mapSlice := range t {
+			replacedMapSlice := recursiveReplaceImage(mapSlice, replacements)
+			t[index] = replacedMapSlice
+		}
+		return t
+	}
+	return nil
 }

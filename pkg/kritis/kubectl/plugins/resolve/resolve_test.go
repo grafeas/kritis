@@ -16,6 +16,7 @@ limitations under the License.
 package resolve
 
 import (
+	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"gopkg.in/yaml.v2"
 	"sort"
@@ -119,4 +120,117 @@ func Test_resolveTagsToDigests(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
+}
+
+func Test_recursiveReplaceImage(t *testing.T) {
+	tests := []struct {
+		name         string
+		yaml         interface{}
+		replacements map[string]string
+		expected     interface{}
+	}{
+		{
+			name: "replace one image",
+			yaml: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "image",
+					Value: "image:tag",
+				},
+			},
+			replacements: map[string]string{
+				"image:tag": "image:digest",
+			},
+			expected: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "image",
+					Value: "image:digest",
+				},
+			},
+		},
+		{
+			name: "yaml without image field",
+			yaml: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "key",
+					Value: "image:tag",
+				},
+			},
+			replacements: map[string]string{
+				"image:tag": "image:digest",
+			},
+			expected: yaml.MapSlice{
+				yaml.MapItem{
+					Key:   "key",
+					Value: "image:tag",
+				},
+			},
+		},
+		{
+			name: "replace some images",
+			yaml: formatMapSlice([]string{"image:tag", "something", "image:tag2"}),
+			replacements: map[string]string{
+				"image:tag":  "image:digest",
+				"image:tag2": "image:digest2",
+			},
+			expected: formatMapSlice([]string{"image:digest", "something", "image:digest2"}),
+		},
+		{
+			name:         "replace no images",
+			yaml:         formatTestYaml1(),
+			replacements: map[string]string{},
+			expected:     formatTestYaml1(),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := recursiveReplaceImage(test.yaml, test.replacements)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+		})
+	}
+}
+
+func formatTestYaml1() yaml.MapSlice {
+	m := yaml.MapSlice{}
+	yaml.Unmarshal([]byte(testYaml1), &m)
+	return m
+}
+
+func formatMapSlice(args []string) yaml.MapSlice {
+	testYaml := `apiVersion: v1
+kind: Pod
+metadata:
+    name: test
+    label: test
+spec:
+    containers:
+    - name: tag
+      image: %s
+    env: 
+        key: ENV
+        value: ENV_VALUE 
+    containers:
+    - name: key1
+        values: 
+        image: image:digest	   
+    - name: key2
+        value: value 
+    - name: key3
+        value: 6
+    moreImages:
+    image: %s
+    nest:
+        value:  0
+        value1: 1
+        value2: 2
+        nest:
+        nest:
+            nest:
+            - name: digest
+            image: %s
+`
+	y := fmt.Sprintf(testYaml, args[0], args[1], args[2])
+
+	m := yaml.MapSlice{}
+	yaml.Unmarshal([]byte(y), &m)
+	return m
 }
