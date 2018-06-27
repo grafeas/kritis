@@ -9,7 +9,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+GOOS ?= $(shell go env GOOS)
+GOARCH = amd64
+BUILD_DIR ?= ./out
+
+%.exe: %
+	mv $< $@
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+ORG := github.com/grafeas
+PROJECT := kritis
+RESOLVE_TAGS_PROJECT := resolve-tags
+REPOPATH ?= $(ORG)/$(PROJECT)
+
+SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
+RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
+RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
+
 .PHONY: test
-test:
+test: cross
 	./hack/check-fmt.sh
 	./hack/test.sh
+
+GO_LDFLAGS :=""
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_BUILD_TAGS := ""
+
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH)
+	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH) $@
+
+.PHONY: cross
+cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform))
+
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
+
+.PHONY: install-plugin
+install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
+	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)

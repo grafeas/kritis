@@ -24,6 +24,11 @@ import (
 	"path/filepath"
 )
 
+const (
+	PWD                                 = "PWD"
+	KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME = "KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME"
+)
+
 var (
 	files multiArg
 )
@@ -35,7 +40,7 @@ func init() {
 var RootCmd = &cobra.Command{
 	Use: "resolve-tags",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return resolveFilepaths(args[0])
+		return resolveFilepaths()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := resolve.Execute(files, os.Stdout); err != nil {
@@ -45,10 +50,14 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func resolveFilepaths(cwd string) error {
-	if len(files) == 0 {
-		return fmt.Errorf("please pass in at least one path to a yaml file to resolve")
+func resolveFilepaths() error {
+	if pluginFile := os.Getenv(KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME); pluginFile != "" {
+		files = []string{pluginFile}
 	}
+	if len(files) == 0 {
+		return fmt.Errorf("please pass in a path to file to resolve")
+	}
+	cwd := os.Getenv(PWD)
 	for index, file := range files {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			fullPath := filepath.Join(cwd, file)

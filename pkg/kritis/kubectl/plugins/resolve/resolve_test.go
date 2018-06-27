@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/ioutil"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -93,7 +94,40 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 	}
 }
 
+type fakeResolver struct {
+	tagMap map[string]string
+}
+
+func newFakeResolver() fakeResolver {
+	f := fakeResolver{
+		tagMap: map[string]string{},
+	}
+	return f
+}
+
+func (f *fakeResolver) resolve(image string) (string, error) {
+	digest, ok := f.tagMap[image]
+	if !ok {
+		return "", fmt.Errorf("image %s not found", image)
+	}
+	return digest, nil
+}
+
+func setResolver(f func(string) (string, error)) func() {
+	oldResolver := resolver
+	resolver = f
+	return func() {
+		resolver = oldResolver
+	}
+}
+
 func Test_resolveTagsToDigests(t *testing.T) {
+	r := newFakeResolver()
+	r.tagMap["gcr.io/google-appengine/debian9:2017-09-07-161610"] = "gcr.io/google-appengine/debian9@sha256:foo"
+	r.tagMap["golang:1.10"] = "index.docker.io/library/golang@sha256:bar"
+
+	defer setResolver(r.resolve)()
+
 	tests := []struct {
 		name     string
 		images   []string
@@ -105,16 +139,16 @@ func Test_resolveTagsToDigests(t *testing.T) {
 				"gcr.io/google-appengine/debian9:2017-09-07-161610",
 			},
 			expected: map[string]string{
-				"gcr.io/google-appengine/debian9:2017-09-07-161610": "gcr.io/google-appengine/debian9@sha256:a97266ab2bbfb8504b636d2b7aa6535323558fd3f859ce6773363757fa7142cb",
+				"gcr.io/google-appengine/debian9:2017-09-07-161610": "gcr.io/google-appengine/debian9@sha256:foo",
 			},
 		},
 		{
 			name: "docker registry image",
 			images: []string{
-				"alpine:3.4",
+				"golang:1.10",
 			},
 			expected: map[string]string{
-				"alpine:3.4": "index.docker.io/library/alpine@sha256:2441496fb9f0d938e5f8b27aba5cc367b24078225ceed82a9a5e67f0d6738c80",
+				"golang:1.10": "index.docker.io/library/golang@sha256:bar",
 			},
 		},
 	}
@@ -197,11 +231,11 @@ func Test_Execute(t *testing.T) {
 	testYaml := `apiVersion: v1
 kind: Pod
 metadata:
-    name: test
+  name: test
 spec:
-    containers:
-    - name: debian
-      image: %s`
+  containers:
+  - name: debian
+    image: %s`
 	initial := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9:2017-09-07-161610")
 	expected := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9@sha256:a97266ab2bbfb8504b636d2b7aa6535323558fd3f859ce6773363757fa7142cb")
 	file, err := ioutil.TempFile("", "")
@@ -224,10 +258,10 @@ spec:
 	if err != nil {
 		t.Error(err)
 	}
-	if expected != string(contents) {
-		t.Fatalf("expected: %s, actual: %s", expected, string(contents))
+	actual := strings.TrimSuffix(string(contents), "\n")
+	if expected != actual {
+		t.Fatalf("expected: %s, actual: %s", expected, actual)
 	}
-
 }
 
 func formatTestYaml1() yaml.MapSlice {

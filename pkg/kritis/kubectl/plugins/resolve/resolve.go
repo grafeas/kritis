@@ -18,6 +18,7 @@ package resolve
 
 import (
 	"fmt"
+
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"gopkg.in/yaml.v2"
@@ -49,6 +50,24 @@ func Execute(files []string, writer io.Writer) error {
 		print(updatedManifest, writer)
 	}
 	return nil
+}
+
+// For testing
+var resolver = func(image string) (string, error) {
+	tag, err := name.NewTag(image, name.WeakValidation)
+	if err != nil {
+		return "", err
+	}
+	sourceImage, err := remote.Image(tag)
+	if err != nil {
+		return "", err
+	}
+	digest, err := sourceImage.Digest()
+	if err != nil {
+		return "", err
+	}
+	digestName := fmt.Sprintf("%s@sha256:%s", tag.Context(), digest.Hex)
+	return digestName, nil
 }
 
 // recursiveGetTaggedImages recursively gets all images referenced by tags
@@ -83,19 +102,10 @@ func recursiveGetTaggedImages(m interface{}) []string {
 func resolveTagsToDigests(images []string) (map[string]string, error) {
 	resolvedImages := map[string]string{}
 	for _, image := range images {
-		tag, err := name.NewTag(image, name.WeakValidation)
+		digestName, err := resolver(image)
 		if err != nil {
 			return nil, err
 		}
-		sourceImage, err := remote.Image(tag)
-		if err != nil {
-			return nil, err
-		}
-		digest, err := sourceImage.Digest()
-		if err != nil {
-			return nil, err
-		}
-		digestName := fmt.Sprintf("%s@sha256:%s", tag.Context(), digest.Hex)
 		resolvedImages[image] = digestName
 	}
 	return resolvedImages, nil
