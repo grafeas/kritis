@@ -2,7 +2,9 @@
 #
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
 # for detailed Gopkg.toml documentation.
-#
+
+# These are the required packages used by the go container analysis client libs.
+# Do not remove.
 required = ["cloud.google.com/go/compute/metadata",
             "github.com/googleapis/gax-go",
             "cloud.google.com/go/internal/version",
@@ -18,6 +20,8 @@ required = ["cloud.google.com/go/compute/metadata",
             "google.golang.org/appengine/internal",
             ]
 
+# Add this ignore to ignore dependency resolution error for imports
+# "cloud.google.com/go/devtools"
 ignored = ["cloud.google.com/go/devtools/*"]
 
 [prune]
