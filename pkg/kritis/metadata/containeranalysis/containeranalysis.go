@@ -23,8 +23,10 @@ import (
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
-var PkgVulnerability = "PACKAGE_VULNERABILITY"
-var PageSize = int32(100)
+const (
+	PkgVulnerability = "PACKAGE_VULNERABILITY"
+	PageSize         = int32(100)
+)
 
 // The ContainerAnalysis struct implements MetadataFetcher Interface.
 type ContainerAnalysis struct {
@@ -44,7 +46,7 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 	}, nil
 }
 func (c ContainerAnalysis) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
-	vulnz := make([]metadata.Vulnerability, 0)
+	vulnz := []metadata.Vulnerability{}
 
 	req := &containeranalysispb.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=\"%s\" AND kind=\"PACKAGE_VULNERABILITY\"", containerImage),

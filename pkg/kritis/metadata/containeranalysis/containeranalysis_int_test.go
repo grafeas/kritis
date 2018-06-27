@@ -1,3 +1,5 @@
+// +build integration
+
 /*
 Copyright 2018 Google LLC
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,16 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package container_analysis
+package containeranalysis
 
 import (
 	"testing"
-
-	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 )
 
 func TestGetVulnerabilities(t *testing.T) {
-	d, err := containeranalysis.NewContainerAnalysisClient()
+	d, err := NewContainerAnalysisClient()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
