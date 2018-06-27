@@ -17,10 +17,11 @@ package resolve
 
 import (
 	"fmt"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"gopkg.in/yaml.v2"
 	"sort"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"gopkg.in/yaml.v2"
 )
 
 var testYaml1 = `apiVersion: v1
@@ -89,7 +90,40 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 	}
 }
 
+type fakeResolver struct {
+	tagMap map[string]string
+}
+
+func newFakeResolver() fakeResolver {
+	f := fakeResolver{
+		tagMap: map[string]string{},
+	}
+	return f
+}
+
+func (f *fakeResolver) resolve(image string) (string, error) {
+	digest, ok := f.tagMap[image]
+	if !ok {
+		return "", fmt.Errorf("image %s not found", image)
+	}
+	return digest, nil
+}
+
+func setResolver(f func(string) (string, error)) func() {
+	oldResolver := resolver
+	resolver = f
+	return func() {
+		resolver = oldResolver
+	}
+}
+
 func Test_resolveTagsToDigests(t *testing.T) {
+	r := newFakeResolver()
+	r.tagMap["gcr.io/google-appengine/debian9:2017-09-07-161610"] = "gcr.io/google-appengine/debian9@sha256:foo"
+	r.tagMap["golang:1.10"] = "index.docker.io/library/golang@sha256:bar"
+
+	defer setResolver(r.resolve)()
+
 	tests := []struct {
 		name     string
 		images   []string
@@ -101,7 +135,7 @@ func Test_resolveTagsToDigests(t *testing.T) {
 				"gcr.io/google-appengine/debian9:2017-09-07-161610",
 			},
 			expected: map[string]string{
-				"gcr.io/google-appengine/debian9:2017-09-07-161610": "gcr.io/google-appengine/debian9@sha256:a97266ab2bbfb8504b636d2b7aa6535323558fd3f859ce6773363757fa7142cb",
+				"gcr.io/google-appengine/debian9:2017-09-07-161610": "gcr.io/google-appengine/debian9@sha256:foo",
 			},
 		},
 		{
@@ -110,7 +144,7 @@ func Test_resolveTagsToDigests(t *testing.T) {
 				"golang:1.10",
 			},
 			expected: map[string]string{
-				"golang:1.10": "index.docker.io/library/golang@sha256:e87d3a74df05105c219ab0d54034bf22a629b98b884efd5fe4211e198a0da43b",
+				"golang:1.10": "index.docker.io/library/golang@sha256:bar",
 			},
 		},
 	}
