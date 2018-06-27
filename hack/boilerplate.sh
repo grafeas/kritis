@@ -14,7 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./...  | grep -v vendor`
-GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
-exit $GO_TEST_EXIT_CODE
+# Ignore these paths in the following tests.
+ignore="vendor\|out\|testdata"
+BOILERPLATEDIR=./hack/boilerplate
+# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
+set +e
+files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
+set -e
+if [[ ! -z ${files} ]]; then
+	echo "Boilerplate missing in:"
+    echo "${files}"
+	exit 1
+fi
