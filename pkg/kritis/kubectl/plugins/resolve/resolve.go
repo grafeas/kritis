@@ -21,15 +21,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 )
 
 // Execute replaces image:tag with image:digest in each file and prints to STDOUT
-func Execute(files []string) error {
+func Execute(files []string, writer io.Writer) error {
 	for _, file := range files {
 		contents, err := ioutil.ReadFile(file)
 		if err != nil {
@@ -38,9 +35,6 @@ func Execute(files []string) error {
 		m := yaml.MapSlice{}
 		if err := yaml.Unmarshal(contents, &m); err != nil {
 			return err
-		}
-		if len(m) == 0 {
-			continue
 		}
 		taggedImages := recursiveGetTaggedImages(m)
 		resolvedImages, err := resolveTagsToDigests(taggedImages)
@@ -52,7 +46,7 @@ func Execute(files []string) error {
 		if err != nil {
 			return err
 		}
-		print(updatedManifest, file)
+		print(updatedManifest, writer)
 	}
 	return nil
 }
@@ -142,9 +136,7 @@ func recursiveReplaceImage(i interface{}, replacements map[string]string) interf
 }
 
 // prints the final replaced kubernetes manifest to STDOUT
-func print(mfst []byte, file string) {
+func print(mfst []byte, writer io.Writer) {
+	fmt.Fprintf(writer, string(mfst))
 	fmt.Println()
-	fmt.Println(fmt.Sprintf("--- %s ---", file))
-	fmt.Println()
-	fmt.Println(string(mfst))
 }

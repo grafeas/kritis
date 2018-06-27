@@ -33,7 +33,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if err := resolve.Execute(files); err != nil {
+	if err := resolve.Execute(files, os.Stdout); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

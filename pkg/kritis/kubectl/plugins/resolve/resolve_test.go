@@ -16,9 +16,13 @@ limitations under the License.
 package resolve
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"gopkg.in/yaml.v2"
+	"io"
+	"io/ioutil"
 	"sort"
 	"testing"
 )
@@ -29,8 +33,8 @@ metadata:
   name: test
 spec:
   containers:
-  - name: docker
-    image: golang:1.10
+  - name: debian
+    image: gcr.io/google-appengine/debian9:2017-09-07-161610
 `
 
 var testYaml2 = `apiVersion: v1
@@ -62,7 +66,7 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 			name: "test one tagged image",
 			yaml: testYaml1,
 			expected: []string{
-				"golang:1.10",
+				"gcr.io/google-appengine/debian9:2017-09-07-161610",
 			},
 		},
 		{
@@ -107,10 +111,10 @@ func Test_resolveTagsToDigests(t *testing.T) {
 		{
 			name: "docker registry image",
 			images: []string{
-				"golang:1.10",
+				"alpine:3.4",
 			},
 			expected: map[string]string{
-				"golang:1.10": "index.docker.io/library/golang@sha256:e87d3a74df05105c219ab0d54034bf22a629b98b884efd5fe4211e198a0da43b",
+				"alpine:3.4": "index.docker.io/library/alpine@sha256:2441496fb9f0d938e5f8b27aba5cc367b24078225ceed82a9a5e67f0d6738c80",
 			},
 		},
 	}
@@ -187,6 +191,43 @@ func Test_recursiveReplaceImage(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
 		})
 	}
+}
+
+func Test_Execute(t *testing.T) {
+	testYaml := `apiVersion: v1
+kind: Pod
+metadata:
+    name: test
+spec:
+    containers:
+    - name: debian
+      image: %s`
+	initial := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9:2017-09-07-161610")
+	expected := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9@sha256:a97266ab2bbfb8504b636d2b7aa6535323558fd3f859ce6773363757fa7142cb")
+	file, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Error(err)
+	}
+	if _, err := io.Copy(file, bytes.NewReader([]byte(initial))); err != nil {
+		t.Error(err)
+	}
+	defer file.Close()
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	if err := Execute([]string{file.Name()}, writer); err != nil {
+		t.Errorf("error executing resolve-tags: %v", err)
+	}
+	if err := writer.Flush(); err != nil {
+		t.Error(err)
+	}
+	contents, err := ioutil.ReadAll(&b)
+	if err != nil {
+		t.Error(err)
+	}
+	if expected != string(contents) {
+		t.Fatalf("expected: %s, actual: %s", expected, string(contents))
+	}
+
 }
 
 func formatTestYaml1() yaml.MapSlice {
