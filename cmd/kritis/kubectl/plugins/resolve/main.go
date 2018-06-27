@@ -20,15 +20,37 @@ import (
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"os"
+	"path/filepath"
 )
 
 var (
-	files = os.Args[1:]
+	cwd   = os.Args[1]
+	files = os.Args[2:]
 )
 
 func main() {
-	if err := resolve.Execute(); err != nil {
+	if err := resolveFilepaths(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	if err := resolve.Execute(files); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func resolveFilepaths() error {
+	if len(files) == 0 {
+		return fmt.Errorf("please pass in at least one path to a yaml file to resolve")
+	}
+	for index, file := range files {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			fullPath := filepath.Join(cwd, file)
+			if _, err := os.Stat(fullPath); err != nil {
+				return err
+			}
+			files[index] = fullPath
+		}
+	}
+	return nil
 }
