@@ -13,11 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-set -e
 
-echo "Checking gofmt..."
-files=$(find . -name "*.go" | grep -v vendor/ | xargs gofmt -l -s)
-if [[ $files ]]; then
-    echo "Gofmt errors in files: $files"
-    exit 1
+# Ignore these paths in the following tests.
+ignore="vendor\|out\|testdata"
+BOILERPLATEDIR=./hack/boilerplate
+# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
+set +e
+files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
+set -e
+if [[ ! -z ${files} ]]; then
+	echo "Boilerplate missing in:"
+    echo "${files}"
+	exit 1
 fi
