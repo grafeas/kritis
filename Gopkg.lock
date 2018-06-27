@@ -263,7 +263,6 @@
     "imports",
     "internal/fastwalk"
   ]
-<<<<<<< HEAD
   revision = "16699b2d33e2654d743c50b4525ab7e73e346238"
 
 [[projects]]
@@ -271,42 +270,6 @@
   packages = ["."]
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
-=======
-  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
-
-[[projects]]
-  name = "google.golang.org/grpc"
-  packages = [
-    ".",
-    "balancer",
-    "balancer/base",
-    "balancer/roundrobin",
-    "codes",
-    "connectivity",
-    "credentials",
-    "credentials/oauth",
-    "encoding",
-    "encoding/proto",
-    "grpclog",
-    "internal",
-    "internal/backoff",
-    "internal/channelz",
-    "internal/grpcrand",
-    "keepalive",
-    "metadata",
-    "naming",
-    "peer",
-    "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
-    "stats",
-    "status",
-    "tap",
-    "transport"
-  ]
-  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
-  version = "v1.13.0"
->>>>>>> Fix dep issues
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -465,10 +428,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-<<<<<<< HEAD
   inputs-digest = "e66c7b1cd7f3400f7524076b9f08632cd03929c0effecac1632be3d0fb3c9336"
-=======
-  inputs-digest = "0e7523ec18fee3b144f4042b4b63f45aa409520003237e4e90844c014727068f"
->>>>>>> Fix dep issues
   solver-name = "gps-cdcl"
   solver-version = 1
