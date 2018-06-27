@@ -21,16 +21,69 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 )
 
-func Execute() error {
-	// TODO (priyawadhwa): fill in this function
-	//	1. Resolve relative paths in files to absolute paths
-	//	2. Get tagged images using recursiveGetTaggedImages
-	// 	3. Resolve tagged images using resolveTagsToDigests
-	//	4. Write recursive function to replace images
-	//	5. Print to STDOUT
+// Execute replaces image:tag with image:digest in each file and prints to STDOUT
+func Execute(files []string) error {
+	for _, file := range files {
+		contents, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		m := yaml.MapSlice{}
+		if err := yaml.Unmarshal(contents, &m); err != nil {
+			return err
+		}
+		if len(m) == 0 {
+			continue
+		}
+		taggedImages := recursiveGetTaggedImages(m)
+		resolvedImages, err := resolveTagsToDigests(taggedImages)
+		if err != nil {
+			return err
+		}
+		replacedYaml := recursiveReplaceImage(m, resolvedImages)
+		updatedManifest, err := yaml.Marshal(replacedYaml)
+		if err != nil {
+			return err
+		}
+		print(updatedManifest, file)
+	}
 	return nil
+}
+
+func resolveFilepaths(files []string) ([]string, error) {
+	if len(files) == 0 {
+		return nil, fmt.Errorf("please pass in at least one path to a yaml file to resolve")
+	}
+	dir, err := getWorkingDirectory()
+	if err != nil {
+		return nil, err
+	}
+	for index, file := range files {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			fullPath := filepath.Join(dir, file)
+			if _, err := os.Stat(fullPath); err != nil {
+				return nil, err
+			}
+			files[index] = fullPath
+		}
+	}
+	return files, nil
+}
+
+// getWorkingDirectory gets the directory that the kubectl plugin was called from
+func getWorkingDirectory() (string, error) {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		return "", fmt.Errorf("no caller information")
+	}
+	return path.Dir(filename), nil
 }
 
 // recursiveGetTaggedImages recursively gets all images referenced by tags
@@ -115,4 +168,12 @@ func recursiveReplaceImage(i interface{}, replacements map[string]string) interf
 		return t
 	}
 	return nil
+}
+
+// prints the final replaced kubernetes manifest to STDOUT
+func print(mfst []byte, file string) {
+	fmt.Println()
+	fmt.Println(fmt.Sprintf("--- %s ---", file))
+	fmt.Println()
+	fmt.Println(string(mfst))
 }

@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 )
 
 var (
@@ -27,8 +30,42 @@ var (
 )
 
 func main() {
-	if err := resolve.Execute(); err != nil {
+	if err := resolveFilepaths(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	if err := resolve.Execute(files); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func resolveFilepaths() error {
+	if len(files) == 0 {
+		return fmt.Errorf("please pass in at least one path to a yaml file to resolve")
+	}
+	dir, err := getWorkingDirectory()
+	if err != nil {
+		return err
+	}
+	for index, file := range files {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			fullPath := filepath.Join(dir, file)
+			if _, err := os.Stat(fullPath); err != nil {
+				return err
+			}
+			files[index] = fullPath
+		}
+	}
+	return nil
+}
+
+// getWorkingDirectory gets the directory that the kubectl plugin was called from
+func getWorkingDirectory() (string, error) {
+	_, filename, _, ok := runtime.Caller(0)
+	fmt.Println("Calling from", filename)
+	if !ok {
+		return "", fmt.Errorf("no caller information")
+	}
+	return path.Dir(filename), nil
 }
