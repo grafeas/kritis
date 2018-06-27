@@ -34,6 +34,7 @@ RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
 test: cross
 	./hack/check-fmt.sh
 	./hack/boilerplate.sh
+	./hack/verify-codegen.sh
 	./hack/test.sh
 
 GO_LDFLAGS :=""
