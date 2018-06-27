@@ -2,6 +2,7 @@
 
 
 [[projects]]
+<<<<<<< HEAD
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -27,6 +28,15 @@
   name = "github.com/golang/glog"
   packages = ["."]
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+=======
+  name = "cloud.google.com/go"
+  packages = [
+    "compute/metadata",
+    "internal/version"
+  ]
+  revision = "777200caa7fb8936aed0f12b1fd79af64cc83ec9"
+  version = "v0.24.0"
+>>>>>>> Fix dep issues
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -53,7 +63,34 @@
     "pkg/v1/types",
     "pkg/v1/v1util"
   ]
-  revision = "000ebf1ac80466c7e9054b0e5e5c367bddb79959"
+  revision = "3f6471078a9661a9a439bd5e71a371aff429566a"
+
+[[projects]]
+  name = "github.com/googleapis/gax-go"
+  packages = ["."]
+  revision = "317e0006254c44a0ac427cc52a0e083ff0b9622f"
+  version = "v2.0.0"
+
+[[projects]]
+  name = "go.opencensus.io"
+  packages = [
+    ".",
+    "exporter/stackdriver/propagation",
+    "internal",
+    "internal/tagencoding",
+    "plugin/ocgrpc",
+    "plugin/ochttp",
+    "plugin/ochttp/propagation/b3",
+    "stats",
+    "stats/internal",
+    "stats/view",
+    "tag",
+    "trace",
+    "trace/internal",
+    "trace/propagation"
+  ]
+  revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
+  version = "v0.13.0"
 
 [[projects]]
   branch = "master"
@@ -127,6 +164,7 @@
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -136,12 +174,24 @@
 
 [[projects]]
   branch = "master"
+<<<<<<< HEAD
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows"
   ]
   revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+=======
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
+  revision = "ef147856a6ddbb60760db74283d2424e98c87bff"
+>>>>>>> Fix dep issues
 
 [[projects]]
   name = "golang.org/x/text"
@@ -166,9 +216,44 @@
 
 [[projects]]
   branch = "master"
+<<<<<<< HEAD
   name = "golang.org/x/time"
   packages = ["rate"]
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
+=======
+  name = "google.golang.org/api"
+  packages = [
+    "googleapi",
+    "googleapi/internal/uritemplates",
+    "googleapi/transport",
+    "internal",
+    "iterator",
+    "option",
+    "transport",
+    "transport/grpc",
+    "transport/http"
+  ]
+  revision = "cd4b2e727ec609b8e6f2430d588c795fec5b575c"
+>>>>>>> Fix dep issues
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/socket",
+    "internal/urlfetch",
+    "socket",
+    "urlfetch"
+  ]
+  revision = "b1f26356af11148e710935ed1ac8a7f5702c7612"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -178,6 +263,7 @@
     "imports",
     "internal/fastwalk"
   ]
+<<<<<<< HEAD
   revision = "16699b2d33e2654d743c50b4525ab7e73e346238"
 
 [[projects]]
@@ -185,6 +271,42 @@
   packages = ["."]
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+=======
+  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/oauth",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/grpcrand",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
+  version = "v1.13.0"
+>>>>>>> Fix dep issues
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -343,6 +465,10 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
+<<<<<<< HEAD
   inputs-digest = "e66c7b1cd7f3400f7524076b9f08632cd03929c0effecac1632be3d0fb3c9336"
+=======
+  inputs-digest = "0e7523ec18fee3b144f4042b4b63f45aa409520003237e4e90844c014727068f"
+>>>>>>> Fix dep issues
   solver-name = "gps-cdcl"
   solver-version = 1

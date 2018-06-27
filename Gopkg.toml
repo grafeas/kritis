@@ -22,6 +22,7 @@ required = [
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
 # for detailed Gopkg.toml documentation.
 #
+<<<<<<< HEAD
 # required = ["github.com/user/thing/cmd/thing"]
 ignored = ["cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"]
 #
@@ -43,7 +44,24 @@ ignored = ["cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"]
 #   go-tests = true
 #   unused-packages = true
 >>>>>>> stash this
+=======
+required = ["cloud.google.com/go/compute/metadata",
+            "github.com/googleapis/gax-go",
+            "cloud.google.com/go/internal/version",
+            "google.golang.org/grpc",
+            "golang.org/x/oauth2",
+            "google.golang.org/appengine",
+            "google.golang.org/api/googleapi",
+            "google.golang.org/api/internal",
+            "google.golang.org/api/option",
+             "google.golang.org/api/transport",
+            "google.golang.org/grpc/credentials",
+            "google.golang.org/appengine/socket",
+            "google.golang.org/appengine/internal",
+            ]
+>>>>>>> Fix dep issues
 
+ignored = ["cloud.google.com/go/devtools/*"]
 
 [prune]
   go-tests = true
