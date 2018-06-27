@@ -4,7 +4,7 @@
 # for detailed Gopkg.toml documentation.
 #
 # required = ["github.com/user/thing/cmd/thing"]
-# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
+ignored = ["cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"]
 #
 # [[constraint]]
 #   name = "github.com/user/project"
@@ -23,6 +23,7 @@
 #   non-go = false
 #   go-tests = true
 #   unused-packages = true
+
 
 [prune]
   go-tests = true

@@ -13,8 +13,8 @@
 // limitations under the License.
 
 // AUTO-GENERATED CODE. DO NOT EDIT.
-// This auto-generated code is downloaded from https://storage.cloud.google.com/container-analysis-v1alpha1/containeranalysis-go.tar.gz
-package gen
+
+package containeranalysis
 
 import (
 	"math"

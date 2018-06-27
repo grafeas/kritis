@@ -22,7 +22,7 @@
 // An implementation of the Grafeas API, which stores, and enables querying
 // and
 // retrieval of critical metadata about all of your software artifacts.
-package gen
+package containeranalysis // import "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
 
 import (
 	"golang.org/x/net/context"
