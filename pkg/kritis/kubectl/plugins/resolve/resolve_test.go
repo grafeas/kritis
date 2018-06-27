@@ -34,8 +34,8 @@ metadata:
   name: test
 spec:
   containers:
-  - name: debian
-    image: gcr.io/google-appengine/debian9:2017-09-07-161610
+  - name: docker
+    image: golang:1.10
 `
 
 var testYaml2 = `apiVersion: v1
@@ -67,7 +67,7 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 			name: "test one tagged image",
 			yaml: testYaml1,
 			expected: []string{
-				"gcr.io/google-appengine/debian9:2017-09-07-161610",
+				"golang:1.10",
 			},
 		},
 		{
@@ -236,8 +236,8 @@ spec:
   containers:
   - name: debian
     image: %s`
-	initial := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9:2017-09-07-161610")
-	expected := fmt.Sprintf(testYaml, "gcr.io/google-appengine/debian9@sha256:a97266ab2bbfb8504b636d2b7aa6535323558fd3f859ce6773363757fa7142cb")
+	initial := fmt.Sprintf(testYaml, "gcr.io/kaniko-project/executor:v0.1.0")
+	expected := fmt.Sprintf(testYaml, "gcr.io/kaniko-project/executor@sha256:501056bf52f3a96f151ccbeb028715330d5d5aa6647e7572ce6c6c55f91ab374")
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
 		t.Error(err)

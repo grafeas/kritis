@@ -55,7 +55,7 @@ func resolveFilepaths() error {
 		files = []string{pluginFile}
 	}
 	if len(files) == 0 {
-		return fmt.Errorf("please pass in a path to file to resolve")
+		return fmt.Errorf("please pass in a path to a file to resolve")
 	}
 	cwd := os.Getenv(PWD)
 	for index, file := range files {
