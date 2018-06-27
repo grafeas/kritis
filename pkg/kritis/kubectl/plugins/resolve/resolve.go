@@ -21,15 +21,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 )
 
 // Execute replaces image:tag with image:digest in each file and prints to STDOUT
-func Execute(files []string) error {
+func Execute(files []string, writer io.Writer) error {
 	for _, file := range files {
 		contents, err := ioutil.ReadFile(file)
 		if err != nil {
@@ -38,9 +35,6 @@ func Execute(files []string) error {
 		m := yaml.MapSlice{}
 		if err := yaml.Unmarshal(contents, &m); err != nil {
 			return err
-		}
-		if len(m) == 0 {
-			continue
 		}
 		taggedImages := recursiveGetTaggedImages(m)
 		resolvedImages, err := resolveTagsToDigests(taggedImages)
@@ -52,38 +46,9 @@ func Execute(files []string) error {
 		if err != nil {
 			return err
 		}
-		print(updatedManifest, file)
+		print(updatedManifest, writer)
 	}
 	return nil
-}
-
-func resolveFilepaths(files []string) ([]string, error) {
-	if len(files) == 0 {
-		return nil, fmt.Errorf("please pass in at least one path to a yaml file to resolve")
-	}
-	dir, err := getWorkingDirectory()
-	if err != nil {
-		return nil, err
-	}
-	for index, file := range files {
-		if _, err := os.Stat(file); os.IsNotExist(err) {
-			fullPath := filepath.Join(dir, file)
-			if _, err := os.Stat(fullPath); err != nil {
-				return nil, err
-			}
-			files[index] = fullPath
-		}
-	}
-	return files, nil
-}
-
-// getWorkingDirectory gets the directory that the kubectl plugin was called from
-func getWorkingDirectory() (string, error) {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return "", fmt.Errorf("no caller information")
-	}
-	return path.Dir(filename), nil
 }
 
 // recursiveGetTaggedImages recursively gets all images referenced by tags
@@ -171,9 +136,7 @@ func recursiveReplaceImage(i interface{}, replacements map[string]string) interf
 }
 
 // prints the final replaced kubernetes manifest to STDOUT
-func print(mfst []byte, file string) {
+func print(mfst []byte, writer io.Writer) {
+	fmt.Fprintf(writer, string(mfst))
 	fmt.Println()
-	fmt.Println(fmt.Sprintf("--- %s ---", file))
-	fmt.Println()
-	fmt.Println(string(mfst))
 }
