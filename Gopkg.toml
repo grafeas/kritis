@@ -2,28 +2,27 @@
 #
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
 # for detailed Gopkg.toml documentation.
-#
-# required = ["github.com/user/thing/cmd/thing"]
-# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
-#
-# [[constraint]]
-#   name = "github.com/user/project"
-#   version = "1.0.0"
-#
-# [[constraint]]
-#   name = "github.com/user/project2"
-#   branch = "dev"
-#   source = "github.com/myfork/project2"
-#
-# [[override]]
-#   name = "github.com/x/y"
-#   version = "2.4.0"
-#
-# [prune]
-#   non-go = false
-#   go-tests = true
-#   unused-packages = true
 
+# These are the required packages used by the go container analysis client libs.
+# Do not remove.
+required = ["cloud.google.com/go/compute/metadata",
+            "github.com/googleapis/gax-go",
+            "cloud.google.com/go/internal/version",
+            "google.golang.org/grpc",
+            "golang.org/x/oauth2",
+            "google.golang.org/appengine",
+            "google.golang.org/api/googleapi",
+            "google.golang.org/api/internal",
+            "google.golang.org/api/option",
+             "google.golang.org/api/transport",
+            "google.golang.org/grpc/credentials",
+            "google.golang.org/appengine/socket",
+            "google.golang.org/appengine/internal",
+            ]
+
+# Add this ignore to ignore dependency resolution error for imports
+# "cloud.google.com/go/devtools"
+ignored = ["cloud.google.com/go/devtools/*"]
 
 [prune]
   go-tests = true
