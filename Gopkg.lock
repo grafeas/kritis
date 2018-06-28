@@ -397,6 +397,30 @@
   version = "v0.9.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/grafeas/kritis"
+  packages = [
+    "pkg/kritis/kubectl/plugins/resolve",
+    "pkg/kritis/testutil"
+  ]
+  revision = "df7602232a8e65d4a11108fa4815c14b0cdd7d39"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = [
+    "cast5",
+    "openpgp",
+    "openpgp/armor",
+    "openpgp/clearsign",
+    "openpgp/elgamal",
+    "openpgp/errors",
+    "openpgp/packet",
+    "openpgp/s2k"
+  ]
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -609,6 +633,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8e9fcff8d1df42fe59784836627822753f629457f67400b10f95a1265efbcb59"
+  inputs-digest = "2cbff678d7d51fa3f9789b3f6b6c954e0e7c8765d3cd643d1b4cb918998f41f5"
   solver-name = "gps-cdcl"
   solver-version = 1
