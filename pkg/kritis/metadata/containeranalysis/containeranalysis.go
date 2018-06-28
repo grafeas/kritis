@@ -48,11 +48,14 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 		ctx:    ctx,
 	}, nil
 }
+
+// GetVulnerabilites get Occurrences of type PACKAGE_VULNERABILITY
+// containerImage is fully qualified image url with "https://" prefix
 func (c ContainerAnalysis) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
 	vulnz := []metadata.Vulnerability{}
 
 	req := &containeranalysispb.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=\"%s\" AND kind=\"PACKAGE_VULNERABILITY\"", containerImage),
+		Filter:   fmt.Sprintf("resource_url=\"%s\" AND kind=\"%s\"", PkgVulnerability, containerImage),
 		PageSize: PageSize,
 		Parent:   fmt.Sprintf("projects/%s", project),
 	}
