@@ -30,11 +30,6 @@ func (in *ImageSecurityPolicy) DeepCopyInto(out *ImageSecurityPolicy) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
-	if in.RequiredAttestations != nil {
-		in, out := &in.RequiredAttestations, &out.RequiredAttestations
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.ImageWhitelist != nil {
 		in, out := &in.ImageWhitelist, &out.ImageWhitelist
 		*out = make([]string, len(*in))

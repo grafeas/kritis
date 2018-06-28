@@ -29,9 +29,8 @@ type ImageSecurityPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec                 ImageSecurityPolicySpec `json:"spec"`
-	RequiredAttestations []string                `json:"requiredAttestations"`
-	ImageWhitelist       []string                `json:"imageWhitelist"`
+	Spec           ImageSecurityPolicySpec `json:"spec"`
+	ImageWhitelist []string                `json:"imageWhitelist"`
 }
 
 // PackageVulernerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy

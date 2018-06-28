@@ -17,5 +17,5 @@ limitations under the License.
 package kritis
 
 const (
-	GroupName = "kritis.github.com"
+	GroupName = "kritis.grafeas.io"
 )
