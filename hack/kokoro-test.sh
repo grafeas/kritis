@@ -18,10 +18,19 @@ set -ex
 
 source "$KOKORO_GFILE_DIR/common.sh"
 
-pushd github/kritis
+# Get everything into GOPATH
+sudo mkdir -p $GOPATH/src/github.com/grafeas/kritis/
+echo $GOPATH
+echo $GOROOT
+CWD=`pwd`
+sudo cp -r $CWD/greafeas/kritis $GOPATH/src/github.com/grafeas/kritis
+ls $GOPATH/src/github.com/grafeas/kritis
+cd $GOPATH/src/github.com/grafeas/kritis
+
 
 echo "Check format"
 ./hack/check-fmt.sh
+
 
 echo "Running unit and integration tests..."
 go test -cover -v -timeout 60s -tags=integration `go list ./...  | grep -v vendor`
