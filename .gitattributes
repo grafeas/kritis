@@ -1,0 +1,2 @@
+**/zz_generated.*.go linguist-generated=true
+/pkg/kritis/client/** linguist-generated=true
