@@ -43,8 +43,8 @@ var RootCmd = &cobra.Command{
 		return resolveFilepaths()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := resolve.Execute(files, os.Stdout); err != nil {
-			fmt.Println(err)
+		if err := resolve.Execute(files, cmd.OutOrStdout()); err != nil {
+			cmd.Println(err)
 			os.Exit(1)
 		}
 	},

@@ -1,6 +1,6 @@
 name: "resolve-tags"
 shortDesc: "resolve images in kubernetes yamls from tags to digests"
-command: "./resolve-tags $PWD -f=$KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME"
+command: "./resolve-tags"
 flags:
   - name: "filename"
     shorthand: "f"

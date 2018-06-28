@@ -26,7 +26,7 @@ import (
 	"io/ioutil"
 )
 
-// Execute replaces image:tag with image:digest in each file and prints to STDOUT
+// Execute replaces image:tag with image:digest in each file and prints to the writer
 func Execute(files []string, writer io.Writer) error {
 	for _, file := range files {
 		contents, err := ioutil.ReadFile(file)
@@ -145,8 +145,8 @@ func recursiveReplaceImage(i interface{}, replacements map[string]string) interf
 	return nil
 }
 
-// prints the final replaced kubernetes manifest to STDOUT
+// prints the final replaced kubernetes manifest to given writer
 func print(mfst []byte, writer io.Writer) {
 	fmt.Fprintf(writer, string(mfst))
-	fmt.Println()
+	fmt.Fprintln(writer)
 }

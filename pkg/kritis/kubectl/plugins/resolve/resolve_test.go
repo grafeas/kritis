@@ -16,15 +16,10 @@ limitations under the License.
 package resolve
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"gopkg.in/yaml.v2"
-	"io"
-	"io/ioutil"
 	"sort"
-	"strings"
 	"testing"
 )
 
@@ -224,43 +219,6 @@ func Test_recursiveReplaceImage(t *testing.T) {
 			actual := recursiveReplaceImage(test.yaml, test.replacements)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
 		})
-	}
-}
-
-func Test_Execute(t *testing.T) {
-	testYaml := `apiVersion: v1
-kind: Pod
-metadata:
-  name: test
-spec:
-  containers:
-  - name: debian
-    image: %s`
-	initial := fmt.Sprintf(testYaml, "gcr.io/kaniko-project/executor:v0.1.0")
-	expected := fmt.Sprintf(testYaml, "gcr.io/kaniko-project/executor@sha256:501056bf52f3a96f151ccbeb028715330d5d5aa6647e7572ce6c6c55f91ab374")
-	file, err := ioutil.TempFile("", "")
-	if err != nil {
-		t.Error(err)
-	}
-	if _, err := io.Copy(file, bytes.NewReader([]byte(initial))); err != nil {
-		t.Error(err)
-	}
-	defer file.Close()
-	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	if err := Execute([]string{file.Name()}, writer); err != nil {
-		t.Errorf("error executing resolve-tags: %v", err)
-	}
-	if err := writer.Flush(); err != nil {
-		t.Error(err)
-	}
-	contents, err := ioutil.ReadAll(&b)
-	if err != nil {
-		t.Error(err)
-	}
-	actual := strings.TrimSuffix(string(contents), "\n")
-	if expected != actual {
-		t.Fatalf("expected: %s, actual: %s", expected, actual)
 	}
 }
 
