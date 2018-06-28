@@ -20,13 +20,14 @@ source "$KOKORO_GFILE_DIR/common.sh"
 
 # Get everything into GOPATH
 sudo mkdir -p $GOPATH/src/github.com/grafeas/kritis/
-echo $GOPATH
-echo $GOROOT
-CWD=`pwd`
-sudo cp -r $CWD/github/kritis $GOPATH/src/github.com/grafeas/kritis
-ls $GOPATH/src/github.com/grafeas/kritis
-`cd $GOPATH/src/github.com/grafeas/kritis`
 
+CWD=`pwd`
+
+sudo cp -a $CWD/github/kritis/* $GOPATH/src/github.com/grafeas/kritis
+
+ls $GOPATH/src/github.com/grafeas/kritis
+pushd $GOPATH/src/github.com/grafeas/kritis
+ls
 echo "Check format"
 ./hack/check-fmt.sh
 
