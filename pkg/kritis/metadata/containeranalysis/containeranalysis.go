@@ -55,7 +55,7 @@ func (c ContainerAnalysis) GetVulnerabilities(project string, containerImage str
 	vulnz := []metadata.Vulnerability{}
 
 	req := &containeranalysispb.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=\"%s\" AND kind=\"%s\"", PkgVulnerability, containerImage),
+		Filter:   fmt.Sprintf("resource_url=\"%s\" AND kind=\"%s\"", containerImage, PkgVulnerability),
 		PageSize: PageSize,
 		Parent:   fmt.Sprintf("projects/%s", project),
 	}
