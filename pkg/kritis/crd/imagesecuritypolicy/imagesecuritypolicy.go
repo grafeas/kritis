@@ -72,16 +72,17 @@ VulnzLoop:
 				continue VulnzLoop
 			}
 		}
+		// Check ifFixesNotAvailable
+		if isp.Spec.PackageVulernerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
+			violations = append(violations, v)
+			continue VulnzLoop
+		}
 		// Next, see if the severity is below or at threshold
-		if isp.isSeverityAcceptable(v.Severity) {
+		if isp.severityWithinThreshold(v.Severity) {
 			continue VulnzLoop
 		}
 		// Else, add to list of CVEs in violation
 		violations = append(violations, v)
-	}
-	fmt.Println("VIOLATIONS", violations, len(violations))
-	if len(violations) == 0 {
-		return nil, nil
 	}
 	return violations, nil
 }
@@ -95,10 +96,10 @@ func (isp ImageSecurityPolicy) imageInWhitelist(image string) bool {
 	return false
 }
 
-func (isp ImageSecurityPolicy) isSeverityAcceptable(severity string) bool {
-	if severity == constants.BLOCKALL {
+func (isp ImageSecurityPolicy) severityWithinThreshold(severity string) bool {
+	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
+	if maxSeverity == constants.BLOCKALL {
 		return false
 	}
-	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
 	return ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity]
 }
