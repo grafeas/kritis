@@ -35,12 +35,12 @@ type ImageSecurityPolicy struct {
 func ImageSecurityPolicies() ([]ImageSecurityPolicy, error) {
 	cfg, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
-		return nil, fmt.Errorf("error building kubeconfig: %v", err)
+		return nil, fmt.Errorf("error building config: %v", err)
 	}
 
 	client, err := clientset.NewForConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error building example clientset: %v", err)
+		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
 	list, err := client.KritisV1beta1().ImageSecurityPolicies("").List(metav1.ListOptions{})
 	if err != nil {
@@ -54,7 +54,7 @@ func ImageSecurityPolicies() ([]ImageSecurityPolicy, error) {
 }
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
-// It returns a list of vulnerabilites that don't pass, along with why they didn't pass
+// It returns a list of vulnerabilites that don't pass
 func (isp ImageSecurityPolicy) ValidateImageSecurityPolicy(project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error) {
 	// First, check if image is whitelisted
 	if isp.imageInWhitelist(image) {
@@ -88,8 +88,8 @@ VulnzLoop:
 }
 
 func (isp ImageSecurityPolicy) imageInWhitelist(image string) bool {
-	for _, w := range isp.ImageWhitelist {
-		if w == image {
+	for _, i := range isp.ImageWhitelist {
+		if i == image {
 			return true
 		}
 	}
