@@ -18,13 +18,13 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/grafeas/kritis1/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
 const (
@@ -38,10 +38,10 @@ var tcIntTest = []struct {
 	certFile         string
 	keyFile          string
 	expectedHttpResp int
-	err              error
+	shouldError      bool
 }{
-	{"secure connection", CertFile, KeyFile, http.StatusOK, nil},
-	{"insecure connection", "", "", http.StatusContinue, fmt.Errorf("Get https://[::]:41071/: dial tcp [::]:41071: connect: connection refused")},
+	{"secure connection", CertFile, KeyFile, http.StatusOK, false},
+	{"insecure connection", "", "", http.StatusContinue, true},
 }
 
 func TestHTTPSServer(t *testing.T) {
@@ -62,10 +62,8 @@ func TestHTTPSServer(t *testing.T) {
 			// Create a clint and make a request
 			client := &http.Client{Transport: tr}
 			res, err := client.Get(buildSecureUrl(srv.Addr, "/"))
-			if err != tc.err {
-				t.Fatalf("Exptect %v\nGot %v", tc.err, err)
-			}
-			if res.StatusCode != tc.expectedHttpResp {
+			testutil.CheckError(t, tc.shouldError, err)
+			if err == nil && res.StatusCode != tc.expectedHttpResp {
 				t.Errorf("Response code was %v; want %v", res.StatusCode, tc.expectedHttpResp)
 			}
 		})

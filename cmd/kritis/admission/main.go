@@ -22,7 +22,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/grafeas/kritis1/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/admission"
 )
 
 var (
