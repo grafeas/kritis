@@ -2,7 +2,15 @@
 
 
 [[projects]]
-<<<<<<< HEAD
+  name = "cloud.google.com/go"
+  packages = [
+    "compute/metadata",
+    "internal/version"
+  ]
+  revision = "777200caa7fb8936aed0f12b1fd79af64cc83ec9"
+  version = "v0.24.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -28,23 +36,16 @@
   name = "github.com/golang/glog"
   packages = ["."]
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
-=======
-  name = "cloud.google.com/go"
-  packages = [
-    "compute/metadata",
-    "internal/version"
-  ]
-  revision = "777200caa7fb8936aed0f12b1fd79af64cc83ec9"
-  version = "v0.24.0"
->>>>>>> Fix dep issues
 
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp"
   ]
   revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
@@ -66,37 +67,16 @@
   revision = "3f6471078a9661a9a439bd5e71a371aff429566a"
 
 [[projects]]
-  name = "github.com/googleapis/gax-go"
-  packages = ["."]
-  revision = "317e0006254c44a0ac427cc52a0e083ff0b9622f"
-  version = "v2.0.0"
-
-[[projects]]
-  name = "go.opencensus.io"
-  packages = [
-    ".",
-    "exporter/stackdriver/propagation",
-    "internal",
-    "internal/tagencoding",
-    "plugin/ocgrpc",
-    "plugin/ochttp",
-    "plugin/ochttp/propagation/b3",
-    "stats",
-    "stats/internal",
-    "stats/view",
-    "tag",
-    "trace",
-    "trace/internal",
-    "trace/propagation"
-  ]
-  revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
-  version = "v0.13.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/google/gofuzz"
   packages = ["."]
   revision = "24818f796faf91cd76ec7bddd72458fbced7a6c1"
+
+[[projects]]
+  name = "github.com/googleapis/gax-go"
+  packages = ["."]
+  revision = "317e0006254c44a0ac427cc52a0e083ff0b9622f"
+  version = "v2.0.0"
 
 [[projects]]
   name = "github.com/googleapis/gnostic"
@@ -154,6 +134,27 @@
   version = "v1.0.1"
 
 [[projects]]
+  name = "go.opencensus.io"
+  packages = [
+    ".",
+    "exporter/stackdriver/propagation",
+    "internal",
+    "internal/tagencoding",
+    "plugin/ocgrpc",
+    "plugin/ochttp",
+    "plugin/ochttp/propagation/b3",
+    "stats",
+    "stats/internal",
+    "stats/view",
+    "tag",
+    "trace",
+    "trace/internal",
+    "trace/propagation"
+  ]
+  revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
+  version = "v0.13.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
@@ -168,20 +169,14 @@
     "http/httpguts",
     "http2",
     "http2/hpack",
-    "idna"
+    "idna",
+    "internal/timeseries",
+    "trace"
   ]
   revision = "e514e69ffb8bc3c76a71ae40de0118d794855992"
 
 [[projects]]
   branch = "master"
-<<<<<<< HEAD
-  name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows"
-  ]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
-=======
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -191,7 +186,15 @@
     "jwt"
   ]
   revision = "ef147856a6ddbb60760db74283d2424e98c87bff"
->>>>>>> Fix dep issues
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = [
+    "unix",
+    "windows"
+  ]
+  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -216,11 +219,22 @@
 
 [[projects]]
   branch = "master"
-<<<<<<< HEAD
   name = "golang.org/x/time"
   packages = ["rate"]
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
-=======
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "imports",
+    "internal/fastwalk"
+  ]
+  revision = "16699b2d33e2654d743c50b4525ab7e73e346238"
+
+[[projects]]
+  branch = "master"
   name = "google.golang.org/api"
   packages = [
     "googleapi",
@@ -234,7 +248,6 @@
     "transport/http"
   ]
   revision = "cd4b2e727ec609b8e6f2430d588c795fec5b575c"
->>>>>>> Fix dep issues
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -257,13 +270,49 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/tools"
+  name = "google.golang.org/genproto"
   packages = [
-    "go/ast/astutil",
-    "imports",
-    "internal/fastwalk"
+    "googleapis/api/annotations",
+    "googleapis/devtools/containeranalysis/v1alpha1",
+    "googleapis/iam/v1",
+    "googleapis/longrunning",
+    "googleapis/rpc/status",
+    "protobuf/field_mask"
   ]
-  revision = "16699b2d33e2654d743c50b4525ab7e73e346238"
+  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/oauth",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/grpcrand",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
+  version = "v1.13.0"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -428,6 +477,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e66c7b1cd7f3400f7524076b9f08632cd03929c0effecac1632be3d0fb3c9336"
+  inputs-digest = "3c92a98eb3511ea0567b4bd3894d64d51c29fe8409c91554461b4d7f3d98de9f"
   solver-name = "gps-cdcl"
   solver-version = 1
