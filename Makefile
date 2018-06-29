@@ -29,6 +29,7 @@ REPOPATH ?= $(ORG)/$(PROJECT)
 
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
+RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
 .PHONY: test
 test: cross
@@ -51,3 +52,9 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_P
 
 $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
+
+.PHONY: install-plugin
+install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
+	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
