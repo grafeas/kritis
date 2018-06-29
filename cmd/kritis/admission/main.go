@@ -47,6 +47,7 @@ func NewServer(addr string) *http.Server {
 	return &http.Server{
 		Addr: addr,
 		TLSConfig: &tls.Config{
+			// TODO: Change this to tls.RequireAndVerifyClientCert
 			ClientAuth: tls.NoClientCert,
 		},
 	}

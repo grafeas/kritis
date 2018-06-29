@@ -29,8 +29,9 @@ import (
 
 const (
 	RandomPortAddress = ":0"
-	CertFile          = "./certs/cert.pem"
-	KeyFile           = "./certs/key.pem"
+	// TODO: Generate these certs via crypt/tls lib.
+	CertFile = "./certs/cert.pem"
+	KeyFile  = "./certs/key.pem"
 )
 
 var tcIntTest = []struct {
