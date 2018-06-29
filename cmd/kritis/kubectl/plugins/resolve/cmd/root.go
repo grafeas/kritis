@@ -38,7 +38,13 @@ func init() {
 }
 
 var RootCmd = &cobra.Command{
-	Use: "resolve-tags",
+	Use:   "resolve-tags",
+	Short: "resolve-tags is a tool for replacing tagged images with fully qualified images in Kubernetes yamls",
+	Long: `resolve-tags can be run as either a kubectl plugin or as a binary. It takes in paths to file and
+		   prints new manfifests to STDOUT. 
+		   
+		   Note: When running as a binary, if the KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME env variable is set,
+		   it will override any files passed in.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return resolveFilepaths()
 	},
