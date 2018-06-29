@@ -15,3 +15,43 @@ limitations under the License.
 */
 
 package admission
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/grafeas/kritis1/pkg/kritis/admission/constants"
+	"k8s.io/api/admission/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// This is very basic admission controller which allows all pods.
+func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Add image security policy check
+	// 1. Get all Image security Polices
+	// 2. Get all pod specs
+	// 3. For all pods Get Vulnerabilities for images
+	// 4. Validate policy
+	// 5. Attest.
+	status := &v1beta1.AdmissionResponse{
+		Allowed: true,
+		Result: &metav1.Status{
+			Status:  string(constants.SuccessStatus),
+			Message: constants.SuccessMessage,
+		},
+	}
+	WriteHttpResponse(status, w)
+}
+
+func WriteHttpResponse(status *v1beta1.AdmissionResponse, w http.ResponseWriter) {
+	ar := v1beta1.AdmissionReview{
+		Response: status,
+	}
+	data, err := json.Marshal(ar)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}

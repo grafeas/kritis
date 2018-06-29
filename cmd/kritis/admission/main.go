@@ -15,3 +15,39 @@ limitations under the License.
 */
 
 package main
+
+import (
+	"crypto/tls"
+	"flag"
+	"log"
+	"net/http"
+
+	"github.com/grafeas/kritis1/pkg/kritis/admission"
+)
+
+var (
+	tlsCertFile string
+	tlsKeyFile  string
+)
+
+const (
+	Addr = ":443"
+)
+
+func main() {
+	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
+	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
+
+	http.HandleFunc("/", admission.AdmissionReviewHandler)
+	httpsServer := NewServer(Addr)
+	log.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
+}
+
+func NewServer(addr string) *http.Server {
+	return &http.Server{
+		Addr: addr,
+		TLSConfig: &tls.Config{
+			ClientAuth: tls.NoClientCert,
+		},
+	}
+}

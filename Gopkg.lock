@@ -90,6 +90,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/grafeas/kritis"
+  packages = [
+    "pkg/kritis/apis/kritis",
+    "pkg/kritis/apis/kritis/v1beta1",
+    "pkg/kritis/client/clientset/versioned",
+    "pkg/kritis/client/clientset/versioned/scheme",
+    "pkg/kritis/client/clientset/versioned/typed/kritis/v1beta1",
+    "pkg/kritis/client/clientset/versioned/typed/kritis/v1beta1/fake",
+    "pkg/kritis/kubectl/plugins/resolve",
+    "pkg/kritis/testutil"
+  ]
+  revision = "572f93b574930e0b3f06bcfc7837014c554d6185"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
@@ -339,9 +354,9 @@
   version = "v2.2.1"
 
 [[projects]]
-  branch = "master"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -371,7 +386,8 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "9e5ffd1f1320950b238cfce291b926411f0af722"
+  revision = "73d903622b7391f3312dcbac6483fed484e185f8"
+  version = "kubernetes-1.10.0"
 
 [[projects]]
   name = "k8s.io/apimachinery"
