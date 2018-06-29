@@ -90,21 +90,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/grafeas/kritis"
-  packages = [
-    "pkg/kritis/apis/kritis",
-    "pkg/kritis/apis/kritis/v1beta1",
-    "pkg/kritis/client/clientset/versioned",
-    "pkg/kritis/client/clientset/versioned/scheme",
-    "pkg/kritis/client/clientset/versioned/typed/kritis/v1beta1",
-    "pkg/kritis/client/clientset/versioned/typed/kritis/v1beta1/fake",
-    "pkg/kritis/kubectl/plugins/resolve",
-    "pkg/kritis/testutil"
-  ]
-  revision = "572f93b574930e0b3f06bcfc7837014c554d6185"
-
-[[projects]]
-  branch = "master"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
