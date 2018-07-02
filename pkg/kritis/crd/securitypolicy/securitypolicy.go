@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package imagesecuritypolicy
+package securitypolicy
 
 import (
 	"fmt"
@@ -27,12 +27,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type ImageSecurityPolicy struct {
-	v1beta1.ImageSecurityPolicy
-}
-
 // ImageSecurityPolicies returns all ISP's in all namespaces
-func ImageSecurityPolicies() ([]ImageSecurityPolicy, error) {
+func ImageSecurityPolicies() ([]v1beta1.ImageSecurityPolicy, error) {
 	cfg, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return nil, fmt.Errorf("error building config: %v", err)
@@ -46,40 +42,33 @@ func ImageSecurityPolicies() ([]ImageSecurityPolicy, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error listing all image policy requirements: %v", err)
 	}
-	ispList := []ImageSecurityPolicy{}
-	for _, i := range list.Items {
-		ispList = append(ispList, ImageSecurityPolicy{i})
-	}
-	return ispList, nil
+	return list.Items, nil
 }
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilites that don't pass
-func (isp ImageSecurityPolicy) ValidateImageSecurityPolicy(project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error) {
 	// First, check if image is whitelisted
-	if isp.imageInWhitelist(image) {
+	if imageInWhitelist(isp, image) {
 		return nil, nil
 	}
 	// Now, check vulnz in the image
 	vulnz := client.GetVulnerabilities(project, image)
 	var violations []metadata.Vulnerability
 
-VulnzLoop:
 	for _, v := range vulnz {
 		// First, check if the vulnerability is whitelisted
-		for _, w := range isp.Spec.PackageVulernerabilityRequirements.WhitelistCVEs {
-			if w == v.CVE {
-				continue VulnzLoop
-			}
+		if cveInWhitelist(isp, v.CVE) {
+			continue
 		}
 		// Check ifFixesNotAvailable
 		if isp.Spec.PackageVulernerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
 			violations = append(violations, v)
-			continue VulnzLoop
+			continue
 		}
 		// Next, see if the severity is below or at threshold
-		if isp.severityWithinThreshold(v.Severity) {
-			continue VulnzLoop
+		if severityWithinThreshold(isp, v.Severity) {
+			continue
 		}
 		// Else, add to list of CVEs in violation
 		violations = append(violations, v)
@@ -87,7 +76,7 @@ VulnzLoop:
 	return violations, nil
 }
 
-func (isp ImageSecurityPolicy) imageInWhitelist(image string) bool {
+func imageInWhitelist(isp v1beta1.ImageSecurityPolicy, image string) bool {
 	for _, i := range isp.ImageWhitelist {
 		if i == image {
 			return true
@@ -96,7 +85,16 @@ func (isp ImageSecurityPolicy) imageInWhitelist(image string) bool {
 	return false
 }
 
-func (isp ImageSecurityPolicy) severityWithinThreshold(severity string) bool {
+func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
+	for _, w := range isp.Spec.PackageVulernerabilityRequirements.WhitelistCVEs {
+		if w == cve {
+			return true
+		}
+	}
+	return false
+}
+
+func severityWithinThreshold(isp v1beta1.ImageSecurityPolicy, severity string) bool {
 	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {
 		return false

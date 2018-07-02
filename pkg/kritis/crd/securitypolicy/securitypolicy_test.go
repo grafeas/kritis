@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package imagesecuritypolicy
+package securitypolicy
 
 import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -48,16 +48,14 @@ func (m mockMetadataClient) GetVulnerabilities(project string, containerImage st
 }
 
 func Test_ValidISP(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "MEDIUM",
-				},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "MEDIUM",
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -67,20 +65,18 @@ func Test_ValidISP(t *testing.T) {
 }
 
 func Test_BlockallPass(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "BLOCKALL",
-					WhitelistCVEs: []string{
-						"cve1",
-						"cve2",
-					},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "BLOCKALL",
+				WhitelistCVEs: []string{
+					"cve1",
+					"cve2",
 				},
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -90,48 +86,42 @@ func Test_BlockallPass(t *testing.T) {
 }
 
 func Test_BlockallFail(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "BLOCKALL",
-					WhitelistCVEs: []string{
-						"cve1",
-					},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "BLOCKALL",
+				WhitelistCVEs: []string{
+					"cve1",
 				},
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
 }
 
 func Test_MaxSeverityFail(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "LOW",
-				},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "LOW",
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
 }
 
 func Test_WhitelistedImage(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			ImageWhitelist: []string{"image"},
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "LOW",
-				},
+	isp := v1beta1.ImageSecurityPolicy{
+		ImageWhitelist: []string{"image"},
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "LOW",
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "image", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "image", mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -141,20 +131,18 @@ func Test_WhitelistedImage(t *testing.T) {
 }
 
 func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			ImageWhitelist: []string{"image"},
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity: "LOW",
-					WhitelistCVEs: []string{
-						"cve2",
-					},
+	isp := v1beta1.ImageSecurityPolicy{
+		ImageWhitelist: []string{"image"},
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "LOW",
+				WhitelistCVEs: []string{
+					"cve2",
 				},
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "image", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -164,32 +152,28 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 }
 
 func Test_OnlyFixesNotAvailableFail(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity:       "LOW",
-					OnlyFixesNotAvailable: true,
-				},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity:       "LOW",
+				OnlyFixesNotAvailable: true,
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
 }
 func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
-	isp := ImageSecurityPolicy{
-		v1beta1.ImageSecurityPolicy{
-			Spec: v1beta1.ImageSecurityPolicySpec{
-				v1beta1.PackageVulernerabilityRequirements{
-					MaximumSeverity:       "CRITICAL",
-					OnlyFixesNotAvailable: true,
-					WhitelistCVEs:         []string{"cve2"},
-				},
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity:       "CRITICAL",
+				OnlyFixesNotAvailable: true,
+				WhitelistCVEs:         []string{"cve2"},
 			},
 		},
 	}
-	violations, err := isp.ValidateImageSecurityPolicy("", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -233,20 +217,17 @@ func Test_severityWithinThreshold(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			isp := ImageSecurityPolicy{
-				v1beta1.ImageSecurityPolicy{
-					Spec: v1beta1.ImageSecurityPolicySpec{
-						v1beta1.PackageVulernerabilityRequirements{
-							MaximumSeverity:       test.maxSeverity,
-							OnlyFixesNotAvailable: true,
-						},
+			isp := v1beta1.ImageSecurityPolicy{
+				Spec: v1beta1.ImageSecurityPolicySpec{
+					v1beta1.PackageVulernerabilityRequirements{
+						MaximumSeverity:       test.maxSeverity,
+						OnlyFixesNotAvailable: true,
 					},
 				},
 			}
-			if isp.severityWithinThreshold(test.severity) != test.expected {
+			if severityWithinThreshold(isp, test.severity) != test.expected {
 				t.Error("got incorrect severity threshold")
 			}
 		})
 	}
-
 }
