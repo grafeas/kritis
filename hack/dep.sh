@@ -18,6 +18,7 @@ set -e -o pipefail
 
 DEP_VERSION=v0.4.1
 DEP_DIR="$GOPATH/src/github.com/golang/dep"
+KRITIS_DIR="$GOPATH/src/github.com/grafeas/kritis"
 
 install_dep() {
     echo "Installing dep ${DEP_VERSION}"
@@ -55,6 +56,7 @@ if [ ${#files[@]} -gt 0 ]; then
 	if ! [ -x "$(command -v dep)" ]; then
 		install_dep
 	fi
+	cd $KRITIS_DIR
 	dep ensure
 	./hack/dep-fixer.sh
 	diffs="$(git status --porcelain -- vendor Gopkg.toml Gopkg.lock 2>/dev/null)"
