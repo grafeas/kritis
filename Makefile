@@ -36,6 +36,7 @@ test: cross
 	./hack/check-fmt.sh
 	./hack/boilerplate.sh
 	./hack/verify-codegen.sh
+	./hack/dep.sh
 	./hack/test.sh
 
 GO_LDFLAGS :=""
