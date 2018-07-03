@@ -18,6 +18,7 @@ package admission
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
@@ -40,18 +41,22 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			Message: constants.SuccessMessage,
 		},
 	}
-	WriteHttpResponse(status, w)
+	error := WriteHttpResponse(status, w)
+	if error != nil {
+		log.Printf("\nError writing response %s", error)
+	}
 }
 
-func WriteHttpResponse(status *v1beta1.AdmissionResponse, w http.ResponseWriter) {
+func WriteHttpResponse(status *v1beta1.AdmissionResponse, w http.ResponseWriter) error {
 	ar := v1beta1.AdmissionReview{
 		Response: status,
 	}
 	data, err := json.Marshal(ar)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, error := w.Write(data)
+	return error
 }
