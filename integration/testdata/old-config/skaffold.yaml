@@ -1,0 +1,15 @@
+apiVersion: kritis/v1alpha1
+kind: Config
+build:
+  artifacts:
+  - imageName: gcr.io/kritis-int-test/kritis-example
+    workspace: .
+  local: {}
+  tagPolicy: sha256
+deploy:
+  kubectl:
+    manifests:
+      - paths:
+        - k8s-*
+        parameters:
+          IMAGE_NAME: gcr.io/kritis-int-test
