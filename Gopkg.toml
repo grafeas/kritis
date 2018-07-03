@@ -36,6 +36,14 @@ ignored = ["cloud.google.com/go/devtools/*"]
   name = "k8s.io/client-go"
   version = "kubernetes-1.10.0"
 
+[[constraint]]
+  version = "kubernetes-1.10.0"
+  name = "k8s.io/api"
+
+[[constraint]]
+  version = "kubernetes-1.10.0"
+  name = "k8s.io/apimachinery"
+
 [prune]
   go-tests = true
   unused-packages = true
