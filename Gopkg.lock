@@ -393,6 +393,7 @@
 [[projects]]
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -596,6 +597,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3acf0f8fa5681b1fc280ade56a1533be28392d105b75cb9372a9e901b0f49f5f"
+  inputs-digest = "eda5848ff39125220ed0cbca541d2a0ebe5cbbde61d76fbe57c0e2c0dc1d21fa"
   solver-name = "gps-cdcl"
   solver-version = 1
