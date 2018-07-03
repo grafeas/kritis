@@ -19,4 +19,12 @@ package constants
 const (
 	// Used for blocking all images with CVEs, except for whitelisted CVEs
 	BLOCKALL = "BLOCKALL"
+
+	// Pod labels
+	InvalidImageSecPolicyLabel = "invalidImageSecPolicy"
+
+	// Pod annotations
+	InvalidDigestAnnotation      = "Image not resolved to digest."
+	PreviouslyAttestedAnnotation = "Previously attested."
+	NoAttestationsAnnotation     = "No valid attestations present. This pod will not be able to restart in future"
 )
