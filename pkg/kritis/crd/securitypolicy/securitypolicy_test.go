@@ -17,10 +17,11 @@ limitations under the License.
 package securitypolicy
 
 import (
+	"testing"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"testing"
 )
 
 var (
@@ -40,11 +41,11 @@ var (
 type mockMetadataClient struct {
 }
 
-func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) []metadata.Vulnerability {
+func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
 	return []metadata.Vulnerability{
 		vulnz1,
 		vulnz2,
-	}
+	}, nil
 }
 
 func Test_ValidISP(t *testing.T) {

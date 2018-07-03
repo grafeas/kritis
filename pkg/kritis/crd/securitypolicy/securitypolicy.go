@@ -18,6 +18,7 @@ package securitypolicy
 
 import (
 	"fmt"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -53,7 +54,10 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 		return nil, nil
 	}
 	// Now, check vulnz in the image
-	vulnz := client.GetVulnerabilities(project, image)
+	vulnz, err := client.GetVulnerabilities(project, image)
+	if err != nil {
+		return nil, err
+	}
 	var violations []metadata.Vulnerability
 
 	for _, v := range vulnz {
