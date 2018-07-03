@@ -16,6 +16,9 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 
+GCP_PROJECT ?= kritis-int-test
+
+
 %.exe: %
 	mv $< $@
 
@@ -59,3 +62,22 @@ install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
+
+.PHONY: integration
+integration: cross
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
+
+.PHONY: integration-in-docker
+integration-in-docker:
+	docker build \
+		-f deploy/kritis/Dockerfile \
+		--target integration \
+		-t gcr.io/$(GCP_PROJECT)/kritis-integration .
+	docker run \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-e REMOTE_INTEGRATION=true \
+		-e DOCKER_CONFIG=/root/.docker \
+		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
+		gcr.io/$(GCP_PROJECT)/kritis-integration
