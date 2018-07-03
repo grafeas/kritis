@@ -28,13 +28,17 @@ required = [
 # "cloud.google.com/go/devtools"
 ignored = ["cloud.google.com/go/devtools/*"]
 
+[[constraint]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.11.0-beta.2"
+
 [[override]]
   name = "k8s.io/code-generator"
   version = "kubernetes-1.10.0"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0-beta.2"
 
 [prune]
   go-tests = true
