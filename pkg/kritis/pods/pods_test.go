@@ -18,6 +18,7 @@ package pods
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,10 +48,7 @@ func Test_Images(t *testing.T) {
 	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
 }
 
-func mockApplyPatch(modifiedPod *corev1.Pod, originalJSON []byte) ([]byte, error) {
-	return getPatch(modifiedPod, originalJSON)
-}
-func Test_Patch(t *testing.T) {
+func Test_AddPatch(t *testing.T) {
 	tests := []struct {
 		name                string
 		labels              map[string]string
@@ -70,15 +68,6 @@ func Test_Patch(t *testing.T) {
 			expectedAnnotations: map[string]string{"annotation": "new annotation"},
 		},
 		{
-			name:                "add label and annotation",
-			labels:              map[string]string{"key": "value"},
-			annotations:         map[string]string{"key": "value"},
-			newLabels:           map[string]string{"label": "new label"},
-			newAnnotations:      map[string]string{"key": "value", "annotation": "new annotation"},
-			expectedLabels:      map[string]string{"key": "value", "label": "new label"},
-			expectedAnnotations: map[string]string{"annotation": "new annotation"},
-		},
-		{
 			name:                "update label and annotation",
 			labels:              map[string]string{"label": "label"},
 			annotations:         map[string]string{"annotation": "annotation"},
@@ -90,33 +79,106 @@ func Test_Patch(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pod := getPod(test.labels, test.annotations)
-			originalPatch := patchFunction
+			pod := corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod",
+					Labels:      test.labels,
+					Annotations: test.annotations,
+				},
+			}
+			originalPatchFunction := patchFunction
 			defer func() {
-				patchFunction = originalPatch
+				patchFunction = originalPatchFunction
 			}()
+			patch := []byte{}
+			mockApplyPatch := func(modifiedPod *corev1.Pod, originalJSON []byte) error {
+				var err error
+				patch, err = getPatch(modifiedPod, originalJSON)
+				return err
+			}
 			patchFunction = mockApplyPatch
-			actual, err := AddLabelsAndAnnotations(pod, test.newLabels, test.newAnnotations)
+			if err := AddLabelsAndAnnotations(pod, test.newLabels, test.newAnnotations); err != nil {
+				t.Error(err)
+			}
+			annotations, err := json.Marshal(test.expectedAnnotations)
 			if err != nil {
 				t.Error(err)
 			}
-			modifedPod := getPod(test.expectedLabels, test.expectedAnnotations)
-			expected, err := json.Marshal(modifiedPod)
-			testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
+			labels, err := json.Marshal(test.expectedLabels)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
+			expected := fmt.Sprintf(`{"metadata":{"annotations":%s,"labels":%s}}`, annotations, labels)
+			testutil.CheckErrorAndDeepEqual(t, false, err, expected, string(patch))
 		})
 	}
-
 }
 
-func getPod(labels, annotations map[string]string) *corev1.Pod {
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "pod",
-			Labels:      labels,
-			Annotations: annotations,
+func Test_DeletePatch(t *testing.T) {
+	tests := []struct {
+		name                string
+		labels              map[string]string
+		annotations         map[string]string
+		deleteLabels        []string
+		deleteAnnotations   []string
+		expectedLabels      map[string]string
+		expectedAnnotations map[string]string
+		noChange            bool
+	}{
+		{
+			name:                "delete label and annotation",
+			labels:              map[string]string{"label": "some label"},
+			annotations:         map[string]string{"annotation": "some annotation"},
+			deleteLabels:        []string{"label"},
+			deleteAnnotations:   []string{"annotation"},
+			expectedLabels:      nil,
+			expectedAnnotations: nil,
 		},
+		{
+			name:              "delete non-existant label and annotation",
+			labels:            map[string]string{"label": "label"},
+			annotations:       map[string]string{"annotation": "annotation"},
+			deleteLabels:      []string{"something"},
+			deleteAnnotations: []string{"something"},
+			noChange:          true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pod := corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pod",
+					Labels:      test.labels,
+					Annotations: test.annotations,
+				},
+			}
+			originalPatchFunction := patchFunction
+			defer func() {
+				patchFunction = originalPatchFunction
+			}()
+			patch := []byte{}
+			mockApplyPatch := func(modifiedPod *corev1.Pod, originalJSON []byte) error {
+				var err error
+				patch, err = getPatch(modifiedPod, originalJSON)
+				return err
+			}
+			patchFunction = mockApplyPatch
+			if err := DeleteLabelsAndAnnotations(pod, test.deleteLabels, test.deleteAnnotations); err != nil {
+				t.Error(err)
+			}
+			annotations, err := json.Marshal(test.expectedAnnotations)
+			if err != nil {
+				t.Error(err)
+			}
+			labels, err := json.Marshal(test.expectedLabels)
+			if err != nil {
+				t.Error(err)
+			}
+			expected := fmt.Sprintf(`{"metadata":{"annotations":%s,"labels":%s}}`, annotations, labels)
+			if test.noChange {
+				expected = "{}"
+			}
+			testutil.CheckErrorAndDeepEqual(t, false, err, expected, string(patch))
+		})
 	}
 }

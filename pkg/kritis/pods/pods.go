@@ -28,6 +28,7 @@ import (
 )
 
 var (
+	// For testing
 	patchFunction = applyPatch
 )
 
@@ -62,17 +63,17 @@ func getPatch(modifiedPod *corev1.Pod, originalJSON []byte) ([]byte, error) {
 }
 
 // applyPatch applies the patches in the modified pod to the running pod
-func applyPatch(modifiedPod *corev1.Pod, originalJSON []byte) ([]byte, error) {
+func applyPatch(modifiedPod *corev1.Pod, originalJSON []byte) error {
 	p, err := getPatch(modifiedPod, originalJSON)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	clientset, err := getClientSet()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = clientset.CoreV1().Pods(modifiedPod.Namespace).Patch(modifiedPod.GetName(), types.StrategicMergePatchType, p)
-	return nil, err
+	return err
 }
 
 // AddLabelsAndAnnotations adds labels and annotations to a pod
@@ -122,7 +123,7 @@ func DeleteLabelsAndAnnotations(pod corev1.Pod, labels []string, annotations []s
 			delete(modifiedPod.Annotations, a)
 		}
 	}
-	return applyPatch(modifiedPod, originalJSON)
+	return patchFunction(modifiedPod, originalJSON)
 }
 
 func getClientSet() (kubernetes.Interface, error) {
