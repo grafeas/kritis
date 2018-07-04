@@ -54,3 +54,26 @@ type ImageSecurityPolicyList struct {
 
 	Items []ImageSecurityPolicy `json:"items"`
 }
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type AttestationAuthority struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	NoteReference        string   `json:"noteReference"`
+	PrivateKeySecretName []string `json:"privateKeySecretName"`
+	PublicKeyData        []string `json:"publicKeyData"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// AttestationAuthorityList is a list of AttestationAuthority resources
+type AttestationAuthorityList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []AttestationAuthority `json:"items"`
+}
