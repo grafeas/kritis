@@ -21,7 +21,7 @@ kubectl plugin resolve-tags -f <path to file>
 
 To apply subsitutions using `kubectl apply -f`, you can run:
 ```
-kubectl plugin resolve-tags -f <path to file> -a true
+kubectl plugin resolve-tags -f <path to file> --apply true
 ```
 
 ## resolve-tags binary
