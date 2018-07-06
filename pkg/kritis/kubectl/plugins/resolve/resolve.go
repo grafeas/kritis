@@ -141,8 +141,9 @@ func recursiveReplaceImage(i interface{}, replacements map[string]string) interf
 			t[index] = replacedMapSlice
 		}
 		return t
+	default:
+		return t
 	}
-	return nil
 }
 
 // prints the final replaced kubernetes manifest to given writer
