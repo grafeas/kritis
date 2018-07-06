@@ -20,21 +20,28 @@ import (
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/spf13/cobra"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 const (
 	PWD                                 = "PWD"
 	KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME = "KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME"
+	KUBECTL_PLUGINS_LOCAL_FLAG_APPLY    = "KUBECTL_PLUGINS_LOCAL_FLAG_APPLY"
+	KUBECTL_PLUGINS_CALLER              = "KUBECTL_PLUGINS_CALLER"
 )
 
 var (
 	files multiArg
+	apply bool
 )
 
 func init() {
 	RootCmd.PersistentFlags().VarP(&files, "filename", "f", "Filename to resolve. Set it repeatedly for multiple filenames.")
+	RootCmd.PersistentFlags().BoolVarP(&apply, "apply", "a", false, "Apply changes using 'kubectl apply -f'.")
 }
 
 var RootCmd = &cobra.Command{
@@ -46,14 +53,24 @@ var RootCmd = &cobra.Command{
 		   Note: When running as a binary, if the KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME env variable is set,
 		   it will override any files passed in.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		resolveApply()
 		return resolveFilepaths()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := resolve.Execute(files, cmd.OutOrStdout()); err != nil {
+		substitutes, err := resolve.Execute(files)
+		if err != nil {
+			cmd.Println(err)
+			os.Exit(1)
+		}
+		if err := outputResults(substitutes, cmd.OutOrStdout()); err != nil {
 			cmd.Println(err)
 			os.Exit(1)
 		}
 	},
+}
+
+func resolveApply() {
+	apply = apply || (os.Getenv(KUBECTL_PLUGINS_LOCAL_FLAG_APPLY) != "")
 }
 
 func resolveFilepaths() error {
@@ -71,6 +88,41 @@ func resolveFilepaths() error {
 				return err
 			}
 			files[index] = fullPath
+		}
+	}
+	return nil
+}
+
+func outputResults(substitutes map[string]string, writer io.Writer) error {
+	if apply {
+		return applyChanges(substitutes, writer)
+	}
+	print(substitutes, writer)
+	return nil
+}
+
+// prints the final replaced kubernetes manifest to given writer
+func print(substitutes map[string]string, writer io.Writer) {
+	for file, contents := range substitutes {
+		fmt.Fprintln(writer, fmt.Sprintf("---%s---", file))
+		fmt.Fprintf(writer, contents)
+		fmt.Fprintln(writer)
+	}
+}
+
+func applyChanges(substitutes map[string]string, writer io.Writer) error {
+	kubectl := os.Getenv("KUBECTL_PLUGINS_CALLER")
+	if kubectl == "" {
+		kubectl = "kubectl"
+	}
+
+	for _, contents := range substitutes {
+		cmd := exec.Command(kubectl, "apply", "-f", "-")
+		cmd.Stdin = strings.NewReader(contents)
+		output, err := cmd.CombinedOutput()
+		fmt.Fprintln(writer, string(output))
+		if err != nil {
+			return err
 		}
 	}
 	return nil
