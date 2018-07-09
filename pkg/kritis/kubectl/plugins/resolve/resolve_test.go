@@ -32,8 +32,8 @@ spec:
   - name: docker
     image: golang:1.10
     args: ["--arg1=<first>",
-	       "--arg2=<second>",
-	       "--arg3=<third>"]
+           "--arg2=<second>",
+           "--arg3=<third>"]
 `
 
 var testYaml2 = `apiVersion: v1
