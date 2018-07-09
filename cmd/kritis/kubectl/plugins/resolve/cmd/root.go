@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
+	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/spf13/cobra"
 	"io"
 	"os"
@@ -59,12 +60,10 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		substitutes, err := resolve.Execute(files)
 		if err != nil {
-			cmd.Println(err)
-			os.Exit(1)
+			util.ExitIfErr(cmd, err)
 		}
 		if err := outputResults(substitutes, cmd.OutOrStdout()); err != nil {
-			cmd.Println(err)
-			os.Exit(1)
+			util.ExitIfErr(cmd, err)
 		}
 	},
 }
@@ -111,6 +110,7 @@ func print(substitutes map[string]string, writer io.Writer) {
 }
 
 func applyChanges(substitutes map[string]string, writer io.Writer) error {
+	// Use full path to kubectl binary if we can get it, otherwise assume it's on $PATH
 	kubectl := os.Getenv("KUBECTL_PLUGINS_CALLER")
 	if kubectl == "" {
 		kubectl = "kubectl"
