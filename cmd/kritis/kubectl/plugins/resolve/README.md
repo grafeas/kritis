@@ -19,6 +19,11 @@ You can then run the plugin:
 kubectl plugin resolve-tags -f <path to file>
 ```
 
+To apply subsitutions using `kubectl apply -f`, you can run:
+```
+kubectl plugin resolve-tags -f <path to file> --apply true
+```
+
 ## resolve-tags binary
 
 resolve-tags can also be run as a binary. 
@@ -35,4 +40,8 @@ You can then run the binary:
 
 ```
 ./out/resolve-tags -f <path to file> -f <path to another file>
+```
+To apply subsitutions using `kubectl apply -f`, you can run:
+```
+kubectl plugin resolve-tags -f <path to file> -a
 ```
