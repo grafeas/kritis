@@ -40,11 +40,11 @@ var (
 type mockMetadataClient struct {
 }
 
-func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) []metadata.Vulnerability {
+func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
 	return []metadata.Vulnerability{
 		vulnz1,
 		vulnz2,
-	}
+	}, nil
 }
 
 func Test_ValidISP(t *testing.T) {

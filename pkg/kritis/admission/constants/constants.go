@@ -28,4 +28,6 @@ const (
 
 const (
 	SuccessMessage = "Successfully admitted."
+	// BREAKGLASS is the annotation used to allow any pod past the webhook
+	BREAKGLASS = "breakglass"
 )

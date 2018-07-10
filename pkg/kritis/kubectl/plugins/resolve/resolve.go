@@ -83,8 +83,7 @@ func recursiveGetTaggedImages(m interface{}) []string {
 	case yaml.MapItem:
 		if t.Key.(string) == "image" {
 			image := t.Value.(string)
-			_, err := name.NewDigest(image, name.WeakValidation)
-			if err != nil {
+			if !FullyQualifiedImage(image) {
 				images = append(images, image)
 			}
 		} else {
@@ -96,6 +95,12 @@ func recursiveGetTaggedImages(m interface{}) []string {
 		}
 	}
 	return images
+}
+
+// FullyQualifiedImage returns true if the image is fully qualified
+func FullyQualifiedImage(image string) bool {
+	_, err := name.NewDigest(image, name.WeakValidation)
+	return err == nil
 }
 
 // resolveTagsToDigests resolves all images specified by tag to digest

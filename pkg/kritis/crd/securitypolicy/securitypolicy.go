@@ -27,8 +27,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// ImageSecurityPolicies returns all ISP's in all namespaces
-func ImageSecurityPolicies() ([]v1beta1.ImageSecurityPolicy, error) {
+// ImageSecurityPolicies returns all ISP's in the specified namespaces
+// Pass in an empty string to get all ISPs in all namespaces
+func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 	cfg, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		return nil, fmt.Errorf("error building config: %v", err)
@@ -38,7 +39,7 @@ func ImageSecurityPolicies() ([]v1beta1.ImageSecurityPolicy, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().ImageSecurityPolicies("").List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().ImageSecurityPolicies(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all image policy requirements: %v", err)
 	}
@@ -53,7 +54,10 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 		return nil, nil
 	}
 	// Now, check vulnz in the image
-	vulnz := client.GetVulnerabilities(project, image)
+	vulnz, err := client.GetVulnerabilities(project, image)
+	if err != nil {
+		return nil, err
+	}
 	var violations []metadata.Vulnerability
 
 	for _, v := range vulnz {
