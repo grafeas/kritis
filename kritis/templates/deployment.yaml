@@ -23,6 +23,9 @@ spec:
         - name: {{ .Chart.Servicename }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+              - "--tls-cert-file=/var/serving-cert/tls.crt"
+              - "--tls-key-file=/var/serving-cert/tls.key"
           ports:
             - name: https
               containerPort: 8443
@@ -49,10 +52,10 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
-        # volumeMounts:
-        #     - mountPath: /var/serving-cert
-        #       name: tls
-        # volumes:
-        #   - name: tls
-        #     secret:
-        #       secretName: tls-image-signature-webhook
+        volumeMounts:
+            - mountPath: /var/serving-cert
+              name: tls
+        volumes:
+          - name: tls
+            secret:
+              secretName: {{ template "kritis.secretname" . }}
