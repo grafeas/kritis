@@ -41,17 +41,10 @@ RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releas
     rm docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
     docker-credential-gcr configure-docker
 
-ENV KUSTOMIZE_VERSION=1.0.1
-RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
-    chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
-    mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
-
 ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
 
 FROM runtime_deps as builder
 
-ENV ASCIIDOCTOR_VERSION=1.5.7.1
-ENV ASCIIDOCTOR_PDF_VERSION=1.5.0.alpha.16
 RUN apt-get install --no-install-recommends --no-install-suggests -y \
         ca-certificates \
         curl \
@@ -61,11 +54,7 @@ RUN apt-get install --no-install-recommends --no-install-suggests -y \
         python-setuptools \
         lsb-release \
         software-properties-common \
-        ruby-dev \
         apt-transport-https && \
-    gem install  --no-document "asciidoctor-pdf:${ASCIIDOCTOR_PDF_VERSION}" \
-        asciidoctor:${ASCIIDOCTOR_VERSION} \
-        pygments.rb rouge && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
     apt-key fingerprint 0EBFCD88 && \
     add-apt-repository \
@@ -79,17 +68,11 @@ COPY --from=golang:1.10 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go/
 
-WORKDIR /go/src/github.com/GoogleContainerTools/kritis
+WORKDIR /go/src/github.com/grafeas/kritis
 
 COPY . .
 
 FROM builder as integration
 
-# RUN make out/kritis-linux-amd64 && mv out/kritis-linux-amd64 /usr/bin/kritis
-
 CMD ["make", "integration"]
-
-# FROM runtime_deps as distribution
-
-# COPY --from=integration /usr/bin/kritis /usr/bin/kritis
 

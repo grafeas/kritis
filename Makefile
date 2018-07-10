@@ -84,7 +84,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration
 integration: cross
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m -- --remote=true
 
 .PHONY: integration-in-docker
 integration-in-docker:

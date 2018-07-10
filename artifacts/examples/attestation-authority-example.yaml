@@ -2,7 +2,6 @@ apiVersion: kritis.grafeas.io/v1beta1
 kind: AttestationAuthority
 metadata:
   name: qa-attestor
-  namespace: default
 spec:
     noteReference: v1alpha1/projects/image-signing
     privateKeySecretName: foo
