@@ -24,8 +24,8 @@ import (
 	"os/exec"
 	"testing"
 
-	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
+	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,11 +103,18 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	}
 }
 
+var CRDS = []string{
+	"attestation-authority-crd.yaml",
+	"image-security-policy-crd.yaml",
+}
+
+var CRD_EXAMPLES = []string{
+	"attestation-authority-example.yaml",
+	"image-security-policy-example.yaml",
+}
+
 func deleteCRDs() {
-	crds := []string{
-		"attestation-authority-crd.yaml",
-	}
-	for _, crd := range crds {
+	for _, crd := range CRDS {
 		crdCmd := exec.Command("kubectl", "delete", "-f",
 			crd)
 		crdCmd.Dir = "../artifacts/examples"
@@ -115,26 +122,39 @@ func deleteCRDs() {
 	}
 }
 
+func createCRDs(t *testing.T) {
+	for _, crd := range CRDS {
+		crdCmd := exec.Command("kubectl", "create", "-f",
+			crd)
+		crdCmd.Dir = "../artifacts/examples"
+		_, err := integration_util.RunCmdOut(crdCmd)
+		if err != nil {
+			t.Fatalf("testing error: %v", err)
+		}
+	}
+}
+
+func createCRDExamples(t *testing.T) {
+	for _, crd := range CRD_EXAMPLES {
+		crdCmd := exec.Command("kubectl", "create", "-f",
+			crd)
+		crdCmd.Dir = "../artifacts/examples"
+		_, err := integration_util.RunCmdOut(crdCmd)
+		if err != nil {
+			t.Fatalf("testing error: %v", err)
+		}
+	}
+}
+
 func TestCRDs(t *testing.T) {
 	_, deleteNs := setupNamespace(t)
 	defer deleteNs()
+	defer deleteCRDs()
 
 	// CRDs themselves are non-namespaced so we have to delete them each run
 	deleteCRDs()
 
-	aaCrdCmd := exec.Command("kubectl", "create", "-f",
-		"attestation-authority-crd.yaml")
-	aaCrdCmd.Dir = "../artifacts/examples"
-	_, err := integration_util.RunCmdOut(aaCrdCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
+	createCRDs(t)
 
-	aaCrdCmd = exec.Command("kubectl", "create", "-f",
-		"attestation-authority-example.yaml")
-	aaCrdCmd.Dir = "../artifacts/examples"
-	_, err = integration_util.RunCmdOut(aaCrdCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
+	createCRDExamples(t)
 }

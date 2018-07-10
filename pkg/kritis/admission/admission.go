@@ -19,6 +19,10 @@ package admission
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -26,12 +30,9 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
-	"io/ioutil"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
-	"net/http"
 )
 
 type config struct {

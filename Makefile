@@ -89,7 +89,7 @@ integration: cross
 .PHONY: integration-in-docker
 integration-in-docker:
 	docker build \
-		-f deploy/kritis/Dockerfile \
+		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/kritis-integration .
 	docker run \
