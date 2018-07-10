@@ -65,7 +65,7 @@ install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 
 .PHONY: integration
 integration: cross
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m --remote=$(REMOTE_INTEGRATION)
+	go test -v -tags integration $(REPOPATH)/integration -timeout 10m -- --remote=true
 
 .PHONY: integration-in-docker
 integration-in-docker:

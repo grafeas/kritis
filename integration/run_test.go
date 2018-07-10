@@ -19,18 +19,14 @@ limitations under the License.
 package integration
 
 import (
-	"bytes"
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 
-	kubernetesutil "github.com/grafeas/kritis/pkg/skaffold/kubernetes"
-	skaffold_util "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -39,9 +35,9 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "integration-tests", "name of the integration test cluster")
+var gkeClusterName = flag.String("gke-cluster-name", "test-cluster", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
-var remote = flag.Bool("remote", false, "if true, run tests on a remote GKE cluster")
+var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
 var client kubernetes.Interface
 
@@ -51,7 +47,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *remote {
 		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if err := skaffold_util.RunCmd(cmd); err != nil {
+		if err := integration_util.RunCmd(cmd); err != nil {
 			logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
 		}
 	}
@@ -82,97 +78,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-// func TestRun(t *testing.T) {
-// 	type testObject struct {
-// 		name string
-// 	}
-
-// 	type testRunCase struct {
-// 		description          string
-// 		dir                  string
-// 		args                 []string
-// 		deployments          []testObject
-// 		pods                 []testObject
-// 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-// 		env                  map[string]string
-
-// 		remoteOnly bool
-// 		cleanup    func(t *testing.T)
-// 	}
-
-// 	var testCases = []testRunCase{
-// 		{
-// 			description: "attestation authority crd test",
-// 			args:        []string{"kubectl", "create", "-f"},
-// 			pods: []testObject{
-// 				{
-// 					name: "getting-started",
-// 				},
-// 			},
-// 			dir: "../examples/getting-started",
-// 		},
-// 		{
-// 			description: "kaniko example",
-// 			args:        []string{"run"},
-// 			pods: []testObject{
-// 				{
-// 					name: "getting-started-kaniko",
-// 				},
-// 			},
-// 			dir:        "../examples/kaniko",
-// 			remoteOnly: true,
-// 		},
-// 	}
-
-// 	for _, testCase := range testCases {
-// 		t.Run(testCase.description, func(t *testing.T) {
-// 			if !*remote && testCase.remoteOnly {
-// 				t.Skip("skipping remote only test")
-// 			}
-
-// 			ns, deleteNs := setupNamespace(t)
-// 			defer deleteNs()
-
-// 			cmd := exec.Command("kritis", testCase.args...)
-// 			env := os.Environ()
-// 			for k, v := range testCase.env {
-// 				env = append(env, fmt.Sprintf("%s=%s", k, v))
-// 			}
-// 			cmd.Env = env
-// 			cmd.Dir = testCase.dir
-// 			output, err := skaffold_util.RunCmdOut(cmd)
-// 			if err != nil {
-// 				t.Fatalf("kritis: %s %v", output, err)
-// 			}
-
-// 			for _, p := range testCase.pods {
-// 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-// 					t.Fatalf("Timed out waiting for pod ready")
-// 				}
-// 			}
-
-// 			for _, d := range testCase.deployments {
-// 				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
-// 					t.Fatalf("Timed out waiting for deployment to stabilize")
-// 				}
-// 				if testCase.deploymentValidation != nil {
-// 					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
-// 					if err != nil {
-// 						t.Fatalf("Could not find deployment: %s %s", ns.Name, d)
-// 					}
-// 					testCase.deploymentValidation(t, deployment)
-// 				}
-
-// 				if testCase.cleanup != nil {
-// 					testCase.cleanup(t)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
-
 func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
-	namespaceName := skaffold_util.RandomID()
+	namespaceName := integration_util.RandomID()
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      namespaceName,
@@ -184,7 +91,7 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	}
 
 	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
-	if err := skaffold_util.RunCmd(kubectlCmd); err != nil {
+	if err := integration_util.RunCmd(kubectlCmd); err != nil {
 		t.Fatalf("kubectl config set-context --namespace: %v", err)
 	}
 
@@ -195,22 +102,38 @@ func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 		os.Setenv("KRITIS_DEPLOY_NAMESPACE", "")
 	}
 }
+
+func deleteCRDs() {
+	crds := []string{
+		"attestation-authority-crd.yaml",
+	}
+	for _, crd := range crds {
+		crdCmd := exec.Command("kubectl", "delete", "-f",
+			crd)
+		crdCmd.Dir = "../artifacts/examples"
+		integration_util.RunCmdOut(crdCmd)
+	}
+}
+
 func TestCRDs(t *testing.T) {
 	_, deleteNs := setupNamespace(t)
 	defer deleteNs()
 
+	// CRDs themselves are non-namespaced so we have to delete them each run
+	deleteCRDs()
+
 	aaCrdCmd := exec.Command("kubectl", "create", "-f",
 		"attestation-authority-crd.yaml")
-	aaCrdCmd.Dir = "../../artifacts/examples"
-	out, err := skaffold_util.RunCmdOut(aaCrdCmd)
+	aaCrdCmd.Dir = "../artifacts/examples"
+	_, err := integration_util.RunCmdOut(aaCrdCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
 
-	aaCrdCmd := exec.Command("kubectl", "create", "-f",
+	aaCrdCmd = exec.Command("kubectl", "create", "-f",
 		"attestation-authority-example.yaml")
-	aaCrdCmd.Dir = "../../artifacts/examples"
-	out, err := skaffold_util.RunCmdOut(aaCrdCmd)
+	aaCrdCmd.Dir = "../artifacts/examples"
+	_, err = integration_util.RunCmdOut(aaCrdCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
