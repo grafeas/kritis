@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "kritis.servicename" . }}
+  name: {{ .Values.servicename }}
   labels:
-    app: {{ template "kritis.servicename" . }}
+    app: {{ .Values.servicename }}
     chart: {{ template "kritis.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -15,5 +15,5 @@ spec:
       protocol: TCP
       name: https
   selector:
-    app: {{ template "kritis.servicename" . }}
+    app: {{ .Values.servicename }}
     release: {{ .Release.Name }}

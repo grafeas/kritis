@@ -31,6 +31,24 @@ SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_LDFLAGS := '-extldflags "-static"
+GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+GO_LDFLAGS += -w -s # Drop debugging symbols.
+GO_LDFLAGS += '
+
+ORG := github.com/grafeas
+PROJECT := kritis
+REGISTRY?=gcr.io/kritis-project
+REPOPATH ?= $(ORG)/$(PROJECT)
+SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
+KRITIS_PROJECT = $(REPOPATH)/kritis
+
+out/kritis-server: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(SERVICE_PACKAGE)
+
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+
 .PHONY: test
 test: cross
 	./hack/check-fmt.sh
@@ -38,12 +56,6 @@ test: cross
 	./hack/verify-codegen.sh
 	./hack/dep.sh
 	./hack/test.sh
-
-GO_LDFLAGS :=""
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-GO_BUILD_TAGS := ""
-
-.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
 $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH) $@
@@ -59,3 +71,10 @@ install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
+
+.PHONY: build-image
+build-image: out/kritis-server
+	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
+
+clean:
+	rm -rf $(BUILD_DIR)

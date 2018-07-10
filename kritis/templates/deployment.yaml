@@ -1,9 +1,9 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ template "kritis.servicename" . }}
+  name: {{ .Values.servicename }}
   labels:
-    app: {{ template "kritis.servicename" . }}
+    app: {{ .Values.servicename }}
     chart: {{ template "kritis.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -11,21 +11,23 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ template "kritis.servicename" . }}
+      app: {{ .Values.servicename }}
       release: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ template "kritis.servicename" . }}
+        app: {{ .Values.servicename }}
         release: {{ .Release.Name }}
     spec:
+      imagePullSecrets:
+      - name: {{ .Values.gcrsecretname }}
       containers:
-        - name: {{ .Chart.Servicename }}
+        - name: {{ .Values.image.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-              - "--tls-cert-file=/var/serving-cert/tls.crt"
-              - "--tls-key-file=/var/serving-cert/tls.key"
+            - "--tls-cert-file=/var/serving-cert/tls.crt"
+            - "--tls-key-file=/var/serving-cert/tls.key"
           ports:
             - name: https
               containerPort: 8443
@@ -38,24 +40,10 @@ spec:
             httpGet:
               path: /
               port: https
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
-    {{- with .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.affinity }}
-      affinity:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations:
-{{ toYaml . | indent 8 }}
-    {{- end }}
         volumeMounts:
-            - mountPath: /var/serving-cert
-              name: tls
+        - mountPath: /var/serving-cert
+          name: tls
         volumes:
-          - name: tls
-            secret:
-              secretName: {{ template "kritis.secretname" . }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.tlssecretname }}
