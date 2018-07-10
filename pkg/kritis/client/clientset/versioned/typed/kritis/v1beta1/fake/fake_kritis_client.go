@@ -28,6 +28,10 @@ type FakeKritisV1beta1 struct {
 	*testing.Fake
 }
 
+func (c *FakeKritisV1beta1) AttestationAuthorities(namespace string) v1beta1.AttestationAuthorityInterface {
+	return &FakeAttestationAuthorities{c, namespace}
+}
+
 func (c *FakeKritisV1beta1) ImageSecurityPolicies(namespace string) v1beta1.ImageSecurityPolicyInterface {
 	return &FakeImageSecurityPolicies{c, namespace}
 }
