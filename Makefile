@@ -39,7 +39,9 @@ GO_LDFLAGS += '
 
 ORG := github.com/grafeas
 PROJECT := kritis
-REGISTRY?=gcr.io/kritis-project
+# TODO: Change this to "kritis-project" once we figure out how to distribute ImagePullSecrets.
+# For now, to get integration testing working, lets use the kritis-int-test project
+REGISTRY?=gcr.io/kritis-int-test
 REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 KRITIS_PROJECT = $(REPOPATH)/kritis

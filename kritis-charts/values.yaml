@@ -37,17 +37,9 @@ tls:
 
 servicename: kritis-validation-hook
 tlssecretname: tls-webhook-secret
-gcrsecretname: gcr-pull
-
 
 image:
-  repository: gcr.io/kritis-project/kritis-server
+  repository: gcr.io/kritis-int-test/kritis-server
   tag: latest
   name: kritis-server
   pullPolicy: Always
-
-gcrPull:
-  username: "_json_key"
-  secret: "{\"type\": \"service_account\",\"project_id\": \"kritis-project\",\"private_key_id\": \"5fcbd90260fe8e192846139f90d24fc4e11743c4\",\"private_key\": \"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7jX1LGiDYcsab\nlVXwFh4Hn+WFr05rq5VDlPWyTzKSlsxy18eUzrvGZZ8gSnS6tat4/YBLeszWlhKD\nvdDlvmDwt/OKzgzv9ucAEVjlZorFKBWPs75lr5zi3xP3nw3KLswWnivzGcM7LCUc\nQWonkYLF0cOBrEaS72+9yi/VwAoZneGzBulnWYnFaRgcez+7C5F/4zVBQFNtQq/s\navjCt0WsnzJWtHZRXCPcto8apWXGfSqONDUCK5kMwlevGxwK0upaWYUDfwWNx+E+\n5PnzybNCiwalkVRYz36x5dVA9loID4YnNFBTfDWFfJBT+drV3PLPTTmpDPMNEEvx\n4JqgR/6dAgMBAAECggEACfymBhSBWL093aWFUrg+x52oUWbNGHclxtg9AA5vDTa5\n8siSMFaU0aLyJvxH/HQ1igcHqJ1EoI2TtU+rerxZOaA19/dyYWnGka6ayvZbn9V7\nVnBWDGCeTEdgLxCZYaF9zRuFkBeYWYOHg1ppXmuFaOa7UCGeDW9yBgto4issboIu\nCW8/4nanI+2m12GoEASKrObt5sgmncjIrcI6kKZC071L10LYxXesT6Cj9REiGUhX\nknAyGybiHjbl0siQISV2O2BpIlfsf11//o7pvgZf5g1AT8I8nINlxB1hxptFWU4Z\n1brBys1Ud2/hEeRcR8bLF2icCbhFdAIiPrcKJbovaQKBgQDuqnI25HcGRTBNY0kL\naykubUajNrdPA99NXF70j21hKIC5Bh2P0jgllZh03amB6BMw0PlJd4LX8Tdm5xSO\nhJpKPfBV6Zy9i28sOUakjn6Q06IQLDe+r9oq3iJyFwZJToH0zWF/bCozR5ZxfR49\neleZSWfPNuPLqb6m/irlaL17pQKBgQDJLLBBooR/iJmRTN2EWdEPd6d1zSGJDBDz\nt1GEdPTfb5/2cMLpoMLGHmhaQ6chqRZXEPd25U/Ogax/uU6wK6LWhH62s9bP/j0Z\nJqLgx6OlazZ5p7oPO2Xf1FbYJt8kLWglJHL0S1paEWs1irxszZGABWCIQpDLq5tG\n4cDCIG1lmQKBgHyNo1GWZa92CEE64XH+GN3L1aNz+LJZ2P2siTmkaHbeBl+JG4Bl\nOzwSGCBVVhMfpHRDevWmUziTAFDJo+bEuSiprnWHl28sB3bS5VUXsGGwsNEz4lu3\ntmnMx7k23ub++79gN9OiBVwBrjfIDjITWQf8URrJEJTHH2JTHtvej5SpAoGBAMQ4\nXXa3gMswPrF1qr70KDERAXqqaWJWLZa6IL20oj/pjbn/RG5CSpiZgilAwZzYYxzr\nRKRoiI4g91LhOTomZb8dHscv5H+dOJT2lXnv39NyHoFMsvM2eWh3oXlVeOK9k05f\nHezgLrGZOdvQhXcOjzOyivR9EORHbr4VZkEzBeFJAoGBALR+FkBQ16swiXvsOGOf\nKuf+H8K1zoJLlkuBQ505IEE+gQhxu6Z/4pJ4tpZGBO5JMvfbQKwKBXDr+fUh617Y\n6Lfc3p4IBmU8FM+dgZN6F08fIQcK2XMHoTdBWZSdH+88zNmN5JsBDnnRlo3EyZOX\n7XRzRS2aY+xkrpKPB/4Bk15+\n-----END PRIVATE KEY-----\n\",\"client_email\": \"gcr-pull@kritis-project.iam.gserviceaccount.com\",\"client_id\": \"114883147170173324861\",\"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\"token_uri\": \"https://accounts.google.com/o/oauth2/token\",\"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/gcr-pull%40kritis-project.iam.gserviceaccount.com\"}"
-  email:  "kritis-team@google.com"
-  server: "https://gcr.io"

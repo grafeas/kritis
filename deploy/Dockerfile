@@ -18,15 +18,9 @@ FROM golang:1.10
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 RUN make
-# Get GCR credential helper
-ADD https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.4.3-static/docker-credential-gcr_linux_amd64-1.4.3.tar.gz /usr/local/bin/
-RUN tar -C /usr/local/bin/ -xvzf /usr/local/bin/docker-credential-gcr_linux_amd64-1.4.3.tar.gz
-
 
 FROM scratch
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/kritis-server /kritis/kritis-server
-COPY --from=0 /usr/local/bin/docker-credential-gcr /kaniko/docker-credential-gcr
-COPY files/config.json /kaniko/.docker/
 ENV HOME /root
 ENV USER /root
 ENV PATH /usr/local/bin:/kritis

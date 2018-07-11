@@ -1,0 +1,47 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.servicename }}
+  labels:
+    app: {{ .Values.servicename }}
+    chart: {{ template "kritis.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.servicename }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.servicename }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Values.image.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+          - "--tls-cert-file=/var/tls/tls.crt"
+          - "--tls-key-file=/var/tls/tls.key"
+        ports:
+          - name: https
+            containerPort: 8443
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: https
+        readinessProbe:
+          httpGet:
+            path: /
+            port: https
+        volumeMounts:
+        - mountPath: /var/tls
+          name: tls
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.tlssecretname }}
