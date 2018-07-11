@@ -35,19 +35,19 @@ import (
 )
 
 type config struct {
-	retrievePod           func(r *http.Request) (*v1.Pod, error)
-	metadata              func() (metadata.MetadataFetcher, error)
-	imagesecuritypolicies func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
-	validate              func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error)
+	retrievePod                 func(r *http.Request) (*v1.Pod, error)
+	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
+	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
+	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error)
 }
 
 var (
 	// For testing
 	admissionConfig = config{
-		retrievePod:           pod,
-		metadata:              metadataClient,
-		imagesecuritypolicies: securitypolicy.ImageSecurityPolicies,
-		validate:              securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                 unmarshalPod,
+		fetchMetadataClient:         metadataClient,
+		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
+		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
 )
 
@@ -61,7 +61,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// First, check for a breakglass annotation on the pod
-	if breakglass(pod) {
+	if checkBreakglass(pod) {
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
@@ -74,37 +74,39 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Third, validate images in the pod against ImageSecurityPolicies in the same namespace
-	isps, err := admissionConfig.imagesecuritypolicies(pod.Namespace)
+	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
 	if err != nil {
+		log.Printf("error getting image security policies: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	// get the client we will get vulnz from
-	metadataClient, err := admissionConfig.metadata()
+	metadataClient, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
+		log.Printf("error getting metadata client: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	for _, isp := range isps {
 		for _, image := range images {
-			violations, err := admissionConfig.validate(isp, "", image, metadataClient)
+			violations, err := admissionConfig.validateImageSecurityPolicy(isp, "", image, metadataClient)
 			if err != nil {
-				fmt.Println("error getting violations: ", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			if len(violations) != 0 {
-				//  TODO: Check AttestationAuthorities to see if the image is verified
+				log.Printf("violations found in %s: %v", image, violations)
 				returnStatus(constants.FailureStatus, fmt.Sprintf("found violations in %s", image), w)
 				return
 			}
 		}
 	}
+	//  TODO: Check AttestationAuthorities to see if the image is verified
 	// At this point, we can return a success status
 	returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 }
 
-func pod(r *http.Request) (*v1.Pod, error) {
+func unmarshalPod(r *http.Request) (*v1.Pod, error) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
@@ -120,7 +122,7 @@ func pod(r *http.Request) (*v1.Pod, error) {
 	return &pod, nil
 }
 
-func breakglass(pod *v1.Pod) bool {
+func checkBreakglass(pod *v1.Pod) bool {
 	annotations := pod.GetAnnotations()
 	if annotations == nil {
 		return false

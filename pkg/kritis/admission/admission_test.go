@@ -94,10 +94,10 @@ func Test_ValidISP(t *testing.T) {
 		}, nil
 	}
 	mockConfig := config{
-		retrievePod:           mockValidPod(),
-		metadata:              mockMetadata(),
-		imagesecuritypolicies: mockISP,
-		validate:              securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                 mockValidPod(),
+		fetchMetadataClient:         mockMetadata(),
+		fetchImageSecurityPolicies:  mockISP,
+		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -120,10 +120,10 @@ func Test_InvalidISP(t *testing.T) {
 		}, nil
 	}
 	mockConfig := config{
-		retrievePod:           mockValidPod(),
-		metadata:              mockMetadata(),
-		imagesecuritypolicies: mockISP,
-		validate:              mockValidate,
+		retrievePod:                 mockValidPod(),
+		fetchMetadataClient:         mockMetadata(),
+		fetchImageSecurityPolicies:  mockISP,
+		validateImageSecurityPolicy: mockValidate,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
