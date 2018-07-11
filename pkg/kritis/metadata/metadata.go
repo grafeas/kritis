@@ -18,7 +18,7 @@ package metadata
 
 type MetadataFetcher interface {
 	// Get Package Vulnerabilites
-	GetVulnerabilities(project string, containerImage string) []Vulnerability
+	GetVulnerabilities(project string, containerImage string) ([]Vulnerability, error)
 }
 
 type Vulnerability struct {

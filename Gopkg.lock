@@ -87,7 +87,7 @@
     "pkg/v1/types",
     "pkg/v1/v1util"
   ]
-  revision = "3f6471078a9661a9a439bd5e71a371aff429566a"
+  revision = "d54baf9aa28edb9b985a6b35b57e26e3410c2443"
 
 [[projects]]
   branch = "master"
@@ -123,7 +123,7 @@
     "openstack/utils",
     "pagination"
   ]
-  revision = "4d436eada7b3ce3cbcd8ca818525dc0efd79ebef"
+  revision = "45c2d035713fa44f366921035a44610ac5d45beb"
 
 [[projects]]
   branch = "master"
@@ -158,8 +158,8 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "ca39e5af3ece67bbcda3d0f4f56a8e24d9f2dad4"
-  version = "1.1.3"
+  revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
+  version = "1.1.4"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -170,8 +170,8 @@
 [[projects]]
   name = "github.com/modern-go/reflect2"
   packages = ["."]
-  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
-  version = "1.0.0"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   branch = "master"
@@ -184,6 +184,12 @@
   packages = ["."]
   revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
   version = "v2.0.1"
+
+[[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/spf13/cobra"
@@ -215,8 +221,8 @@
     "trace/internal",
     "trace/propagation"
   ]
-  revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
-  version = "v0.13.0"
+  revision = "e262766cd0d230a1bb7c37281e345e465f19b41b"
+  version = "v0.14.0"
 
 [[projects]]
   branch = "master"
@@ -237,7 +243,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "e514e69ffb8bc3c76a71ae40de0118d794855992"
+  revision = "6f138e0f60713a248abf7046f1014a3ba90f5341"
 
 [[projects]]
   branch = "master"
@@ -258,7 +264,7 @@
     "unix",
     "windows"
   ]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -295,7 +301,7 @@
     "imports",
     "internal/fastwalk"
   ]
-  revision = "16699b2d33e2654d743c50b4525ab7e73e346238"
+  revision = "e2be0f7276f6ea2d8290dea1ffd89c98f6ac0b9e"
 
 [[projects]]
   branch = "master"
@@ -311,7 +317,7 @@
     "transport/grpc",
     "transport/http"
   ]
-  revision = "cd4b2e727ec609b8e6f2430d588c795fec5b575c"
+  revision = "ac730e38c5514b49097b1459b3acbe1bf905e930"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -343,7 +349,7 @@
     "googleapis/rpc/status",
     "protobuf/field_mask"
   ]
-  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
+  revision = "8b2cc369ab52e0003a878865c9372afdd6ca5c5a"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -586,7 +592,7 @@
     "parser",
     "types"
   ]
-  revision = "f659ec9d5207b3bf034eb9b7e22720d360d28712"
+  revision = "fdcf9f9480fdd5bf2b3c3df9bf4ecd22b25b87e2"
 
 [[projects]]
   branch = "master"
@@ -597,6 +603,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eda5848ff39125220ed0cbca541d2a0ebe5cbbde61d76fbe57c0e2c0dc1d21fa"
+  inputs-digest = "caf1b50704d784afb596cbee5f8d3657b57519e40feaff5c8533ff91c9345e3c"
   solver-name = "gps-cdcl"
   solver-version = 1
