@@ -95,6 +95,7 @@ func Test_ValidISP(t *testing.T) {
 	}
 	mockConfig := config{
 		retrievePod:           mockValidPod(),
+		metadata:              mockMetadata(),
 		imagesecuritypolicies: mockISP,
 		validate:              securitypolicy.ValidateImageSecurityPolicy,
 	}
@@ -120,6 +121,7 @@ func Test_InvalidISP(t *testing.T) {
 	}
 	mockConfig := config{
 		retrievePod:           mockValidPod(),
+		metadata:              mockMetadata(),
 		imagesecuritypolicies: mockISP,
 		validate:              mockValidate,
 	}
@@ -130,6 +132,12 @@ func Test_InvalidISP(t *testing.T) {
 		status:     constants.FailureStatus,
 		message:    fmt.Sprintf("found violations in %s", validImage),
 	})
+}
+
+func mockMetadata() func() (metadata.MetadataFetcher, error) {
+	return func() (metadata.MetadataFetcher, error) {
+		return nil, nil
+	}
 }
 
 func mockValidPod() func(r *http.Request) (*v1.Pod, error) {

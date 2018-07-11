@@ -36,6 +36,7 @@ import (
 
 type config struct {
 	retrievePod           func(r *http.Request) (*v1.Pod, error)
+	metadata              func() (metadata.MetadataFetcher, error)
 	imagesecuritypolicies func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	validate              func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error)
 }
@@ -44,6 +45,7 @@ var (
 	// For testing
 	admissionConfig = config{
 		retrievePod:           pod,
+		metadata:              metadataClient,
 		imagesecuritypolicies: securitypolicy.ImageSecurityPolicies,
 		validate:              securitypolicy.ValidateImageSecurityPolicy,
 	}
@@ -78,7 +80,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// get the client we will get vulnz from
-	metadataClient, err := metadataClient()
+	metadataClient, err := admissionConfig.metadata()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -87,12 +89,12 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		for _, image := range images {
 			violations, err := admissionConfig.validate(isp, "", image, metadataClient)
 			if err != nil {
+				fmt.Println("error getting violations: ", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			if len(violations) != 0 {
 				//  TODO: Check AttestationAuthorities to see if the image is verified
-				log.Printf("found violations in %s: %v\n", image, violations)
 				returnStatus(constants.FailureStatus, fmt.Sprintf("found violations in %s", image), w)
 				return
 			}
