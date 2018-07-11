@@ -20,15 +20,15 @@ import (
 	"context"
 	"time"
 
+	"github.com/grafeas/kritis/pkg/kritis/pods"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/sirupsen/logrus"
@@ -36,19 +36,20 @@ import (
 
 // For testing
 var (
-	checkInterval = 1 * time.Minute
+	checkInterval = 1 * time.Hour
 	podChecker    = CheckPods
 )
 
 // For testing.
-type podLister func(string) (*v1.PodList, error)
+type podLister func(string) ([]corev1.Pod, error)
 type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error)
-type violationHandler func(string, *v1.Pod, []metadata.Vulnerability) error
+type violationHandler func(string, *corev1.Pod, []metadata.Vulnerability) error
 
 type Config struct {
-	PodLister         podLister
-	ViolationChecker  violationChecker
-	ViolationStrategy violation.Strategy
+	PodLister            podLister
+	ViolationChecker     violationChecker
+	ViolationStrategy    violation.Strategy
+	SecurityPolicyLister func() ([]v1beta1.ImageSecurityPolicy, error)
 }
 
 var (
@@ -56,18 +57,16 @@ var (
 )
 
 func NewCronConfig(cs *kubernetes.Clientset, ca containeranalysis.ContainerAnalysis) *Config {
-	pl := func(ns string) (*v1.PodList, error) {
-		return cs.CoreV1().Pods(ns).List(metav1.ListOptions{})
-	}
 
 	vc := func(image string, isp v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error) {
 		return securitypolicy.ValidateImageSecurityPolicy(isp, "", image, ca)
 	}
 
 	cfg := Config{
-		PodLister:         pl,
-		ViolationChecker:  vc,
-		ViolationStrategy: defaultViolationStrategy,
+		PodLister:            pods.Pods,
+		ViolationChecker:     vc,
+		ViolationStrategy:    defaultViolationStrategy,
+		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}
 	return &cfg
 }
@@ -80,7 +79,12 @@ func Start(ctx context.Context, cfg Config) {
 	for {
 		select {
 		case <-c.C:
-			if err := podChecker(cfg, nil); err != nil {
+			isps, err := cfg.SecurityPolicyLister()
+			if err != nil {
+				logrus.Errorf("fetching image security policies: %s", err)
+				continue
+			}
+			if err := podChecker(cfg, isps); err != nil {
 				logrus.Errorf("error checking pods: %s", err)
 			}
 		case <-done:
@@ -92,18 +96,18 @@ func Start(ctx context.Context, cfg Config) {
 // CheckPods checks all running pods against defined policies.
 func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 	for _, isp := range isps {
-		pods, err := cfg.PodLister(isp.Namespace)
+		ps, err := cfg.PodLister(isp.Namespace)
 		if err != nil {
 			return err
 		}
-		for _, p := range pods.Items {
-			for _, c := range p.Spec.Containers {
-				v, err := cfg.ViolationChecker(c.Image, isp)
+		for _, p := range ps {
+			for _, c := range pods.Images(p) {
+				v, err := cfg.ViolationChecker(c, isp)
 				if err != nil {
 					return err
 				}
 				if len(v) != 0 {
-					if err := cfg.ViolationStrategy.HandleViolation(c.Image, &p, v); err != nil {
+					if err := cfg.ViolationStrategy.HandleViolation(c, &p, v); err != nil {
 						logrus.Errorf("handling violations: %s", err)
 					}
 				}

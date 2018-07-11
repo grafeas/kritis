@@ -54,7 +54,11 @@ func TestStartCancels(t *testing.T) {
 	defer cancel()
 
 	// Make sure the checker is called and Start cancels correctly when the deadline expires.
-	Start(c, Config{})
+	Start(c, Config{
+		SecurityPolicyLister: func() ([]v1beta1.ImageSecurityPolicy, error) {
+			return nil, nil
+		},
+	})
 
 	if !checked {
 		t.Fatalf("check function not called")
@@ -66,9 +70,6 @@ type imageViolations struct {
 }
 
 func (iv *imageViolations) violationChecker(image string, isp v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error) {
-	if iv == nil {
-		return nil, nil
-	}
 	if ok := iv.imageMap[image]; ok {
 		return []metadata.Vulnerability{
 			{
@@ -80,26 +81,24 @@ func (iv *imageViolations) violationChecker(image string, isp v1beta1.ImageSecur
 }
 
 type testLister struct {
-	pl v1.PodList
+	pl []v1.Pod
 }
 
-func (tl *testLister) list(ns string) (*v1.PodList, error) {
-	return &tl.pl, nil
+func (tl *testLister) list(ns string) ([]v1.Pod, error) {
+	return tl.pl, nil
 }
 
 var testPods = testLister{
-	pl: v1.PodList{
-		Items: []v1.Pod{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "bar",
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Image: "gcr.io/foo/bar@sha256:baz",
-						},
+	pl: []v1.Pod{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+			},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Image: "gcr.io/foo/bar@sha256:baz",
 					},
 				},
 			},
