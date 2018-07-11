@@ -6,7 +6,8 @@
    1. First download the helm plugin to generate certs from [here](https://github.com/SUSE/helm-certgen/releases)
    2. Unzip the tar and then install the plugin.
       ```
-      helm plugin install /tmp/certgen-linux-amd64-1-0-0-1501786067-53c4719
+      tar -xvf certgen-linux-amd64-1-0-0-1501794790-f3b21c90.tgz --directory ~/certgen/
+      helm plugin install ~/certgen/
       ```
    3. Finally generate the Cert using the plugin.
       ```
