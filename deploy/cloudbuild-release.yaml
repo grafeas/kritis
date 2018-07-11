@@ -2,5 +2,5 @@
 steps:
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile",
-           "-t", "gcr.io/kaniko-project/kritis-server:$TAG_NAME", "."]
-images: ["gcr.io/kaniko-project/kritis-server:$TAG_NAME"]
+           "-t", "gcr.io/kritis-project/kritis-server:$TAG_NAME", "."]
+images: ["gcr.io/kritis-project/kritis-server:$TAG_NAME"]
