@@ -22,6 +22,7 @@ import (
 	"flag"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
@@ -157,4 +158,35 @@ func TestCRDs(t *testing.T) {
 	createCRDs(t)
 
 	createCRDExamples(t)
+}
+
+func TestKritisHelm(t *testing.T) {
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+
+	helmCmd := exec.Command("helm", "certgen", "generate", "./kritis-charts",
+		"--namespace", ns.Name)
+	helmCmd.Dir = "../"
+	_, err := integration_util.RunCmdOut(helmCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
+	}
+
+	helmCmd = exec.Command("helm", "install", "./kritis-charts",
+		"--namespace", ns.Name)
+	helmCmd.Dir = "../"
+	out, err := integration_util.RunCmdOut(helmCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
+	}
+	// parsing out release name from 'helm init' output
+	helmNameString := strings.Split(string(out[:]), "\n")[0]
+	kritisRelease := strings.Split(helmNameString, "   ")[1]
+
+	helmCmd = exec.Command("helm", "delete", kritisRelease)
+	helmCmd.Dir = "../"
+	_, err = integration_util.RunCmdOut(helmCmd)
+	if err != nil {
+		t.Fatalf("testing error: %v", err)
+	}
 }

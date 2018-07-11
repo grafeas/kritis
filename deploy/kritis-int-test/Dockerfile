@@ -16,7 +16,7 @@ FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
-        python-dev\
+        python-dev
 
 ENV KUBECTL_VERSION v1.10.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
@@ -26,6 +26,12 @@ ENV HELM_VERSION v2.8.1
 RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     tar -zxvf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin/helm
+
+RUN mkdir /tmp/certgen &&\
+    curl -LO https://github.com/SUSE/helm-certgen/releases/download/1.0.0/certgen-linux-amd64-1-0-0-1501794790-f3b21c90.tgz && \
+    tar -xf certgen-linux-amd64-1-0-0-1501794790-f3b21c90.tgz -C /tmp/certgen && \
+    mkdir -p /root/.helm/plugins && \
+    helm plugin install /tmp/certgen
 
 ENV CLOUD_SDK_VERSION 193.0.0
 RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
