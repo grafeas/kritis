@@ -39,8 +39,8 @@ test: cross
 	./hack/dep.sh
 	./hack/test.sh
 
-GO_LDFLAGS :=""
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_LD_RESOLVE_FLAGS :=""
 GO_BUILD_TAGS := ""
 
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
@@ -52,10 +52,30 @@ $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOO
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform))
 
 $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LD_RESOLVE_FLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
 
 .PHONY: install-plugin
 install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
+
+GO_LDFLAGS := '-extldflags "-static"
+GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+GO_LDFLAGS += -w -s # Drop debugging symbols.
+GO_LDFLAGS += '
+
+REGISTRY?=gcr.io/kritis-project
+REPOPATH ?= $(ORG)/$(PROJECT)
+SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
+KRITIS_PROJECT = $(REPOPATH)/kritis
+
+out/kritis-server: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(SERVICE_PACKAGE)
+
+.PHONY: build-image
+build-image: out/kritis-server
+	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
+
+clean:
+	rm -rf $(BUILD_DIR)

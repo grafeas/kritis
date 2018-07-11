@@ -1,0 +1,6 @@
+# This cloudbuild is run on the creation of new tags, which should signify releases.
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "deploy/Dockerfile",
+           "-t", "gcr.io/kritis-project/kritis-server:$TAG_NAME", "."]
+images: ["gcr.io/kritis-project/kritis-server:$TAG_NAME"]
