@@ -18,6 +18,7 @@ package cron
 
 import (
 	"context"
+	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"testing"
 	"time"
 
@@ -69,11 +70,13 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(image string, isp v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error) {
+func (iv *imageViolations) violationChecker(image string, isp v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error) {
 	if ok := iv.imageMap[image]; ok {
-		return []metadata.Vulnerability{
+		return []securitypolicy.SecurityPolicyViolation{
 			{
-				Severity: "foo",
+				Vulnerability: metadata.Vulnerability{
+					Severity: "foo",
+				},
 			},
 		}, nil
 	}

@@ -18,6 +18,7 @@ package pods
 
 import (
 	"encoding/json"
+	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -52,6 +53,18 @@ func Images(pod corev1.Pod) []string {
 		images = append(images, c.Image)
 	}
 	return images
+}
+
+// UnqualifiedImages returns a list of unqualified images in the pod
+func UnqualifiedImages(pod corev1.Pod) []string {
+	images := Images(pod)
+	unqualified := []string{}
+	for _, i := range images {
+		if !resolve.FullyQualifiedImage(i) {
+			unqualified = append(unqualified, i)
+		}
+	}
+	return unqualified
 }
 
 func getPatch(modifiedPod *corev1.Pod, originalJSON []byte) ([]byte, error) {

@@ -22,6 +22,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	ca "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,17 +49,24 @@ func ImageSecurityPolicies() ([]v1beta1.ImageSecurityPolicy, error) {
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilites that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
 		return nil, nil
+	}
+	var violations []SecurityPolicyViolation
+	// Next, check if image in qualified
+	if !resolve.FullyQualifiedImage(image) {
+		violations = append(violations, SecurityPolicyViolation{
+			Violation: UnqualifiedImageViolation,
+			Reason:    UnqualifiedImageViolationReason(image),
+		})
 	}
 	// Now, check vulnz in the image
 	vulnz, err := client.GetVulnerabilities(project, image)
 	if err != nil {
 		return nil, err
 	}
-	var violations []metadata.Vulnerability
 
 	for _, v := range vulnz {
 		// First, check if the vulnerability is whitelisted
@@ -67,7 +75,11 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 		}
 		// Check ifFixesNotAvailable
 		if isp.Spec.PackageVulernerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
-			violations = append(violations, v)
+			violations = append(violations, SecurityPolicyViolation{
+				Vulnerability: v,
+				Violation:     FixesAvailableViolation,
+				Reason:        FixesAvailableViolationReason(image, v),
+			})
 			continue
 		}
 		// Next, see if the severity is below or at threshold
@@ -75,7 +87,11 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 			continue
 		}
 		// Else, add to list of CVEs in violation
-		violations = append(violations, v)
+		violations = append(violations, SecurityPolicyViolation{
+			Vulnerability: v,
+			Violation:     ExceedsMaxSeverityViolation,
+			Reason:        ExceedsMaxSeverityViolationReason(image, v, isp),
+		})
 	}
 	return violations, nil
 }
