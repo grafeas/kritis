@@ -31,14 +31,40 @@ SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
+.PHONY: test
+test: cross
+	./hack/check-fmt.sh
+	./hack/boilerplate.sh
+	./hack/verify-codegen.sh
+	./hack/dep.sh
+	./hack/test.sh
+
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_LD_RESOLVE_FLAGS :=""
+GO_BUILD_TAGS := ""
+
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH)
+	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH) $@
+
+.PHONY: cross
+cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform))
+
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LD_RESOLVE_FLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
+
+.PHONY: install-plugin
+install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
+	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
+	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
+
 GO_LDFLAGS := '-extldflags "-static"
 GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 GO_LDFLAGS += '
 
-ORG := github.com/grafeas
-PROJECT := kritis
 # TODO: Change this to "kritis-project" once we figure out how to distribute ImagePullSecrets.
 # For now, to get integration testing working, lets use the kritis-int-test project
 REGISTRY?=gcr.io/kritis-int-test
@@ -48,31 +74,6 @@ KRITIS_PROJECT = $(REPOPATH)/kritis
 
 out/kritis-server: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(SERVICE_PACKAGE)
-
-.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
-
-.PHONY: test
-test: cross
-	./hack/check-fmt.sh
-	./hack/boilerplate.sh
-	./hack/verify-codegen.sh
-	./hack/dep.sh
-	./hack/test.sh
-
-$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH)
-	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH) $@
-
-.PHONY: cross
-cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform))
-
-$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
-
-.PHONY: install-plugin
-install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
-	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
-	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
-	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
 
 .PHONY: build-image
 build-image: out/kritis-server
