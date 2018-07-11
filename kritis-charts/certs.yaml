@@ -1,0 +1,11 @@
+name: tls-webhook-secret
+metadata:
+  name: tls-webhook-secret-name
+spec:
+  api:
+    name: tls-webhook-secret-name
+    csr:
+      country: US
+      state: CA
+      locality: Mountain View
+      organisationname: kritis

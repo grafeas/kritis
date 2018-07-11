@@ -37,7 +37,7 @@ const (
 func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
-
+	flag.Parse()
 	http.HandleFunc("/", admission.AdmissionReviewHandler)
 	httpsServer := NewServer(Addr)
 	log.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
