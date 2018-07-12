@@ -20,14 +20,11 @@ const (
 	// Used for blocking all images with CVEs, except for whitelisted CVEs
 	BLOCKALL = "BLOCKALL"
 
-	// Pod annotation/label keys
+	// InvalidImageSecPolicyLabel is the key for labels and annotations
 	InvalidImageSecPolicyLabel = "invalidImageSecPolicy"
 
-	// Pod label values
+	// A list of label values
 	InvalidDigestLabel      = "Image not resolved to digest."
 	PreviouslyAttestedLabel = "Previously attested."
 	NoAttestationsLabel     = "No valid attestations present. This pod will not be able to restart in future"
-
-	// Pod annotation values
-
 )

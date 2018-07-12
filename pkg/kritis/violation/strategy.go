@@ -34,13 +34,14 @@ func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations 
 	if len(violations) == 0 {
 		return nil
 	}
-	logrus.Warnf("Founc violations in pod %s, ns %s", pod.Name, pod.Namespace)
+	logrus.Warnf("Found violations in pod %s, ns %s", pod.Name, pod.Namespace)
 	for _, v := range violations {
 		logrus.Warn(v.Reason)
 	}
 	return nil
 }
 
+// AnnotationStrategy adds "InvalidImageSecPolicy" as a label and an annotation, with detailed info in the annotations
 type AnnotationStrategy struct {
 }
 

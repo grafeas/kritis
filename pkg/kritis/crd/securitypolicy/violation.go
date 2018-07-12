@@ -19,13 +19,14 @@ package securitypolicy
 import (
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 )
 
 const (
-	UnqualifiedImageViolation   = 0
-	FixesAvailableViolation     = 1
-	ExceedsMaxSeverityViolation = 2
+	UnqualifiedImageViolation = iota
+	FixesAvailableViolation
+	ExceedsMaxSeverityViolation
 )
 
 type SecurityPolicyViolation struct {
@@ -43,6 +44,11 @@ func FixesAvailableViolationReason(image string, vulnz metadata.Vulnerability) s
 }
 
 func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) string {
+	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
+	if maxSeverity == constants.BLOCKALL {
+		return fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+			vulnz.CVE, image, maxSeverity)
+	}
 	return fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
-		vulnz.Severity, isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity)
+		vulnz.Severity, maxSeverity)
 }
