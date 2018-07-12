@@ -225,6 +225,35 @@ func Test_recursiveReplaceImage(t *testing.T) {
 	}
 }
 
+func Test_MultiYaml(t *testing.T) {
+	r := newFakeResolver()
+	r.tagMap["image:tag"] = "image:digest"
+	r.tagMap["image:tag2"] = "image:digest2"
+
+	defer setResolver(r.resolve)()
+	multiYaml := `apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - name: first
+    image: %s
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - name: second
+    image: %s
+`
+	expected := fmt.Sprintf(multiYaml, "image:digest", "image:digest2")
+	actual, err := executeSubstitution(fmt.Sprintf(multiYaml, "image:tag", "image:tag2"))
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
+}
+
 func formatTestYaml1() yaml.MapSlice {
 	m := yaml.MapSlice{}
 	yaml.Unmarshal([]byte(testYaml1), &m)

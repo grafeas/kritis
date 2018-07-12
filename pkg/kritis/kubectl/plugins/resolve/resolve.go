@@ -18,11 +18,16 @@ package resolve
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+)
+
+const (
+	yamlSeparator = "---\n"
 )
 
 // Execute replaces image:tag with image:digest in each file
@@ -34,23 +39,35 @@ func Execute(files []string) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		m := yaml.MapSlice{}
-		if err := yaml.Unmarshal(contents, &m); err != nil {
+		newContents, err := executeSubstitution(string(contents))
+		if err != nil {
 			return nil, err
+		}
+		substitutes[file] = newContents
+	}
+	return substitutes, nil
+}
+
+func executeSubstitution(contents string) (string, error) {
+	yamls := strings.Split(contents, yamlSeparator)
+	for i, y := range yamls {
+		m := yaml.MapSlice{}
+		if err := yaml.Unmarshal([]byte(y), &m); err != nil {
+			return "", err
 		}
 		taggedImages := recursiveGetTaggedImages(m)
 		resolvedImages, err := resolveTagsToDigests(taggedImages)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		replacedYaml := recursiveReplaceImage(m, resolvedImages)
 		updatedManifest, err := yaml.Marshal(replacedYaml)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		substitutes[file] = string(updatedManifest)
+		yamls[i] = string(updatedManifest)
 	}
-	return substitutes, nil
+	return strings.Join(yamls, yamlSeparator), nil
 }
 
 // For testing
