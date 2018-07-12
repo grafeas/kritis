@@ -1,0 +1,14 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: ImageSecurityPolicy
+metadata:
+  name: my-isp
+  namespace: default
+spec:
+  imageWhitelist:
+  - gcr.io/my/image
+  packageVulnerabilityRequirements:
+    maximumSeverity: HIGH
+    onlyFixesAvailable: true
+    whitelistCVEs: 
+      - providers/goog-vulnz/notes/CVE-2017-1000082
+      - providers/goog-vulnz/notes/CVE-2017-1000081
