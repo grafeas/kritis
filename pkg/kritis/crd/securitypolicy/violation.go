@@ -23,26 +23,34 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 )
 
+type violation int
+
+// A list of security policy violations
+// TODO: Add Attestation checking violations
 const (
-	UnqualifiedImageViolation = iota
-	FixesAvailableViolation
+	UnqualifiedImageViolation violation = iota
+	FixesNotAvailableViolation
 	ExceedsMaxSeverityViolation
 )
 
+// SecurityPolicyViolation represents a vulnerability that violates an ISP
 type SecurityPolicyViolation struct {
 	Vulnerability metadata.Vulnerability
-	Violation     int
+	Violation     violation
 	Reason        string
 }
 
+// UnqualifiedImageViolationReason returns a detailed reason if the image is unqualified
 func UnqualifiedImageViolationReason(image string) string {
 	return fmt.Sprintf("%s is not a fully qualified image", image)
 }
 
-func FixesAvailableViolationReason(image string, vulnz metadata.Vulnerability) string {
-	return fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image)
+// FixesAvailableViolationReason returns a detailed reason if a CVE doesn't have a fix available
+func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) string {
+	return fmt.Sprintf("found CVE %s in %s which doesn't have fixes available", vulnz.CVE, image)
 }
 
+// ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
 func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) string {
 	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {

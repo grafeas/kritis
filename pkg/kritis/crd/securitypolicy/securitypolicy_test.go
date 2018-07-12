@@ -198,8 +198,8 @@ func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 	expected := []SecurityPolicyViolation{
 		{
 			Vulnerability: vulnz2,
-			Violation:     FixesAvailableViolation,
-			Reason:        FixesAvailableViolationReason(testutil.QualifiedImage, vulnz2),
+			Violation:     FixesNotAvailableViolation,
+			Reason:        FixesNotAvailableViolationReason(testutil.QualifiedImage, vulnz2),
 		},
 	}
 	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)

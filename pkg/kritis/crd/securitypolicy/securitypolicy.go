@@ -77,8 +77,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 		if isp.Spec.PackageVulernerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
 			violations = append(violations, SecurityPolicyViolation{
 				Vulnerability: v,
-				Violation:     FixesAvailableViolation,
-				Reason:        FixesAvailableViolationReason(image, v),
+				Violation:     FixesNotAvailableViolation,
+				Reason:        FixesNotAvailableViolationReason(image, v),
 			})
 			continue
 		}

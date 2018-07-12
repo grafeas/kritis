@@ -40,7 +40,7 @@ var (
 
 // For testing.
 type podLister func(string) ([]corev1.Pod, error)
-type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error)
+type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error)
 
 type Config struct {
 	PodLister            podLister
