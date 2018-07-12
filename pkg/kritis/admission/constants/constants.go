@@ -31,6 +31,5 @@ const (
 )
 
 const (
-	DefaultCompressionLevel = 9
-	RSABits                 = 4096
+	RSABits = 4096
 )

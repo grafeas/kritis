@@ -37,16 +37,8 @@ var pgpConfig = packet.Config{
 	DefaultHash:            crypto.SHA256,
 	DefaultCipher:          packet.CipherAES256,
 	DefaultCompressionAlgo: packet.CompressionZLIB,
-	// Level is the compression level to use. It must be set to
-	// between -1 and 9, with -1 causing the compressor to use the
-	// default compression level, 0 causing the compressor to use
-	// no compression and 1 to 9 representing increasing (better,
-	// slower) compression levels. If Level is less than -1 or
-	// more then 9, a non-nil error will be returned during
-	// encryption. See the constants above for convenient common
-	// settings for Level.
 	CompressionConfig: &packet.CompressionConfig{
-		Level: constants.DefaultCompressionLevel,
+		Level: packet.DefaultCompression,
 	},
 	RSABits: constants.RSABits,
 }
@@ -114,19 +106,17 @@ func AttestMessage(pubKeyEnc string, privKeyEnc string, message string) (string,
 		return "", encErr
 	}
 
-	// Sign the Message.
+	// Create a Detached Signature.
 	signer := createEntityFromKeys(pubKey, privKey)
-	var b bytes.Buffer
-	err = openpgp.ArmoredDetachSignText(&b, signer, strings.NewReader(message), nil)
-
+	// Sign the Message
 	clearSignedMsg := bytes.NewBuffer(nil)
 	dec, err := clearsign.Encode(clearSignedMsg, signer.PrivateKey, &pgpConfig)
 	if err != nil {
 		return "", err
 	}
-	dec.Write(b.Bytes())
+	dec.Write([]byte(message))
 	dec.Close()
-	return base64.StdEncoding.EncodeToString([]byte(clearSignedMsg.String())), err
+	return base64.StdEncoding.EncodeToString(clearSignedMsg.Bytes()), err
 }
 
 func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) *openpgp.Entity {
