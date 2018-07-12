@@ -22,26 +22,54 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"os"
+	"strings"
 
 	"golang.org/x/crypto/openpgp"
 
+	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/clearsign"
 	"golang.org/x/crypto/openpgp/packet"
 )
 
-func VerifyImageAttestation(publicKeyStr string, attestationHash string) error {
+var pgpConfig = packet.Config{
+	// Use Sha256
+	DefaultHash:            crypto.SHA256,
+	DefaultCipher:          packet.CipherAES256,
+	DefaultCompressionAlgo: packet.CompressionZLIB,
+	// Level is the compression level to use. It must be set to
+	// between -1 and 9, with -1 causing the compressor to use the
+	// default compression level, 0 causing the compressor to use
+	// no compression and 1 to 9 representing increasing (better,
+	// slower) compression levels. If Level is less than -1 or
+	// more then 9, a non-nil error will be returned during
+	// encryption. See the constants above for convenient common
+	// settings for Level.
+	CompressionConfig: &packet.CompressionConfig{
+		Level: constants.DefaultCompressionLevel,
+	},
+	RSABits: constants.RSABits,
+}
+
+func VerifyImageAttestation(pubKeyEnc string, attestationHash string) error {
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
 
-	key, err := parsePublicKey(publicKeyStr)
+	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
 	if err != nil {
 		return err
 	}
+	key, err := parsePublicKey(string(pemPublicKey))
+	if err != nil {
+		return err
+	}
+	// Decode Attestation.
 	b, _ := clearsign.Decode(attestation)
+	if b == nil {
+		return fmt.Errorf("Not a valid signature!")
+	}
 
 	reader := packet.NewReader(b.ArmoredSignature.Body)
 	pkt, err := reader.Next()
@@ -64,24 +92,45 @@ func VerifyImageAttestation(publicKeyStr string, attestationHash string) error {
 	return nil
 }
 
-func AttestImageSignature(pubKey *packet.PublicKey, privKey *packet.PrivateKey, message io.Reader) (string, error) {
+// AttestMessage attests the message using the given public and private key.
+// pubKeyEnc: Base64 Encoded Public Key
+// privKeyEnc: Base64 Decoded Private Key
+// message: Message to attest
+func AttestMessage(pubKeyEnc string, privKeyEnc string, message string) (string, error) {
+	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
+	if err != nil {
+		return "", err
+	}
+	pemPrivateKey, err := base64.StdEncoding.DecodeString(privKeyEnc)
+	if err != nil {
+		return "", err
+	}
+	pubKey, encErr := parsePublicKey(string(pemPublicKey))
+	if encErr != nil {
+		return "", encErr
+	}
+	privKey, encErr := parsePrivateKey(string(pemPrivateKey))
+	if encErr != nil {
+		return "", encErr
+	}
+
+	// Sign the Message.
 	signer := createEntityFromKeys(pubKey, privKey)
 	var b bytes.Buffer
-	err := openpgp.ArmoredDetachSign(&b, signer, message, nil)
-	return base64.StdEncoding.EncodeToString(b.Bytes()), err
+	err = openpgp.ArmoredDetachSignText(&b, signer, strings.NewReader(message), nil)
+
+	clearSignedMsg := bytes.NewBuffer(nil)
+	dec, err := clearsign.Encode(clearSignedMsg, signer.PrivateKey, &pgpConfig)
+	if err != nil {
+		return "", err
+	}
+	dec.Write(b.Bytes())
+	dec.Close()
+	return base64.StdEncoding.EncodeToString([]byte(clearSignedMsg.String())), err
 }
 
 func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) *openpgp.Entity {
-	config := packet.Config{
-		DefaultHash:            crypto.SHA256,
-		DefaultCipher:          packet.CipherAES256,
-		DefaultCompressionAlgo: packet.CompressionZLIB,
-		CompressionConfig: &packet.CompressionConfig{
-			Level: 9,
-		},
-		RSABits: 4096,
-	}
-	currentTime := config.Now()
+	currentTime := pgpConfig.Now()
 	uid := packet.NewUserId("", "", "")
 
 	e := openpgp.Entity{
@@ -98,7 +147,7 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 			CreationTime: currentTime,
 			SigType:      packet.SigTypePositiveCert,
 			PubKeyAlgo:   packet.PubKeyAlgoRSA,
-			Hash:         config.Hash(),
+			Hash:         pgpConfig.Hash(),
 			IsPrimaryId:  &isPrimaryId,
 			FlagsValid:   true,
 			FlagSign:     true,
@@ -117,7 +166,7 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 			CreationTime:              currentTime,
 			SigType:                   packet.SigTypeSubkeyBinding,
 			PubKeyAlgo:                packet.PubKeyAlgoRSA,
-			Hash:                      config.Hash(),
+			Hash:                      pgpConfig.Hash(),
 			PreferredHash:             []uint8{8}, // SHA-256
 			FlagsValid:                true,
 			FlagEncryptStorage:        true,
@@ -154,11 +203,8 @@ func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
 }
 
 func parseKey(key string, keytype string) (packet.Packet, error) {
-	f, err := os.Open(key)
-	if err != nil {
-		return nil, err
-	}
-	block, err := armor.Decode(f)
+	r := strings.NewReader(key)
+	block, err := armor.Decode(r)
 	if err != nil {
 		return nil, err
 	}

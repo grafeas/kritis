@@ -29,3 +29,8 @@ const (
 const (
 	SuccessMessage = "Successfully admitted."
 )
+
+const (
+	DefaultCompressionLevel = 9
+	RSABits                 = 4096
+)
