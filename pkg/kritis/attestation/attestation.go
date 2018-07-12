@@ -73,14 +73,13 @@ func VerifyImageAttestation(pubKeyEnc string, attestationHash string) error {
 	}
 
 	hash := sig.Hash.New()
-	io.Copy(hash, bytes.NewReader(b.Bytes))
-
-	// Verify Signature using the Public Key
-	err = pgpKey.PublicKey().VerifySignature(hash, sig)
+	_, err = io.Copy(hash, bytes.NewReader(b.Bytes))
 	if err != nil {
 		return err
 	}
-	return nil
+
+	// Verify Signature using the Public Key
+	return pgpKey.PublicKey().VerifySignature(hash, sig)
 }
 
 // AttestMessage attests the message using the given public and private key.
@@ -102,6 +101,5 @@ func AttestMessage(pubKeyEnc string, privKeyEnc string, message string) (string,
 	}
 	dec.Write([]byte(message))
 	dec.Close()
-	fmt.Println(clearSignedMsg.String())
 	return base64.StdEncoding.EncodeToString(clearSignedMsg.Bytes()), err
 }
