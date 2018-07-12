@@ -23,11 +23,12 @@ import (
 	"crypto"
 	"encoding/base64"
 	"fmt"
-	"io"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+	"github.com/pkg/errors"
 
-	"golang.org/x/crypto/openpgp/clearsign"
+	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/packet"
 )
 
@@ -44,42 +45,52 @@ var pgpConfig = packet.Config{
 
 // VerifyImageAttestation verifies if the image is attested using the Base64
 // encoded public key.
-func VerifyImageAttestation(pubKeyEnc string, attestationHash string) error {
+func VerifyImageAttestation(pubKeyEnc string, attestationHash string, message string) error {
+	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
+	if err != nil {
+		return err
+	}
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
-	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey("", pubKeyEnc)
+	// // Create a PgpKey from Encoded Public Key
+	// pgpKey, err := NewPgpKey("", pubKeyEnc)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// buf := bytes.NewBuffer([]byte(attestation))
+	// pkt, err := packet.Read(buf)
+	// if err != nil {
+	// 	fmt.Println("error 1")
+	// 	return err
+	// }
+
+	// sig, ok := pkt.(*packet.Signature)
+	// if !ok {
+	// 	return fmt.Errorf("Not a valid signature")
+	// }
+
+	// hash := sig.Hash.New()
+	// _, err = io.Copy(hash, bytes.NewReader([]byte(message)))
+	// if err != nil {
+	// 	return err
+	// }
+	fmt.Println(string(pemPublicKey))
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(string(pemPublicKey)))
 	if err != nil {
+		fmt.Println("errroorr", err)
 		return err
 	}
-
-	// Decode Attestation.
-	b, _ := clearsign.Decode(attestation)
-	if b == nil {
-		return fmt.Errorf("Not a valid signature!")
-	}
-
-	reader := packet.NewReader(b.ArmoredSignature.Body)
-	pkt, err := reader.Next()
-	if err != nil {
-		return err
-	}
-
-	sig, ok := pkt.(*packet.Signature)
-	if !ok {
-		return fmt.Errorf("Not a valid signature")
-	}
-
-	hash := sig.Hash.New()
-	_, err = io.Copy(hash, bytes.NewReader(b.Bytes))
-	if err != nil {
-		return err
-	}
-
 	// Verify Signature using the Public Key
-	return pgpKey.PublicKey().VerifySignature(hash, sig)
+	verificationString := strings.NewReader(message)
+	_, err = openpgp.CheckArmoredDetachedSignature(
+		keyring,
+		verificationString,
+		bytes.NewReader(attestation),
+	)
+	return err
 }
 
 // AttestMessage attests the message using the given public and private key.
@@ -93,13 +104,62 @@ func AttestMessage(pubKeyEnc string, privKeyEnc string, message string) (string,
 	if err != nil {
 		return "", err
 	}
-	// Create a Detached Signature using clearsign
-	clearSignedMsg := bytes.NewBuffer(nil)
-	dec, err := clearsign.Encode(clearSignedMsg, pgpKey.PrivateKey(), &pgpConfig)
+	// Sign the Message.
+	signer := createEntityFromKeys(pgpKey.PublicKey(), pgpKey.PrivateKey())
+	var b bytes.Buffer
+	err = openpgp.ArmoredDetachSignText(&b, signer, strings.NewReader(message), nil)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Error while signing:")
 	}
-	dec.Write([]byte(message))
-	dec.Close()
-	return base64.StdEncoding.EncodeToString(clearSignedMsg.Bytes()), err
+	fmt.Println(string(b.Bytes()))
+	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
+}
+
+func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) *openpgp.Entity {
+	currentTime := pgpConfig.Now()
+	uid := packet.NewUserId("", "", "")
+
+	e := openpgp.Entity{
+		PrimaryKey: pubKey,
+		PrivateKey: privKey,
+		Identities: make(map[string]*openpgp.Identity),
+	}
+	isPrimaryId := false
+
+	e.Identities[uid.Id] = &openpgp.Identity{
+		Name:   uid.Name,
+		UserId: uid,
+		SelfSignature: &packet.Signature{
+			CreationTime: currentTime,
+			SigType:      packet.SigTypePositiveCert,
+			PubKeyAlgo:   packet.PubKeyAlgoRSA,
+			Hash:         pgpConfig.Hash(),
+			IsPrimaryId:  &isPrimaryId,
+			FlagsValid:   true,
+			FlagSign:     true,
+			FlagCertify:  true,
+			IssuerKeyId:  &e.PrimaryKey.KeyId,
+		},
+	}
+
+	keyLifetimeSecs := uint32(86400 * 365)
+
+	e.Subkeys = make([]openpgp.Subkey, 1)
+	e.Subkeys[0] = openpgp.Subkey{
+		PublicKey:  pubKey,
+		PrivateKey: privKey,
+		Sig: &packet.Signature{
+			CreationTime:              currentTime,
+			SigType:                   packet.SigTypeSubkeyBinding,
+			PubKeyAlgo:                packet.PubKeyAlgoRSA,
+			Hash:                      pgpConfig.Hash(),
+			PreferredHash:             []uint8{8}, // SHA-256
+			FlagsValid:                true,
+			FlagEncryptStorage:        true,
+			FlagEncryptCommunications: true,
+			IssuerKeyId:               &e.PrimaryKey.KeyId,
+			KeyLifetimeSecs:           &keyLifetimeSecs,
+		},
+	}
+	return &e
 }
