@@ -42,6 +42,9 @@ func TestAttestations(t *testing.T) {
 		pubKeyBaseEnc, privKeyBaseEnc := createBase64KeyPair(t)
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := AttestMessage(pubKeyBaseEnc, privKeyBaseEnc, tc.message)
+			if err != nil {
+				t.Fatalf("Unexpected error %s", err)
+			}
 			if tc.signature == "" {
 				tc.signature = sig
 			}
@@ -56,6 +59,7 @@ func createBase64KeyPair(t *testing.T) (string, string) {
 	var key *openpgp.Entity
 	key, err := openpgp.NewEntity("kritis", "test", "kritis@grafeas.com", nil)
 	testutil.CheckError(t, false, err)
+
 	// Get Pem encoded Public Key
 	gotWriter := bytes.NewBuffer(nil)
 	wr, encodingError := armor.Encode(gotWriter, openpgp.PublicKeyType, nil)
