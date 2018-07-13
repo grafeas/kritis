@@ -3,9 +3,14 @@ metadata:
   name: tls-webhook-secret-name
 spec:
   api:
-    name: tls-webhook-secret-name
+    name: tls-webhook-secret-cert
     csr:
       country: US
       state: CA
       locality: Mountain View
       organisationname: kritis
+    hosts:
+    - kritis-validation-hook
+    - kritis-validation-hook.kube-system
+    - kritis-validation-hook.default
+    - kritis-validation-hook.default.svc
