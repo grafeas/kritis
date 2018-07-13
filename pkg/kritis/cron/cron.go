@@ -48,7 +48,7 @@ type Config struct {
 	PodLister            podLister
 	ViolationChecker     violationChecker
 	ViolationStrategy    violation.Strategy
-	SecurityPolicyLister func() ([]v1beta1.ImageSecurityPolicy, error)
+	SecurityPolicyLister func(namespace string) ([]v1beta1.ImageSecurityPolicy, error)
 }
 
 var (
@@ -78,7 +78,7 @@ func Start(ctx context.Context, cfg Config) {
 	for {
 		select {
 		case <-c.C:
-			isps, err := cfg.SecurityPolicyLister()
+			isps, err := cfg.SecurityPolicyLister("")
 			if err != nil {
 				logrus.Errorf("fetching image security policies: %s", err)
 				continue
