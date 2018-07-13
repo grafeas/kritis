@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: List
+items:
+
+- apiVersion: admissionregistration.k8s.io/v1beta1
+  kind: ValidatingWebhookConfiguration
+  metadata:
+    name: image-signature-webook
+  webhooks:
+    - name: image-whitelist.babyremote.com
+      rules:
+        - apiGroups:
+            - ""
+          apiVersions:
+            - v1
+          operations:
+            - CREATE
+          resources:
+            - pods
+      failurePolicy: Fail
+      clientConfig:
+        caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUR1RENDQXFDZ0F3SUJBZ0lVRCs4dDJvNno0UXo2a0lFLy85YjErSjlxdUtvd0RRWUpLb1pJaHZjTkFRRUwKQlFBd1lqRUxNQWtHQTFVRUJoTUNWVk14RHpBTkJnTlZCQWdUQms5eVpXZHZiakVSTUE4R0ExVUVCeE1JVUc5eQpkR3hoYm1ReEVEQU9CZ05WQkFvVEIwZHlZV1psWVhNeEN6QUpCZ05WQkFzVEFrTkJNUkF3RGdZRFZRUURFd2RICmNtRm1aV0Z6TUI0WERURTNNVEF4TmpBMk1UWXdNRm9YRFRJeU1UQXhOVEEyTVRZd01Gb3dZakVMTUFrR0ExVUUKQmhNQ1ZWTXhEekFOQmdOVkJBZ1RCazl5WldkdmJqRVJNQThHQTFVRUJ4TUlVRzl5ZEd4aGJtUXhFREFPQmdOVgpCQW9UQjBkeVlXWmxZWE14Q3pBSkJnTlZCQXNUQWtOQk1SQXdEZ1lEVlFRREV3ZEhjbUZtWldGek1JSUJJakFOCkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXZPSi9yeEJ2YlZKRHFnbHhFMFF0elJtdW1Ma2UKYUFyemVDQVJQeDZHMGV0OEhvNXdkeVpBOE1tSExqdlRxdUtWZWRtcVFIdUMxNTdmKytWTm5MdXdmNU1FWnBtZgpQQVJ0WlVLbEw0SFlrQlhQQTRIVXFMYXRqejgyN2djZlhtelpNb2hscmswYi9hSDUzaVp0WjRnTFk4UHgyWnhuCkpVbjZmUU5WdEdMdGRBZjVCTll4Q0hSWWN1Q1dkdUg0SStQUHBPdDNsSUIvMlhVNWlDd3JYanZabW9Xc2dLOS8KY1ltSXg3OFZEcTdQQjUrTHZualU1eGllYlBsNENIL21kU3lmQVZFU2JEdSt0S3RyUGZHbHZkTkJ2YVY5QXE5QQp3YWJ3YUlUQWRBTlppaHNiT2h5dzhFcjRtSnRrOFV2S05yckw4U01PYlEyVDY3RzBqNTlwWWlIeGp3SURBUUFCCm8yWXdaREFPQmdOVkhROEJBZjhFQkFNQ0FRWXdFZ1lEVlIwVEFRSC9CQWd3QmdFQi93SUJBakFkQmdOVkhRNEUKRmdRVW03WG9HWHJiZElTNGtXSGZxd05IVlBwQkc2d3dId1lEVlIwakJCZ3dGb0FVbTdYb0dYcmJkSVM0a1dIZgpxd05IVlBwQkc2d3dEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBR0loRU90b2s0NE5CeXVqVk8yc0VnYmo1eHV3CkRFckR4UW95dHVLOXFjVGZiZDg2dmxiSjI1OE1VQm01VTMvOUwxay9nQXNkM0QwMmpHYXVDRmpjeG1iL2Z5dnEKM2hyZVFxTUVZMi8rT1dmM0hxczdUOUVFZmVncG0vR0dGa25nVmhGUlh4Z0FXK1dwcFFvWnVicTVOeElTRFFEagpuMHR5bU1pVFBLbDF5ZWlGRjZqQUZIa2pRRTRUNDB4SmpOdTdsSnVGbndJV2h3cHRZSnVwbzQ5dmJoYk5OM2ZECkFjMmQ4c2oxNHJ1ZzlSeFk5MGdUWTI3MDdiUmRDdW52NW41RWNiVjJJNDFML3ZubFdkVy9pVUgyU3ZMRHc4VTUKSmRsZFdBOTBGdElKb1UzWmtaa3R4K1cxME9QU3plVzQ0dDZrVzJVZ0JmSm9VMXRaRkQ4c2pCYWw5K2c9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+        service:
+          name: image-signature-webhook
+          namespace: default
+
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    namespace: default
+    name: image-signature-webhook
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: image-signature-webhook
+    name: image-signature-webhook
+  spec:
+    ports:
+      - name: https
+        port: 443
+        protocol: "TCP"
+    selector:
+      app: image-signature-webhook
+
+- apiVersion: apps/v1beta1
+  kind: Deployment
+  metadata:
+    name: image-signature-webhook
+  spec:
+    template:
+      metadata:
+        labels:
+          app: image-signature-webhook
+      spec:
+        containers:
+          - name: image-signature-webhook
+            ports:
+            - containerPort: 8443
+            image: gcr.io/kritis-int-test/kritis-server
+            imagePullPolicy: Always
+            args:
+              - "--tls-cert-file=/var/serving-cert/tls.crt"
+              - "--tls-private-key-file=/var/serving-cert/tls.key"
+            volumeMounts:
+            - mountPath: /var/serving-cert
+              name: tls
+            - name: pubkeys
+              mountPath: /var/gpg_pub/
+            - name: privkeys
+              mountPath: /var/gpg_priv/
+        volumes:
+          - name: tls
+            secret:
+              secretName: tls-image-signature-webhook
+          - name: pubkeys
+            configMap:
+               name: image-signature-gpg
+          - name: privkeys
+            configMap:
+              name: image-signature-gpg-secret
