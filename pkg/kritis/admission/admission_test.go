@@ -78,7 +78,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
-		httpStatus: http.StatusBadRequest,
+		httpStatus: http.StatusOK,
 		allowed:    false,
 		status:     constants.FailureStatus,
 		message:    "image:tag is not a fully qualified image",
@@ -127,7 +127,7 @@ func Test_InvalidISP(t *testing.T) {
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
-		httpStatus: http.StatusBadRequest,
+		httpStatus: http.StatusOK,
 		allowed:    false,
 		status:     constants.FailureStatus,
 		message:    fmt.Sprintf("found violations in %s", validImage),

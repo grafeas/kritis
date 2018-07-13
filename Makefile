@@ -75,8 +75,7 @@ out/kritis-server: $(GO_FILES)
 
 .PHONY: build-image
 build-image: out/kritis-server
-	docker build -t gcr.io/priya-wadhwa/kritis-server -f deploy/Dockerfile .
-	docker push gcr.io/priya-wadhwa/kritis-server
+	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
 
 clean:
 	rm -rf $(BUILD_DIR)

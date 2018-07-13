@@ -19,7 +19,7 @@ WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 RUN make
 
-FROM ubuntu
+FROM scratch
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/kritis-server /kritis/kritis-server
 ENV HOME /root
 ENV USER /root

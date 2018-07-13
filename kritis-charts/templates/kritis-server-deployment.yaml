@@ -28,14 +28,6 @@ spec:
           - name: https
             containerPort: 8443
             protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /
-            port: https
-        readinessProbe:
-          httpGet:
-            path: /
-            port: https
         volumeMounts:
         - mountPath: /var/tls
           name: tls

@@ -57,6 +57,7 @@ var (
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	pod, err := admissionConfig.retrievePod(r)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -155,14 +156,11 @@ func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWrite
 	}
 	data, err := json.Marshal(ar)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return nil
 	}
-	if response.Allowed {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-	}
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	return err
 }
