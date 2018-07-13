@@ -39,3 +39,6 @@ image:
   tag: latest
   name: kritis-server
   pullPolicy: Always
+
+# kritis-server-webhook.yaml values
+caBundle: ""

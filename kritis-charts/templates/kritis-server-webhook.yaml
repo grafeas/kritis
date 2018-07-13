@@ -16,7 +16,7 @@ webhooks:
           - pods
     failurePolicy: Fail
     clientConfig:
-      caBundle: # TODO: Add script to inject caBundle here
+      caBundle: {{ .Values.caBundle }}
       service:
         name: {{ .Values.serviceName }}
         namespace: default
