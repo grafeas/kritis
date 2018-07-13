@@ -23,14 +23,14 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 )
 
-type violation int
+type violation string
 
 // A list of security policy violations
 // TODO: Add Attestation checking violations
 const (
-	UnqualifiedImageViolation violation = iota
-	FixesNotAvailableViolation
-	ExceedsMaxSeverityViolation
+	UnqualifiedImageViolation   violation = "UnqualifiedImageViolation"
+	FixesNotAvailableViolation            = "FixesNotAvailableViolation"
+	ExceedsMaxSeverityViolation           = "ExceedsMaxSeverityViolation"
 )
 
 // SecurityPolicyViolation represents a vulnerability that violates an ISP
@@ -47,7 +47,7 @@ func UnqualifiedImageViolationReason(image string) string {
 
 // FixesAvailableViolationReason returns a detailed reason if a CVE doesn't have a fix available
 func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) string {
-	return fmt.Sprintf("found CVE %s in %s which doesn't have fixes available", vulnz.CVE, image)
+	return fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image)
 }
 
 // ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
