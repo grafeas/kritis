@@ -5,7 +5,8 @@ metadata:
 spec:
   group: kritis.grafeas.io
   version: v1beta1
-  names:
-    kind: AttestationAuthority
-    plural: attestationauthorities
   scope: Namespaced
+  names:
+    plural: attestationauthorities
+    singular: attestationauthority
+    kind: AttestationAuthority

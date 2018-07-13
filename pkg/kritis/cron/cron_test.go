@@ -56,7 +56,7 @@ func TestStartCancels(t *testing.T) {
 
 	// Make sure the checker is called and Start cancels correctly when the deadline expires.
 	Start(c, Config{
-		SecurityPolicyLister: func() ([]v1beta1.ImageSecurityPolicy, error) {
+		SecurityPolicyLister: func(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 			return nil, nil
 		},
 	})

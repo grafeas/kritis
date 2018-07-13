@@ -114,7 +114,7 @@ func recursiveGetTaggedImages(m interface{}) []string {
 	return images
 }
 
-// FullyQualifiedImage returns true if image is fully qualified
+// FullyQualifiedImage returns true if the image is fully qualified
 func FullyQualifiedImage(image string) bool {
 	_, err := name.NewDigest(image, name.WeakValidation)
 	return err == nil

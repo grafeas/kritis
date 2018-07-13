@@ -47,7 +47,7 @@ if [ -z "$VALIDATE_UPSTREAM" ]; then
 		fi
 	}
 fi
-# See if there have been upstream changes 
+# See if there have been upstream changes
 IFS=$'\n'
 files=( $(validate_diff --name-only -- 'Gopkg.toml' 'Gopkg.lock' 'vendor/' || true) )
 unset IFS

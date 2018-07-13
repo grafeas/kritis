@@ -35,3 +35,5 @@ GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 
 popd
 exit $GO_TEST_EXIT_CODE
+
+make integration-in-docker

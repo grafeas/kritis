@@ -14,20 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package defines all constants needed for AdmissionController.
-package constants
+package util
 
-// Define constants for metav1.Status.Status
-// See https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#response-status-kind
-type Status string
-
-const (
-	SuccessStatus Status = "Success"
-	FailureStatus Status = "Failure"
+import (
+	"crypto/rand"
+	"fmt"
 )
 
-const (
-	SuccessMessage = "Successfully admitted."
-	// BREAKGLASS is the annotation used to allow any pod past the webhook
-	BREAKGLASS = "breakglass"
-)
+func RandomID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", b)
+}
