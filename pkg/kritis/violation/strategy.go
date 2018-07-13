@@ -61,7 +61,7 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 		if v.Violation == securitypolicy.UnqualifiedImageViolation {
 			labelValue = constants.InvalidDigestLabel
 		}
-		annotationValue += v.Reason + "\n"
+		annotationValue += string(v.Reason) + "\n"
 	}
 	labels := map[string]string{constants.InvalidImageSecPolicyLabel: labelValue}
 	annotations := map[string]string{constants.InvalidImageSecPolicyLabel: annotationValue}

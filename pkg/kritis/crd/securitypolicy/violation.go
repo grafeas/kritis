@@ -28,35 +28,35 @@ type violation string
 // A list of security policy violations
 // TODO: Add Attestation checking violations
 const (
-	UnqualifiedImageViolation   violation = "UnqualifiedImageViolation"
-	FixesNotAvailableViolation            = "FixesNotAvailableViolation"
-	ExceedsMaxSeverityViolation           = "ExceedsMaxSeverityViolation"
+	UnqualifiedImageViolation int = iota
+	FixesNotAvailableViolation
+	ExceedsMaxSeverityViolation
 )
 
 // SecurityPolicyViolation represents a vulnerability that violates an ISP
 type SecurityPolicyViolation struct {
 	Vulnerability metadata.Vulnerability
-	Violation     violation
-	Reason        string
+	Violation     int
+	Reason        violation
 }
 
 // UnqualifiedImageViolationReason returns a detailed reason if the image is unqualified
-func UnqualifiedImageViolationReason(image string) string {
-	return fmt.Sprintf("%s is not a fully qualified image", image)
+func UnqualifiedImageViolationReason(image string) violation {
+	return violation(fmt.Sprintf("%s is not a fully qualified image", image))
 }
 
 // FixesAvailableViolationReason returns a detailed reason if a CVE doesn't have a fix available
-func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) string {
-	return fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image)
+func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) violation {
+	return violation(fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image))
 }
 
 // ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
-func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) string {
+func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) violation {
 	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {
-		return fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
-			vulnz.CVE, image, maxSeverity)
+		return violation(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+			vulnz.CVE, image, maxSeverity))
 	}
-	return fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
-		vulnz.Severity, maxSeverity)
+	return violation(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
+		vulnz.Severity, maxSeverity))
 }

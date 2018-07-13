@@ -30,6 +30,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
+	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +40,7 @@ type config struct {
 	retrievePod                 func(r *http.Request) (*v1.Pod, error)
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
-	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error)
+	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
 }
 
 var (
@@ -50,6 +51,8 @@ var (
 		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
+
+	defaultViolationStrategy = violation.LoggingStrategy{}
 )
 
 // This admission controller looks for the breakglass annotation
@@ -96,7 +99,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if len(violations) != 0 {
-				log.Printf("violations found in %s: %v", image, violations)
+				defaultViolationStrategy.HandleViolation(image, pod, violations)
 				returnStatus(constants.FailureStatus, fmt.Sprintf("found violations in %s", image), w)
 				return
 			}
