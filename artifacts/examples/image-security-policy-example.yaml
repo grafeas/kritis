@@ -7,8 +7,8 @@ spec:
   imageWhitelist:
   - gcr.io/my/image
   packageVulnerabilityRequirements:
-    maximumSeverity: HIGH
-    onlyFixesAvailable: true
+    maximumSeverity: HIGH # LOW|MEDIUM|HIGH|CRITICAL|BLOCKALL
+    onlyFixesNotAvailable: true 
     whitelistCVEs: 
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
