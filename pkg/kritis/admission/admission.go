@@ -66,17 +66,18 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// First, check for a breakglass annotation on the pod
 	if checkBreakglass(pod) {
+		log.Print("found breakglass annotation, returning successful status")
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
-	// Second, check if all images are globlally whitelisted
+	// Then, check if images are in the global whitelist
 	images := pods.Images(*pod)
 	if util.CheckGlobalWhitelist(images) {
+		log.Printf("%s are all whitelisted, returning successful status", images)
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
-
-	// Third, validate images in the pod against ImageSecurityPolicies in the same namespace
+	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
 	if err != nil {
 		log.Printf("error getting image security policies: %v", err)
@@ -100,6 +101,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			// Check if one of the violations is that the image is not fully qualified
 			for _, v := range violations {
 				if v.Violation == securitypolicy.UnqualifiedImageViolation {
+					log.Printf("%s is not a fully qualified image", image)
 					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
 					return
 				}

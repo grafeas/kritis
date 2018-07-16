@@ -28,7 +28,7 @@ func CheckGlobalWhitelist(images []string) bool {
 	for _, image := range images {
 		whitelisted, err := imageInWhitelist(image)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
 		}
 		if !whitelisted {
 			return false
