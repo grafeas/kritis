@@ -19,21 +19,19 @@ package admission
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
-	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
+	"io/ioutil"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
+	"net/http"
 )
 
 type config struct {
@@ -70,15 +68,8 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
-	// Second, get all images in the pod and make sure they are fully qualified
 	images := pods.Images(*pod)
-	for _, image := range images {
-		if !resolve.FullyQualifiedImage(image) {
-			returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
-			return
-		}
-	}
-	// Third, validate images in the pod against ImageSecurityPolicies in the same namespace
+	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
 	if err != nil {
 		log.Printf("error getting image security policies: %v", err)
@@ -98,6 +89,13 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
+			}
+			// Check if one of the violations is that the image is not fully qualified
+			for _, v := range violations {
+				if v.Violation == securitypolicy.UnqualifiedImageViolation {
+					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
+					return
+				}
 			}
 			if len(violations) != 0 {
 				defaultViolationStrategy.HandleViolation(image, pod, violations)
