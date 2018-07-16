@@ -42,7 +42,7 @@ func Test_BreakglassAnnotation(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, error) {
 		return &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"breakglass": "true"},
+				Annotations: map[string]string{"kritis.grafeas.io/breakglass": "true"},
 			},
 		}, nil
 	}

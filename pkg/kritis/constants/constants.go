@@ -20,8 +20,11 @@ const (
 	// Used for blocking all images with CVEs, except for whitelisted CVEs
 	BLOCKALL = "BLOCKALL"
 
-	// InvalidImageSecPolicyLabel is the key for labels and annotations
-	InvalidImageSecPolicyLabel = "invalidImageSecPolicy"
+	// InvalidImageSecPolicy is the key for labels and annotations
+	InvalidImageSecPolicy = "kritis.grafeas.io/invalidImageSecPolicy"
+
+	// Breakglass is the key for the breakglass annotation
+	Breakglass = "kritis.grafeas.io/breakglass"
 
 	// A list of label values
 	InvalidDigestLabel      = "Image not resolved to digest."
