@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
-	"github.com/grafeas/kritis/pkg/kritis/apis/kritis"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -132,8 +132,7 @@ func checkBreakglass(pod *v1.Pod) bool {
 	if annotations == nil {
 		return false
 	}
-	breakglass := fmt.Sprintf("%s/%s", kritis.GroupName, constants.BREAKGLASS)
-	_, ok := annotations[breakglass]
+	_, ok := annotations[kritisconstants.Breakglass]
 	return ok
 }
 

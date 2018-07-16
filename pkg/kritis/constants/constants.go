@@ -21,7 +21,10 @@ const (
 	BLOCKALL = "BLOCKALL"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
-	InvalidImageSecPolicy = "invalidImageSecPolicy"
+	InvalidImageSecPolicy = "kritis.grafeas.io/invalidImageSecPolicy"
+
+	// Breakglass is the key for the breakglass annotation
+	Breakglass = "kritis.grafeas.io/breakglass"
 
 	// A list of label values
 	InvalidDigestLabel      = "Image not resolved to digest."
