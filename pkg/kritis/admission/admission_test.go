@@ -61,6 +61,12 @@ func Test_BreakglassAnnotation(t *testing.T) {
 	})
 }
 
+type mockMetadataClient struct {
+}
+
+func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
+	return nil, nil
+}
 func Test_UnqualifiedImage(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, error) {
 		return &v1.Pod{
@@ -73,8 +79,17 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		}, nil
 	}
+	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
+		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
+	}
+	mockMetadata := func() (metadata.MetadataFetcher, error) {
+		return mockMetadataClient{}, nil
+	}
 	mockConfig := config{
-		retrievePod: mockPod,
+		retrievePod:                 mockPod,
+		fetchMetadataClient:         mockMetadata,
+		fetchImageSecurityPolicies:  mockISP,
+		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,

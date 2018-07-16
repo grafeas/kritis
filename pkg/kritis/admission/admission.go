@@ -98,7 +98,12 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			// Check if one of the violations is that the image is not fully qualified
-
+			for _, v := range violations {
+				if v.Violation == securitypolicy.UnqualifiedImageViolation {
+					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
+					return
+				}
+			}
 			if len(violations) != 0 {
 				defaultViolationStrategy.HandleViolation(image, pod, violations)
 				returnStatus(constants.FailureStatus, fmt.Sprintf("found violations in %s", image), w)
