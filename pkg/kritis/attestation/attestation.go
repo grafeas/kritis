@@ -23,7 +23,12 @@ import (
 	"crypto"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"strings"
+
+	"golang.org/x/crypto/openpgp/armor"
+
+	_ "crypto/sha256"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
@@ -54,6 +59,14 @@ func VerifyImageAttestation(pubKeyEnc string, attestationHash string, message st
 	if err != nil {
 		return err
 	}
+
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(string(pemPublicKey)))
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer([]byte(attestation))
+	armorBlock, err := armor.Decode(buf)
+	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
 	// // Create a PgpKey from Encoded Public Key
 	// pgpKey, err := NewPgpKey("", pubKeyEnc)
 	// if err != nil {
@@ -77,20 +90,18 @@ func VerifyImageAttestation(pubKeyEnc string, attestationHash string, message st
 	// if err != nil {
 	// 	return err
 	// }
-	fmt.Println(string(pemPublicKey))
-	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(string(pemPublicKey)))
+
+	// Verify Signature using the Public Key
+
+	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
 	if err != nil {
-		fmt.Println("errroorr", err)
 		return err
 	}
-	// Verify Signature using the Public Key
-	verificationString := strings.NewReader(message)
-	_, err = openpgp.CheckArmoredDetachedSignature(
-		keyring,
-		verificationString,
-		bytes.NewReader(attestation),
-	)
-	return err
+
+	if string(plaintext) != message {
+		return fmt.Errorf("got: %q, want: %q", plaintext, message)
+	}
+	return nil
 }
 
 // AttestMessage attests the message using the given public and private key.
@@ -102,16 +113,31 @@ func AttestMessage(pubKeyEnc string, privKeyEnc string, message string) (string,
 	// Create a PgpKey from Encoded Public Key
 	pgpKey, err := NewPgpKey(privKeyEnc, pubKeyEnc)
 	if err != nil {
-		return "", err
+		fmt.Println("here")
+		return "", errors.Wrap(err, "Error while signing:")
 	}
 	// Sign the Message.
 	signer := createEntityFromKeys(pgpKey.PublicKey(), pgpKey.PrivateKey())
-	var b bytes.Buffer
-	err = openpgp.ArmoredDetachSignText(&b, signer, strings.NewReader(message), nil)
-	if err != nil {
+
+	b := new(bytes.Buffer)
+	armorWriter, errEncode := armor.Encode(b, openpgp.SignatureType, make(map[string]string))
+	if errEncode != nil {
+		fmt.Println("here 1")
 		return "", errors.Wrap(err, "Error while signing:")
 	}
-	fmt.Println(string(b.Bytes()))
+	w, err := Sign(armorWriter, signer, nil, &pgpConfig)
+	if err != nil {
+		fmt.Println("here 3")
+		return "", errors.Wrap(err, "Error while signing:")
+	}
+
+	_, err = w.Write([]byte(message))
+	if err != nil {
+		fmt.Println("here2")
+		return "", errors.Wrap(err, "Error while signing:")
+	}
+	armorWriter.Close()
+	fmt.Println("sig =>>", string(b.Bytes()))
 	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
 }
 
