@@ -112,10 +112,12 @@ func Test_InvalidISP(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
 	}
-	mockValidate := func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]metadata.Vulnerability, error) {
-		return []metadata.Vulnerability{
+	mockValidate := func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
+		return []securitypolicy.SecurityPolicyViolation{
 			{
-				Severity: "foo",
+				Vulnerability: metadata.Vulnerability{
+					Severity: "foo",
+				},
 			},
 		}, nil
 	}

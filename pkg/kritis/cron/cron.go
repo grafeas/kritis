@@ -24,10 +24,8 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
-	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -42,7 +40,7 @@ var (
 
 // For testing.
 type podLister func(string) ([]corev1.Pod, error)
-type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error)
+type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error)
 
 type Config struct {
 	PodLister            podLister
@@ -52,12 +50,12 @@ type Config struct {
 }
 
 var (
-	defaultViolationStrategy = &violation.LoggingStrategy{}
+	defaultViolationStrategy = &violation.AnnotationStrategy{}
 )
 
 func NewCronConfig(cs *kubernetes.Clientset, ca containeranalysis.ContainerAnalysis) *Config {
 
-	vc := func(image string, isp v1beta1.ImageSecurityPolicy) ([]metadata.Vulnerability, error) {
+	vc := func(image string, isp v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error) {
 		return securitypolicy.ValidateImageSecurityPolicy(isp, "", image, ca)
 	}
 

@@ -14,17 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package testutil
 
 const (
-	// Used for blocking all images with CVEs, except for whitelisted CVEs
-	BLOCKALL = "BLOCKALL"
-
-	// InvalidImageSecPolicyLabel is the key for labels and annotations
-	InvalidImageSecPolicyLabel = "invalidImageSecPolicy"
-
-	// A list of label values
-	InvalidDigestLabel      = "Image not resolved to digest."
-	PreviouslyAttestedLabel = "Previously attested."
-	NoAttestationsLabel     = "No valid attestations present. This pod will not be able to restart in future"
+	QualifiedImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
 )
