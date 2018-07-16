@@ -56,13 +56,32 @@ func Test_ValidISP(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
 	if violations != nil {
 		t.Errorf("got unexpected violations: %v", violations)
 	}
+}
+
+func Test_UnqualifiedImage(t *testing.T) {
+	isp := v1beta1.ImageSecurityPolicy{
+		Spec: v1beta1.ImageSecurityPolicySpec{
+			v1beta1.PackageVulernerabilityRequirements{
+				MaximumSeverity: "MEDIUM",
+			},
+		},
+	}
+	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
+	expected := []SecurityPolicyViolation{
+		{
+			Vulnerability: metadata.Vulnerability{},
+			Violation:     UnqualifiedImageViolation,
+			Reason:        UnqualifiedImageViolationReason(""),
+		},
+	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 
 func Test_BlockallPass(t *testing.T) {
@@ -77,7 +96,7 @@ func Test_BlockallPass(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -97,8 +116,15 @@ func Test_BlockallFail(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
+	expected := []SecurityPolicyViolation{
+		{
+			Vulnerability: vulnz2,
+			Violation:     ExceedsMaxSeverityViolation,
+			Reason:        ExceedsMaxSeverityViolationReason(testutil.QualifiedImage, vulnz2, isp),
+		},
+	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 
 func Test_MaxSeverityFail(t *testing.T) {
@@ -109,8 +135,15 @@ func Test_MaxSeverityFail(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
+	expected := []SecurityPolicyViolation{
+		{
+			Vulnerability: vulnz2,
+			Violation:     ExceedsMaxSeverityViolation,
+			Reason:        ExceedsMaxSeverityViolationReason(testutil.QualifiedImage, vulnz2, isp),
+		},
+	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 
 func Test_WhitelistedImage(t *testing.T) {
@@ -143,7 +176,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -161,8 +194,15 @@ func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, []metadata.Vulnerability{vulnz2})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
+	expected := []SecurityPolicyViolation{
+		{
+			Vulnerability: vulnz2,
+			Violation:     FixesNotAvailableViolation,
+			Reason:        FixesNotAvailableViolationReason(testutil.QualifiedImage, vulnz2),
+		},
+	}
+	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
@@ -174,7 +214,7 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", "", mockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.QualifiedImage, mockMetadataClient{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
