@@ -6,14 +6,15 @@ webhooks:
   - name: kritis-validation-hook.grafeas.io
     rules:
       - apiGroups:
-          - ""
+          - "*" # TODO(aaron-prindle) minimize this capture group
         apiVersions:
-          - v1
+          - "*" # TODO(aaron-prindle) minimize this capture group
         operations:
           - CREATE
           - UPDATE
         resources:
           - pods
+          - deployments
     failurePolicy: Fail
     clientConfig:
       caBundle: {{ .Values.caBundle }}

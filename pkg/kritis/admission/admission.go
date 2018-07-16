@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/golang/glog"
@@ -33,13 +34,18 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/admission/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type config struct {
 	retrievePod                 func(r *http.Request) (*v1.Pod, error)
+	retrieveDeployment          func(r *http.Request) (*appsv1.Deployment, error)
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
@@ -49,6 +55,7 @@ var (
 	// For testing
 	admissionConfig = config{
 		retrievePod:                 unmarshalPod,
+		retrieveDeployment:          unmarshalDeployment,
 		fetchMetadataClient:         metadataClient,
 		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
@@ -57,36 +64,91 @@ var (
 	defaultViolationStrategy = violation.LoggingStrategy{}
 )
 
-// This admission controller looks for the breakglass annotation
-// If one is not found, it validates against image security policies
-// TODO: Check for attestations
+var (
+	runtimeScheme = runtime.NewScheme()
+	codecs        = serializer.NewCodecFactory(runtimeScheme)
+)
+
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	glog.Info("Starting admission review handler version %s ...", version.Commit)
-	pod, err := admissionConfig.retrievePod(r)
+	glog.Info("Starting admission review handler: ", version.Commit)
+
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		glog.Error(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	// First, check for a breakglass annotation on the pod
-	if checkBreakglass(pod) {
-		glog.Infof("found breakglass annotation, returning successful status")
-		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
 
-	// TODO: Fetch Attestations for the given images to see if the image is already verified
-	images := pods.Images(*pod)
+	ar := v1beta1.AdmissionReview{}
+	deserializer := codecs.UniversalDeserializer()
+	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+
+		payload, err := json.Marshal(&v1beta1.AdmissionResponse{
+			UID:     ar.Request.UID,
+			Allowed: false,
+			Result: &metav1.Status{
+				Message: err.Error(),
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
+		w.Write(payload)
+	}
+
+	admitResponse := &v1beta1.AdmissionReview{
+		Response: &v1beta1.AdmissionResponse{
+			UID:     ar.Request.UID,
+			Allowed: true,
+			Result:  &metav1.Status{Message: constants.SuccessMessage},
+		},
+	}
+
+	if ar.Request.Kind.Kind == "Deployment" {
+		fmt.Println("handling deployment...")
+		deployment := appsv1.Deployment{}
+		json.Unmarshal(ar.Request.Object.Raw, &deployment)
+		reviewDeployment(&deployment, admitResponse)
+	}
+
+	if ar.Request.Kind.Kind == "Pod" {
+		fmt.Println("handling pod...")
+		pod := v1.Pod{}
+		json.Unmarshal(ar.Request.Object.Raw, &pod)
+		reviewPod(&pod, admitResponse)
+	}
+
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	payload, err := json.Marshal(admitResponse)
+	if err != nil {
+		fmt.Println(err)
+	}
+	w.Write(payload)
+}
+
+func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
+	for _, c := range deployment.Spec.Template.Spec.Containers {
+		log.Println(c.Image)
+		reviewImages([]string{c.Image}, deployment.Namespace, ar)
+	}
+}
+
+func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	if util.CheckGlobalWhitelist(images) {
 		glog.Infof("%s are all whitelisted, returning successful status", images)
-		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
-	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
-	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
+	// Validate images in the pod against ImageSecurityPolicies in the same namespace
+	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
 		glog.Errorf("error getting image security policies: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+		ar.Response.Allowed = false
+		ar.Response.Result = &metav1.Status{
+			Message: "error getting image security policies",
+		}
 		return
 	}
 	glog.Infof("Got isps %v", isps)
@@ -94,7 +156,10 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	metadataClient, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
 		glog.Errorf("error getting metadata client: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+		ar.Response.Allowed = false
+		ar.Response.Result = &metav1.Status{
+			Message: fmt.Sprintf("error getting metadata client %v", err),
+		}
 		return
 	}
 	for _, isp := range isps {
@@ -102,29 +167,46 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			glog.Infof("Getting vulnz for %s", image)
 			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
+				ar.Response.Allowed = false
+				ar.Response.Result = &metav1.Status{
+					Message: fmt.Sprintf("error validating image security policy %v", err),
+				}
 				return
 			}
 			// Check if one of the violations is that the image is not fully qualified
 			for _, v := range violations {
 				if v.Violation == securitypolicy.UnqualifiedImageViolation {
 					glog.Infof("%s is not a fully qualified image", image)
-					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
+					ar.Response.Allowed = false
+					ar.Response.Result = &metav1.Status{
+						Message: fmt.Sprintf("%s is not a fully qualified image", image),
+					}
 					return
 				}
 			}
 			if len(violations) != 0 {
-				defaultViolationStrategy.HandleViolation(image, pod, violations)
-				returnStatus(constants.FailureStatus, fmt.Sprintf("found violations in %s", image), w)
+				defaultViolationStrategy.HandleViolation(image, ns, violations)
+				ar.Response.Allowed = false
+				ar.Response.Result = &metav1.Status{
+					Message: fmt.Sprintf("found violations in %s", image),
+				}
 				return
 			}
 		}
 	}
-	// TODO: Create Attestations as Occurrences for the given images.
-	// At this point, we can return a success status
-	returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
+
 }
 
+func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+	// First, check for a breakglass annotation on the pod
+	if checkBreakglass(pod) {
+		logrus.Debugf("found breakglass annotation, returning successful status")
+		return
+	}
+	reviewImages(pods.Images(*pod), pod.Namespace, ar)
+}
+
+// TODO(aaron-prindle) remove these functions
 func unmarshalPod(r *http.Request) (*v1.Pod, error) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -141,6 +223,22 @@ func unmarshalPod(r *http.Request) (*v1.Pod, error) {
 	return &pod, nil
 }
 
+func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, error) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	ar := v1beta1.AdmissionReview{}
+	if err := json.Unmarshal(data, &ar); err != nil {
+		return nil, err
+	}
+	deployment := appsv1.Deployment{}
+	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
+		return nil, err
+	}
+	return &deployment, nil
+}
+
 func checkBreakglass(pod *v1.Pod) bool {
 	annotations := pod.GetAnnotations()
 	if annotations == nil {
@@ -153,32 +251,4 @@ func checkBreakglass(pod *v1.Pod) bool {
 // TODO: update this once we have more metadata clients
 func metadataClient() (metadata.MetadataFetcher, error) {
 	return containeranalysis.NewContainerAnalysisClient()
-}
-
-func returnStatus(status constants.Status, message string, w http.ResponseWriter) {
-	response := &v1beta1.AdmissionResponse{
-		Allowed: (status == constants.SuccessStatus),
-		Result: &metav1.Status{
-			Status:  string(status),
-			Message: message,
-		},
-	}
-	if err := writeHttpResponse(response, w); err != nil {
-		glog.Error("error writing response:", err)
-	}
-}
-
-func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWriter) error {
-	ar := v1beta1.AdmissionReview{
-		Response: response,
-	}
-	data, err := json.Marshal(ar)
-	if err != nil {
-		glog.Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil
-	}
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(data)
-	return err
 }
