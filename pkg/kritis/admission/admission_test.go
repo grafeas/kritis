@@ -134,6 +134,30 @@ func Test_InvalidISP(t *testing.T) {
 	})
 }
 
+func Test_GlobalWhitelist(t *testing.T) {
+	mockPod := func(r *http.Request) (*v1.Pod, error) {
+		return &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Image: "gcr.io/kritis-project/kritis-server:tag",
+					},
+				},
+			},
+		}, nil
+	}
+	mockConfig := config{
+		retrievePod: mockPod,
+	}
+	RunTest(t, testConfig{
+		mockConfig: mockConfig,
+		httpStatus: http.StatusOK,
+		allowed:    true,
+		status:     constants.SuccessStatus,
+		message:    constants.SuccessMessage,
+	})
+}
+
 func mockMetadata() func() (metadata.MetadataFetcher, error) {
 	return func() (metadata.MetadataFetcher, error) {
 		return nil, nil
