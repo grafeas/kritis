@@ -16,6 +16,7 @@ limitations under the License.
 package violation
 
 import (
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
@@ -47,7 +48,7 @@ type AnnotationStrategy struct {
 
 func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error {
 	// First, remove "InvalidImageSecPolicy" label/annotation in case it doesn't apply anymore
-	deletionKeys := []string{constants.InvalidImageSecPolicyLabel}
+	deletionKeys := []string{kritis.GroupName}
 	if err := pods.DeleteLabelsAndAnnotations(*pod, deletionKeys, deletionKeys); err != nil {
 		return err
 	}
@@ -63,8 +64,8 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 		}
 		annotationValue += string(v.Reason) + "\n"
 	}
-	labels := map[string]string{constants.InvalidImageSecPolicyLabel: labelValue}
-	annotations := map[string]string{constants.InvalidImageSecPolicyLabel: annotationValue}
+	labels := map[string]string{kritis.GroupName: labelValue}
+	annotations := map[string]string{kritis.GroupName: annotationValue}
 
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }

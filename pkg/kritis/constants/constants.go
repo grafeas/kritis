@@ -20,9 +20,6 @@ const (
 	// Used for blocking all images with CVEs, except for whitelisted CVEs
 	BLOCKALL = "BLOCKALL"
 
-	// InvalidImageSecPolicyLabel is the key for labels and annotations
-	InvalidImageSecPolicyLabel = "invalidImageSecPolicy"
-
 	// A list of label values
 	InvalidDigestLabel      = "Image not resolved to digest."
 	PreviouslyAttestedLabel = "Previously attested."
