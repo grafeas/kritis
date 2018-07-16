@@ -19,11 +19,8 @@ package admission
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
@@ -31,9 +28,12 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
+	"io/ioutil"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
+	"net/http"
 )
 
 type config struct {
@@ -132,7 +132,8 @@ func checkBreakglass(pod *v1.Pod) bool {
 	if annotations == nil {
 		return false
 	}
-	_, ok := annotations[constants.BREAKGLASS]
+	breakglass := fmt.Sprintf("%s/%s", kritis.GroupName, constants.BREAKGLASS)
+	_, ok := annotations[breakglass]
 	return ok
 }
 
