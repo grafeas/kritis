@@ -22,15 +22,12 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-)
-
-const (
-	validImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
 )
 
 type testConfig struct {
@@ -73,8 +70,17 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		}, nil
 	}
+	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
+		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
+	}
+	mockMetadata := func() (metadata.MetadataFetcher, error) {
+		return mockMetadataClient{}, nil
+	}
 	mockConfig := config{
-		retrievePod: mockPod,
+		retrievePod:                 mockPod,
+		fetchMetadataClient:         mockMetadata,
+		fetchImageSecurityPolicies:  mockISP,
+		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -89,7 +95,7 @@ func Test_ValidISP(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{
 			{
-				ImageWhitelist: []string{validImage},
+				ImageWhitelist: []string{testutil.QualifiedImage},
 			},
 		}, nil
 	}
@@ -110,30 +116,44 @@ func Test_ValidISP(t *testing.T) {
 
 func Test_InvalidISP(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
+		return []kritisv1beta1.ImageSecurityPolicy{{
+			Spec: kritisv1beta1.ImageSecurityPolicySpec{
+				PackageVulernerabilityRequirements: kritisv1beta1.PackageVulernerabilityRequirements{
+					MaximumSeverity: "LOW",
+				},
+			},
+		}}, nil
 	}
-	mockValidate := func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
-		return []securitypolicy.SecurityPolicyViolation{
-			{
-				Vulnerability: metadata.Vulnerability{
-					Severity: "foo",
+	mockMetadata := func() (metadata.MetadataFetcher, error) {
+		return mockMetadataClient{
+			vulnz: []metadata.Vulnerability{
+				{
+					Severity: "MEDIUM",
 				},
 			},
 		}, nil
 	}
 	mockConfig := config{
 		retrievePod:                 mockValidPod(),
-		fetchMetadataClient:         mockMetadata(),
+		fetchMetadataClient:         mockMetadata,
 		fetchImageSecurityPolicies:  mockISP,
-		validateImageSecurityPolicy: mockValidate,
+		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
 		httpStatus: http.StatusOK,
 		allowed:    false,
 		status:     constants.FailureStatus,
-		message:    fmt.Sprintf("found violations in %s", validImage),
+		message:    fmt.Sprintf("found violations in %s", testutil.QualifiedImage),
 	})
+}
+
+type mockMetadataClient struct {
+	vulnz []metadata.Vulnerability
+}
+
+func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
+	return m.vulnz, nil
 }
 
 func mockMetadata() func() (metadata.MetadataFetcher, error) {
@@ -148,7 +168,7 @@ func mockValidPod() func(r *http.Request) (*v1.Pod, error) {
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
 					{
-						Image: validImage,
+						Image: testutil.QualifiedImage,
 					},
 				},
 			},
