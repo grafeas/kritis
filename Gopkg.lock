@@ -192,15 +192,12 @@
   version = "v0.8.0"
 
 [[projects]]
-<<<<<<< HEAD
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
   version = "v1.0.5"
 
 [[projects]]
-=======
->>>>>>> test
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
@@ -621,6 +618,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d3575ea2a5445e4a11d991cbe3ccc78bde8eba5bec864d94da93e6e169567681"
+  inputs-digest = "4881f1dd470c736b701577c99af023a6ea819f33b445219761cef884e2e5f6fe"
   solver-name = "gps-cdcl"
   solver-version = 1
