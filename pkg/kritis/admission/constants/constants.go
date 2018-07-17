@@ -29,3 +29,7 @@ const (
 const (
 	SuccessMessage = "Successfully admitted."
 )
+
+const (
+	RSABits = 4096
+)
