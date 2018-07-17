@@ -42,3 +42,7 @@ image:
 
 # kritis-server-webhook.yaml values
 caBundle: ""
+
+secret:
+  name: ""
+  path: "kritis.json"

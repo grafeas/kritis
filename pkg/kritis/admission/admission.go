@@ -40,7 +40,7 @@ type config struct {
 	retrievePod                 func(r *http.Request) (*v1.Pod, error)
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
-	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
+	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
 }
 
 var (
@@ -59,6 +59,7 @@ var (
 // If one is not found, it validates against image security policies
 // TODO: Check for attestations
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
+	log.Print("Starting admission review handler...")
 	pod, err := admissionConfig.retrievePod(r)
 	if err != nil {
 		log.Println(err)
@@ -80,6 +81,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	log.Printf("Got isps %v", isps)
 	// get the client we will get vulnz from
 	metadataClient, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
@@ -89,7 +91,8 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, isp := range isps {
 		for _, image := range images {
-			violations, err := admissionConfig.validateImageSecurityPolicy(isp, "", image, metadataClient)
+			log.Printf("Getting vulnz for %s", image)
+			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return

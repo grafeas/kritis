@@ -31,7 +31,15 @@ spec:
         volumeMounts:
         - mountPath: /var/tls
           name: tls
+        - name: {{ .Values.secret.name }}
+          mountPath: /secret
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /secret/{{ .Values.secret.path }}
       volumes:
         - name: tls
           secret:
             secretName: {{ .Values.tlsSecretName }}
+        - name: {{ .Values.secret.name }}
+          secret:
+            secretName: {{ .Values.secret.name }}
