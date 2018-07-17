@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-digest-breakglass
+  annotations: {
+    "kritis.grafeas.io/breakglass": "true"
+  }
+spec:
+  containers:
+  - name: nginx-no-digest-breakglass
+    image: gcr.io/kritis-int-test/nginx-no-digest-breakglass:latest
+    ports:
+    - containerPort: 80

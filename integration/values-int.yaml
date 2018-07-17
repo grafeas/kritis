@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: gcr.io/kritis-project/kritis-server
+  repository: gcr.io/kritis-int-test/kritis-server
   tag: latest
   pullPolicy: Always
 
@@ -35,7 +35,7 @@ serviceName: kritis-validation-hook
 tlsSecretName: tls-webhook-secret
 
 image:
-  repository: gcr.io/kritis-project/kritis-server
+  repository: gcr.io/kritis-int-test/kritis-server
   tag: latest
   name: kritis-server
   pullPolicy: Always
@@ -43,7 +43,3 @@ image:
 # kritis-server-webhook.yaml values
 caBundle: ""
 serviceNamespace: "default"
-
-secret:
-  name: ""
-  path: "kritis.json"

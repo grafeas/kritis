@@ -19,7 +19,7 @@ WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 RUN make out/kritis-server
 
-FROM scratch
+FROM gcr.io/distroless/base:latest
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/kritis-server /kritis/kritis-server
 ENV HOME /root
 ENV USER /root
