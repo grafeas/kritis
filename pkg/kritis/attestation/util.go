@@ -29,9 +29,12 @@ import (
 	"golang.org/x/crypto/openpgp/s2k"
 )
 
-// Sign signs a message. The resulting WriteCloser must be closed after the
-// contents of the file have been written.
-// If config is nil, sensible defaults will be used.
+// This file is copy of PR https://github.com/golang/crypto/pull/50/files which
+// ass Sign method to openpgp.
+// Along with Sing, we copy the private methods used in openpgp.Sign and renamed
+// it to <methodName>Copy
+
+// Copy of openpgp.Sign
 func Sign(ciphertext io.Writer, signed *openpgp.Entity, hints *openpgp.FileHints, config *packet.Config) (plaintext io.WriteCloser, err error) {
 	if signed == nil {
 		return nil, errors.InvalidArgumentError("no signer provided")
@@ -44,18 +47,17 @@ func Sign(ciphertext io.Writer, signed *openpgp.Entity, hints *openpgp.FileHints
 		hashToHashIdCopy(crypto.SHA1),
 		hashToHashIdCopy(crypto.RIPEMD160),
 	}
-	defaultHashes := candidateHashes[0:1] // len(candidateHashes)-1:]
+	defaultHashes := candidateHashes[len(candidateHashes)-1:]
 	preferredHashes := primaryIdentityCopy(signed).SelfSignature.PreferredHash
 	if len(preferredHashes) == 0 {
 		preferredHashes = defaultHashes
 	}
-	candidateHashes = copyIntersectPreferences(candidateHashes, preferredHashes)
+	candidateHashes = intersectPreferencesCopy(candidateHashes, preferredHashes)
 	return writeAndSign(noOpCloserCopy{ciphertext}, candidateHashes, signed, hints, config)
 }
 
-// intersectPreferences mutates and returns a prefix of a that contains only
-// the values in the intersection of a and b. The order of a is preserved.
-func copyIntersectPreferences(a []uint8, b []uint8) (intersection []uint8) {
+// intersectPreferencesCopy is copy of openpgp.intersectPreferences
+func intersectPreferencesCopy(a []uint8, b []uint8) (intersection []uint8) {
 	var j int
 	for _, v := range a {
 		for _, v2 := range b {
@@ -158,6 +160,7 @@ func writeAndSign(payload io.WriteCloser, candidateHashes []uint8, signed *openp
 	return literalData, nil
 }
 
+// hashToHashIdCopy is Copy of openpgp.hashToHashId
 func hashToHashIdCopy(h crypto.Hash) uint8 {
 	v, ok := s2k.HashToHashId(h)
 	if !ok {
@@ -166,9 +169,7 @@ func hashToHashIdCopy(h crypto.Hash) uint8 {
 	return v
 }
 
-// signatureWriter hashes the contents of a message while passing it along to
-// literalData. When closed, it closes literalData, writes a signature packet
-// to encryptedData and then also closes encryptedData.
+// signatureWriterCopy is Copy of openpgp.signatureWriter and its methods.
 type signatureWriterCopy struct {
 	encryptedData io.WriteCloser
 	literalData   io.WriteCloser
@@ -204,9 +205,7 @@ func (s signatureWriterCopy) Close() error {
 	return s.encryptedData.Close()
 }
 
-// noOpCloserCopy is like an ioutil.NopCloser, but for an io.Writer.
-// TODO: we have two of these in OpenPGP packages alone. This probably needs
-// to be promoted somewhere more common.
+// noOpCloserCopy is copy of openpgp.noOpCloser
 type noOpCloserCopy struct {
 	w io.Writer
 }
