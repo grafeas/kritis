@@ -41,14 +41,14 @@ func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
 		publicKey, privateKey := createBase64KeyPair(t)
 		t.Run(tc.name, func(t *testing.T) {
-			sig, err := AttestMessage(publicKey, privateKey, tc.message)
+			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {
 				t.Fatalf("Unexpected error %s", err)
 			}
 			if tc.signature == "" {
 				tc.signature = sig
 			}
-			err = VerifyImageAttestation(publicKey, tc.signature, tc.message)
+			err = VerifyMessageAttestation(publicKey, tc.signature, tc.message)
 			testutil.CheckError(t, tc.hasErr, err)
 		})
 	}

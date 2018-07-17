@@ -19,6 +19,10 @@ package admission
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
@@ -27,12 +31,9 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"io/ioutil"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
-	"net/http"
 )
 
 type config struct {
@@ -69,6 +70,8 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
+
+	// TODO: Fetch Attestations for the given images to see if the image is already verified
 	images := pods.Images(*pod)
 	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
@@ -105,7 +108,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	//  TODO: Check AttestationAuthorities to see if the image is verified
+	// TODO: Create Attestations as Occurrences for the given images.
 	// At this point, we can return a success status
 	returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 }
