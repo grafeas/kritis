@@ -3,6 +3,9 @@ steps:
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile",
            "-t", "gcr.io/kritis-project/kritis-server:${COMMIT_SHA}", "."]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "deploy/Dockerfile",
+           "-t", "gcr.io/kritis-project/kritis-server:latest", "."]
   # Build container to build resolve-tags
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile_resolve",
@@ -15,4 +18,4 @@ steps:
     args: ["cp", "out/resolve-tags", "gs://resolve-tags/$COMMIT_SHA/"]
   - name: "gcr.io/cloud-builders/gsutil"
     args: ["cp", "gs://resolve-tags/$COMMIT_SHA/*", "gs://resolve-tags/latest/"]
-images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}"]
+images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}", "gcr.io/kritis-project/kritis-server:latest]
