@@ -43,3 +43,7 @@ image:
 # kritis-server-webhook.yaml values
 caBundle: ""
 serviceNamespace: "default"
+
+secret:
+  name: "kritis-ca-admin"
+  path: "kritis.json"

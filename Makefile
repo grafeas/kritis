@@ -86,13 +86,18 @@ clean:
 integration: cross
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m -- --remote=true
 
+.PHONY: integration-build-push-image
+integration-build-push-image: out/kritis-server
+	docker build -t gcr.io/$(GCP_PROJECT)/kritis-server:latest -f deploy/Dockerfile .
+	docker push gcr.io/$(GCP_PROJECT)/kritis-server:latest
+
 .PHONY: integration-in-docker
-integration-in-docker:
+integration-in-docker: integration-build-push-image
 	docker build \
 		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/kritis-integration .
-	docker push gcr.io/$(GCP_PROJECT)/kritis-integration
+		-t gcr.io/$(GCP_PROJECT)/kritis-integration:latest .
+	docker push gcr.io/$(GCP_PROJECT)/kritis-integration:latest
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
