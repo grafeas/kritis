@@ -57,7 +57,6 @@ func Test_BreakglassAnnotation(t *testing.T) {
 		message:    constants.SuccessMessage,
 	})
 }
-
 func Test_UnqualifiedImage(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, error) {
 		return &v1.Pod{
@@ -145,6 +144,30 @@ func Test_InvalidISP(t *testing.T) {
 		allowed:    false,
 		status:     constants.FailureStatus,
 		message:    fmt.Sprintf("found violations in %s", testutil.QualifiedImage),
+	})
+}
+
+func Test_GlobalWhitelist(t *testing.T) {
+	mockPod := func(r *http.Request) (*v1.Pod, error) {
+		return &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Image: "gcr.io/kritis-project/kritis-server:tag",
+					},
+				},
+			},
+		}, nil
+	}
+	mockConfig := config{
+		retrievePod: mockPod,
+	}
+	RunTest(t, testConfig{
+		mockConfig: mockConfig,
+		httpStatus: http.StatusOK,
+		allowed:    true,
+		status:     constants.SuccessStatus,
+		message:    constants.SuccessMessage,
 	})
 }
 

@@ -30,6 +30,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
+	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
@@ -68,12 +69,18 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// First, check for a breakglass annotation on the pod
 	if checkBreakglass(pod) {
+		log.Print("found breakglass annotation, returning successful status")
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
 
 	// TODO: Fetch Attestations for the given images to see if the image is already verified
 	images := pods.Images(*pod)
+	if util.CheckGlobalWhitelist(images) {
+		log.Printf("%s are all whitelisted, returning successful status", images)
+		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
+		return
+	}
 	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
 	if err != nil {
@@ -100,6 +107,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			// Check if one of the violations is that the image is not fully qualified
 			for _, v := range violations {
 				if v.Violation == securitypolicy.UnqualifiedImageViolation {
+					log.Printf("%s is not a fully qualified image", image)
 					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
 					return
 				}
