@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-digest
+spec:
+  containers:
+  - name: nginx-no-digest
+    image: gcr.io/kritis-int-test/nginx-no-digest:latest
+    ports:
+    - containerPort: 80

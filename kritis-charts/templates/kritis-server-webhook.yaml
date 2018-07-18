@@ -19,4 +19,4 @@ webhooks:
       caBundle: {{ .Values.caBundle }}
       service:
         name: {{ .Values.serviceName }}
-        namespace: default
+        namespace: {{ .Values.serviceNamespace }}

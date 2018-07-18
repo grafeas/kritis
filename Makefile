@@ -92,6 +92,7 @@ integration-in-docker:
 		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/kritis-integration .
+	docker push gcr.io/$(GCP_PROJECT)/kritis-integration
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
