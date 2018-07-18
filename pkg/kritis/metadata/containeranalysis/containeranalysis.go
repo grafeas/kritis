@@ -17,13 +17,13 @@ limitations under the License.
 package containeranalysis
 
 import (
-	"fmt"
-
 	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
+	"fmt"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"strings"
 )
 
 const (
@@ -51,15 +51,18 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 
 // GetVulnerabilites gets Package Vulnerabilities Occurrences for a specified image.
 // containerImage is fully qualified image url with "https://" prefix
-func (c ContainerAnalysis) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
+func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	vulnz := []metadata.Vulnerability{}
+	if !strings.HasPrefix(containerImage, "https://") {
+		containerImage = fmt.Sprintf("https://%s", containerImage)
+	}
+	project := strings.Split(strings.TrimPrefix(containerImage, "https://"), "/")[1]
 
 	req := &containeranalysispb.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", containerImage, PkgVulnerability),
 		PageSize: PageSize,
 		Parent:   fmt.Sprintf("projects/%s", project),
 	}
-
 	it := c.client.ListOccurrences(c.ctx, req)
 	for {
 		occ, err := it.Next()

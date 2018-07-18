@@ -18,7 +18,6 @@ package securitypolicy
 
 import (
 	"fmt"
-
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -50,7 +49,7 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilites that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
 		return nil, nil
@@ -64,7 +63,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, project, image
 		})
 	}
 	// Now, check vulnz in the image
-	vulnz, err := client.GetVulnerabilities(project, image)
+	vulnz, err := client.GetVulnerabilities(image)
 	if err != nil {
 		return nil, err
 	}

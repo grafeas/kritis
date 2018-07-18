@@ -152,7 +152,7 @@ type mockMetadataClient struct {
 	vulnz []metadata.Vulnerability
 }
 
-func (m mockMetadataClient) GetVulnerabilities(project string, containerImage string) ([]metadata.Vulnerability, error) {
+func (m mockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.vulnz, nil
 }
 

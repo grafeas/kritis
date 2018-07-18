@@ -56,7 +56,7 @@ var (
 func NewCronConfig(cs *kubernetes.Clientset, ca containeranalysis.ContainerAnalysis) *Config {
 
 	vc := func(image string, isp v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error) {
-		return securitypolicy.ValidateImageSecurityPolicy(isp, "", image, ca)
+		return securitypolicy.ValidateImageSecurityPolicy(isp, image, ca)
 	}
 
 	cfg := Config{

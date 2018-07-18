@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: List
+items:
+
+# to delegate authentication and authorization
+- apiVersion: rbac.authorization.k8s.io/v1beta1
+  kind: ClusterRoleBinding
+  metadata:
+    name: kritis-clusterrolebinding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: edit
+  subjects:
+  - kind: ServiceAccount
+    namespace: default
+    name: default
+
+# to let the admission server read imagewhitelist/imagesecuritypolicies
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    annotations:
+    name: kritis-clusterrole
+    labels:
+      # Add these permissions to the "edit" default role, so that "edit" can see our CRD.
+      rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  rules:
+  - apiGroups: ["kritis.grafeas.io"]
+    resources: ["*"]
+    verbs: ["get", "watch", "list"]
