@@ -19,20 +19,22 @@ package admission
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"io/ioutil"
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
-	"net/http"
 )
 
 type config struct {
@@ -70,7 +72,8 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
-	// Then, check if images are in the global whitelist
+
+	// TODO: Fetch Attestations for the given images to see if the image is already verified
 	images := pods.Images(*pod)
 	if util.CheckGlobalWhitelist(images) {
 		log.Printf("%s are all whitelisted, returning successful status", images)
@@ -113,7 +116,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	//  TODO: Check AttestationAuthorities to see if the image is verified
+	// TODO: Create Attestations as Occurrences for the given images.
 	// At this point, we can return a success status
 	returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 }
@@ -139,7 +142,7 @@ func checkBreakglass(pod *v1.Pod) bool {
 	if annotations == nil {
 		return false
 	}
-	_, ok := annotations[constants.BREAKGLASS]
+	_, ok := annotations[kritisconstants.Breakglass]
 	return ok
 }
 

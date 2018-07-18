@@ -17,7 +17,7 @@
 FROM golang:1.10
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
-RUN make
+RUN make out/kritis-server
 
 FROM scratch
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/kritis-server /kritis/kritis-server
