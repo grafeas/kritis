@@ -38,7 +38,7 @@ func Test_CheckGlobalWhitelist(t *testing.T) {
 			name: "some images not whitelisted",
 			images: []string{
 				"gcr.io/kritis-project/kritis-server:tag",
-				"gcr.io/kritis/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+				"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			},
 			expected: false,
 		},
