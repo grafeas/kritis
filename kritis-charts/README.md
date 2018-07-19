@@ -19,14 +19,89 @@ Instructions can be found in the `Before you Begin` section of the [Getting Imag
 kritis can only inspect images hosted in projects that have both of these enabled, and have already been scanned for vulnerabilities.
 
 ### Creating a Container Analysis Secret
-You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images.
+You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images. You can create the secret through the Google Cloud Console or on the command line with gcloud.
+
+#### Google Cloud Console
 To create the secret:
-1. Create a service account with `Container Analysis Admin` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
+1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
 2. Download a JSON key for the service account
 3. Rename the key to `kritis.json`
 4. Create a Kubernetes secret by running:
 ```
 kubectl create secret generic <SECRET NAME> --from-file=<path to kritis.json>
+```
+
+#### Command Line
+1. First create the service account
+```
+gcloud iam service-accounts create ACC_NAME --display-name DISPLAY_NAME
+```
+This should create a service account ACC_NAME@PROJECT_ID.iam.gserviceaccount.com. 
+The project id can be found from `gcloud config list project`.
+2. Create a key for the service account
+```
+gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
+```
+3. Create a JSON file for IAM roles, yours should look similar to this.
+```
+$ gcloud projects get-iam-policy IMAGE_PROJECT_ID --format json > iam.json
+$ cat iam.json
+{
+  "bindings":[
+    {
+      "members":[
+        "user:email1@gmail.com"
+      ],
+      "role":"roles/owner"
+    },
+    {
+      "members":[
+        "serviceAccount:our-project-123@appspot.gserviceaccount.com",
+        "serviceAccount:123456789012-compute@developer.gserviceaccount.com"
+      ],
+      "role":"roles/editor"
+    }
+  ],
+  "etag":"BwUjMhCsNvY=",
+  "version":1
+}
+```
+4. Using a text editor, add the necessary Container Analysis roles:
+```
+{
+  "bindings":[
+    {
+    ...
+    {
+      "members":[
+        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containeranalysis.occurrences.viewer" 
+    },
+    {
+      "members":[
+        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containeranalysis.notes.viewer" 
+    },
+    {
+      "members":[
+        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containeranalysis.notes.editor" 
+    },
+    {
+      "members":[
+        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
+      ],
+      "role": "roles/containeranalysis.occurrence.editor" 
+    },
+    ...
+}
+```
+5. Add the new container analysis roles:
+```
+gcloud projects set-iam-policy IMAGE-PROJECT-ID iam.json
 ```
 
 ### Installing Helm
