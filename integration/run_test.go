@@ -178,6 +178,7 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
+
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
@@ -215,89 +216,89 @@ func TestKritisPods(t *testing.T) {
 	}
 
 	var testCases = []testRunCase{
-		// {
-		// 	description: "nginx-no-digest",
-		// 	args: []string{"kubectl", "create", "-f",
-		// 		"integration/testdata/nginx/nginx-no-digest.yaml"},
-		// 	pods: []testObject{
-		// 		{
-		// 			name: "nginx-no-digest",
-		// 		},
-		// 	},
-		// 	shouldDeploy: false,
-		// 	dir:          "../",
-		// 	cleanup: func(t *testing.T) {
-		// 		cmd := exec.Command("kubectl", "delete", "-f",
-		// 			"integration/testdata/nginx/nginx-no-digest.yaml")
-		//		cmd.Dir = "../"
-		// 		output, err := integration_util.RunCmdOut(cmd)
-		// 		if err != nil {
-		// 			t.Fatalf("kritis: %s %v", output, err)
-		// 		}
-		// 	},
-		// },
-		// {
-		// 	description: "nginx-no-digest-whitelist",
-		// 	args:        []string{"kubectl", "create", "-f",
-		// 		"integration/testdata/nginx/nginx-no-digest-whitelist.yaml"},
-		// 	pods: []testObject{
-		// 		{
-		// 			name: "nginx-no-digest-whitelist",
-		// 		},
-		// 	},
-		// 	shouldDeploy: true,
-		// 	dir: "../",
-		// 	cleanup: func(t *testing.T) {
-		// 		cmd := exec.Command("kubectl", "delete", "-f",
-		// 		"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
-		//		cmd.Dir = "../"
-		// 		output, err := integration_util.RunCmdOut(cmd)
-		// 		if err != nil {
-		// 			t.Fatalf("kritis: %s %v", output, err)
-		// 		}
-		// 	},
-		// },
-		// {
-		// 	description: "nginx-digest-whitelist",
-		// 	args:        []string{"kubectl", "create", "-f",
-		// 		"integration/testdata/nginx/nginx-digest-whitelist.yaml"},
-		// 	pods: []testObject{
-		// 		{
-		// 			name: "nginx-digest-whitelist",
-		// 		},
-		// 	},
-		// 	shouldDeploy: true,
-		// 	dir: "../",
-		// 	cleanup: func(t *testing.T) {
-		// 		cmd := exec.Command("kubectl", "delete", "-f",
-		// 		"integration/testdata/nginx/nginx-digest-whitelist.yaml")
-		//		cmd.Dir = "../"
-		// 		output, err := integration_util.RunCmdOut(cmd)
-		// 		if err != nil {
-		// 			t.Fatalf("kritis: %s %v", output, err)
-		// 		}
-		// 	},
-		// },
-		// {
-		// 	description: "java-with-vuln",
-		// 	args:        []string{"kubectl", "create", "-f",
-		// 		"integration/testdata/java/java-with-vuln.yaml"},
-		// 	pods: []testObject{
-		// 		{
-		// 			name: "java-with-vuln",
-		// 		},
-		// 	},
-		// 	shouldDeploy: false,
-		// 	dir: "../",
-		// 	cleanup: func(t *testing.T) {
-		// 		cmd := exec.Command("kubectl", "delete", "-f",
-		// 		"integration/testdata/java/java-with-vuln.yaml")
-		// 		output, err := integration_util.RunCmdOut(cmd)
-		// 		if err != nil {
-		// 			t.Fatalf("kritis: %s %v", output, err)
-		// 		}
-		// 	},
-		// },
+		{
+			description: "nginx-no-digest",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/nginx/nginx-no-digest.yaml"},
+			pods: []testObject{
+				{
+					name: "nginx-no-digest",
+				},
+			},
+			shouldDeploy: false,
+			dir:          "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/nginx/nginx-no-digest.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "nginx-no-digest-whitelist",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/nginx/nginx-no-digest-whitelist.yaml"},
+			pods: []testObject{
+				{
+					name: "nginx-no-digest-whitelist",
+				},
+			},
+			shouldDeploy: true,
+			dir:          "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "nginx-digest-whitelist",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/nginx/nginx-digest-whitelist.yaml"},
+			pods: []testObject{
+				{
+					name: "nginx-digest-whitelist",
+				},
+			},
+			shouldDeploy: true,
+			dir:          "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/nginx/nginx-digest-whitelist.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "java-with-vuln",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/java/java-with-vuln.yaml"},
+			pods: []testObject{
+				{
+					name: "java-with-vuln",
+				},
+			},
+			shouldDeploy: false,
+			dir:          "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln.yaml")
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
 		{
 			description: "nginx-no-digest-breakglass",
 			args: []string{"kubectl", "apply", "-f",
