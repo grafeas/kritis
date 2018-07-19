@@ -51,11 +51,7 @@ func main() {
 
 	log.Println("Running the background job in background")
 	// Kick off back ground cron job.
-	e := make(chan error, 1)
-	go StartCronJob(e)
-	if err := <-e; err != nil {
-		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
-	}
+	StartCronJob()
 
 	// Start the Kritis Server.
 	log.Println("Running the server")
@@ -76,21 +72,20 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
-func StartCronJob(e chan error) {
+func StartCronJob() {
 	checkInterval, err := time.ParseDuration(cronInterval)
 	if err != nil {
-		e <- err
+		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
 	}
 	ctx := context.Background()
 	ki, err := kubernetesutil.GetClientset()
 	if err != nil {
-		e <- err
+		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
 	}
 	kcs := ki.(*kubernetes.Clientset)
 	metadataClient, err := containeranalysis.NewContainerAnalysisClient()
 	if err != nil {
-		e <- err
+		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
 	}
-	close(e)
-	cron.Start(ctx, *cron.NewCronConfig(kcs, *metadataClient), checkInterval)
+	go cron.Start(ctx, *cron.NewCronConfig(kcs, *metadataClient), checkInterval)
 }
