@@ -61,6 +61,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			Violation: UnqualifiedImageViolation,
 			Reason:    UnqualifiedImageViolationReason(image),
 		})
+		return violations, nil
 	}
 	// Now, check vulnz in the image
 	vulnz, err := client.GetVulnerabilities(image)
