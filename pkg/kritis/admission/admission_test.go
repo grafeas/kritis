@@ -94,7 +94,12 @@ func Test_ValidISP(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{
 			{
-				ImageWhitelist: []string{testutil.QualifiedImage},
+				Spec: kritisv1beta1.ImageSecurityPolicySpec{
+					ImageWhitelist: []string{testutil.QualifiedImage},
+					PackageVulernerabilityRequirements: kritisv1beta1.PackageVulernerabilityRequirements{
+						MaximumSeverity: "LOW",
+					},
+				},
 			},
 		}, nil
 	}
