@@ -18,4 +18,4 @@ steps:
     args: ["cp", "out/resolve-tags", "gs://resolve-tags/$COMMIT_SHA/"]
   - name: "gcr.io/cloud-builders/gsutil"
     args: ["cp", "gs://resolve-tags/$COMMIT_SHA/*", "gs://resolve-tags/latest/"]
-images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}", "gcr.io/kritis-project/kritis-server:latest]
+images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}", "gcr.io/kritis-project/kritis-server:latest"]
