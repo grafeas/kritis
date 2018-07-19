@@ -16,7 +16,7 @@ gcloud container clusters create <CLUSTER NAME> \
 ### Enabling the Container Analysis API
 You will need to enable the Container Analysis API and enable Vulnerability Scanning in your Google Cloud Console project.
 Instructions can be found in the `Before you Begin` section of the [Getting Image Vulnerabilities](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities#before_you_begin) docs.
-kritis can only inspect images hosted in projects that have both of these enabled.
+kritis can only inspect images hosted in projects that have both of these enabled, and have already been scanned for vulnerabilities.
 
 ### Creating a Container Analysis Secret
 You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images.
@@ -28,6 +28,9 @@ To create the secret:
 ```
 kubectl create secret generic <SECRET NAME> --from-file=<path to kritis.json>
 ```
+
+### Installing Helm
+You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis. 
 
 ## Installing Kritis
 1. To install kritis via helm, we need to first generate TLS certs.
@@ -52,8 +55,12 @@ kubectl create secret generic <SECRET NAME> --from-file=<path to kritis.json>
    ```
    $  kubectl get secret tls-webhook-secret --output=yaml
    ```
-3. Now run, `helm install` to install the kritis-server.
-   
+3. Now, install the kritis-server with helm.
+    ```
+    helm install ./kritis-charts --namespace <your namesapce> \
+        --set caBundle=$(kubectl get secret tls-webhook-secret -o jsonpath='{.data.cert}') \
+        --set secret.name=<your secret name>
+    ```   
    You will pass in the certificate from `tls-webhook-secret` to caBundle and the name of the secret with container analysis permissions created above.
    
    Note: Please install in the same namespace that you created the secret using the `certgen` plugin.
