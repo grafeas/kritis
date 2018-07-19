@@ -2,7 +2,7 @@ apiVersion: kritis.grafeas.io/v1beta1
 kind: ImageSecurityPolicy
 metadata:
   name: my-isp
-  namespace: test-cron
+  namespace: default
 spec:
   imageWhitelist:
   - gcr.io/kritis-int-test/nginx-digest-whitelist:latest

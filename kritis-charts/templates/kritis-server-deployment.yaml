@@ -24,7 +24,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args: ["--tls-cert-file=/var/tls/cert",
-               "--tls-key-file=/var/tls/key", 
+               "--tls-key-file=/var/tls/key",
                "--cron-interval=1m",
                "--logtostderr"]
         ports:

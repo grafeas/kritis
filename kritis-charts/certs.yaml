@@ -12,7 +12,5 @@ spec:
     hosts:
     - kritis-validation-hook
     - kritis-validation-hook.kube-system
-    - kritis-validation-hook.test-cron
-    - kritis-validation-hook.test-cron.svc
     - kritis-validation-hook.default
     - kritis-validation-hook.default.svc

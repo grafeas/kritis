@@ -21,15 +21,15 @@ const (
 	BLOCKALL = "BLOCKALL"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
-	InvalidImageSecPolicy = "kritis.grafeas.io/invalidImageSecPolicy"
+	InvalidImageSecPolicy           = "kritis.grafeas.io/invalidImageSecPolicy"
+	InvalidImageSecPolicyLabelValue = "invalidImageSecPolicy"
 
 	// Breakglass is the key for the breakglass annotation
 	Breakglass = "kritis.grafeas.io/breakglass"
 
 	// A list of label values
-	InvalidDigestLabel      = "Image not resolved to digest."
-	PreviouslyAttestedLabel = "Previously attested."
-	NoAttestationsLabel     = "No valid attestations present. This pod will not be able to restart in future"
+	PreviouslyAttestedAnnotation = "Previously attested."
+	NoAttestationsAnnotation     = "No valid attestations present. This pod will not be able to restart in future"
 )
 
 var (

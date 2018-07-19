@@ -36,7 +36,7 @@ tlsSecretName: tls-webhook-secret
 
 image:
   repository: gcr.io/kritis-project/kritis-server
-  tag: cron
+  tag: latest
   name: kritis-server
   pullPolicy: Always
 
