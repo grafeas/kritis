@@ -17,17 +17,24 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/cron"
+	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	tlsCertFile string
-	tlsKeyFile  string
+	tlsCertFile  string
+	tlsKeyFile   string
+	cronInterval string
 )
 
 const (
@@ -38,10 +45,20 @@ func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
 	flag.Set("logtostderr", "true")
+	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.Parse()
+
+	// // Kick off back ground cron job.
+	// err := StartCronJob()
+	// if err != nil {
+	// 	log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
+	// }
+
+	// Start the Kritis Server.
 	http.HandleFunc("/", admission.AdmissionReviewHandler)
 	httpsServer := NewServer(Addr)
 	log.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
+	log.Println("Running the server")
 }
 
 func NewServer(addr string) *http.Server {
@@ -52,4 +69,23 @@ func NewServer(addr string) *http.Server {
 			ClientAuth: tls.NoClientCert,
 		},
 	}
+}
+
+func StartCronJob() error {
+	checkInterval, err := time.ParseDuration(cronInterval)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	ki, err := kubernetesutil.GetClientset()
+	if err != nil {
+		return err
+	}
+	kcs := ki.(*kubernetes.Clientset)
+	metadataClient, err := containeranalysis.NewContainerAnalysisClient()
+	if err != nil {
+		return err
+	}
+	cron.Start(ctx, *cron.NewCronConfig(kcs, *metadataClient), checkInterval)
+	return nil
 }

@@ -23,7 +23,10 @@ spec:
       - name: {{ .Values.image.name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        args: ["--tls-cert-file=/var/tls/cert", "--tls-key-file=/var/tls/key"]
+        args: ["--tls-cert-file=/var/tls/cert",
+               "--tls-key-file=/var/tls/key", 
+               "--cron-interval=1m",
+               "--logtostderr"]
         ports:
           - name: https
             containerPort: 8443

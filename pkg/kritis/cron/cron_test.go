@@ -18,9 +18,10 @@ package cron
 
 import (
 	"context"
-	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"testing"
 	"time"
+
+	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 
@@ -35,7 +36,7 @@ import (
 func TestStartCancels(t *testing.T) {
 
 	// Speed up the checks for testing.
-	checkInterval = 2 * time.Millisecond
+	checkInterval := 2 * time.Millisecond
 
 	checked := false
 
@@ -59,7 +60,7 @@ func TestStartCancels(t *testing.T) {
 		SecurityPolicyLister: func(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 			return nil, nil
 		},
-	})
+	}, checkInterval)
 
 	if !checked {
 		t.Fatalf("check function not called")

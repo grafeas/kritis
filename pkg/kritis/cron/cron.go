@@ -34,8 +34,7 @@ import (
 
 // For testing
 var (
-	checkInterval = 1 * time.Hour
-	podChecker    = CheckPods
+	podChecker = CheckPods
 )
 
 // For testing.
@@ -69,7 +68,7 @@ func NewCronConfig(cs *kubernetes.Clientset, ca containeranalysis.ContainerAnaly
 }
 
 // Start starts the background processing of image security policies.
-func Start(ctx context.Context, cfg Config) {
+func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 	c := time.NewTicker(checkInterval)
 	done := ctx.Done()
 
