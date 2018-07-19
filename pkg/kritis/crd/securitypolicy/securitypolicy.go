@@ -97,7 +97,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 }
 
 func imageInWhitelist(isp v1beta1.ImageSecurityPolicy, image string) bool {
-	for _, i := range isp.ImageWhitelist {
+	for _, i := range isp.Spec.ImageWhitelist {
 		if i == image {
 			return true
 		}

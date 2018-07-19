@@ -21,7 +21,6 @@ package integration
 import (
 	"flag"
 	"fmt"
-	"github.com/priyawadhwa/kbuild/vendor/github.com/containers/storage/pkg/truncindex"
 	"os"
 	"os/exec"
 	"strings"
@@ -167,7 +166,7 @@ func createCRDExamples(t *testing.T) {
 
 func initKritis(t *testing.T) func() {
 	helmCmd := exec.Command("kubectl", "get", "csr",
-		"tls-webhook-secret-name", "-o", "jsonpath='{.status.certificate}'")
+		"tls-webhook-secret-cert", "-o", "jsonpath='{.status.certificate}'")
 	kubeCA, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
@@ -179,7 +178,7 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
-	fmt.Println(helmCmd)
+
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
