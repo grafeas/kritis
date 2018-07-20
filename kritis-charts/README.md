@@ -29,7 +29,7 @@ To create the secret:
 3. Rename the key to `kritis.json`
 4. Create a Kubernetes secret by running:
 ```
-kubectl create secret generic <SECRET NAME> --from-file=<path to kritis.json>
+kubectl create secret generic gac-secret --from-file=<path to kritis.json>
 ```
 
 #### Creating Container Analysis Secret via Command Line
@@ -63,7 +63,6 @@ gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAM
 ```
 
 ### Installing Helm
-
 You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis.
 
 ## Installing Kritis
@@ -78,8 +77,10 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
 2. Now run the install script.
    This should create TLS certs, deploy kritis in given namespace.
 
+   The secret name is the Container Analysis Secret you created above.
+
    ```
-    ./install/install-kritis.sh -n <your namespace DEFAUT=default> -s <your secret name | DEFAULT=gac-secret
+    ./install/install-kritis.sh -n <your namespace | DEFAUT=default> -s <your secret name | DEFAULT=gac-secret
 
     NAME:   whimsical-cricket
     LAST DEPLOYED: Wed Jul 18 15:41:50 2018
