@@ -27,14 +27,7 @@ func TestGetVulnerabilities(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	vuln, err := d.GetVulnerabilities("https://gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
-	if err != nil {
-		t.Fatalf("Found err %s", err)
-	}
-	if vuln == nil {
-		t.Fatalf("Expected some vulnerabilities. Nil found")
-	}
-	vuln, err = d.GetVulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
+	vuln, err := d.GetVulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}
