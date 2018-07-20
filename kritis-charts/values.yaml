@@ -33,6 +33,7 @@ affinity: {}
 
 serviceName: kritis-validation-hook
 tlsSecretName: tls-webhook-secret
+cronInterval: 1h
 
 image:
   repository: gcr.io/kritis-project/kritis-server
@@ -45,5 +46,5 @@ caBundle: ""
 serviceNamespace: "default"
 
 secret:
-  name: ""
+  name: "google-application-secret"
   path: "kritis.json"
