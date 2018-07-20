@@ -49,7 +49,6 @@ func main() {
 	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.Parse()
 
-	log.Println("Running the background job in background")
 	// Kick off back ground cron job.
 	StartCronJob()
 
@@ -58,8 +57,6 @@ func main() {
 	http.HandleFunc("/", admission.AdmissionReviewHandler)
 	httpsServer := NewServer(Addr)
 	log.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
-
-	log.Println("End Running the server")
 }
 
 func NewServer(addr string) *http.Server {
