@@ -30,6 +30,9 @@ const (
 	// A list of label values
 	PreviouslyAttestedAnnotation = "Previously attested."
 	NoAttestationsAnnotation     = "No valid attestations present. This pod will not be able to restart in future"
+
+	// Atomic Container Signature type
+	AtomicContainerSigType = "atomic container signature"
 )
 
 var (
