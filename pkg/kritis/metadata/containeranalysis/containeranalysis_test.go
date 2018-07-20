@@ -115,14 +115,3 @@ func Test_isRegistryGCR(t *testing.T) {
 		})
 	}
 }
-func Test_InvalidImages(t *testing.T) {
-	images := []string{"foogcr.io/something", "busybox", "some/image"}
-	d, err := NewContainerAnalysisClient()
-	if err != nil {
-		t.Fatalf("Could not initialize the client %s", err)
-	}
-	for _, image := range images {
-		_, err := d.GetVulnerabilities(image)
-		testutil.CheckError(t, true, err)
-	}
-}
