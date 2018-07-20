@@ -122,33 +122,12 @@ var CRD_EXAMPLES = []string{
 	"image-security-policy-example.yaml",
 }
 
-func deleteCRDs() {
-	for _, crd := range CRDS {
-		crdCmd := exec.Command("kubectl", "delete", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts"
-		integration_util.RunCmdOut(crdCmd)
-	}
-}
-
 func deleteCRDExamples() {
 	for _, crd := range CRDS {
 		crdCmd := exec.Command("kubectl", "delete", "-f",
 			crd)
 		crdCmd.Dir = "../artifacts/integration-examples"
 		integration_util.RunCmdOut(crdCmd)
-	}
-}
-
-func createCRDs(t *testing.T) {
-	for _, crd := range CRDS {
-		crdCmd := exec.Command("kubectl", "create", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts"
-		_, err := integration_util.RunCmdOut(crdCmd)
-		if err != nil {
-			t.Fatalf("testing error: %v", err)
-		}
 	}
 }
 
@@ -328,11 +307,8 @@ func TestKritisPods(t *testing.T) {
 		"kritis-validation-hook", 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
-	defer deleteCRDs()
 	defer deleteCRDExamples()
 	// CRDs themselves are non-namespaced so we have to delete them each run
-	deleteCRDs()
-	createCRDs(t)
 	createCRDExamples(t)
 
 	for _, testCase := range testCases {
