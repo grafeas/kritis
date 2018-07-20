@@ -15,17 +15,16 @@
 # limitations under the License.
 
 set -ex
-set -o pipefail
 
-# Command line Args
-NAMESPACE=""
+# Command line Args Default
+NAMESPACE="default"
 GAC_SECRET="gac-secret"
 
 # Global variables.
 CERT_FILE="kritis-charts/certs.yaml"
 CERT_TEMPLATE_FILE="kritis-charts/certs.yaml.template"
 CERTIFICATE=""
-TLS_CERT="tls-webhook-secret-cert"
+TLS_SECRET="tls-webhook-secret"
 CHARTS_DIR="kritis-charts/"
 
 while getopts "n:s" opt; do
@@ -39,12 +38,6 @@ while getopts "n:s" opt; do
   esac
 done
 
-if [ -z "$NAMESPACE" ]
-then
-  echo -e "Please Specify namespace using '-n' option.\nRe run as:\n\t$0 -n <my namespace>"
-  exit 0
-fi
-
 # creates a cert
 function kritis::create_cert {
     # First Substitute $NAMESPACE in kritis-charts/cert.yaml
@@ -55,7 +48,7 @@ function kritis::create_cert {
 
 # gets the  certifacate value
 function kritis::get_certificate {
-  CERTIFICATE=$(kubectl get csr $TLS_CERT --output=json --namespace $NAMESPACE | jq '.status.certificate' -r)
+  CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.cert}' --namespace $NAMESPACE)
   if [[ "$CERTIFICATE" == "null" ]]; then
     echo "Could not find certificate $CERTIFICATE"
     exit 1
@@ -69,7 +62,8 @@ function kritis::install_helm {
   $CMD
 }
 
-which jq &>/dev/null || { echo "Please install jq (https://stedolan.github.io/jq/)."; exit 1; }
+
+which helm &>/dev/null || { echo "Please install helm (https://docs.helm.sh/using_helm/)."; exit 1; }
 
 kritis::create_cert
 kritis::get_certificate
