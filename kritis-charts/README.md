@@ -14,6 +14,7 @@ gcloud container clusters create <CLUSTER NAME> \
 ```
 
 ### Enabling the Container Analysis API
+
 You will need to enable the Container Analysis API and enable Vulnerability Scanning in your Google Cloud Console project.
 Instructions can be found in the `Before you Begin` section of the [Getting Image Vulnerabilities](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities#before_you_begin) docs.
 kritis can only inspect images hosted in projects that have both of these enabled, and have already been scanned for vulnerabilities.
@@ -32,79 +33,38 @@ kubectl create secret generic <SECRET NAME> --from-file=<path to kritis.json>
 ```
 
 #### Command Line
+
 1. First create the service account
 ```
 gcloud iam service-accounts create ACC_NAME --display-name DISPLAY_NAME
 ```
 This should create a service account ACC_NAME@PROJECT_ID.iam.gserviceaccount.com. 
 The project id can be found from `gcloud config list project`.
+
 2. Create a key for the service account
 ```
 gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
 ```
-3. Create a JSON file for IAM roles, yours should look similar to this.
+
+3. Create a kubernetes secret for the service account
 ```
-$ gcloud projects get-iam-policy IMAGE_PROJECT_ID --format json > iam.json
-$ cat iam.json
-{
-  "bindings":[
-    {
-      "members":[
-        "user:email1@gmail.com"
-      ],
-      "role":"roles/owner"
-    },
-    {
-      "members":[
-        "serviceAccount:our-project-123@appspot.gserviceaccount.com",
-        "serviceAccount:123456789012-compute@developer.gserviceaccount.com"
-      ],
-      "role":"roles/editor"
-    }
-  ],
-  "etag":"BwUjMhCsNvY=",
-  "version":1
-}
+kubectl create secret generic <SECRET NAME> --from-file=~/kritis.json
 ```
-4. Using a text editor, add the necessary Container Analysis roles:
+
+3. Create policy bindings for the necessary roles:
+
 ```
-{
-  "bindings":[
-    {
-    ...
-    {
-      "members":[
-        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
-      ],
-      "role": "roles/containeranalysis.occurrences.viewer" 
-    },
-    {
-      "members":[
-        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
-      ],
-      "role": "roles/containeranalysis.notes.viewer" 
-    },
-    {
-      "members":[
-        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
-      ],
-      "role": "roles/containeranalysis.notes.editor" 
-    },
-    {
-      "members":[
-        "serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com"
-      ],
-      "role": "roles/containeranalysis.occurrence.editor" 
-    },
-    ...
-}
-```
-5. Add the new container analysis roles:
-```
-gcloud projects set-iam-policy IMAGE-PROJECT-ID iam.json
+gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.viewer
+
+gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+
+gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.editor
+
+gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
 ```
 
 ### Installing Helm
+
 You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis. 
 
 ## Installing Kritis
@@ -120,6 +80,7 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
       ```
        helm certgen generate ./kritis-charts --namespace <your namespace>
       ```
+
 2. Once the certs are created, you will see secret `tls-webhook-secret` created in your cluster.
    ```
    $ kubectl get secrets --namespace=default
@@ -130,11 +91,13 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
    ```
    $  kubectl get secret tls-webhook-secret --output=yaml
    ```
+
 3. Now, install the kritis-server with helm.
     ```
     helm install ./kritis-charts --namespace <your namesapce> \
         --set caBundle=$(kubectl get secret tls-webhook-secret -o jsonpath='{.data.cert}') \
         --set secret.name=<your secret name>
+        --tlsSecretName
     ```   
    You will pass in the certificate from `tls-webhook-secret` to caBundle and the name of the secret with container analysis permissions created above.
    
@@ -174,6 +137,7 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
     kritis-clusterrole  0s
     ```
     Helm will create a cluster role and cluster role binding, which gives the kritis deployment access to the ImageSecurityPolicy CRD. 
+
 4. You can delete all the deployments using the release name.
    ```
    helm delete whimsical-cricket
