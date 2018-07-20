@@ -63,8 +63,6 @@ function kritis::install_helm {
 }
 
 
-which helm &>/dev/null || { echo "Please install helm (https://docs.helm.sh/using_helm/)."; exit 1; }
-
 kritis::create_cert
 kritis::get_certificate
 kritis::install_helm
