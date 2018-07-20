@@ -57,7 +57,7 @@ func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata
 	if err != nil {
 		return nil, err
 	}
-	if !strings.HasSuffix(ref.Context().RegistryStr(), "gcr.io") {
+	if !isRegistryGCR(ref.Context().RegistryStr()) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 	project := strings.Split(containerImage, "/")[1]
@@ -99,6 +99,17 @@ func isFixAvaliable(pis []*containeranalysispb.VulnerabilityType_PackageIssue) b
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
 			return false
 		}
+	}
+	return true
+}
+
+func isRegistryGCR(r string) bool {
+	registry := strings.Split(r, ".")
+	if len(registry) < 2 {
+		return false
+	}
+	if registry[len(registry)-2] != "gcr" || registry[len(registry)-1] != "io" {
+		return false
 	}
 	return true
 }

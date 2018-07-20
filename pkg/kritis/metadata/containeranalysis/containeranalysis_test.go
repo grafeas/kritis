@@ -17,11 +17,11 @@ limitations under the License.
 package containeranalysis
 
 import (
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 	"reflect"
 	"testing"
-
-	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 var tcGetVuln = []struct {
@@ -78,5 +78,51 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
 			}
 		})
+	}
+}
+
+func Test_isRegistryGCR(t *testing.T) {
+	tests := []struct {
+		name     string
+		registry string
+		expected bool
+	}{
+		{
+			name:     "gcr image",
+			registry: "gcr.io",
+			expected: true,
+		},
+		{
+			name:     "eu gcr image",
+			registry: "eu.gcr.io",
+			expected: true,
+		},
+		{
+			name:     "invalid gcr image",
+			registry: "foogcr.io",
+			expected: false,
+		},
+		{
+			name:     "non gcr image",
+			registry: "index.docker.io",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := isRegistryGCR(test.registry)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+		})
+	}
+}
+func Test_InvalidImages(t *testing.T) {
+	images := []string{"foogcr.io/something", "busybox", "some/image"}
+	d, err := NewContainerAnalysisClient()
+	if err != nil {
+		t.Fatalf("Could not initialize the client %s", err)
+	}
+	for _, image := range images {
+		_, err := d.GetVulnerabilities(image)
+		testutil.CheckError(t, true, err)
 	}
 }
