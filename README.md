@@ -16,10 +16,10 @@ Instructions for installing kritis on your cluster via helm can be found [here](
 ### Setting up an ImageSecurityPolicy
 
 Kritis relies on user defined `ImageSecurityPolicies` to determine whether a pod should be admitted or denied at deploy time.
-First, create the `ImageSecurityPolicy` CRD (custom resource definition).
+First, install the `ImageSecurityPolicy` CRD (custom resource definition).
 
 ```
-$ kubectl create -f artifacts/image-security-policy-crd.yaml
+$ kubectl create -f https://raw.githubusercontent.com/grafeas/kritis/master/artifacts/image-security-policy-crd.yaml
     customresourcedefinition.apiextensions.k8s.io "imagesecuritypolicies.kritis.grafeas.io" created
 ```
 
