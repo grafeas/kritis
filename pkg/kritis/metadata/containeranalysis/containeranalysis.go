@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
@@ -50,20 +51,24 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 }
 
 // GetVulnerabilites gets Package Vulnerabilities Occurrences for a specified image.
-// containerImage is fully qualified image url with "https://" prefix
 func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	vulnz := []metadata.Vulnerability{}
-	if !strings.HasPrefix(containerImage, "https://") {
-		containerImage = fmt.Sprintf("https://%s", containerImage)
+	// Make sure container image is a GCR image
+	ref, err := name.ParseReference(containerImage, name.WeakValidation)
+	if err != nil {
+		return nil, err
 	}
-	project := strings.Split(strings.TrimPrefix(containerImage, "https://"), "/")[1]
+	if !isRegistryGCR(ref.Context().RegistryStr()) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	}
+	project := strings.Split(containerImage, "/")[1]
 
 	req := &containeranalysispb.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", containerImage, PkgVulnerability),
+		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", fmt.Sprintf("https://%s", containerImage), PkgVulnerability),
 		PageSize: PageSize,
 		Parent:   fmt.Sprintf("projects/%s", project),
 	}
 	it := c.client.ListOccurrences(c.ctx, req)
+	vulnz := []metadata.Vulnerability{}
 	for {
 		occ, err := it.Next()
 		if err == iterator.Done {
@@ -94,6 +99,17 @@ func isFixAvaliable(pis []*containeranalysispb.VulnerabilityType_PackageIssue) b
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
 			return false
 		}
+	}
+	return true
+}
+
+func isRegistryGCR(r string) bool {
+	registry := strings.Split(r, ".")
+	if len(registry) < 2 {
+		return false
+	}
+	if registry[len(registry)-2] != "gcr" || registry[len(registry)-1] != "io" {
+		return false
 	}
 	return true
 }
