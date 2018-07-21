@@ -20,9 +20,10 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
@@ -50,13 +51,15 @@ func main() {
 	flag.Parse()
 
 	// Kick off back ground cron job.
-	StartCronJob()
+	if err := StartCronJob(); err != nil {
+		logrus.Fatal(errors.Wrap(err, "starting background job"))
+	}
 
 	// Start the Kritis Server.
-	log.Println("Running the server")
+	logrus.Println("Running the server")
 	http.HandleFunc("/", admission.AdmissionReviewHandler)
 	httpsServer := NewServer(Addr)
-	log.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
+	logrus.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
 func NewServer(addr string) *http.Server {
@@ -69,20 +72,21 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
-func StartCronJob() {
+func StartCronJob() error {
 	checkInterval, err := time.ParseDuration(cronInterval)
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
+		return err
 	}
 	ctx := context.Background()
 	ki, err := kubernetesutil.GetClientset()
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
+		return err
 	}
 	kcs := ki.(*kubernetes.Clientset)
 	metadataClient, err := containeranalysis.NewContainerAnalysisClient()
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "Could not start Cron Job due to "))
+		return err
 	}
 	go cron.Start(ctx, *cron.NewCronConfig(kcs, *metadataClient), checkInterval)
+	return nil
 }
