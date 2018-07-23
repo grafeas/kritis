@@ -17,7 +17,6 @@ limitations under the License.
 package secrets
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -51,8 +50,8 @@ func GetSecret(namespace string, name string) (*KSecret, error) {
 		return nil, fmt.Errorf("Invalid Secret %s. Could not find key %s", name, constants.PublicKey)
 	}
 	return &KSecret{
-		PublicKey:  base64.StdEncoding.EncodeToString(pub),
-		PrivateKey: base64.StdEncoding.EncodeToString(priv),
+		PublicKey:  string(pub),
+		PrivateKey: string(priv),
 		SecretName: secret.Name,
 	}, nil
 }
