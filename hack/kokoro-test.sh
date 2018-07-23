@@ -33,7 +33,8 @@ echo "Running unit and integration tests..."
 go test -cover -v -timeout 60s -tags=integration `go list ./...  | grep -v vendor`
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 
+make integration-build-push
+make integration-in-docker
+
 popd
 exit $GO_TEST_EXIT_CODE
-
-make integration-in-docker

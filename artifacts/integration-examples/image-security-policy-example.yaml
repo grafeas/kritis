@@ -5,9 +5,10 @@ metadata:
   namespace: default
 spec:
   imageWhitelist:
-  - gcr.io/my/image
+  - gcr.io/kritis-int-test/nginx-digest-whitelist:latest
+  - gcr.io/kritis-int-test/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72
   packageVulnerabilityRequirements:
-    maximumSeverity: HIGH # LOW|MEDIUM|HIGH|CRITICAL|BLOCKALL
+    maximumSeverity: HIGH
     onlyFixesNotAvailable: true
     whitelistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082

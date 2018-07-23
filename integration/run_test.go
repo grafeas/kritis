@@ -172,10 +172,11 @@ func initKritis(t *testing.T) func() {
 		t.Fatalf("testing error: %v", err)
 	}
 	helmCmd = exec.Command("helm", "install", "./kritis-charts",
-		"-f", "integration/values-int.yaml",
 		"--namespace", "default",
 		"--set", fmt.Sprintf("caBundle=%s", kubeCA),
-		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
+		"--set", fmt.Sprintf("image.repository=%s",
+			"gcr.io/kritis-int-test/kritis-server"),
+		"--set", fmt.Sprintf("=%s", "default"),
 	)
 	helmCmd.Dir = "../"
 
@@ -209,7 +210,7 @@ func TestKritisPods(t *testing.T) {
 		deployments          []testObject
 		pods                 []testObject
 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		shouldDeploy         bool
+		shouldSucceed        bool
 
 		remoteOnly bool
 		cleanup    func(t *testing.T)
@@ -225,16 +226,17 @@ func TestKritisPods(t *testing.T) {
 					name: "nginx-no-digest",
 				},
 			},
-			shouldDeploy: false,
-			dir:          "../",
+			shouldSucceed: false,
+			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest.yaml")
 				cmd.Dir = "../"
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
-				}
+				integration_util.RunCmdOut(cmd)
+				// output, err := integration_util.RunCmdOut(cmd)
+				// if err != nil {
+				// 	t.Fatalf("kritis: %s %v", output, err)
+				// }
 			},
 		},
 		{
@@ -246,8 +248,8 @@ func TestKritisPods(t *testing.T) {
 					name: "nginx-no-digest-whitelist",
 				},
 			},
-			shouldDeploy: true,
-			dir:          "../",
+			shouldSucceed: true,
+			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
@@ -267,8 +269,8 @@ func TestKritisPods(t *testing.T) {
 					name: "nginx-digest-whitelist",
 				},
 			},
-			shouldDeploy: true,
-			dir:          "../",
+			shouldSucceed: true,
+			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-digest-whitelist.yaml")
@@ -288,15 +290,16 @@ func TestKritisPods(t *testing.T) {
 					name: "java-with-vuln",
 				},
 			},
-			shouldDeploy: false,
-			dir:          "../",
+			shouldSucceed: false,
+			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln.yaml")
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
-				}
+				integration_util.RunCmdOut(cmd)
+				// output, err := integration_util.RunCmdOut(cmd)
+				// if err != nil {
+				// 	t.Fatalf("kritis: %s %v", output, err)
+				// }
 			},
 		},
 		{
@@ -308,8 +311,8 @@ func TestKritisPods(t *testing.T) {
 					name: "nginx-no-digest-breakglass",
 				},
 			},
-			shouldDeploy: true,
-			dir:          "../",
+			shouldSucceed: true,
+			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
@@ -332,6 +335,7 @@ func TestKritisPods(t *testing.T) {
 	defer deleteCRDExamples()
 	// CRDs themselves are non-namespaced so we have to delete them each run
 	deleteCRDs()
+	deleteCRDExamples()
 	createCRDs(t)
 	createCRDExamples(t)
 
@@ -346,30 +350,32 @@ func TestKritisPods(t *testing.T) {
 			cmd.Dir = testCase.dir
 			output, err := integration_util.RunCmdOut(cmd)
 			if err != nil {
-				t.Fatalf("kritis: %s %v", output, err)
+				if testCase.shouldSucceed {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			}
+			if !testCase.shouldSucceed {
+				t.Fatalf("deployment should have failed but succeeded")
 			}
 
-			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), p.name); err != nil {
-					if testCase.shouldDeploy {
+			if testCase.shouldSucceed {
+				for _, p := range testCase.pods {
+					if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), p.name); err != nil {
 						t.Fatalf("Timed out waiting for pod ready")
 					}
 				}
-				if !testCase.shouldDeploy {
-					t.Fatalf("Pod created when it should not have been")
-				}
-			}
 
-			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default", d.name, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for deployment to stabilize")
-				}
-				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments("default").Get(d.name, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s", "default", d)
+				for _, d := range testCase.deployments {
+					if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default", d.name, 10*time.Minute); err != nil {
+						t.Fatalf("Timed out waiting for deployment to stabilize")
 					}
-					testCase.deploymentValidation(t, deployment)
+					if testCase.deploymentValidation != nil {
+						deployment, err := client.AppsV1().Deployments("default").Get(d.name, meta_v1.GetOptions{})
+						if err != nil {
+							t.Fatalf("Could not find deployment: %s %s", "default", d)
+						}
+						testCase.deploymentValidation(t, deployment)
+					}
 				}
 			}
 		})
