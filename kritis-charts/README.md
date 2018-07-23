@@ -26,7 +26,7 @@ You will need to create a Kubernetes secret, which will provide kritis with the 
 To create the secret:
 1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
 2. Download a JSON key for the service account
-3. Rename the key to `kritis.json`
+3. Rename the key to `gac.json`
 4. Create a Kubernetes secret by running:
 ```
 kubectl create secret generic gac-secret --from-file=<path to kritis.json>
@@ -35,14 +35,14 @@ kubectl create secret generic gac-secret --from-file=<path to kritis.json>
 #### Creating Container Analysis Secret via Command Line
 1. First create the service account
 ```
-gcloud iam service-accounts create ACC_NAME --display-name DISPLAY_NAME
+gcloud iam service-accounts create ACCOUNT_NAME --display-name DISPLAY_NAME
 ```
-This should create a service account ACC_NAME@PROJECT_ID.iam.gserviceaccount.com.
+This should create a service account ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com.
 The project id can be found from `gcloud config list project`.
 
 2. Create a key for the service account
 ```
-gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com
 ```
 
 3. Create a kubernetes secret for the service account
@@ -53,17 +53,26 @@ kubectl create secret generic <SECRET NAME> --from-file=~/kritis.json
 3. Create policy bindings for the necessary roles:
 
 ```
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.viewer
+export MEMBER=serviceAccount:ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com
+gcloud projects add-iam-policy-binding PROJECT_ID--member=$MEMBER --role=roles/containeranalysis.notes.viewer
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+gcloud projects add-iam-policy-binding PROJECT_ID--member=$MEMBER --role=roles/containeranalysis.occurrences.viewer
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.editor
+gcloud projects add-iam-policy-binding PROJECT_ID--member=$MEMBER --role=roles/containeranalysis.notes.editor
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+gcloud projects add-iam-policy-binding PROJECT_ID--member=$MEMBER --role=roles/containeranalysis.occurrences.viewer
 ```
 
 ### Installing Helm
 You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis.
+
+### GKE Helm Service Account
+If you installed helm on GKE with `helm init` you will need to configure helm permissions to create deployments via RBAC rules. To setup a helm service account with correct permissions on GKE, run the following (NOTE: this has to run after helm init):
+```
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+```
 
 ## Installing Kritis
 1. To install kritis via helm, we need to first generate TLS certs.
@@ -71,7 +80,7 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
    1. First download the helm plugin to generate certs from [here](https://github.com/SUSE/helm-certgen/releases)
    2. Unzip the tar and then install the plugin.
       ```
-      tar -xvf certgen-linux-amd64-1-0-0-1501794790-f3b21c90.tgz --directory ~/certgen/
+      tar -xvf certgen-CLIENT_PLATFORM-amd64-CERTGEN_VERSION.tgz --directory ~/certgen/
       helm plugin install ~/certgen/
       ```
 2. Now run the install script.
@@ -80,7 +89,7 @@ You will need [helm](https://docs.helm.sh/using_helm/) installed to install krit
    The secret name is the Container Analysis Secret you created above.
 
    ```
-    ./install/install-kritis.sh -n <your namespace | DEFAUT=default> -s <your secret name | DEFAULT=gac-secret
+    ./install/install-kritis.sh -n <your namespace | DEFAUT=default>
 
     NAME:   whimsical-cricket
     LAST DEPLOYED: Wed Jul 18 15:41:50 2018
