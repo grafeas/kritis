@@ -18,13 +18,13 @@ set -ex
 
 # Command line Args Default
 NAMESPACE="default"
-GAC_SECRET="gac-secret"
+GAC_SECRET="priyawadhwa-ca-admin"
 
 # Global variables.
 CERT_FILE="kritis-charts/certs.yaml"
 CERT_TEMPLATE_FILE="kritis-charts/certs.yaml.template"
 CERTIFICATE=""
-TLS_SECRET="tls-webhook-secret"
+TLS_SECRET="tls-priya"
 CHARTS_DIR="kritis-charts/"
 
 while getopts "n:s" opt; do
@@ -48,7 +48,7 @@ function kritis::create_cert {
 
 # gets the  certifacate value
 function kritis::get_certificate {
-  CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.cert}' --namespace $NAMESPACE)
+  CERTIFICATE=$(kubectl get secret tls-priya -o jsonpath='{.data.tls\.crt}' --namespace $NAMESPACE)
   if [[ "$CERTIFICATE" == "null" ]]; then
     echo "Could not find certificate $CERTIFICATE"
     exit 1

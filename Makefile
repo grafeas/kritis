@@ -80,6 +80,20 @@ out/kritis-server: $(GO_FILES)
 build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
 
+out/preinstall: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ github.com/grafeas/kritis/preinstall
+
+.PHONY: preinstall-image
+preinstall-image:  out/preinstall
+	docker build -t gcr.io/priya-wadhwa/preinstall:latest -f preinstall/Dockerfile .
+	docker push gcr.io/priya-wadhwa/preinstall:latest
+
+.PHONY: clean-preinstall
+clean-preinstall: 
+	kubectl delete csr tls-webhook-secret-cert
+	kubectl delete secret tls-webhook-secret
+
+
 clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration

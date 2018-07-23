@@ -32,7 +32,7 @@ tolerations: []
 affinity: {}
 
 serviceName: kritis-validation-hook
-tlsSecretName: tls-webhook-secret
+tlsSecretName: tls-priya
 cronInterval: 1h
 
 image:
@@ -46,5 +46,5 @@ caBundle: ""
 serviceNamespace: ""
 
 gacSecret:
-  name: ""
-  path: "kritis.json"
+  name: "priyawadhwa-ca-admin"
+  path: "priyawadhwa-ca-admin.json"
