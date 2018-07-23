@@ -17,9 +17,8 @@ limitations under the License.
 package util
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 func ExitIfErr(cmd *cobra.Command, err error) {
