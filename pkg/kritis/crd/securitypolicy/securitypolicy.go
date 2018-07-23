@@ -18,6 +18,7 @@ package securitypolicy
 
 import (
 	"fmt"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -25,18 +26,18 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	ca "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 )
 
 // ImageSecurityPolicies returns all ISP's in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
 func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
-	cfg, err := clientcmd.BuildConfigFromFlags("", "")
+	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error building config: %v", err)
 	}
 
-	client, err := clientset.NewForConfig(cfg)
+	client, err := clientset.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
