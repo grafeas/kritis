@@ -46,5 +46,5 @@ caBundle: ""
 serviceNamespace: "default"
 
 gacSecret:
-  name: "kritis-ca-admin"
-  path: "kritis.json"
+  name: "gac-ca-admin"
+  path: "gac.json"

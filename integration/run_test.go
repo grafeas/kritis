@@ -198,6 +198,23 @@ func initKritis(t *testing.T) func() {
 	}
 }
 
+func getKritisLogs(t *testing.T) string {
+	cmd := exec.Command("kubectl", "logs", "-l",
+		"app=kritis-validation-hook")
+	cmd.Dir = "../"
+	output, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Fatalf("kritis: %s %v", output, err)
+	}
+	cmd = exec.Command("kubectl", "get", "imagesecuritypolicy")
+	cmd.Dir = "../"
+	output2, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Fatalf("kritis: %s %v", output2, err)
+	}
+	return string(output[:]) + "\n" + string(output2[:])
+}
+
 func TestKritisPods(t *testing.T) {
 	type testObject struct {
 		name string
@@ -325,20 +342,19 @@ func TestKritisPods(t *testing.T) {
 		},
 	}
 
+	// CRDs themselves are non-namespaced so we have to delete them each run
+	deleteCRDs()
+	deleteCRDExamples()
+	// defer deleteCRDExamples()
+
 	deleteKritis := initKritis(t)
 	defer deleteKritis()
 	if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default",
 		"kritis-validation-hook", 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
-	defer deleteCRDs()
-	defer deleteCRDExamples()
-	// CRDs themselves are non-namespaced so we have to delete them each run
-	deleteCRDs()
-	deleteCRDExamples()
-	createCRDs(t)
 	createCRDExamples(t)
-
+	time.Sleep(5 * time.Second)
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
 			// TODO(aaron-prindle) add back namespaces
@@ -350,32 +366,35 @@ func TestKritisPods(t *testing.T) {
 			cmd.Dir = testCase.dir
 			output, err := integration_util.RunCmdOut(cmd)
 			if err != nil {
-				if testCase.shouldSucceed {
-					t.Fatalf("kritis: %s %v", output, err)
+				if !testCase.shouldSucceed {
+					return
 				}
+				t.Fatalf("kritis: %s %v\n%s", output, err, getKritisLogs(t))
+
 			}
 			if !testCase.shouldSucceed {
-				t.Fatalf("deployment should have failed but succeeded")
+				t.Fatalf("deployment should have failed but succeeded\n%s",
+					getKritisLogs(t))
 			}
 
-			if testCase.shouldSucceed {
-				for _, p := range testCase.pods {
-					if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), p.name); err != nil {
-						t.Fatalf("Timed out waiting for pod ready")
-					}
+			for _, p := range testCase.pods {
+				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), p.name); err != nil {
+					t.Fatalf("Timed out waiting for pod ready\n%s",
+						getKritisLogs(t))
 				}
+			}
 
-				for _, d := range testCase.deployments {
-					if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default", d.name, 10*time.Minute); err != nil {
-						t.Fatalf("Timed out waiting for deployment to stabilize")
+			for _, d := range testCase.deployments {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default", d.name, 10*time.Minute); err != nil {
+					t.Fatalf("Timed out waiting for deployment to stabilize\n%s",
+						getKritisLogs(t))
+				}
+				if testCase.deploymentValidation != nil {
+					deployment, err := client.AppsV1().Deployments("default").Get(d.name, meta_v1.GetOptions{})
+					if err != nil {
+						t.Fatalf("Could not find deployment: %s %s\n%s", "default", d, getKritisLogs(t))
 					}
-					if testCase.deploymentValidation != nil {
-						deployment, err := client.AppsV1().Deployments("default").Get(d.name, meta_v1.GetOptions{})
-						if err != nil {
-							t.Fatalf("Could not find deployment: %s %s", "default", d)
-						}
-						testCase.deploymentValidation(t, deployment)
-					}
+					testCase.deploymentValidation(t, deployment)
 				}
 			}
 		})
