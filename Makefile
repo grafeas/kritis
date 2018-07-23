@@ -15,9 +15,9 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
+COMMIT ?= $(shell git rev-parse HEAD)
 
 GCP_PROJECT ?= kritis-int-test
-
 
 %.exe: %
 	mv $< $@
@@ -33,6 +33,7 @@ REPOPATH ?= $(ORG)/$(PROJECT)
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
+
 
 .PHONY: test
 test: cross
@@ -63,10 +64,9 @@ install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
 
-GO_LDFLAGS := '-extldflags "-static"
-GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+GO_LDFLAGS := -extldflags "-static"
+GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Commit=$(COMMIT)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
-GO_LDFLAGS += '
 
 REGISTRY?=gcr.io/kritis-project
 REPOPATH ?= $(ORG)/$(PROJECT)
@@ -74,7 +74,7 @@ SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 KRITIS_PROJECT = $(REPOPATH)/kritis
 
 out/kritis-server: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(SERVICE_PACKAGE)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SERVICE_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
