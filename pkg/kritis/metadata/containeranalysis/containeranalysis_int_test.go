@@ -1,3 +1,5 @@
+// +build integration
+
 /*
 Copyright 2018 Google LLC
 
@@ -25,9 +27,6 @@ import (
 )
 
 var (
-	IntTestImageNames = []string{"https://gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71",
-		"gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71",
-	}
 	IntTestNoteName = "test-aa-note"
 	IntAPI          = "testv1"
 	IntProject      = "kritis-int-test"
@@ -39,14 +38,11 @@ func TestGetVulnerabilities(t *testing.T) {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
 	vuln, err := d.GetVulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
-	for _, image := range IntTestImageNames {
-		vuln, err := d.GetVulnerabilities(image)
-		if err != nil {
-			t.Fatalf("Found err %s while fetching vuln for image %s", err, image)
-		}
-		if vuln == nil {
-			t.Fatalf("Expected some vulnerabilities. Nil found for image %s", image)
-		}
+	if err != nil {
+		t.Fatalf("Found err %s", err)
+	}
+	if vuln == nil {
+		t.Fatalf("Expected some vulnerabilities. Nil found")
 	}
 }
 

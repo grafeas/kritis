@@ -46,11 +46,6 @@ var pgpConfig = packet.Config{
 	RSABits: constants.RSABits,
 }
 
-type AttesationSignature struct {
-	PgpSignedAttesation string
-	KeyId               string
-}
-
 // VerifyMessageAttestation verifies if the image is attested using the Base64
 // encoded public key.
 func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message string) error {

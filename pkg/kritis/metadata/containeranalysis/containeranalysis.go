@@ -18,16 +18,13 @@ package containeranalysis
 
 import (
 	"fmt"
-<<<<<<< HEAD
-	"github.com/google/go-containerregistry/pkg/name"
-=======
 	"strings"
+
+	"github.com/google/go-containerregistry/pkg/name"
 
 	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
->>>>>>> set
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	"github.com/grafeas/kritis/pkg/kritis/util"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
