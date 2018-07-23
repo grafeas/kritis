@@ -17,14 +17,20 @@ limitations under the License.
 package containeranalysis
 
 import (
-	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
 	"fmt"
+<<<<<<< HEAD
 	"github.com/google/go-containerregistry/pkg/name"
+=======
+	"strings"
+
+	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+>>>>>>> set
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/util"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
-	"strings"
 )
 
 const (
@@ -112,4 +118,66 @@ func isRegistryGCR(r string) bool {
 		return false
 	}
 	return true
+}
+
+func getProjectFromNotReference(ref string) (string, error) {
+	if str := strings.Split(ref, "/"); len(str) < 3 {
+		return "", fmt.Errorf("Invalid Note Reference. Should be in format <api>/projects/<project_id")
+	}
+	return strings.Split(ref, "/")[2], nil
+}
+
+func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
+	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	if err != nil {
+		return err
+	}
+	aaNote := &containeranalysispb.AttestationAuthority{
+		Hint: &containeranalysispb.AttestationAuthority_AttestationAuthorityHint{
+			HumanReadableName: aa.Name,
+		},
+	}
+	note := containeranalysispb.Note{
+		Name:             fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		ShortDescription: fmt.Sprintf("Image Policy Security Attestor"),
+		LongDescription:  fmt.Sprintf("Image Policy Security Attestor deployed in %s namespace", aa.Namespace),
+		NoteType: &containeranalysispb.Note_AttestationAuthority{
+			AttestationAuthority: aaNote,
+		},
+	}
+
+	req := &containeranalysispb.CreateNoteRequest{
+		Note:   &note,
+		NoteId: aa.Name,
+		Parent: fmt.Sprintf("projects/%s", noteProject),
+	}
+	_, err = c.client.CreateNote(c.ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+	req := &containeranalysispb.GetNoteRequest{
+		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+	}
+	resp, err := c.client.GetNote(c.ctx, req)
+	return resp, nil
+}
+
+// This is used for Testing.
+func (c ContainerAnalysis) DeleteAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
+	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	if err != nil {
+		return err
+	}
+	req := &containeranalysispb.DeleteNoteRequest{
+		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+	}
+	return c.client.DeleteNote(c.ctx, req)
 }
