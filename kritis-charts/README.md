@@ -26,10 +26,10 @@ You will need to create a Kubernetes secret, which will provide kritis with the 
 To create the secret:
 1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
 2. Download a JSON key for the service account
-3. Rename the key to `kritis.json`
+3. Rename the key to `gac.json`
 4. Create a Kubernetes secret by running:
 ```
-kubectl create secret generic gac-secret --from-file=<path to kritis.json>
+kubectl create secret generic gac-ca-admin --from-file=<path to kritis.json>
 ```
 
 #### Creating Container Analysis Secret via Command Line
@@ -65,56 +65,104 @@ gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAM
 ### Installing Helm
 You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis.
 
+After installing helm, run
+```
+helm init
+```
+to install helm into your cluster.
+
+You may also need to run these commands to give helm permissions in your cluster:
+```
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+```
+
 ## Installing Kritis
-1. To install kritis via helm, we need to first generate TLS certs.
-   To do that,
-   1. First download the helm plugin to generate certs from [here](https://github.com/SUSE/helm-certgen/releases)
-   2. Unzip the tar and then install the plugin.
-      ```
-      tar -xvf certgen-linux-amd64-1-0-0-1501794790-f3b21c90.tgz --directory ~/certgen/
-      helm plugin install ~/certgen/
-      ```
-2. Now run the install script.
-   This should create TLS certs, deploy kritis in given namespace.
+Now run the install script.
+This will create the necessary TLS certs and deploy kritis into the given namespace.
+```
+./install/install-kritis.sh
+```
 
-   The secret name is the Container Analysis Secret you created above.
+### Optional Flags
+|  Flag | Default      | Description  |   
+|-------|--------------|--------------|
+| -n    | default      | The namespace to install kritis in |   
+| -s    | gac-ca-admin | The name of the secret created above with container analysis permissions |  
 
-   ```
-    ./install/install-kritis.sh -n <your namespace | DEFAUT=default> -s <your secret name | DEFAULT=gac-secret
+```shell
+$ ./install/install-kritis.sh
++ NAMESPACE=default
++ GAC_SECRET=gac-ca-admin
++ PREINSTALL_FILE=preinstall/preinstall.yaml
++ CERTIFICATE=
++ TLS_SECRET=tls-webhook-secret
++ CHARTS_DIR=kritis-charts/
++ getopts n:s opt
++ kritis::preinstall
++ kubectl apply -f preinstall/preinstall.yaml --namespace default
+serviceaccount "kritis-preinstall-serviceaccount" created
+clusterrolebinding.rbac.authorization.k8s.io "kritis-preinstall-clusterrolebinding" created
+pod "preinstall-kritis" created
++ kritis::get_certificate
+++ kubectl get secret tls-webhook-secret -o 'jsonpath={.data.tls\.crt}' --namespace default
+    ...
++ kritis::install_helm
+    ...
++ helm install kritis-charts/ --namespace default --set serviceNamespace=default --set 
+    ...
+NAME:   piquant-seagull
+LAST DEPLOYED: Tue Jul 24 13:03:24 2018
+NAMESPACE: default
+STATUS: DEPLOYED
 
-    NAME:   whimsical-cricket
-    LAST DEPLOYED: Wed Jul 18 15:41:50 2018
-    NAMESPACE: default
-    STATUS: DEPLOYED
+RESOURCES:
+==> v1beta1/ClusterRoleBinding
+NAME                       AGE
+kritis-clusterrolebinding  0s
 
-    RESOURCES:
-    ==> v1beta1/ValidatingWebhookConfiguration
-    NAME                    AGE
-    kritis-validation-hook  0s
+==> v1/ClusterRole
+NAME                AGE
+kritis-clusterrole  0s
 
-    ==> v1/Pod(related)
-    NAME                                     READY  STATUS             RESTARTS  AGE
-    kritis-validation-hook-85dbc5c8c8-n4tr5  0/1    ContainerCreating  0         0s
+==> v1beta1/ValidatingWebhookConfiguration
+kritis-validation-hook  0s
 
-    ==> v1/Service
-    NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE
-    kritis-validation-hook  ClusterIP  10.63.244.219  <none>       443/TCP  1s
+==> v1/Pod(related)
+NAME                                     READY  STATUS             RESTARTS  AGE
+kritis-validation-hook-59f47c77b8-7qb4b  0/1    ContainerCreating  0         0s
 
-    ==> v1beta2/Deployment
-    NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-    kritis-validation-hook  1        1        1           0          0s
+==> v1beta1/CustomResourceDefinition
+NAME                                      AGE
+attestationauthorities.kritis.grafeas.io  0s
+imagesecuritypolicies.kritis.grafeas.io   0s
 
-    ==> v1beta1/ClusterRoleBinding
-    NAME                       AGE
-    kritis-clusterrolebinding  0s
+==> v1/Service
+NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE
+kritis-validation-hook  ClusterIP  10.63.249.175  <none>       443/TCP  0s
 
-    ==> v1/ClusterRole
-    NAME                AGE
-    kritis-clusterrole  0s
-    ```
-    Helm will create a cluster role and cluster role binding, which gives the kritis deployment access to the ImageSecurityPolicy CRD.
-3. You can delete all the deployments using the release name.
-   ```
-   helm delete whimsical-cricket
-   ```
-   Note: This does not delete the secrets.
+==> v1beta2/Deployment
+NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+kritis-validation-hook  1        1        1           0          0s
+
+
++ kritis::delete_preinstall
++ kubectl delete -f preinstall/preinstall.yaml --namespace default
+serviceaccount "kritis-preinstall-serviceaccount" deleted
+clusterrolebinding.rbac.authorization.k8s.io "kritis-preinstall-clusterrolebinding" deleted
+pod "preinstall-kritis" deleted
+```
+
+## Deleting Kritis
+
+You can delete kritis by deleting the helm deployment:
+```shell
+$ helm ls
+NAME           	REVISION	UPDATED                 	STATUS  	CHART       	NAMESPACE
+piquant-seagull	1       	Tue Jul 24 13:03:24 2018	DEPLOYED	kritis-0.1.0	default  
+$ helm delete piquant-seagull
+release "piquant-seagull" deleted
+
+```
+Note: This will not delete the CertificateSigningRequest or TLS secret created during preinstall, or the container analysis secret created above.
