@@ -28,9 +28,9 @@ var tests = []struct {
 	name       string
 	secretName string
 	shdErr     bool
-	expected   *KSecret
+	expected   *PgpSigningSecret
 }{
-	{"good", "good-sec", false, &KSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
+	{"good", "good-sec", false, &PgpSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
 	{"bad1", "bad1-sec", true, nil},
 	{"bad2", "bad2-sec", true, nil},
 	{"notfound", "not-present", true, nil},
@@ -46,7 +46,7 @@ func TestSecrets(t *testing.T) {
 	}
 }
 
-var testSectets = []v1.Secret{
+var testSecrets = []v1.Secret{
 	{
 		ObjectMeta: metav1.ObjectMeta{Name: "good-sec"},
 		Data: map[string][]byte{
@@ -69,7 +69,7 @@ var testSectets = []v1.Secret{
 }
 
 func getTestSecret(namespace string, name string) (*v1.Secret, error) {
-	for _, sec := range testSectets {
+	for _, sec := range testSecrets {
 		if sec.Name == name {
 			return &sec, nil
 		}
