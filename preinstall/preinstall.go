@@ -38,18 +38,18 @@ func setNamespace() {
 }
 
 func deleteExistingObjects() {
-	csrCmd := exec.Command("kubectl", "get", "csr", csrName)
+	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
 	csrCmd.Stderr = os.Stderr
 	_, err := csrCmd.Output()
 	if err == nil {
-		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName)
+		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName, "--namespace", namespace)
 		RunCommand(deleteCSRCmd)
 	}
-	secretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName)
+	secretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName, "--namespace", namespace)
 	secretCmd.Stderr = os.Stderr
 	_, err = secretCmd.Output()
 	if err == nil {
-		deleteSecretCmd := exec.Command("kubectl", "delete", "secret", tlsSecretName)
+		deleteSecretCmd := exec.Command("kubectl", "delete", "secret", tlsSecretName, "--namespace", namespace)
 		RunCommand(deleteSecretCmd)
 	}
 }
@@ -118,7 +118,7 @@ func retrieveRequestCertificate() string {
 }
 
 func createTLSSecret() {
-	retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'")
+	retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'", "--namespace", namespace)
 	cert := RunCommand(retrieveCertCmd)
 
 	certStr := string(cert)
