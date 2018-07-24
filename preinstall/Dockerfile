@@ -21,4 +21,3 @@ RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-re
     chmod +x /usr/local/bin/kubectl
 
 COPY out/preinstall /preinstall
-ENTRYPOINT /preinstall

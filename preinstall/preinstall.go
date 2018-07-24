@@ -27,11 +27,20 @@ import (
 	"strings"
 )
 
+func setNamespace() {
+	namespaceFile := "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+	contents, err := ioutil.ReadFile(namespaceFile)
+	if err != nil {
+		logrus.Fatalf("error trying to get namespace from %s: %v", namespaceFile, err)
+	}
+	logrus.Infof("contents of %s: %s", namespaceFile, contents)
+	namespace = string(contents)
+}
+
 func deleteExistingObjects() {
 	csrCmd := exec.Command("kubectl", "get", "csr", csrName)
 	csrCmd.Stderr = os.Stderr
 	_, err := csrCmd.Output()
-	fmt.Println(err)
 	if err == nil {
 		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName)
 		RunCommand(deleteCSRCmd)
@@ -39,7 +48,6 @@ func deleteExistingObjects() {
 	secretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName)
 	secretCmd.Stderr = os.Stderr
 	_, err = secretCmd.Output()
-	fmt.Println(err)
 	if err == nil {
 		deleteSecretCmd := exec.Command("kubectl", "delete", "secret", tlsSecretName)
 		RunCommand(deleteSecretCmd)
@@ -134,13 +142,13 @@ func createTLSSecret() {
 
 // RunCommand executes the command
 func RunCommand(cmd *exec.Cmd) []byte {
-	b := bytes.NewBuffer([]byte{})
-	cmd.Stderr = b
+	stderr := bytes.NewBuffer([]byte{})
+	cmd.Stderr = stderr
 	output, err := cmd.Output()
 	logrus.Info(cmd.Args)
 	logrus.Info(string(output))
 	if err != nil {
-		logrus.Error(string(b.Bytes()))
+		logrus.Error(string(stderr.Bytes()))
 		logrus.Fatal(err)
 	}
 	return output

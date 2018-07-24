@@ -18,11 +18,10 @@ set -ex
 
 # Command line Args Default
 NAMESPACE="default"
-GAC_SECRET="gac-secret"
+GAC_SECRET="gac-ca-admin"
 
 # Global variables.
 PREINSTALL_FILE="preinstall/preinstall.yaml"
-PREINSTALL_TEMPLATE_FILE="preinstall/preinstall.yaml.template"
 CERTIFICATE=""
 TLS_SECRET="tls-webhook-secret"
 CHARTS_DIR="kritis-charts/"
@@ -39,8 +38,7 @@ while getopts "n:s" opt; do
 done
 
 function kritis::preinstall {
-  cat $PREINSTALL_TEMPLATE_FILE | sed "s/NAMESPACE/$NAMESPACE/g" > $PREINSTALL_FILE
-  kubectl apply -f $PREINSTALL_FILE
+  kubectl apply -f $PREINSTALL_FILE --namespace $NAMESPACE
 }
 
 # gets the  certifacate value
@@ -60,7 +58,7 @@ function kritis::install_helm {
 }
 
 function kritis::delete_preinstall {
-  kubectl delete -f $PREINSTALL_FILE
+  kubectl delete -f $PREINSTALL_FILE --namespace $NAMESPACE
 }
 
 kritis::preinstall

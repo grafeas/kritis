@@ -81,7 +81,7 @@ build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
 
 out/preinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags $(GO_LDFLAGS) -o $@ $(REPOPATH)/preinstall
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/preinstall
 
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
