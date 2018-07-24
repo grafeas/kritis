@@ -80,10 +80,12 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		PublicKey:  pub,
 		SecretName: "test",
 	}
-	err = d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+
+	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
+	defer d.DeleteOccurrence(occ.GetName())
 	occurrences, err := d.GetAttestations(testutil.IntTestImage)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
@@ -91,5 +93,5 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if occurrences == nil {
 		t.Fatal("Shd have created atleast 1 occurrence")
 	}
-	defer d.DeleteOccurrences(occurrences)
+
 }

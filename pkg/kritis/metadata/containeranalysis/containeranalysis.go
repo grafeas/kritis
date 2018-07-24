@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/glog"
+
 	gen "cloud.google.com/go/devtools/containeranalysis/apiv1alpha1"
 	"github.com/google/go-containerregistry/pkg/name"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -76,7 +78,7 @@ func (c ContainerAnalysis) GetAttestations(containerImage string) ([]*containera
 
 func (c ContainerAnalysis) fethcOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
-	if !isValidImageAndRegistryGCR(containerImage) {
+	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 	project := strings.Split(containerImage, "/")[1]
@@ -121,9 +123,10 @@ func isFixAvaliable(pis []*containeranalysispb.VulnerabilityType_PackageIssue) b
 	return true
 }
 
-func isValidImageAndRegistryGCR(containerImage string) bool {
+func isValidImageOnGCR(containerImage string) bool {
 	ref, err := name.ParseReference(containerImage, name.WeakValidation)
 	if err != nil {
+		glog.Warning(err)
 		return false
 	}
 	return isRegistryGCR(ref.Context().RegistryStr())
@@ -191,14 +194,16 @@ func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthor
 	return c.client.GetNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.Note, containerImage string, pgpSigningKey *secrets.PgpSigningSecret) error {
-	if !isValidImageAndRegistryGCR(containerImage) {
-		return fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.Note,
+	containerImage string,
+	pgpSigningKey *secrets.PgpSigningSecret) (*containeranalysispb.Occurrence, error) {
+	if !isValidImageOnGCR(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 	// Create Attestation Signature
 	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pgpSignedAttestation := &containeranalysispb.PgpSignedAttestation{
 		Signature: sig,
@@ -224,9 +229,8 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 		Occurrence: occ,
 		Parent:     fmt.Sprintf("projects/%s", strings.Split(containerImage, "/")[1]),
 	}
-	// Call create Occurrence Api.s
-	_, err = c.client.CreateOccurrence(c.ctx, req)
-	return err
+	// Call create Occurrence Api
+	return c.client.CreateOccurrence(c.ctx, req)
 }
 
 // These following methods are used for Testing.
@@ -246,10 +250,4 @@ func (c ContainerAnalysis) DeleteOccurrence(occurrenceId string) error {
 		Name: occurrenceId,
 	}
 	return c.client.DeleteOccurrence(c.ctx, req)
-}
-
-func (c ContainerAnalysis) DeleteOccurrences(occs []*containeranalysispb.Occurrence) {
-	for _, occ := range occs {
-		c.DeleteOccurrence(occ.GetName())
-	}
 }
