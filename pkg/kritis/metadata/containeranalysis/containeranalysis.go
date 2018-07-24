@@ -117,15 +117,16 @@ func isRegistryGCR(r string) bool {
 	return true
 }
 
-func getProjectFromNotReference(ref string) (string, error) {
-	if str := strings.Split(ref, "/"); len(str) < 3 {
+func getProjectFromNoteReference(ref string) (string, error) {
+	str := strings.Split(ref, "/")
+	if len(str) < 3 {
 		return "", fmt.Errorf("Invalid Note Reference. Should be in format <api>/projects/<project_id")
 	}
-	return strings.Split(ref, "/")[2], nil
+	return str[2], nil
 }
 
 func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
-	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
 		return err
 	}
@@ -149,10 +150,7 @@ func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAut
 		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
 	_, err = c.client.CreateNote(c.ctx, req)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
