@@ -26,10 +26,10 @@ You will need to create a Kubernetes secret, which will provide kritis with the 
 To create the secret:
 1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
 2. Download a JSON key for the service account
-3. Rename the key to `kritis.json`
+3. Rename the key to `gac.json`
 4. Create a Kubernetes secret by running:
 ```
-kubectl create secret generic gac-secret --from-file=<path to kritis.json>
+kubectl create secret generic gac-secret --from-file=<path to gac.json>
 ```
 
 #### Creating Container Analysis Secret via Command Line
@@ -42,12 +42,12 @@ The project id can be found from `gcloud config list project`.
 
 2. Create a key for the service account
 ```
-gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/gac.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
 ```
 
 3. Create a kubernetes secret for the service account
 ```
-kubectl create secret generic <SECRET NAME> --from-file=~/kritis.json
+kubectl create secret generic <SECRET NAME> --from-file=~/gac.json
 ```
 
 3. Create policy bindings for the necessary roles:

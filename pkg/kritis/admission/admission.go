@@ -22,8 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -62,16 +61,16 @@ var (
 // If one is not found, it validates against image security policies
 // TODO: Check for attestations
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	logrus.Info("Starting admission review handler version %s ...", version.Commit)
+	glog.Info("Starting admission review handler version %s ...", version.Commit)
 	pod, err := admissionConfig.retrievePod(r)
 	if err != nil {
-		logrus.Error(err)
+		glog.Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	// First, check for a breakglass annotation on the pod
 	if checkBreakglass(pod) {
-		logrus.Debugf("found breakglass annotation, returning successful status")
+		glog.Infof("found breakglass annotation, returning successful status")
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
@@ -79,28 +78,28 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Fetch Attestations for the given images to see if the image is already verified
 	images := pods.Images(*pod)
 	if util.CheckGlobalWhitelist(images) {
-		logrus.Debugf("%s are all whitelisted, returning successful status", images)
+		glog.Infof("%s are all whitelisted, returning successful status", images)
 		returnStatus(constants.SuccessStatus, constants.SuccessMessage, w)
 		return
 	}
 	// Next, validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(pod.Namespace)
 	if err != nil {
-		logrus.Errorf("error getting image security policies: %v", err)
+		glog.Errorf("error getting image security policies: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logrus.Debugf("Got isps %v", isps)
+	glog.Infof("Got isps %v", isps)
 	// get the client we will get vulnz from
 	metadataClient, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
-		logrus.Errorf("error getting metadata client: %v", err)
+		glog.Errorf("error getting metadata client: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	for _, isp := range isps {
 		for _, image := range images {
-			logrus.Infof("Getting vulnz for %s", image)
+			glog.Infof("Getting vulnz for %s", image)
 			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -109,7 +108,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			// Check if one of the violations is that the image is not fully qualified
 			for _, v := range violations {
 				if v.Violation == securitypolicy.UnqualifiedImageViolation {
-					logrus.Infof("%s is not a fully qualified image", image)
+					glog.Infof("%s is not a fully qualified image", image)
 					returnStatus(constants.FailureStatus, fmt.Sprintf("%s is not a fully qualified image", image), w)
 					return
 				}
@@ -165,7 +164,7 @@ func returnStatus(status constants.Status, message string, w http.ResponseWriter
 		},
 	}
 	if err := writeHttpResponse(response, w); err != nil {
-		logrus.Error("error writing response:", err)
+		glog.Error("error writing response:", err)
 	}
 }
 
@@ -175,7 +174,7 @@ func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWrite
 	}
 	data, err := json.Marshal(ar)
 	if err != nil {
-		logrus.Error(err)
+		glog.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return nil
 	}

@@ -16,10 +16,12 @@ limitations under the License.
 package violation
 
 import (
+	"fmt"
+
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
-	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 )
 
@@ -31,13 +33,12 @@ type LoggingStrategy struct {
 }
 
 func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error {
-	logrus.Debug("HandleViolation via LoggingStrategy")
 	if len(violations) == 0 {
 		return nil
 	}
-	logrus.Warnf("Found violations in pod %s, ns %s", pod.Name, pod.Namespace)
+	glog.Warning("Found violations in pod %s, ns %s", pod.Name, pod.Namespace)
 	for _, v := range violations {
-		logrus.Warn(v.Reason)
+		glog.Warning(v.Reason)
 	}
 	return nil
 }
@@ -47,7 +48,6 @@ type AnnotationStrategy struct {
 }
 
 func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error {
-	logrus.Debug("HandleViolation via AnnotationStrategy")
 	// First, remove "kritis.grafeas.io/invalidImageSecPolicy" label/annotation in case it doesn't apply anymore
 	if err := pods.DeleteLabelsAndAnnotations(*pod, []string{constants.InvalidImageSecPolicy}, []string{constants.InvalidImageSecPolicy}); err != nil {
 		return err
@@ -66,7 +66,7 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	}
 	labels := map[string]string{constants.InvalidImageSecPolicy: labelValue}
 	annotations := map[string]string{constants.InvalidImageSecPolicy: annotationValue}
-
+	glog.Info(fmt.Sprintf("Adding label %s and annotation %s", labelValue, annotationValue))
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 

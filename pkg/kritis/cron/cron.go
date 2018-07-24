@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -28,8 +29,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/sirupsen/logrus"
 )
 
 // For testing
@@ -73,15 +72,16 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 	done := ctx.Done()
 
 	for {
+		glog.Info("Checking pods.")
 		select {
 		case <-c.C:
 			isps, err := cfg.SecurityPolicyLister("")
 			if err != nil {
-				logrus.Errorf("fetching image security policies: %s", err)
+				glog.Errorf("fetching image security policies: %s", err)
 				continue
 			}
 			if err := podChecker(cfg, isps); err != nil {
-				logrus.Errorf("error checking pods: %s", err)
+				glog.Errorf("error checking pods: %s", err)
 			}
 		case <-done:
 			return
@@ -104,7 +104,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 				}
 				if len(v) != 0 {
 					if err := cfg.ViolationStrategy.HandleViolation(c, &p, v); err != nil {
-						logrus.Errorf("handling violations: %s", err)
+						glog.Errorf("handling violations: %s", err)
 					}
 				}
 			}

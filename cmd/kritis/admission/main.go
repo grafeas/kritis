@@ -25,8 +25,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
@@ -55,21 +54,21 @@ func main() {
 	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.Parse()
 
-	// Kick off back ground cron job.
 	if showVersion {
 		fmt.Println(version.Commit)
 		os.Exit(0)
 	}
 
+	// Kick off back ground cron job.
 	if err := StartCronJob(); err != nil {
-		logrus.Fatal(errors.Wrap(err, "starting background job"))
+		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
 
 	// Start the Kritis Server.
-	logrus.Println("Running the server")
+	glog.Info("Running the server")
 	http.HandleFunc("/", admission.AdmissionReviewHandler)
 	httpsServer := NewServer(Addr)
-	logrus.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
+	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
 func NewServer(addr string) *http.Server {
