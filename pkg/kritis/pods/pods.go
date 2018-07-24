@@ -68,7 +68,7 @@ func applyPatch(modifiedPod *corev1.Pod, originalJSON []byte) error {
 	if err != nil {
 		return err
 	}
-	clientset, err := getClientSet()
+	clientset, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
 	}
