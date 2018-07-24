@@ -140,6 +140,11 @@ func deleteCRDExamples() {
 	}
 }
 
+func deletePods() {
+	deletePods := exec.Command("kubectl", "delete", "pods", "--all")
+	integration_util.RunCmdOut(deletePods)
+}
+
 func createCRDs(t *testing.T) {
 	for _, crd := range CRDS {
 		crdCmd := exec.Command("kubectl", "create", "-f",
@@ -169,9 +174,11 @@ func initKritis(t *testing.T) func() {
 	preinstallCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(preinstallCmd)
 	if err != nil {
-		t.Fatalf("preinstall err: %v, logs: %s", err, getPreinstallLogs(t))
+		t.Fatalf("preinstall err: %v \n %s", err, getPreinstallLogs(t))
 	}
-
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "preinstall-kritis"); err != nil {
+		t.Fatalf("preinstall pod didn't complete: %v \n %s", err, getPreinstallLogs(t))
+	}
 	helmCmd := exec.Command("kubectl", "get", "secret",
 		"tls-webhook-secret", "-o", "jsonpath='{.data.tls\\.crt}'")
 	kubeCA, err := integration_util.RunCmdOut(helmCmd)
@@ -206,7 +213,7 @@ func initKritis(t *testing.T) func() {
 }
 
 func getPreinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "kritis-preinstall")
+	cmd := exec.Command("kubectl", "logs", "preinstall-kritis")
 	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
@@ -416,4 +423,5 @@ func TestKritisPods(t *testing.T) {
 			}
 		})
 	}
+	deletePods()
 }
