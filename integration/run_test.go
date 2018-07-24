@@ -140,11 +140,6 @@ func deleteCRDExamples() {
 	}
 }
 
-func deletePods() {
-	deletePods := exec.Command("kubectl", "delete", "pods", "--all")
-	integration_util.RunCmdOut(deletePods)
-}
-
 func createCRDs(t *testing.T) {
 	for _, crd := range CRDS {
 		crdCmd := exec.Command("kubectl", "create", "-f",
@@ -172,6 +167,10 @@ func createCRDExamples(t *testing.T) {
 func initKritis(t *testing.T) func() {
 	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
 	preinstallCmd.Dir = "../"
+	defer func() {
+		deletePreinstall := exec.Command("kubectl", "delete", "pod", "preinstall-kritis")
+		integration_util.RunCmdOut(deletePreinstall)
+	}()
 	_, err := integration_util.RunCmdOut(preinstallCmd)
 	if err != nil {
 		t.Fatalf("preinstall err: %v \n %s", err, getPreinstallLogs(t))
@@ -423,5 +422,4 @@ func TestKritisPods(t *testing.T) {
 			}
 		})
 	}
-	deletePods()
 }
