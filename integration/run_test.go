@@ -165,6 +165,13 @@ func createCRDExamples(t *testing.T) {
 }
 
 func initKritis(t *testing.T) func() {
+	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
+	preinstallCmd.Dir = "../"
+	_, err := integration_util.RunCmdOut(preinstallCmd)
+	if err != nil {
+		t.Fatalf("preinstall err: %v", err)
+	}
+
 	helmCmd := exec.Command("kubectl", "get", "csr",
 		"tls-webhook-secret-cert", "-o", "jsonpath='{.status.certificate}'")
 	kubeCA, err := integration_util.RunCmdOut(helmCmd)
