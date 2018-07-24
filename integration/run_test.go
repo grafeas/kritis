@@ -169,11 +169,11 @@ func initKritis(t *testing.T) func() {
 	preinstallCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(preinstallCmd)
 	if err != nil {
-		t.Fatalf("preinstall err: %v", err)
+		t.Fatalf("preinstall err: %v, logs: %s", err, getPreinstallLogs(t))
 	}
 
-	helmCmd := exec.Command("kubectl", "get", "csr",
-		"tls-webhook-secret-cert", "-o", "jsonpath='{.status.certificate}'")
+	helmCmd := exec.Command("kubectl", "get", "secret",
+		"tls-webhook-secret", "-o", "jsonpath='{.data.tls\\.crt}'")
 	kubeCA, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
@@ -203,6 +203,16 @@ func initKritis(t *testing.T) func() {
 			t.Fatalf("testing error: %v", err)
 		}
 	}
+}
+
+func getPreinstallLogs(t *testing.T) string {
+	cmd := exec.Command("kubectl", "logs", "kritis-preinstall")
+	cmd.Dir = "../"
+	output, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Fatalf("kritis preinstall: %s %v", output, err)
+	}
+	return string(output)
 }
 
 func getKritisLogs(t *testing.T) string {
