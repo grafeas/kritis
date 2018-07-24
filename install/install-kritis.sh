@@ -47,7 +47,7 @@ function kritis::preinstall {
 # gets the  certifacate value
 function kritis::get_certificate {
   CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.tls\.crt}' --namespace $NAMESPACE)
-  if [[ "$CERTIFICATE" == "null" ]]; then
+  if [[ -z "$CERTIFICATE" ]]; then
     echo "Could not find certificate $CERTIFICATE"
     exit 1
   fi
