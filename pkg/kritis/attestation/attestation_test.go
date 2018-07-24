@@ -17,13 +17,9 @@ limitations under the License.
 package attestation
 
 import (
-	"bytes"
-	"encoding/base64"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
 )
 
 var tcAttestations = []struct {
@@ -39,7 +35,7 @@ var tcAttestations = []struct {
 
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
-		publicKey, privateKey := createBase64KeyPair(t)
+		publicKey, privateKey := testutil.CreateBase64KeyPair(t)
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {
@@ -52,37 +48,6 @@ func TestAttestations(t *testing.T) {
 			testutil.CheckError(t, tc.hasErr, err)
 		})
 	}
-}
-
-func createBase64KeyPair(t *testing.T) (string, string) {
-	// Create a new pair of key
-	var key *openpgp.Entity
-	key, err := openpgp.NewEntity("kritis", "test", "kritis@grafeas.com", nil)
-	testutil.CheckError(t, false, err)
-	// Get Pem encoded Public Key
-	pubKeyBaseEnc := getBase64EncodedKey(key, openpgp.PublicKeyType, t)
-	// Get Pem encoded Private Key
-	privKeyBaseEnc := getBase64EncodedKey(key, openpgp.PrivateKeyType, t)
-	return pubKeyBaseEnc, privKeyBaseEnc
-}
-
-func getBase64EncodedKey(key *openpgp.Entity, keyType string, t *testing.T) string {
-	keyBytes := getKey(key, keyType, t)
-	// base64 encoded Key
-	return base64.StdEncoding.EncodeToString(keyBytes)
-}
-
-func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
-	gotWriter := bytes.NewBuffer(nil)
-	wr, encodingError := armor.Encode(gotWriter, keyType, nil)
-	testutil.CheckError(t, false, encodingError)
-	if keyType == openpgp.PrivateKeyType {
-		testutil.CheckError(t, false, key.SerializePrivate(wr, nil))
-	} else {
-		testutil.CheckError(t, false, key.Serialize(wr))
-	}
-	wr.Close()
-	return gotWriter.Bytes()
 }
 
 var invalidSig = "invalid sig"
