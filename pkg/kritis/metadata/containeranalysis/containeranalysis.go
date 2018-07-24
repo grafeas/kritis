@@ -154,7 +154,7 @@ func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAut
 }
 
 func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthor
 
 // This is used for Testing.
 func (c ContainerAnalysis) DeleteAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
-	noteProject, err := getProjectFromNotReference(aa.NoteReference)
+	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
 		return err
 	}
