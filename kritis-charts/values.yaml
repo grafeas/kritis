@@ -43,8 +43,8 @@ image:
 
 # kritis-server-webhook.yaml values
 caBundle: ""
-serviceNamespace: ""
+serviceNamespace: "default"
 
 gacSecret:
-  name: ""
-  path: "kritis.json"
+  name: "gac-ca-admin"
+  path: "gac.json"
