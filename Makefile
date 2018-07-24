@@ -16,6 +16,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
+IMAGE_TAG ?= latest
 
 GCP_PROJECT ?= kritis-int-test
 
@@ -78,14 +79,14 @@ out/kritis-server: $(GO_FILES)
 
 .PHONY: build-image
 build-image: out/kritis-server
-	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
+	docker build -t $(REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
 out/preinstall: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/preinstall
 
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
-	docker build -t gcr.io/kritis-project/preinstall:latest -f preinstall/Dockerfile .
+	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f preinstall/Dockerfile .
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -95,16 +96,16 @@ integration: cross
 
 .PHONY: integration-build-push-image
 integration-build-push-image: out/kritis-server
-	docker build -t gcr.io/$(GCP_PROJECT)/kritis-server:latest -f deploy/Dockerfile .
-	docker push gcr.io/$(GCP_PROJECT)/kritis-server:latest
+	docker build -t gcr.io/$(GCP_PROJECT)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
+	docker push gcr.io/$(GCP_PROJECT)/kritis-server:$(IMAGE_TAG)
 
 .PHONY: integration-in-docker
 integration-in-docker: integration-build-push-image
 	docker build \
 		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/kritis-integration:latest .
-	docker push gcr.io/$(GCP_PROJECT)/kritis-integration:latest
+		-t gcr.io/$(GCP_PROJECT)/kritis-integration:$(IMAGE_TAG) .
+	docker push gcr.io/$(GCP_PROJECT)/kritis-integration:$(IMAGE_TAG)
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
