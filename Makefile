@@ -80,6 +80,13 @@ out/kritis-server: $(GO_FILES)
 build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:latest -f deploy/Dockerfile .
 
+out/preinstall: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/preinstall
+
+.PHONY: preinstall-image
+preinstall-image:  out/preinstall
+	docker build -t gcr.io/kritis-project/preinstall:latest -f preinstall/Dockerfile .
+
 clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration

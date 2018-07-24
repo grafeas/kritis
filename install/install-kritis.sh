@@ -18,11 +18,10 @@ set -ex
 
 # Command line Args Default
 NAMESPACE="default"
-GAC_SECRET="gac-secret"
+GAC_SECRET="gac-ca-admin"
 
 # Global variables.
-CERT_FILE="kritis-charts/certs.yaml"
-CERT_TEMPLATE_FILE="kritis-charts/certs.yaml.template"
+PREINSTALL_FILE="preinstall/preinstall.yaml"
 CERTIFICATE=""
 TLS_SECRET="tls-webhook-secret"
 CHARTS_DIR="kritis-charts/"
@@ -38,17 +37,13 @@ while getopts "n:s" opt; do
   esac
 done
 
-# creates a cert
-function kritis::create_cert {
-    # First Substitute $NAMESPACE in kritis-charts/cert.yaml
-    cat $CERT_TEMPLATE_FILE | sed "s/NAMESPACE/$NAMESPACE/g" > $CERT_FILE
-    CMD="helm certgen generate $CHARTS_DIR --namespace $NAMESPACE"
-    $CMD
+function kritis::preinstall {
+  kubectl apply -f $PREINSTALL_FILE --namespace $NAMESPACE
 }
 
 # gets the  certifacate value
 function kritis::get_certificate {
-  CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.cert}' --namespace $NAMESPACE)
+  CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.tls\.crt}' --namespace $NAMESPACE)
   if [[ "$CERTIFICATE" == "null" ]]; then
     echo "Could not find certificate $CERTIFICATE"
     exit 1
@@ -62,7 +57,11 @@ function kritis::install_helm {
   $CMD
 }
 
+function kritis::delete_preinstall {
+  kubectl delete -f $PREINSTALL_FILE --namespace $NAMESPACE
+}
 
-kritis::create_cert
+kritis::preinstall
 kritis::get_certificate
 kritis::install_helm
+kritis::delete_preinstall
