@@ -21,7 +21,7 @@ source "$KOKORO_GFILE_DIR/common.sh"
 # Get everything into GOPATH
 sudo mkdir -p $GOPATH/src/github.com/grafeas/kritis/
 CWD=`pwd`
-sudo cp -a $CWD/github/kritis/* $GOPATH/src/github.com/grafeas/kritis
+sudo cp -ar $CWD/github/kritis/. $GOPATH/src/github.com/grafeas/kritis
 
 pushd $GOPATH/src/github.com/grafeas/kritis
 
@@ -32,8 +32,11 @@ echo "Check format"
 echo "Running unit and integration tests..."
 go test -cover -v -timeout 60s -tags=integration `go list ./...  | grep -v vendor`
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
+if [ GO_TEST_EXIT_CODE -ne 0 ]; then
+    exit $GO_TEST_EXIT_CODE
+fi
+
+make integration-build-push-image
+make integration-in-docker
 
 popd
-exit $GO_TEST_EXIT_CODE
-
-make integration-in-docker

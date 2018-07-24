@@ -17,11 +17,12 @@ limitations under the License.
 package containeranalysis
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
-	"reflect"
-	"testing"
 )
 
 var tcGetVuln = []struct {
@@ -112,6 +113,24 @@ func Test_isRegistryGCR(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual := isRegistryGCR(test.registry)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+		})
+	}
+}
+func TestGetProjectFromNoteRef(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		shdErr bool
+		output string
+	}{
+		{"good", "v1aplha1/projects/name", false, "name"},
+		{"bad1", "some", true, ""},
+		{"bad2", "some/t", true, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := getProjectFromNoteReference(tc.input)
+			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.output, actual)
 		})
 	}
 }
