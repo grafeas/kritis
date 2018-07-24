@@ -42,12 +42,12 @@ The project id can be found from `gcloud config list project`.
 
 2. Create a key for the service account
 ```
-gcloud iam service-accounts keys create ~/kritis.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/gac.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
 ```
 
 3. Create a kubernetes secret for the service account
 ```
-kubectl create secret generic <SECRET NAME> --from-file=~/kritis.json
+kubectl create secret generic <SECRET NAME> --from-file=~/gac.json
 ```
 
 3. Create policy bindings for the necessary roles:

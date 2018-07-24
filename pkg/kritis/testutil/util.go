@@ -17,9 +17,14 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"reflect"
 	"testing"
+
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
 )
 
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
@@ -47,4 +52,35 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("Unexpected error: %s", err)
 	}
 	return nil
+}
+
+func CreateBase64KeyPair(t *testing.T) (string, string) {
+	// Create a new pair of key
+	var key *openpgp.Entity
+	key, err := openpgp.NewEntity("kritis", "test", "kritis@grafeas.com", nil)
+	CheckError(t, false, err)
+	// Get Pem encoded Public Key
+	pubKeyBaseEnc := getBase64EncodedKey(key, openpgp.PublicKeyType, t)
+	// Get Pem encoded Private Key
+	privKeyBaseEnc := getBase64EncodedKey(key, openpgp.PrivateKeyType, t)
+	return pubKeyBaseEnc, privKeyBaseEnc
+}
+
+func getBase64EncodedKey(key *openpgp.Entity, keyType string, t *testing.T) string {
+	keyBytes := getKey(key, keyType, t)
+	// base64 encoded Key
+	return base64.StdEncoding.EncodeToString(keyBytes)
+}
+
+func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
+	gotWriter := bytes.NewBuffer(nil)
+	wr, encodingError := armor.Encode(gotWriter, keyType, nil)
+	CheckError(t, false, encodingError)
+	if keyType == openpgp.PrivateKeyType {
+		CheckError(t, false, key.SerializePrivate(wr, nil))
+	} else {
+		CheckError(t, false, key.Serialize(wr))
+	}
+	wr.Close()
+	return gotWriter.Bytes()
 }

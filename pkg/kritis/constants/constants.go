@@ -37,6 +37,10 @@ const (
 	// Public Key Private Key constants for Attestation Secrets.
 	PrivateKey = "private"
 	PublicKey  = "public"
+
+	// Constants for Metadata Library
+	PageSize          = int32(100)
+	ResourceUrlPrefix = "https://"
 )
 
 var (

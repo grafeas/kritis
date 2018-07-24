@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,7 +48,7 @@ func TestGetVulnerabilities(t *testing.T) {
 	}
 }
 
-func TestCreateAttestationNote(t *testing.T) {
+func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := NewContainerAnalysisClient()
 	aa := kritisv1beta1.AttestationAuthority{
 		NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
@@ -71,4 +73,25 @@ func TestCreateAttestationNote(t *testing.T) {
 	if actualHint != IntTestNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
+	// Test Create Attestation Occurence
+	pub, priv := testutil.CreateBase64KeyPair(t)
+	secret := &secrets.PgpSigningSecret{
+		PrivateKey: priv,
+		PublicKey:  pub,
+		SecretName: "test",
+	}
+
+	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	if err != nil {
+		t.Fatalf("Unexpected error while creating Occurence %v", err)
+	}
+	defer d.DeleteOccurrence(occ.GetName())
+	occurrences, err := d.GetAttestations(testutil.IntTestImage)
+	if err != nil {
+		t.Fatalf("Unexpected error while listing Occ %v", err)
+	}
+	if occurrences == nil {
+		t.Fatal("Shd have created atleast 1 occurrence")
+	}
+
 }

@@ -17,8 +17,11 @@ limitations under the License.
 package util
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/spf13/cobra"
 )
 
 func ExitIfErr(cmd *cobra.Command, err error) {
@@ -26,4 +29,16 @@ func ExitIfErr(cmd *cobra.Command, err error) {
 		cmd.Println(err)
 		os.Exit(1)
 	}
+}
+
+func CreateAttestationSignature(image string, pgpSigningKey *secrets.PgpSigningSecret) (string, error) {
+	hostSig, err := NewAtomicContainerSig(image, map[string]string{})
+	if err != nil {
+		return "", err
+	}
+	hostStr, err := hostSig.Json()
+	if err != nil {
+		return "", err
+	}
+	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
 }
