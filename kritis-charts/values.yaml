@@ -32,7 +32,7 @@ tolerations: []
 affinity: {}
 
 serviceName: kritis-validation-hook
-tlsSecretName: tls-priya
+tlsSecretName: tls-webhook-secret
 cronInterval: 1h
 
 image:

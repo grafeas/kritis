@@ -10,7 +10,7 @@ items:
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: admin
+    name: edit
   subjects:
   - kind: ServiceAccount
     namespace: default
@@ -23,16 +23,9 @@ items:
     annotations:
     name: kritis-clusterrole
     labels:
-      # Add these permissions to the "admin" default role, so that "admin" can see our CRD.
-      rbac.authorization.k8s.io/aggregate-to-admin: "true"
+      # Add these permissions to the "edit" default role, so that "edit" can see our CRD.
+      rbac.authorization.k8s.io/aggregate-to-edit: "true"
   rules:
   - apiGroups: ["kritis.grafeas.io"]
     resources: ["*"]
     verbs: ["get", "watch", "list"]
-  - apiGroups: ["certificates.k8s.io"]
-    resources: ["certificatesigningrequests"]
-    verbs: ["create", "delete", "get", "list", "patch", "update", "watch", "approve"]
-  - apiGroups: ["certificates.k8s.io"]
-    resources: ["certificatesigningrequests/approve"]
-    verbs: ["update"]
-  

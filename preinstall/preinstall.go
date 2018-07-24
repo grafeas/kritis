@@ -112,7 +112,7 @@ func createTLSSecret() {
 	if err := ioutil.WriteFile("server.crt", decoded, 0644); err != nil {
 		logrus.Fatalf("unable to copy decoded cert to server.crt: %v", err)
 	}
-	tlsSecretCmd := exec.Command("kubectl", "create", "secret", "tls", tlsSecretName, "--cert=server.crt", "--key=server-key.pem")
+	tlsSecretCmd := exec.Command("kubectl", "create", "secret", "tls", tlsSecretName, "--cert=server.crt", "--key=server-key.pem", "--namespace", namespace)
 	RunCommand(tlsSecretCmd)
 }
 

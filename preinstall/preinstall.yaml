@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kritis-preinstall-serviceaccount
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: kritis-preinstall-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  namespace: default
+  name: kritis-preinstall-serviceaccount
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: preinstall-kritis
+spec:
+  restartPolicy: Never
+  serviceAccountName: kritis-preinstall-serviceaccount
+  containers:
+  - name: preinstall-kritis
+    image: gcr.io/kritis-project/preinstall:latest
+    args: [--namespace=default]
