@@ -18,13 +18,13 @@ package pods
 
 import (
 	"encoding/json"
+
+	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 
 // Pods returns a list of pods in a namespace
 func Pods(namespace string) ([]corev1.Pod, error) {
-	clientset, err := getClientSet()
+	clientset, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func applyPatch(modifiedPod *corev1.Pod, originalJSON []byte) error {
 	if err != nil {
 		return err
 	}
-	clientset, err := getClientSet()
+	clientset, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
 	}
@@ -124,14 +124,4 @@ func DeleteLabelsAndAnnotations(pod corev1.Pod, labels []string, annotations []s
 		}
 	}
 	return patchFunction(modifiedPod, originalJSON)
-}
-
-func getClientSet() (kubernetes.Interface, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	clientConfig, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewForConfig(clientConfig)
 }

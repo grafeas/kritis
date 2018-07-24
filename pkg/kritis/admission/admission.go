@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
@@ -61,7 +62,7 @@ var (
 // If one is not found, it validates against image security policies
 // TODO: Check for attestations
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	logrus.Info("Starting admission review handler...")
+	logrus.Info("Starting admission review handler version %s ...", version.Commit)
 	pod, err := admissionConfig.retrievePod(r)
 	if err != nil {
 		logrus.Error(err)

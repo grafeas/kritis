@@ -20,11 +20,14 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -37,6 +40,7 @@ var (
 	tlsCertFile  string
 	tlsKeyFile   string
 	cronInterval string
+	showVersion  bool
 )
 
 const (
@@ -46,11 +50,17 @@ const (
 func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
+	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
 	flag.Set("logtostderr", "true")
 	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.Parse()
 
 	// Kick off back ground cron job.
+	if showVersion {
+		fmt.Println(version.Commit)
+		os.Exit(0)
+	}
+
 	if err := StartCronJob(); err != nil {
 		logrus.Fatal(errors.Wrap(err, "starting background job"))
 	}
