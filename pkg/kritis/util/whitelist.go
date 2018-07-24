@@ -17,10 +17,11 @@ limitations under the License.
 package util
 
 import (
+	"reflect"
+
+	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-	"github.com/sirupsen/logrus"
-	"reflect"
 )
 
 // CheckGlobalWhitelist returns true if all images are globally whitelisted
@@ -28,7 +29,7 @@ func CheckGlobalWhitelist(images []string) bool {
 	for _, image := range images {
 		whitelisted, err := imageInWhitelist(image)
 		if err != nil {
-			logrus.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
+			glog.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
 		}
 		if !whitelisted {
 			return false
