@@ -30,6 +30,9 @@ var (
 	getSecretFunc = getSecret
 )
 
+// KSecret represents gpg private, public key pair secret in your kubernetes cluster.
+// The secret expects private and public key to be stored in "private" and "public" keys. e.g.
+// kubectl create secret generic my-secret --from-file=public=pub.gpg --from-file=private=priv.key
 type KSecret struct {
 	PublicKey  string
 	PrivateKey string
