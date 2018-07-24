@@ -47,20 +47,20 @@ func TestSecrets(t *testing.T) {
 }
 
 var testSectets = []v1.Secret{
-	v1.Secret{
+	{
 		ObjectMeta: metav1.ObjectMeta{Name: "good-sec"},
 		Data: map[string][]byte{
 			"private": []byte("private key"),
 			"public":  []byte("public key"),
 		},
 	},
-	v1.Secret{
+	{
 		ObjectMeta: metav1.ObjectMeta{Name: "bad1-sec"},
 		Data: map[string][]byte{
 			"public": []byte("public key"),
 		},
 	},
-	v1.Secret{
+	{
 		ObjectMeta: metav1.ObjectMeta{Name: "bad2-sec"},
 		Data: map[string][]byte{
 			"private": []byte("private key"),
