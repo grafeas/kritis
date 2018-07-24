@@ -161,8 +161,7 @@ func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthor
 	req := &containeranalysispb.GetNoteRequest{
 		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
 	}
-	resp, err := c.client.GetNote(c.ctx, req)
-	return resp, nil
+	return c.client.GetNote(c.ctx, req)
 }
 
 // This is used for Testing.
