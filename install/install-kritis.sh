@@ -25,12 +25,15 @@ PREINSTALL_FILE="preinstall/preinstall.yaml"
 CERTIFICATE=""
 TLS_SECRET="tls-webhook-secret"
 CHARTS_DIR="kritis-charts/"
+PREINSTALL_ONLY=""
 
-while getopts "n:s" opt; do
+while getopts "n:sp" opt; do
   case $opt in
     n) NAMESPACE="$OPTARG"
     ;;
     s) GAC_SECRET="$OPTARG"
+    ;;
+    p) PREINSTALL_ONLY="true"
     ;;
     \?) echo "Invalid option -$OPTARG" >&2
     ;;
@@ -62,6 +65,9 @@ function kritis::delete_preinstall {
 }
 
 kritis::preinstall
+if "$PREINSTALL_ONLY" -eq "true" ; then
+  exit 0
+fi
 kritis::get_certificate
 kritis::install_helm
 kritis::delete_preinstall

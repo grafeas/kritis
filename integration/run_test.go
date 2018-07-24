@@ -165,8 +165,21 @@ func createCRDExamples(t *testing.T) {
 }
 
 func initKritis(t *testing.T) func() {
-	helmCmd := exec.Command("kubectl", "get", "csr",
-		"tls-webhook-secret-cert", "-o", "jsonpath='{.status.certificate}'")
+	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
+	preinstallCmd.Dir = "../"
+	defer func() {
+		deletePreinstall := exec.Command("kubectl", "delete", "pod", "preinstall-kritis")
+		integration_util.RunCmdOut(deletePreinstall)
+	}()
+	_, err := integration_util.RunCmdOut(preinstallCmd)
+	if err != nil {
+		t.Fatalf("preinstall err: %v \n %s", err, getPreinstallLogs(t))
+	}
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "preinstall-kritis"); err != nil {
+		t.Fatalf("preinstall pod didn't complete: %v \n %s", err, getPreinstallLogs(t))
+	}
+	helmCmd := exec.Command("kubectl", "get", "secret",
+		"tls-webhook-secret", "-o", "jsonpath='{.data.tls\\.crt}'")
 	kubeCA, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
@@ -196,6 +209,16 @@ func initKritis(t *testing.T) func() {
 			t.Fatalf("testing error: %v", err)
 		}
 	}
+}
+
+func getPreinstallLogs(t *testing.T) string {
+	cmd := exec.Command("kubectl", "logs", "preinstall-kritis")
+	cmd.Dir = "../"
+	output, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Fatalf("kritis preinstall: %s %v", output, err)
+	}
+	return string(output)
 }
 
 func getKritisLogs(t *testing.T) string {
