@@ -18,7 +18,7 @@ set -ex
 
 # Command line Args Default
 NAMESPACE="default"
-GAC_SECRET="priyawadhwa-ca-admin"
+GAC_SECRET="gac-secret"
 
 # Global variables.
 PREINSTALL_FILE="preinstall/preinstall.yaml"
@@ -45,7 +45,7 @@ function kritis::preinstall {
 
 # gets the  certifacate value
 function kritis::get_certificate {
-  CERTIFICATE=$(kubectl get secret tls-webhook-secret -o jsonpath='{.data.tls\.crt}' --namespace $NAMESPACE)
+  CERTIFICATE=$(kubectl get secret $TLS_SECRET -o jsonpath='{.data.tls\.crt}' --namespace $NAMESPACE)
   if [[ "$CERTIFICATE" == "null" ]]; then
     echo "Could not find certificate $CERTIFICATE"
     exit 1

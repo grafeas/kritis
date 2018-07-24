@@ -86,7 +86,6 @@ out/preinstall: $(GO_FILES)
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
 	docker build -t gcr.io/kritis-project/preinstall:latest -f preinstall/Dockerfile .
-	docker push gcr.io/kritis-project/preinstall:latest
 
 clean:
 	rm -rf $(BUILD_DIR)
