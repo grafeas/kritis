@@ -39,7 +39,7 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+var gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
