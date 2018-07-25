@@ -39,7 +39,7 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
+var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
@@ -164,7 +164,16 @@ func createCRDExamples(t *testing.T) {
 	}
 }
 
+func deleteFailedDeployments(){
+		helmCmd := exec.Command("sh", "-c",
+			 "helm delete $(helm list --failed --short)",)
+		helmCmd.Dir = "../artifacts"
+		integration_util.RunCmdOut(crdCmd)
+}
+
 func initKritis(t *testing.T) func() {
+	deleteFailedDeployments()
+
 	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
 	preinstallCmd.Dir = "../"
 	defer func() {
@@ -195,6 +204,7 @@ func initKritis(t *testing.T) func() {
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
+		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
 	// parsing out release name from 'helm init' output
