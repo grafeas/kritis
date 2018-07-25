@@ -41,10 +41,11 @@ func deleteExistingObjects() {
 	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
 	csrCmd.Stderr = os.Stderr
 	_, err := csrCmd.Output()
-	if err == nil {
+	if err == nil && deleteCSR {
 		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName, "--namespace", namespace)
 		RunCommand(deleteCSRCmd)
 	}
+
 	secretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName, "--namespace", namespace)
 	secretCmd.Stderr = os.Stderr
 	_, err = secretCmd.Output()

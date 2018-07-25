@@ -24,11 +24,13 @@ var (
 	namespace     string
 	csrName       string
 	tlsSecretName string
+	deleteCSR     bool
 )
 
 func init() {
 	flag.StringVar(&csrName, "csr-name", "tls-webhook-secret-cert", "The name of the kritis csr.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "tls-webhook-secret", "The name of the kritis tls secret.")
+	flag.BoolVar(&deleteCSR, "delete-csr", true, "Delete the csr passed in to csr-name, default tls-webhook-secret-cert")
 	flag.Parse()
 }
 
