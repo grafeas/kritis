@@ -13,13 +13,14 @@ Instructions for installing kritis on your cluster via helm can be found [here](
 
 ## Kritis Tutorial
 
-### Setting up an ImageSecurityPolicy
+### 1. Setting up an ImageSecurityPolicy
 
 Kritis relies on user defined `ImageSecurityPolicies` to determine whether a pod should be admitted or denied at deploy time.
 
-First, you will need to specify an `ImageSecurityPolicy`. 
-A sample is shown here:
-```yaml
+First, you will need to create an `ImageSecurityPolicy`. 
+```shell
+cat <<EOF | kubectl apply -f - \
+
 apiVersion: kritis.grafeas.io/v1beta1
 kind: ImageSecurityPolicy
 metadata:
@@ -35,88 +36,148 @@ spec:
     whitelistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
-```
-| Field         | Possible Values           | Details  |
-| ------------- | ------------- | ----- |
-| imageWhitelist  | | A list of images that are whitelisted and should always be allowed. |
-| maximumSeverity | LOW/MEDIUM/HIGH/CRITICAL/BLOCKALL |   The maximum CVE severity allowed in an image. An image with CVEs exceeding this limit will result in the pod being denied. `BLOCKALL` will block an image with any CVEs that aren't whitelisted.|
-| onlyFixesNotAvailable | true/false | When set to true, any images that contain CVEs with fixes available will be denied. |
-| whitelistCVEs |     | Ignore these CVEs when deciding whether to allow or deny a pod. |
-
-Create your image security policy:
-```
-$ kubectl create -f image-security-policy.yaml 
-    imagesecuritypolicy.kritis.grafeas.io "my-isp" created
+EOF
 ```
 
-### Fully Qualified Images
-When deploying pods, images must be fully qualified with digests.
-This is necessary because tags are mutable, and kritis may not get the correct vulnerability information for a tagged image.
+The `ImageSecurityPolicy` should be configured:
+```shell
+imagesecuritypolicy.kritis.grafeas.io/my-isp configured
+```
+This `ImageSecurityPolicy` specifies two `nginx` images that are whitelisted and should always be allowed entry.
+It sets the maximum CVE severity allowed in any image to `HIGH`, and whitelists two CVEs which should be ignored during validation.
+It also sets `onlyFixesNotAvailable: true`, meaning that images that contain CVEs with fixes available should be denied.
 
-We provide [resolve-tags](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md), which can be run as a kubectl plugin or as a standalone binary to resolve all images from tags to digests in Kubernetes yamls.
+### 2. Deploying An Image With Vulnerabilities
+Now that we have kritis installed and an `ImageSecurityPolicy` to validate against, we can go ahead and start deploying some images!
 
-If you need to deploy tagged images, you can add them to the `imageWhitelist` in your image security policy.
+First, let's try to deploy a java image:
+```shell
+cat <<EOF | kubectl apply -f - \
 
-### Breakglass Annotation
-To deploy a pod without any validation checks, you can add a breakglass annotation to your pod.
-```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx-no-digest-breakglass
-  annotations: {
-    "kritis.grafeas.io/breakglass": "true"
-  }
+  name: java-with-vuln
 spec:
   containers:
-  - name: nginx-no-digest-breakglass
-    image: gcr.io/kritis-int-test/nginx-no-digest-breakglass:latest
+  - name: java-with-vuln
+    image: gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
     ports:
     - containerPort: 80
+EOF
 ```
 
-### Deploying Pods
-Now, when you deploy pods kritis will validate them against all `ImageSecurityPolicies` found in the same namespace.
-We can deploy a pod with a whitelisted image, which will be allowed:
-
-```
-$ kubectl create -f integration/testdata/nginx/nginx-digest-whitelist.yaml 
-    pod "nginx-digest-whitelist" created
+You should see an error:
+```shell
+Error from server: error when creating "integration/testdata/java/java-with-vuln.yaml ": admission webhook 
+"kritis-validation-hook.grafeas.io" denied the request: found violations in 
+gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
 ```
 
-We can deploy an unqualified image, which is whitelisted:
-```
-$ kubectl create -f integration/testdata/nginx/nginx-no-digest-whitelist.yaml 
-    pod "nginx-no-digest-whitelist" created
-```
+Kritis denied this pod deployment because violations not allowed by the `ImageSecurityPolicy` were found in the image.
 
-We can deploy any pod with the breakglass annotation:
-```
-$ kubectl create -f integration/testdata/nginx/nginx-no-digest-breakglass.yaml 
-    pod "nginx-no-digest-breakglass" created
-```
+### 3. Checking Kritis Logs
 
-However, an unqualified image that isn't whitelisted will be denied:
-```
-$ kubectl create -f integration/testdata/nginx/nginx-no-digest.yaml
-    Error from server: error when creating "integration/testdata/nginx/nginx-no-digest.yaml": admission webhook 
-    "kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-int-test/nginx-no-digest:latest is not a fully 
-    qualified image
-```
-
-An image with violation that exceed the max severity defined in the image security policy will also be denied:
-```
-kubectl create -f integration/testdata/java/java-with-vuln.yaml 
-    Error from server: error when creating "integration/testdata/java/java-with-vuln.yaml ": admission webhook 
-    "kritis-validation-hook.grafeas.io" denied the request: found violations in 
-    gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
-```
-
-To get more information about why a request was denied, you can look at the logs for the kritis webhook pod:
+We can learn more about why a deployment failed by looking at logs for the kritis validation hook pod.
 ```
 $ kubectl get pods
 NAME                                      READY     STATUS    RESTARTS   AGE
 kritis-validation-hook-56d9d7d4f5-54mqt   1/1       Running   0          3m
 $ kubectl logs -f kritis-validation-hook-56d9d7d4f5-54mqt
     ...
+    found CVE projects/goog-vulnz/notes/CVE-2013-7445 in gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+        which has fixes available
+    found CVE projects/goog-vulnz/notes/CVE-2015-8985 in gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+        which has fixes available
+
 ```
+The logs show that this image contains CVEs with fixes available.
+Since our `ImageSecurityPolicy` was configured to deny such images, our request to deploy this pod was denied.
+
+### 4. Force Deployment With a Breakglass Annotation
+Say we want to force deploy this image even though it doesn't pass validation checks.
+
+We can add a breakglass annotation to the pod spec which instructs kritis to always allow the pod:
+
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-with-vuln
+  annotations: {
+    "kritis.grafeas.io/breakglass": "true"
+  }
+spec:
+  containers:
+  - name: java-with-vuln
+    image: gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+    ports:
+    - containerPort: 80
+EOF
+```
+
+The pod should be created:
+```shell
+pod/java-with-vuln created
+```
+### 5. Deploying a Tagged Image
+Kritis expects all images it inspects to be fully qualified with a digest, since it can't retrieve vulnerability information for tagged images.
+
+We can try to deploy a tagged image:
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-digest
+spec:
+  containers:
+  - name: nginx-no-digest
+    image: gcr.io/kritis-int-test/nginx-no-digest:latest
+    ports:
+    - containerPort: 80
+EOF
+```
+which should result in an error:
+```shell
+"kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-int-test/nginx-no-digest:latest
+    is not a fully qualified image
+```
+
+### 6. Deploying a Tagged Whitelisted Image
+
+To deploy a tagged image, you can add that image to the `imageWhitelist` in your `ImageSecurityPolicy`.
+
+We can try to deploy a tagged whitelisted image:
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-digest-whitelist
+spec:
+  containers:
+  - name: nginx-no-digest-whitelist
+    image: gcr.io/kritis-int-test/nginx-digest-whitelist:latest
+    ports:
+    - containerPort: 80
+EOF
+```
+
+The pod should be created:
+```shell
+pod/nginx-no-digest-whitelist created
+```
+
+That brings us to the end of the tutorial!
+
+## Qualifying Images with Resolve-Tags
+When deploying pods, images must be fully qualified with digests.
+This is necessary because tags are mutable, and kritis may not get the correct vulnerability information for a tagged image.
+
+We provide [resolve-tags](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md), which can be run as a kubectl plugin or as a standalone binary to resolve all images from tags to digests in Kubernetes yamls.
+
