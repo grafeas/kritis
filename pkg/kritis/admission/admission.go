@@ -34,7 +34,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"github.com/sirupsen/logrus"
 	"k8s.io/api/admission/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
@@ -44,8 +43,8 @@ import (
 )
 
 type config struct {
-	retrievePod                 func(r *http.Request) (*v1.Pod, error)
-	retrieveDeployment          func(r *http.Request) (*appsv1.Deployment, error)
+	retrievePod                 func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error)
+	retrieveDeployment          func(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error)
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
@@ -70,8 +69,8 @@ var (
 )
 
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	glog.Info("Starting admission review handler: ", version.Commit)
-
+	glog.Infof("Starting admission review handler, version: %s",
+		version.Commit)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body: %v", err)
@@ -89,11 +88,12 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 			UID:     ar.Request.UID,
 			Allowed: false,
 			Result: &metav1.Status{
+				Status:  string(constants.FailureStatus),
 				Message: err.Error(),
 			},
 		})
 		if err != nil {
-			fmt.Println(err)
+			glog.Info(err)
 		}
 		w.Write(payload)
 	}
@@ -102,19 +102,22 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		Response: &v1beta1.AdmissionResponse{
 			UID:     ar.Request.UID,
 			Allowed: true,
-			Result:  &metav1.Status{Message: constants.SuccessMessage},
+			Result: &metav1.Status{
+				Status:  string(constants.SuccessStatus),
+				Message: constants.SuccessMessage,
+			},
 		},
 	}
 
 	if ar.Request.Kind.Kind == "Deployment" {
-		fmt.Println("handling deployment...")
+		glog.Info("handling deployment...")
 		deployment := appsv1.Deployment{}
 		json.Unmarshal(ar.Request.Object.Raw, &deployment)
 		reviewDeployment(&deployment, admitResponse)
 	}
 
 	if ar.Request.Kind.Kind == "Pod" {
-		fmt.Println("handling pod...")
+		glog.Info("handling pod...")
 		pod := v1.Pod{}
 		json.Unmarshal(ar.Request.Object.Raw, &pod)
 		reviewPod(&pod, admitResponse)
@@ -124,7 +127,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	payload, err := json.Marshal(admitResponse)
 	if err != nil {
-		fmt.Println(err)
+		glog.Info(err)
 	}
 	w.Write(payload)
 }
@@ -147,6 +150,7 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 		glog.Errorf("error getting image security policies: %v", err)
 		ar.Response.Allowed = false
 		ar.Response.Result = &metav1.Status{
+			Status:  string(constants.FailureStatus),
 			Message: "error getting image security policies",
 		}
 		return
@@ -158,6 +162,7 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 		glog.Errorf("error getting metadata client: %v", err)
 		ar.Response.Allowed = false
 		ar.Response.Result = &metav1.Status{
+			Status:  string(constants.FailureStatus),
 			Message: fmt.Sprintf("error getting metadata client %v", err),
 		}
 		return
@@ -169,6 +174,7 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 			if err != nil {
 				ar.Response.Allowed = false
 				ar.Response.Result = &metav1.Status{
+					Status:  string(constants.FailureStatus),
 					Message: fmt.Sprintf("error validating image security policy %v", err),
 				}
 				return
@@ -179,6 +185,7 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 					glog.Infof("%s is not a fully qualified image", image)
 					ar.Response.Allowed = false
 					ar.Response.Result = &metav1.Status{
+						Status:  string(constants.FailureStatus),
 						Message: fmt.Sprintf("%s is not a fully qualified image", image),
 					}
 					return
@@ -188,6 +195,7 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 				defaultViolationStrategy.HandleViolation(image, ns, violations)
 				ar.Response.Allowed = false
 				ar.Response.Result = &metav1.Status{
+					Status:  string(constants.FailureStatus),
 					Message: fmt.Sprintf("found violations in %s", image),
 				}
 				return
@@ -200,43 +208,43 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 	// First, check for a breakglass annotation on the pod
 	if checkBreakglass(pod) {
-		logrus.Debugf("found breakglass annotation, returning successful status")
+		glog.Infof("found breakglass annotation, returning successful status")
 		return
 	}
 	reviewImages(pods.Images(*pod), pod.Namespace, ar)
 }
 
 // TODO(aaron-prindle) remove these functions
-func unmarshalPod(r *http.Request) (*v1.Pod, error) {
+func unmarshalPod(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
+	ar := v1beta1.AdmissionReview{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return nil, ar, err
 	}
-	ar := v1beta1.AdmissionReview{}
 	if err := json.Unmarshal(data, &ar); err != nil {
-		return nil, err
+		return nil, ar, err
 	}
 	pod := v1.Pod{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
-		return nil, err
+		return nil, ar, err
 	}
-	return &pod, nil
+	return &pod, ar, nil
 }
 
-func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, error) {
+func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error) {
+	ar := v1beta1.AdmissionReview{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return nil, ar, err
 	}
-	ar := v1beta1.AdmissionReview{}
 	if err := json.Unmarshal(data, &ar); err != nil {
-		return nil, err
+		return nil, ar, err
 	}
 	deployment := appsv1.Deployment{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
-		return nil, err
+		return nil, ar, err
 	}
-	return &deployment, nil
+	return &deployment, ar, nil
 }
 
 func checkBreakglass(pod *v1.Pod) bool {
