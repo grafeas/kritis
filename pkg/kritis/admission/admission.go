@@ -37,8 +37,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type config struct {
@@ -62,59 +60,9 @@ var (
 	defaultViolationStrategy = violation.LoggingStrategy{}
 )
 
-var (
-	runtimeScheme = runtime.NewScheme()
-	codecs        = serializer.NewCodecFactory(runtimeScheme)
-)
-
-var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview){
-	"Deployment": handleDeployment,
-	"Pod":        handlePod,
-}
-
-func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
-	glog.Info("handling deployment...")
-	deployment := appsv1.Deployment{}
-	json.Unmarshal(ar.Request.Object.Raw, &deployment)
-	reviewDeployment(&deployment, admitResponse)
-}
-
-func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
-	glog.Info("handling pod...")
-	pod := v1.Pod{}
-	json.Unmarshal(ar.Request.Object.Raw, &pod)
-	reviewPod(&pod, admitResponse)
-}
-
-func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
-	ar := v1beta1.AdmissionReview{}
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return ar, err
-	}
-
-	deserializer := codecs.UniversalDeserializer()
-	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
-		payload, err := json.Marshal(&v1beta1.AdmissionResponse{
-			UID:     ar.Request.UID,
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  string(constants.FailureStatus),
-				Message: err.Error(),
-			},
-		})
-		if err != nil {
-			glog.Info(err)
-		}
-		w.Write(payload)
-	}
-	return ar, nil
-}
-
+// This admission controller looks for the breakglass annotation
+// If one is not found, it validates against image security policies
+// TODO: Check for attestations
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	glog.Infof("Starting admission review handler, version: %s",
 		version.Commit)
@@ -276,4 +224,39 @@ func checkBreakglass(pod *v1.Pod) bool {
 // TODO: update this once we have more metadata clients
 func metadataClient() (metadata.MetadataFetcher, error) {
 	return containeranalysis.NewContainerAnalysisClient()
+}
+
+func returnStatus(status constants.Status, message string, w http.ResponseWriter) {
+	response := &v1beta1.AdmissionResponse{
+		Allowed: (status == constants.SuccessStatus),
+		Result: &metav1.Status{
+			Status:  string(status),
+			Message: message,
+		},
+	}
+	if err := writeHttpResponse(response, w); err != nil {
+		glog.Error("error writing response:", err)
+	}
+}
+
+func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWriter) error {
+	ar := v1beta1.AdmissionReview{
+		Response: response,
+	}
+	data, err := json.Marshal(ar)
+	if err != nil {
+		glog.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return nil
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(data)
+	return err
+}
+
+func isPodRunning(pod *v1.Pod) bool {
+	if pod.Status.Phase == v1.PodRunning {
+		return true
+	}
+	return false
 }

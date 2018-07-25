@@ -16,8 +16,6 @@ limitations under the License.
 package violation
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -67,7 +65,7 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	}
 	labels := map[string]string{constants.InvalidImageSecPolicy: labelValue}
 	annotations := map[string]string{constants.InvalidImageSecPolicy: annotationValue}
-	glog.Info(fmt.Sprintf("Adding label %s and annotation %s", labelValue, annotationValue))
+	glog.Infof("Adding label %s and annotation %s", labelValue, annotationValue)
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 

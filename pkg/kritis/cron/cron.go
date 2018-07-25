@@ -97,6 +97,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 			return err
 		}
 		for _, p := range ps {
+			glog.Infof("Checking po %s", p.Name)
 			for _, c := range pods.Images(p) {
 				v, err := cfg.ViolationChecker(c, isp)
 				if err != nil {
