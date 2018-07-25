@@ -13,11 +13,16 @@
 # limitations under the License.
 
 FROM golang:1.10
+WORKDIR /go/src/github.com/grafeas/kritis
+COPY . .
+RUN make out/preinstall 
 
+
+FROM golang:1.10
 RUN go get -u github.com/cloudflare/cfssl/cmd/...
 
 ENV KUBECTL_VERSION v1.10.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 
-COPY out/preinstall /preinstall
+COPY --from=0 /go/src/github.com/grafeas/kritis/out/preinstall /preinstall
