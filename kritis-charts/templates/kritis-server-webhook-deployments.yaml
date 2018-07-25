@@ -1,19 +1,19 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: {{ .Values.serviceNamePods }}
+  name: {{ .Values.serviceNameDeployments }}
 webhooks:
-  - name: kritis-validation-hook.grafeas.io
+  - name: kritis-validation-hook-deployments.grafeas.io
     rules:
       - apiGroups:
-          - ""
+          - "*" # TODO(aaron-prindle) minimize this capture group
         apiVersions:
-          - v1
+          - "*" # TODO(aaron-prindle) minimize this capture group
         operations:
           - CREATE
-          - UPDATE
+          # - UPDATE # TODO(aaron-prindle) add back update when whitelist and helm do not collide
         resources:
-          - pods
+          - deployments
     failurePolicy: Fail
     clientConfig:
       caBundle: {{ .Values.caBundle }}

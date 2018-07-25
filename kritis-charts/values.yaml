@@ -31,7 +31,8 @@ tolerations: []
 
 affinity: {}
 
-serviceName: kritis-validation-hook
+serviceNamePods: kritis-validation-hook
+serviceNameDeployments: kritis-validation-hook-deployments
 tlsSecretName: tls-webhook-secret
 cronInterval: 1h
 
