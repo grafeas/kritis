@@ -273,10 +273,6 @@ func TestKritisPods(t *testing.T) {
 					"integration/testdata/nginx/nginx-no-digest.yaml")
 				cmd.Dir = "../"
 				integration_util.RunCmdOut(cmd)
-				// output, err := integration_util.RunCmdOut(cmd)
-				// if err != nil {
-				// 	t.Fatalf("kritis: %s %v", output, err)
-				// }
 			},
 		},
 		{
@@ -336,10 +332,23 @@ func TestKritisPods(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln.yaml")
 				integration_util.RunCmdOut(cmd)
-				// output, err := integration_util.RunCmdOut(cmd)
-				// if err != nil {
-				// 	t.Fatalf("kritis: %s %v", output, err)
-				// }
+			},
+		},
+		{
+			description: "java-with-vuln-deployment",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/java/java-with-vuln-deployment.yaml"},
+			deployments: []testObject{
+				{
+					name: "java-with-vuln-deployment",
+				},
+			},
+			shouldSucceed: false,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-deployment.yaml")
+				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
@@ -368,7 +377,6 @@ func TestKritisPods(t *testing.T) {
 	// CRDs themselves are non-namespaced so we have to delete them each run
 	deleteCRDs()
 	deleteCRDExamples()
-	// defer deleteCRDExamples()
 
 	deleteKritis := initKritis(t)
 	defer deleteKritis()
