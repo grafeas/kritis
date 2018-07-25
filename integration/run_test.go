@@ -39,7 +39,7 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+var gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
@@ -164,11 +164,11 @@ func createCRDExamples(t *testing.T) {
 	}
 }
 
-func deleteFailedDeployments(){
-		helmCmd := exec.Command("sh", "-c",
-			 "helm delete $(helm list --failed --short)",)
-		helmCmd.Dir = "../artifacts"
-		integration_util.RunCmdOut(crdCmd)
+func deleteFailedDeployments() {
+	helmCmd := exec.Command("sh", "-c",
+		"helm delete $(helm list --failed --short)")
+	helmCmd.Dir = "../artifacts"
+	integration_util.RunCmdOut(helmCmd)
 }
 
 func initKritis(t *testing.T) func() {
@@ -198,7 +198,7 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("caBundle=%s", kubeCA),
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
-		"--set", fmt.Sprintf("=%s", "default"),
+		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
 
