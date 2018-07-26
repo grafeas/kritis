@@ -74,15 +74,15 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admitResponse := &v1beta1.AdmissionReview{
-		Response: &v1beta1.AdmissionResponse{
-			UID:     ar.Request.UID,
-			Allowed: true,
-			Result: &metav1.Status{
-				Status:  string(constants.SuccessStatus),
-				Message: constants.SuccessMessage,
-			},
-		},
+	// Check, if the pod is already running. This handles scenarios when security
+	// policy is deployed after a pod is deployed.
+	// In this situation, the cron job will annotate the pod and call v1.CoreV1.Pod.Patch()
+	// kubectl patch command goes through admission review before patching the pod and will return error.
+	// In order to apply the labels for invalid pods, we skip admission review for already running pods.
+	if pods.IsPodRunning(*pod) {
+		glog.Infof("The pod is already running. Skip Admission Review.")
+		returnStatus(constants.SuccessStatus, constants.PodAlreadyRunning, w)
+		return
 	}
 
 	for k8sType, handler := range handlers {
@@ -252,11 +252,4 @@ func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWrite
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	return err
-}
-
-func isPodRunning(pod *v1.Pod) bool {
-	if pod.Status.Phase == v1.PodRunning {
-		return true
-	}
-	return false
 }

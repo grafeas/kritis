@@ -125,3 +125,7 @@ func DeleteLabelsAndAnnotations(pod corev1.Pod, labels []string, annotations []s
 	}
 	return patchFunction(modifiedPod, originalJSON)
 }
+
+func IsPodRunning(pod corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodRunning
+}

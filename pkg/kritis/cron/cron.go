@@ -113,3 +113,13 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 	}
 	return nil
 }
+
+// RunInForeground checks Pods in foreground.
+func RunInForeground(cfg Config) error {
+	isps, err := cfg.SecurityPolicyLister("")
+	if err != nil {
+		return err
+	}
+	glog.Infof("Got isps %v", isps)
+	return podChecker(cfg, isps)
+}

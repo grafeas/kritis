@@ -35,11 +35,11 @@ serviceName: kritis-validation-hook
 serviceNamePods: kritis-validation-hook
 serviceNameDeployments: kritis-validation-hook-deployments
 tlsSecretName: tls-webhook-secret
-cronInterval: 10m
+cronInterval: 1h
 
 image:
   repository: gcr.io/kritis-project/kritis-server
-  tag: test_cron
+  tag: latest
   name: kritis-server
   pullPolicy: Always
 
