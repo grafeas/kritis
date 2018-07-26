@@ -67,21 +67,37 @@ var (
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 )
 
-func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	glog.Infof("Starting admission review handler, version: %s",
-		version.Commit)
+var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview){
+	"Deployment": handleDeployment,
+	"Pod":        handlePod,
+}
+
+func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+	glog.Info("handling deployment...")
+	deployment := appsv1.Deployment{}
+	json.Unmarshal(ar.Request.Object.Raw, &deployment)
+	reviewDeployment(&deployment, admitResponse)
+}
+
+func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+	glog.Info("handling pod...")
+	pod := v1.Pod{}
+	json.Unmarshal(ar.Request.Object.Raw, &pod)
+	reviewPod(&pod, admitResponse)
+}
+
+func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
+	ar := v1beta1.AdmissionReview{}
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		glog.Errorf("Error reading body: %v", err)
-		http.Error(w, "can't read body", http.StatusBadRequest)
-		return
+		return ar, err
 	}
 
-	ar := v1beta1.AdmissionReview{}
 	deserializer := codecs.UniversalDeserializer()
 	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusBadRequest)
 
 		payload, err := json.Marshal(&v1beta1.AdmissionResponse{
 			UID:     ar.Request.UID,
@@ -96,6 +112,19 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write(payload)
 	}
+	return ar, nil
+}
+
+func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
+	glog.Infof("Starting admission review handler, version: %s",
+		version.Commit)
+
+	ar, err := deserializeRequest(w, r)
+	if err != nil {
+		glog.Errorf("Error reading body: %v", err)
+		http.Error(w, "can't read body", http.StatusBadRequest)
+		return
+	}
 
 	admitResponse := &v1beta1.AdmissionReview{
 		Response: &v1beta1.AdmissionResponse{
@@ -108,18 +137,10 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if ar.Request.Kind.Kind == "Deployment" {
-		glog.Info("handling deployment...")
-		deployment := appsv1.Deployment{}
-		json.Unmarshal(ar.Request.Object.Raw, &deployment)
-		reviewDeployment(&deployment, admitResponse)
-	}
-
-	if ar.Request.Kind.Kind == "Pod" {
-		glog.Info("handling pod...")
-		pod := v1.Pod{}
-		json.Unmarshal(ar.Request.Object.Raw, &pod)
-		reviewPod(&pod, admitResponse)
+	for k8sType, handler := range handlers {
+		if ar.Request.Kind.Kind == k8sType {
+			handler(&ar, admitResponse)
+		}
 	}
 
 	// Send response
@@ -140,6 +161,14 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 	}
 }
 
+func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
+	ar.Response.Allowed = false
+	ar.Response.Result = &metav1.Status{
+		Status:  string(constants.FailureStatus),
+		Message: message,
+	}
+}
+
 func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	if util.CheckGlobalWhitelist(images) {
 		glog.Infof("%s are all whitelisted, returning successful status", images)
@@ -148,24 +177,18 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	// Validate images in the pod against ImageSecurityPolicies in the same namespace
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
-		glog.Errorf("error getting image security policies: %v", err)
-		ar.Response.Allowed = false
-		ar.Response.Result = &metav1.Status{
-			Status:  string(constants.FailureStatus),
-			Message: "error getting image security policies",
-		}
+		errMsg := fmt.Sprintf("error getting image security policies: %v", err)
+		glog.Errorf(errMsg)
+		createDeniedResponse(ar, errMsg)
 		return
 	}
 	glog.Infof("Got isps %v", isps)
 	// get the client we will get vulnz from
 	metadataClient, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
-		glog.Errorf("error getting metadata client: %v", err)
-		ar.Response.Allowed = false
-		ar.Response.Result = &metav1.Status{
-			Status:  string(constants.FailureStatus),
-			Message: fmt.Sprintf("error getting metadata client %v", err),
-		}
+		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
+		glog.Errorf(errMsg)
+		createDeniedResponse(ar, errMsg)
 		return
 	}
 	for _, isp := range isps {
@@ -173,32 +196,25 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 			glog.Infof("Getting vulnz for %s", image)
 			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
-				ar.Response.Allowed = false
-				ar.Response.Result = &metav1.Status{
-					Status:  string(constants.FailureStatus),
-					Message: fmt.Sprintf("error validating image security policy %v", err),
-				}
+				errMsg := fmt.Sprintf("error validating image security policy %v", err)
+				glog.Errorf(errMsg)
+				createDeniedResponse(ar, errMsg)
 				return
 			}
 			// Check if one of the violations is that the image is not fully qualified
 			for _, v := range violations {
 				if v.Violation == securitypolicy.UnqualifiedImageViolation {
-					glog.Infof("%s is not a fully qualified image", image)
-					ar.Response.Allowed = false
-					ar.Response.Result = &metav1.Status{
-						Status:  string(constants.FailureStatus),
-						Message: fmt.Sprintf("%s is not a fully qualified image", image),
-					}
+					errMsg := fmt.Sprintf("%s is not a fully qualified image", image)
+					glog.Errorf(errMsg)
+					createDeniedResponse(ar, errMsg)
 					return
 				}
 			}
 			if len(violations) != 0 {
 				defaultViolationStrategy.HandleViolation(image, ns, violations)
-				ar.Response.Allowed = false
-				ar.Response.Result = &metav1.Status{
-					Status:  string(constants.FailureStatus),
-					Message: fmt.Sprintf("found violations in %s", image),
-				}
+				errMsg := fmt.Sprintf("found violations in %s", image)
+				glog.Errorf(errMsg)
+				createDeniedResponse(ar, errMsg)
 				return
 			}
 		}
