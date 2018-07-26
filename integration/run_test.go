@@ -164,7 +164,16 @@ func createCRDExamples(t *testing.T) {
 	}
 }
 
+func deleteFailedDeployments() {
+	helmCmd := exec.Command("sh", "-c",
+		"helm delete $(helm list --failed --short)")
+	helmCmd.Dir = "../artifacts"
+	integration_util.RunCmdOut(helmCmd)
+}
+
 func initKritis(t *testing.T) func() {
+	deleteFailedDeployments()
+
 	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
 	preinstallCmd.Dir = "../"
 	defer func() {
@@ -189,12 +198,13 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("caBundle=%s", kubeCA),
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
-		"--set", fmt.Sprintf("=%s", "default"),
+		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
+		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
 	// parsing out release name from 'helm init' output
@@ -273,10 +283,6 @@ func TestKritisPods(t *testing.T) {
 					"integration/testdata/nginx/nginx-no-digest.yaml")
 				cmd.Dir = "../"
 				integration_util.RunCmdOut(cmd)
-				// output, err := integration_util.RunCmdOut(cmd)
-				// if err != nil {
-				// 	t.Fatalf("kritis: %s %v", output, err)
-				// }
 			},
 		},
 		{
@@ -336,10 +342,23 @@ func TestKritisPods(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln.yaml")
 				integration_util.RunCmdOut(cmd)
-				// output, err := integration_util.RunCmdOut(cmd)
-				// if err != nil {
-				// 	t.Fatalf("kritis: %s %v", output, err)
-				// }
+			},
+		},
+		{
+			description: "java-with-vuln-deployment",
+			args: []string{"kubectl", "create", "-f",
+				"integration/testdata/java/java-with-vuln-deployment.yaml"},
+			deployments: []testObject{
+				{
+					name: "java-with-vuln-deployment",
+				},
+			},
+			shouldSucceed: false,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-deployment.yaml")
+				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
@@ -368,7 +387,6 @@ func TestKritisPods(t *testing.T) {
 	// CRDs themselves are non-namespaced so we have to delete them each run
 	deleteCRDs()
 	deleteCRDExamples()
-	// defer deleteCRDExamples()
 
 	deleteKritis := initKritis(t)
 	defer deleteKritis()
