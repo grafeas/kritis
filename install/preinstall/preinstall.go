@@ -133,8 +133,8 @@ func createTLSSecret() {
 	// time.Sleep(5 * time.Second)
 	foundSecret := false
 	var secretErr error
-	for i := 0; i < secretChecks; i++ {
-		tlsSecretCmd := exec.Command("kubectl", "get", "csr", "tls", "--namespace", namespace)
+	for i := 0; i < 10; i++ {
+		tlsSecretCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
 		_, err := tlsSecretCmd.CombinedOutput()
 		if err == nil {
 			foundSecret = true

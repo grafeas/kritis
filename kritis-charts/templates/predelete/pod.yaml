@@ -15,4 +15,11 @@ spec:
   containers:
   - name: {{ .Values.predelete.pod.name }}
     image: {{ .Values.predelete.pod.image }}
+    args:
+    - "--webhook-name"
+    - {{ .Values.serviceName }}
+    - "--tls-secret-name"
+    - {{ .Values.tlsSecretName }}
+    - "--csr-name"
+    - {{ .Values.csrName }}
     command: {{ .Values.predelete.pod.command }}

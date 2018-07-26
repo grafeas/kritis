@@ -30,9 +30,9 @@ var (
 )
 
 func init() {
-	flag.StringVar(&webhookName, "webhook-name", install.WebhookName, "The name of the validation webhook.")
-	flag.StringVar(&tlsSecretName, "tls-secret-name", install.TlsSecretName, "The name of the kritis tls secret.")
-	flag.StringVar(&csrName, "csr-name", install.CSRName, "The name of the kritis csr.")
+	flag.StringVar(&webhookName, "webhook-name", "", "The name of the validation webhook.")
+	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
+	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.Parse()
 }
 

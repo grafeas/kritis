@@ -30,8 +30,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&csrName, "csr-name", install.CSRName, "The name of the kritis csr.")
-	flag.StringVar(&tlsSecretName, "tls-secret-name", install.TlsSecretName, "The name of the kritis tls secret.")
+	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
+	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.BoolVar(&deleteCSR, "delete-csr", true, "Delete the csr passed in to csr-name, default tls-webhook-secret-cert")
 	flag.Parse()
 }

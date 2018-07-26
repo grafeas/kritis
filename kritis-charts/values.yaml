@@ -33,6 +33,7 @@ affinity: {}
  
 serviceName: kritis-validation-hook
 tlsSecretName: tls-webhook-secret
+csrName: tls-webhook-secret-cert
 cronInterval: 1h
  
 image:

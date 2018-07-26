@@ -15,4 +15,9 @@ spec:
   containers:
   - name: {{ .Values.preinstall.pod.name }}
     image: {{ .Values.preinstall.pod.image }}
+    args:
+      - "--csr-name"
+      - {{ .Values.csrName }}
+      - "--tls-secret-name"
+      - {{ .Values.tlsSecretName }}
     command: {{ .Values.preinstall.pod.command }}

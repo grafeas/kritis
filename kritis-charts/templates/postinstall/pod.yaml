@@ -13,4 +13,11 @@ spec:
   containers:
   - name: {{ .Values.postinstall.pod.name }}
     image: {{ .Values.postinstall.pod.image }}
+    args:
+      - "--webhook-name" 
+      - {{ .Values.serviceName }}
+      - "--service-name"
+      - {{ .Values.serviceName }}
+      - "--tls-secret-name"
+      - {{ .Values.tlsSecretName }}
     command: {{ .Values.postinstall.pod.command }}

@@ -20,7 +20,6 @@ import (
 	"flag"
 
 	"github.com/grafeas/kritis/pkg/kritis/install"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -32,18 +31,14 @@ var (
 )
 
 func init() {
-	flag.StringVar(&webhookName, "webhook-name", install.WebhookName, "The name of the validation webhook.")
-	flag.StringVar(&serviceName, "service-name", install.ServiceName, "The name of the service for the webhook.")
-	flag.StringVar(&tlsSecretName, "tls-secret-name", install.TlsSecretName, "The name of the kritis tls secret.")
+	flag.StringVar(&webhookName, "webhook-name", "", "The name of the validation webhook.")
+	flag.StringVar(&serviceName, "service-name", "", "The name of the service for the webhook.")
+	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.Parse()
 }
 
 func main() {
-	logrus.Info("waiting for preinstall pod")
 	waitForPreinstallPod()
-	logrus.Info("preinstall pod complete")
 	getCaBundle()
-	logrus.Info("getting ca bundle")
 	createValidationWebhook()
-	logrus.Info("creating validation webhookS")
 }
