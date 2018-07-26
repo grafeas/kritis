@@ -37,7 +37,7 @@ func (l *LoggingStrategy) HandleViolation(image string, ns string, violations []
 	if len(violations) == 0 {
 		return nil
 	}
-	glog.Warning("Found violations in pod %s, ns %s", image, ns)
+	glog.Warning("Found violations in image %s, ns %s", image, ns)
 	for _, v := range violations {
 		glog.Warning(v.Reason)
 	}

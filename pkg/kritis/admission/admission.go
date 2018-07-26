@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/golang/glog"
@@ -73,7 +72,7 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		version.Commit)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error reading body: %v", err)
+		glog.Errorf("Error reading body: %v", err)
 		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
@@ -134,7 +133,9 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
 	for _, c := range deployment.Spec.Template.Spec.Containers {
-		log.Println(c.Image)
+		reviewImages([]string{c.Image}, deployment.Namespace, ar)
+	}
+	for _, c := range deployment.Spec.Template.Spec.InitContainers {
 		reviewImages([]string{c.Image}, deployment.Namespace, ar)
 	}
 }
