@@ -20,11 +20,12 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 func setNamespace() {
@@ -62,6 +63,11 @@ func createCertificates() {
     "kritis-validation-hook.kube-system",
     "kritis-validation-hook.%s",
     "kritis-validation-hook.%s.svc"
+    "kritis-validation-hook-deployments",
+    "kritis-validation-hook-deployments.kube-system",
+    "kritis-validation-hook-deployments.%s",
+    "kritis-validation-hook-deployments.%s.svc"
+
 ],
 "key": {
 	"algo": "ecdsa",

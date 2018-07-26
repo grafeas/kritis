@@ -17,17 +17,23 @@ limitations under the License.
 package admission
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/golang/glog"
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"k8s.io/api/admission/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"net/http/httptest"
-	"testing"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type testConfig struct {
@@ -39,12 +45,12 @@ type testConfig struct {
 }
 
 func Test_BreakglassAnnotation(t *testing.T) {
-	mockPod := func(r *http.Request) (*v1.Pod, error) {
+	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"kritis.grafeas.io/breakglass": "true"},
 			},
-		}, nil
+		}, v1beta1.AdmissionReview{}, nil
 	}
 	mockConfig := config{
 		retrievePod: mockPod,
@@ -58,7 +64,7 @@ func Test_BreakglassAnnotation(t *testing.T) {
 	})
 }
 func Test_UnqualifiedImage(t *testing.T) {
-	mockPod := func(r *http.Request) (*v1.Pod, error) {
+	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -67,7 +73,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 					},
 				},
 			},
-		}, nil
+		}, v1beta1.AdmissionReview{}, nil
 	}
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
@@ -153,7 +159,7 @@ func Test_InvalidISP(t *testing.T) {
 }
 
 func Test_GlobalWhitelist(t *testing.T) {
-	mockPod := func(r *http.Request) (*v1.Pod, error) {
+	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -162,7 +168,7 @@ func Test_GlobalWhitelist(t *testing.T) {
 					},
 				},
 			},
-		}, nil
+		}, v1beta1.AdmissionReview{}, nil
 	}
 	mockConfig := config{
 		retrievePod: mockPod,
@@ -190,8 +196,8 @@ func mockMetadata() func() (metadata.MetadataFetcher, error) {
 	}
 }
 
-func mockValidPod() func(r *http.Request) (*v1.Pod, error) {
-	return func(r *http.Request) (*v1.Pod, error) {
+func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
+	return func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -200,7 +206,7 @@ func mockValidPod() func(r *http.Request) (*v1.Pod, error) {
 					},
 				},
 			},
-		}, nil
+		}, v1beta1.AdmissionReview{}, nil
 	}
 }
 
@@ -218,7 +224,7 @@ func RunTest(t *testing.T, tc testConfig) {
 	admissionConfig = tc.mockConfig
 	// Create a ResponseRecorder to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(AdmissionReviewHandler)
+	handler := http.HandlerFunc(PodTestReviewHandler)
 	handler.ServeHTTP(rr, req)
 	// Check the status code is what we expect.
 	if status := rr.Code; status != tc.httpStatus {
@@ -232,4 +238,35 @@ func RunTest(t *testing.T, tc testConfig) {
 		t.Errorf("handler returned unexpected body: got %v want %v",
 			rr.Body.String(), expected)
 	}
+}
+
+// This admission controller looks for the breakglass annotation
+// If one is not found, it validates against image security policies
+// TODO: Check for attestations
+func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
+	glog.Info("Starting admission review handler version %s ...", version.Commit)
+	pod, _, err := admissionConfig.retrievePod(r)
+	if err != nil {
+		glog.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	admitResponse := &v1beta1.AdmissionReview{
+		Response: &v1beta1.AdmissionResponse{
+			UID:     types.UID(""),
+			Allowed: true,
+			Result: &metav1.Status{
+				Status:  string(constants.SuccessStatus),
+				Message: constants.SuccessMessage,
+			},
+		},
+	}
+	reviewPod(pod, admitResponse)
+	// Send response
+	w.Header().Set("Content-Type", "application/json")
+	payload, err := json.Marshal(admitResponse)
+	if err != nil {
+		glog.Info(err)
+	}
+	w.Write(payload)
 }
