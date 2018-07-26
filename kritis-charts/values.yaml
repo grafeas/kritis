@@ -48,3 +48,10 @@ serviceNamespace: "default"
 gacSecret:
   name: "gac-ca-admin"
   path: "gac.json"
+
+preinstall:
+  serviceAccount: "kritis-preinstall-serviceaccount"
+  clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
+  pod: "kritis-preinstall"
+    image: "gcr.io/kritis-project/preinstall:latest"
+    command: ["/preinstall"]
