@@ -64,9 +64,10 @@ spec:
       providers/goog-vulnz/notes/CVE-2017-1000082
       providers/goog-vulnz/notes/CVE-2017-1000082
 ```
-|Image Security Policy Spec description:
-| Field | Default  (if applicable)   | Description |
-|-----------|-------------|-------------|
+Image Security Policy Spec description:
+
+| Field     | Default (if applicable)   | Description |
+|-----------|---------------------------|-------------|
 |imageWhitelist | | List of images that are whitelisted and are not inspected by Admission Controller.|
 |packageVulnerabilityPolicy.whitelistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| CRITICAL|Defines the tolerance level for vulnerability found in the container image.|
