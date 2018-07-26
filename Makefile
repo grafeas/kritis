@@ -88,6 +88,13 @@ out/preinstall: $(GO_FILES)
 preinstall-image:  out/preinstall
 	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f preinstall/Dockerfile .
 
+out/postinstall: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/postinstall
+
+.PHONY: postinstall-image
+postinstall-image:  out/postinstall
+	docker build -t gcr.io/kritis-project/postinstall:$(IMAGE_TAG) -f postinstall/Dockerfile .
+
 clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration

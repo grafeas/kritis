@@ -20,22 +20,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
-)
 
-func setNamespace() {
-	namespaceFile := "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	contents, err := ioutil.ReadFile(namespaceFile)
-	if err != nil {
-		logrus.Fatalf("error trying to get namespace from %s: %v", namespaceFile, err)
-	}
-	logrus.Infof("contents of %s: %s", namespaceFile, contents)
-	namespace = string(contents)
-}
+	"github.com/grafeas/kritis/pkg/kritis/install"
+	"github.com/sirupsen/logrus"
+)
 
 func deleteExistingObjects() {
 	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
@@ -43,7 +35,7 @@ func deleteExistingObjects() {
 	_, err := csrCmd.Output()
 	if err == nil && deleteCSR {
 		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName, "--namespace", namespace)
-		RunCommand(deleteCSRCmd)
+		install.RunCommand(deleteCSRCmd)
 	}
 
 	secretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName, "--namespace", namespace)
@@ -51,7 +43,7 @@ func deleteExistingObjects() {
 	_, err = secretCmd.Output()
 	if err == nil {
 		deleteSecretCmd := exec.Command("kubectl", "delete", "secret", tlsSecretName, "--namespace", namespace)
-		RunCommand(deleteSecretCmd)
+		install.RunCommand(deleteSecretCmd)
 	}
 }
 
@@ -71,11 +63,11 @@ func createCertificates() {
 	cert = fmt.Sprintf(cert, namespace, namespace)
 	certCmd := exec.Command("cfssl", "genkey", "-")
 	certCmd.Stdin = bytes.NewReader([]byte(cert))
-	output := RunCommand(certCmd)
+	output := install.RunCommand(certCmd)
 
 	serverCmd := exec.Command("cfssljson", "-bare", "server")
 	serverCmd.Stdin = bytes.NewReader(output)
-	RunCommand(serverCmd)
+	install.RunCommand(serverCmd)
 }
 
 func createCertificateSigningRequest() {
@@ -97,12 +89,12 @@ spec:
 	kubectlCmd := exec.Command("kubectl", "apply", "-f", "-")
 	kubectlCmd.Stdin = bytes.NewReader([]byte(csr))
 	fmt.Println(csr)
-	RunCommand(kubectlCmd)
+	install.RunCommand(kubectlCmd)
 }
 
 func approveCertificateSigningRequest() {
 	approvalCmd := exec.Command("kubectl", "certificate", "approve", csrName)
-	RunCommand(approvalCmd)
+	install.RunCommand(approvalCmd)
 }
 
 func retrieveRequestCertificate() string {
@@ -120,7 +112,7 @@ func retrieveRequestCertificate() string {
 
 func createTLSSecret() {
 	retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'", "--namespace", namespace)
-	cert := RunCommand(retrieveCertCmd)
+	cert := install.RunCommand(retrieveCertCmd)
 
 	certStr := string(cert)
 	certStr = strings.TrimPrefix(certStr, "'")
@@ -138,19 +130,5 @@ func createTLSSecret() {
 		logrus.Fatalf("unable to copy decoded cert to server.crt: %v", err)
 	}
 	tlsSecretCmd := exec.Command("kubectl", "create", "secret", "tls", tlsSecretName, "--cert=server.crt", "--key=server-key.pem", "--namespace", namespace)
-	RunCommand(tlsSecretCmd)
-}
-
-// RunCommand executes the command
-func RunCommand(cmd *exec.Cmd) []byte {
-	stderr := bytes.NewBuffer([]byte{})
-	cmd.Stderr = stderr
-	output, err := cmd.Output()
-	logrus.Info(cmd.Args)
-	logrus.Info(string(output))
-	if err != nil {
-		logrus.Error(string(stderr.Bytes()))
-		logrus.Fatal(err)
-	}
-	return output
+	install.RunCommand(tlsSecretCmd)
 }

@@ -24,27 +24,19 @@ import (
 
 var (
 	namespace     = install.RetrieveNamespace()
-	csrName       string
 	tlsSecretName string
-	deleteCSR     bool
+	certificate   string
+	webhookName   string
+	serviceName   string
 )
 
 func init() {
-	flag.StringVar(&csrName, "csr-name", install.CSRName, "The name of the kritis csr.")
+	flag.StringVar(&webhookName, "webhook-name", install.WebhookName, "The name of the validation webhook.")
+	flag.StringVar(&serviceName, "service-name", install.ServiceName, "The name of the service for the webhook.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", install.TlsSecretName, "The name of the kritis tls secret.")
-	flag.BoolVar(&deleteCSR, "delete-csr", true, "Delete the csr passed in to csr-name, default tls-webhook-secret-cert")
 	flag.Parse()
 }
 
 func main() {
-	// First, delete the CertificateSigningRequest and Secret if they already exist
-	deleteExistingObjects()
-	// Create the certificates
-	createCertificates()
-	// Create the certificate signing request
-	createCertificateSigningRequest()
-	// Approve the certificate signing request
-	approveCertificateSigningRequest()
-	// Create the TLS secret
-	createTLSSecret()
+	createValidationWebhook()
 }
