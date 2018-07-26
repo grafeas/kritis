@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ .Values.preinstall.pod }}
+  name: {{ .Values.preinstall.pod.name }}
   namespace: {{ .Values.serviceNamespace }}
   annotations:
     "helm.sh/hook": "pre-install"
@@ -11,6 +11,6 @@ spec:
   restartPolicy: Never
   serviceAccountName: kritis-preinstall-serviceaccount
   containers:
-  - name: {{ .Values.preinstall.pod }}
+  - name: {{ .Values.preinstall.pod.name }}
     image: {{ .Values.preinstall.pod.image }}
     command: {{ .Values.preinstall.pod.command }}

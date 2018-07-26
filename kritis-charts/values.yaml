@@ -52,6 +52,7 @@ gacSecret:
 preinstall:
   serviceAccount: "kritis-preinstall-serviceaccount"
   clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
-  pod: "kritis-preinstall"
+  pod:
+    name: "kritis-preinstall"
     image: "gcr.io/kritis-project/preinstall:latest"
     command: ["/preinstall"]

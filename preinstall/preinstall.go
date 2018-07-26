@@ -20,12 +20,17 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	// kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 )
+
+const secretChecks = 10
 
 func setNamespace() {
 	namespaceFile := "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
@@ -137,6 +142,23 @@ func createTLSSecret() {
 	if err := ioutil.WriteFile("server.crt", decoded, 0644); err != nil {
 		logrus.Fatalf("unable to copy decoded cert to server.crt: %v", err)
 	}
+	// time.Sleep(5 * time.Second)
+	foundSecret := false
+	var secretErr error
+	for i := 0; i < secretChecks; i++ {
+		tlsSecretCmd := exec.Command("kubectl", "get", "csr", "tls", "--namespace", namespace)
+		_, err := tlsSecretCmd.CombinedOutput()
+		if err == nil {
+			foundSecret = true
+			break
+		}
+		secretErr = err
+		time.Sleep(500 * time.Millisecond)
+	}
+	if !foundSecret {
+		logrus.Fatalf("couldn't find csr : %v", secretErr)
+	}
+
 	tlsSecretCmd := exec.Command("kubectl", "create", "secret", "tls", tlsSecretName, "--cert=server.crt", "--key=server-key.pem", "--namespace", namespace)
 	RunCommand(tlsSecretCmd)
 }
