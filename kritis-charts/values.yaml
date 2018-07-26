@@ -48,17 +48,23 @@ serviceNamespace: "default"
 gacSecret:
   name: "gac-ca-admin"
   path: "gac.json"
- 
+
 preinstall:
   serviceAccount: "kritis-preinstall-serviceaccount"
   clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
-  podName: "kritis-preinstall"
-  podImage: "gcr.io/kritis-project/preinstall:latest"
-  podCommand: "/preinstall"
-
+  pod:
+    name: "kritis-preinstall"
+    image: "gcr.io/kritis-project/preinstall:latest"
+    command: ["/preinstall"]
 
 postinstall:
   pod:
     name: "kritis-postinstall"
     image: "gcr.io/kritis-project/postinstall:latest"
-    command: "/postinstall"
+    command: ["/postinstall"]
+
+predelete:
+  pod:
+    name: "kritis-predelete"
+    image: "gcr.io/kritis-project/predelete:latest"
+    command: ["/predelete"]

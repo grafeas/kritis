@@ -29,3 +29,6 @@ items:
   - apiGroups: ["kritis.grafeas.io"]
     resources: ["*"]
     verbs: ["get", "watch", "list"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["*"]

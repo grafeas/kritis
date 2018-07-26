@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ .Values.postinstall.pod }}
+  name: {{ .Values.postinstall.pod.name }}
   namespace: {{ .Values.serviceNamespace }}
   annotations:
     "helm.sh/hook": "post-install"
-    "helm.sh/hook-weight": "1"
-    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+    "helm.sh/hook-delete-policy": "hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
 spec:
   restartPolicy: Never
   containers:
-  - name: {{ .Values.postinstall.pod }}
+  - name: {{ .Values.postinstall.pod.name }}
     image: {{ .Values.postinstall.pod.image }}
     command: {{ .Values.postinstall.pod.command }}

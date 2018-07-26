@@ -20,6 +20,7 @@ import (
 	"flag"
 
 	"github.com/grafeas/kritis/pkg/kritis/install"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -38,5 +39,11 @@ func init() {
 }
 
 func main() {
+	logrus.Info("waiting for preinstall pod")
+	waitForPreinstallPod()
+	logrus.Info("preinstall pod complete")
+	getCaBundle()
+	logrus.Info("getting ca bundle")
 	createValidationWebhook()
+	logrus.Info("creating validation webhookS")
 }

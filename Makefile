@@ -82,18 +82,25 @@ build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
 out/preinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/preinstall
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/install/preinstall
 
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
-	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f preinstall/Dockerfile .
+	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f install/preinstall/Dockerfile .
 
 out/postinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/postinstall
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/install/postinstall
 
 .PHONY: postinstall-image
 postinstall-image:  out/postinstall
-	docker build -t gcr.io/kritis-project/postinstall:$(IMAGE_TAG) -f postinstall/Dockerfile .
+	docker build -t gcr.io/kritis-project/postinstall:$(IMAGE_TAG) -f install/postinstall/Dockerfile .
+
+out/predelete: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/delete
+
+.PHONY: predelete-image
+predelete-image:  out/delete
+	docker build -t gcr.io/kritis-project/predelete:$(IMAGE_TAG) -f delete/Dockerfile .
 
 clean:
 	rm -rf $(BUILD_DIR)

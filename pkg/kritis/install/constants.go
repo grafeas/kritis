@@ -17,7 +17,7 @@ limitations under the License.
 package install
 
 const (
-	TlsSecretName = "tls-secret-name"
+	TlsSecretName = "tls-webhook-secret"
 	CSRName       = "tls-webhook-secret-cert"
 	WebhookName   = "kritis-validation-hook"
 	ServiceName   = "kritis-validation-hook"
