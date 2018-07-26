@@ -64,7 +64,7 @@ spec:
       providers/goog-vulnz/notes/CVE-2017-1000082
       providers/goog-vulnz/notes/CVE-2017-1000082
 ```
-Image Security Policy Spec description:
+|Image Security Policy Spec description:
 | Field | Default  (if applicable)   | Description |
 |-----------|-------------|-------------|
 |imageWhitelist | | List of images that are whitelisted and are not inspected by Admission Controller.|
@@ -112,8 +112,10 @@ spec:
     publicKeyData: ...
 ```
 Where “image-attestor” is the project for creating AttestationAuthority Notes.
-In order to create notes, the service account `gac-ca-admin` must have containeranalysis.notes.attacher role on this project.
-The Kubernetes secret "foo" must have data fields "private" and "public" which contain the gpg private and public key respectively.
+
+In order to create notes, the service account `gac-ca-admin` must have `containeranalysis.notes.attacher role` on this project.
+
+The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
 
 To create a gpg public, private key pair run,
 ```
