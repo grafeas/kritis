@@ -13,13 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package util
+package container
 
 import (
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
@@ -66,6 +67,38 @@ func Test_ImageUtil(t *testing.T) {
 			if !test.shouldErr && !reflect.DeepEqual(actual.Critical, expected.Critical) {
 				t.Errorf("\nExpected\n%+v\nActual\n%+v", expected.Critical, actual.Critical)
 			}
+		})
+	}
+}
+
+func TestCreateAttestationSignature(t *testing.T) {
+	var tests = []struct {
+		name      string
+		image     string
+		shouldErr bool
+	}{
+		{
+			name:      "GoodImage",
+			image:     "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
+			shouldErr: false,
+		},
+		{
+			name:      "BadImage",
+			image:     "gcr.io/kritis-project/kritis-server:tag",
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pub, priv := testutil.CreateBase64KeyPair(t)
+			secret := secrets.PgpSigningSecret{
+				PrivateKey: priv,
+				PublicKey:  pub,
+				SecretName: "test",
+			}
+			_, err := CreateAttestationSignature(test.image, &secret)
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }

@@ -44,6 +44,10 @@ type testConfig struct {
 	message    string
 }
 
+func mockNoValidAttestations(image string, metadataClient metadata.MetadataFetcher, ns string) bool {
+	return false
+}
+
 func Test_BreakglassAnnotation(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
@@ -52,8 +56,10 @@ func Test_BreakglassAnnotation(t *testing.T) {
 			},
 		}, v1beta1.AdmissionReview{}, nil
 	}
+
 	mockConfig := config{
-		retrievePod: mockPod,
+		retrievePod:          mockPod,
+		validateAttestations: mockNoValidAttestations,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -78,14 +84,13 @@ func Test_UnqualifiedImage(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
 	}
-	mockMetadata := func() (metadata.MetadataFetcher, error) {
-		return mockMetadataClient{}, nil
-	}
+
 	mockConfig := config{
 		retrievePod:                 mockPod,
-		fetchMetadataClient:         mockMetadata,
+		fetchMetadataClient:         testutil.EmptyMockMetadata(),
 		fetchImageSecurityPolicies:  mockISP,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		validateAttestations:        mockNoValidAttestations,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -111,9 +116,10 @@ func Test_ValidISP(t *testing.T) {
 	}
 	mockConfig := config{
 		retrievePod:                 mockValidPod(),
-		fetchMetadataClient:         mockMetadata(),
+		fetchMetadataClient:         testutil.EmptyMockMetadata(),
 		fetchImageSecurityPolicies:  mockISP,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		validateAttestations:        mockNoValidAttestations,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -135,10 +141,16 @@ func Test_InvalidISP(t *testing.T) {
 		}}, nil
 	}
 	mockMetadata := func() (metadata.MetadataFetcher, error) {
-		return mockMetadataClient{
-			vulnz: []metadata.Vulnerability{
+		return testutil.MockMetadataClient{
+			Vulnz: []metadata.Vulnerability{
 				{
 					Severity: "MEDIUM",
+				},
+			},
+			PgpAttestations: []metadata.PgpAttestation{
+				{
+					Signature: "sig",
+					KeyId:     "secret",
 				},
 			},
 		}, nil
@@ -148,6 +160,7 @@ func Test_InvalidISP(t *testing.T) {
 		fetchMetadataClient:         mockMetadata,
 		fetchImageSecurityPolicies:  mockISP,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		validateAttestations:        mockNoValidAttestations,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -180,20 +193,6 @@ func Test_GlobalWhitelist(t *testing.T) {
 		status:     constants.SuccessStatus,
 		message:    constants.SuccessMessage,
 	})
-}
-
-type mockMetadataClient struct {
-	vulnz []metadata.Vulnerability
-}
-
-func (m mockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	return m.vulnz, nil
-}
-
-func mockMetadata() func() (metadata.MetadataFetcher, error) {
-	return func() (metadata.MetadataFetcher, error) {
-		return nil, nil
-	}
 }
 
 func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {

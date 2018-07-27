@@ -18,38 +18,26 @@ package util
 import (
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-func TestCreateAttestationSignature(t *testing.T) {
+func TestGetUniqueImages(t *testing.T) {
 	var tests = []struct {
-		name      string
-		image     string
-		shouldErr bool
+		name   string
+		input  []string
+		output []string
 	}{
 		{
-			name:      "GoodImage",
-			image:     "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
-			shouldErr: false,
-		},
-		{
-			name:      "BadImage",
-			image:     "gcr.io/kritis-project/kritis-server:tag",
-			shouldErr: true,
+			name:   "array with duplicates",
+			input:  []string{"a", "b", "a"},
+			output: []string{"a", "b"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			pub, priv := testutil.CreateBase64KeyPair(t)
-			secret := secrets.PgpSigningSecret{
-				PrivateKey: priv,
-				PublicKey:  pub,
-				SecretName: "test",
-			}
-			_, err := CreateAttestationSignature(test.image, &secret)
-			testutil.CheckError(t, test.shouldErr, err)
+			actual := GetUniqueImages(test.input)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.output, actual)
 		})
 	}
 }

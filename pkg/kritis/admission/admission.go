@@ -22,11 +22,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
@@ -37,6 +40,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type config struct {
@@ -45,6 +50,7 @@ type config struct {
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
+	validateAttestations        func(image string, metadataClient metadata.MetadataFetcher, ns string) bool
 }
 
 var (
@@ -55,14 +61,65 @@ var (
 		fetchMetadataClient:         metadataClient,
 		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		validateAttestations:        hasValidImageAttestations,
 	}
 
 	defaultViolationStrategy = violation.LoggingStrategy{}
 )
 
-// This admission controller looks for the breakglass annotation
-// If one is not found, it validates against image security policies
-// TODO: Check for attestations
+var (
+	runtimeScheme = runtime.NewScheme()
+	codecs        = serializer.NewCodecFactory(runtimeScheme)
+)
+
+var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview){
+	"Deployment": handleDeployment,
+	"Pod":        handlePod,
+}
+
+func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+	glog.Info("handling deployment...")
+	deployment := appsv1.Deployment{}
+	json.Unmarshal(ar.Request.Object.Raw, &deployment)
+	reviewDeployment(&deployment, admitResponse)
+}
+
+func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+	glog.Info("handling pod...")
+	pod := v1.Pod{}
+	json.Unmarshal(ar.Request.Object.Raw, &pod)
+	reviewPod(&pod, admitResponse)
+}
+
+func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
+	ar := v1beta1.AdmissionReview{}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return ar, err
+	}
+
+	deserializer := codecs.UniversalDeserializer()
+	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+
+		payload, err := json.Marshal(&v1beta1.AdmissionResponse{
+			UID:     ar.Request.UID,
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  string(constants.FailureStatus),
+				Message: err.Error(),
+			},
+		})
+		if err != nil {
+			glog.Info(err)
+		}
+		w.Write(payload)
+	}
+	return ar, nil
+}
+
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	glog.Infof("Starting admission review handler, version: %s",
 		version.Commit)
@@ -74,15 +131,15 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check, if the pod is already running. This handles scenarios when security
-	// policy is deployed after a pod is deployed.
-	// In this situation, the cron job will annotate the pod and call v1.CoreV1.Pod.Patch()
-	// kubectl patch command goes through admission review before patching the pod and will return error.
-	// In order to apply the labels for invalid pods, we skip admission review for already running pods.
-	if pods.IsPodRunning(*pod) {
-		glog.Infof("The pod is already running. Skip Admission Review.")
-		returnStatus(constants.SuccessStatus, constants.PodAlreadyRunning, w)
-		return
+	admitResponse := &v1beta1.AdmissionReview{
+		Response: &v1beta1.AdmissionResponse{
+			UID:     ar.Request.UID,
+			Allowed: true,
+			Result: &metav1.Status{
+				Status:  string(constants.SuccessStatus),
+				Message: constants.SuccessMessage,
+			},
+		},
 	}
 
 	for k8sType, handler := range handlers {
@@ -118,6 +175,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 }
 
 func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
+	images = util.GetUniqueImages(images)
 	if util.CheckGlobalWhitelist(images) {
 		glog.Infof("%s are all whitelisted, returning successful status", images)
 		return
@@ -141,6 +199,13 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	}
 	for _, isp := range isps {
 		for _, image := range images {
+			glog.Infof("Check if %s as valid Attestations.", image)
+			if admissionConfig.validateAttestations(image, metadataClient, ns) {
+				glog.Info("Valid Attestations Found.")
+				return
+			}
+			glog.Info("No Valid Attestations Found. Proceeding with next checks")
+
 			glog.Infof("Getting vulnz for %s", image)
 			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
@@ -168,6 +233,40 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 		}
 	}
 
+}
+
+// hasValidImageAttestations return true if any one image attestation is verified.
+func hasValidImageAttestations(image string, metadataClient metadata.MetadataFetcher, ns string) bool {
+	host, err := container.NewAtomicContainerSig(image, map[string]string{})
+	if err != nil {
+		glog.Info(err)
+		return false
+	}
+	pgpAttestations, err := metadataClient.GetAttestations(image)
+	if err != nil {
+		glog.Infof("Error while fetching attestations %s", err)
+		return false
+	}
+	if len(pgpAttestations) == 0 {
+		glog.Infof(`No attestations found for this image.
+This normally happens when you deploy a pod before kritis or no attestation authority is deployed.
+Please see instructions `)
+	}
+	valid := false
+	for _, pgpAttestation := range pgpAttestations {
+		// Get Secret from key id.
+		secret, err := secrets.GetSecret(ns, pgpAttestation.KeyId)
+		if err != nil {
+			glog.Infof("Could not find secret %s in namespace %s for attestation verification", secret.SecretName, ns)
+		}
+
+		if err = host.VerifyAttestationSignature(secret, pgpAttestation.Signature); err != nil {
+			glog.Infof("Could not find verify attestation for attestation authority", secret.SecretName)
+		} else {
+			valid = true
+		}
+	}
+	return valid
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
@@ -224,32 +323,4 @@ func checkBreakglass(pod *v1.Pod) bool {
 // TODO: update this once we have more metadata clients
 func metadataClient() (metadata.MetadataFetcher, error) {
 	return containeranalysis.NewContainerAnalysisClient()
-}
-
-func returnStatus(status constants.Status, message string, w http.ResponseWriter) {
-	response := &v1beta1.AdmissionResponse{
-		Allowed: (status == constants.SuccessStatus),
-		Result: &metav1.Status{
-			Status:  string(status),
-			Message: message,
-		},
-	}
-	if err := writeHttpResponse(response, w); err != nil {
-		glog.Error("error writing response:", err)
-	}
-}
-
-func writeHttpResponse(response *v1beta1.AdmissionResponse, w http.ResponseWriter) error {
-	ar := v1beta1.AdmissionReview{
-		Response: response,
-	}
-	data, err := json.Marshal(ar)
-	if err != nil {
-		glog.Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil
-	}
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(data)
-	return err
 }

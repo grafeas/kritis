@@ -19,8 +19,6 @@ package util
 import (
 	"os"
 
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/spf13/cobra"
 )
 
@@ -31,14 +29,16 @@ func ExitIfErr(cmd *cobra.Command, err error) {
 	}
 }
 
-func CreateAttestationSignature(image string, pgpSigningKey *secrets.PgpSigningSecret) (string, error) {
-	hostSig, err := NewAtomicContainerSig(image, map[string]string{})
-	if err != nil {
-		return "", err
+func GetUniqueImages(images []string) []string {
+	imagesMap := map[string]bool{}
+	for _, image := range images {
+		imagesMap[image] = true
 	}
-	hostStr, err := hostSig.Json()
-	if err != nil {
-		return "", err
+	uniqueImages := make([]string, len(imagesMap))
+	i := 0
+	for image := range imagesMap {
+		uniqueImages[i] = image
+		i++
 	}
-	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
+	return uniqueImages
 }
