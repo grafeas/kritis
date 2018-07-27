@@ -193,31 +193,10 @@ func initKritis(t *testing.T) func() {
 		t.Fatalf("testing error: %v", err)
 	}
 
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		t.Fatalf("error getting kubernetes clientset: %v", err)
-	}
-	// Wait for postinstall pod to finish
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "kritis-postinstall"); err != nil {
-		t.Fatalf("postinstall pod didn't complete: %v", err)
-	}
-	// Wait for validation hook pod to start running
-
-	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
-	if err != nil {
-		t.Fatalf("error getting pods: %v", err)
-	}
-	for _, pod := range podList.Items {
-		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
-			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), pod.Name); err != nil {
-				t.Fatalf("%s didn't start running: %v", pod.Name, err)
-			}
-		}
-	}
 	// parsing out release name from 'helm init' output
 	helmNameString := strings.Split(string(out[:]), "\n")[0]
 	kritisRelease := strings.Split(helmNameString, "   ")[1]
-	return func() {
+	deleteFunc := func() {
 		// cleanup
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
 		helmCmd.Dir = "../"
@@ -226,6 +205,33 @@ func initKritis(t *testing.T) func() {
 			t.Fatalf("testing error: %v", err)
 		}
 	}
+
+	client, err := kubernetesutil.GetClientset()
+	if err != nil {
+		t.Errorf("error getting kubernetes clientset: %v", err)
+		return deleteFunc
+	}
+	// Wait for postinstall pod to finish
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "kritis-postinstall"); err != nil {
+		t.Errorf("postinstall pod didn't complete: %v", err)
+		return deleteFunc
+	}
+	// Wait for validation hook pod to start running
+
+	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
+	if err != nil {
+		t.Errorf("error getting pods: %v", err)
+		return deleteFunc
+	}
+	for _, pod := range podList.Items {
+		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
+			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), pod.Name); err != nil {
+				t.Errorf("%s didn't start running: %v", pod.Name, err)
+				return deleteFunc
+			}
+		}
+	}
+	return deleteFunc
 }
 
 func getPreinstallLogs(t *testing.T) string {
