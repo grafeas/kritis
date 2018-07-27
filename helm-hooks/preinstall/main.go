@@ -18,24 +18,25 @@ package main
 
 import (
 	"flag"
+
+	"github.com/grafeas/kritis/pkg/kritis/install"
 )
 
 var (
-	namespace     string
+	namespace     = install.RetrieveNamespace()
 	csrName       string
 	tlsSecretName string
 	deleteCSR     bool
 )
 
 func init() {
-	flag.StringVar(&csrName, "csr-name", "tls-webhook-secret-cert", "The name of the kritis csr.")
-	flag.StringVar(&tlsSecretName, "tls-secret-name", "tls-webhook-secret", "The name of the kritis tls secret.")
+	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
+	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.BoolVar(&deleteCSR, "delete-csr", true, "Delete the csr passed in to csr-name, default tls-webhook-secret-cert")
 	flag.Parse()
 }
 
 func main() {
-	setNamespace()
 	// First, delete the CertificateSigningRequest and Secret if they already exist
 	deleteExistingObjects()
 	// Create the certificates
