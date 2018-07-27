@@ -79,79 +79,79 @@ kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"templat
 ```
 
 ## Installing Kritis
-Now run the install script.
-This will create the necessary TLS certs and deploy kritis into the given namespace.
-```
-./install/install-kritis.sh
-```
+You can install kritis via helm:
 
-### Optional Flags
-|  Flag | Default      | Description  |   
-|-------|--------------|--------------|
-| -n    | default      | The namespace to install kritis in |   
-| -s    | gac-ca-admin | The name of the secret created above with container analysis permissions |  
+```
+$ helm install ./kritis-charts/
 
-```shell
-$ ./install/install-kritis.sh
-+ NAMESPACE=default
-+ GAC_SECRET=gac-ca-admin
-+ PREINSTALL_FILE=preinstall/preinstall.yaml
-+ CERTIFICATE=
-+ TLS_SECRET=tls-webhook-secret
-+ CHARTS_DIR=kritis-charts/
-+ getopts n:s opt
-+ kritis::preinstall
-+ kubectl apply -f preinstall/preinstall.yaml --namespace default
-serviceaccount "kritis-preinstall-serviceaccount" created
-clusterrolebinding.rbac.authorization.k8s.io "kritis-preinstall-clusterrolebinding" created
-pod "preinstall-kritis" created
-+ kritis::get_certificate
-++ kubectl get secret tls-webhook-secret -o 'jsonpath={.data.tls\.crt}' --namespace default
-    ...
-+ kritis::install_helm
-    ...
-+ helm install kritis-charts/ --namespace default --set serviceNamespace=default --set 
-    ...
-NAME:   piquant-seagull
-LAST DEPLOYED: Tue Jul 24 13:03:24 2018
+NAME:   innocent-parrot
+LAST DEPLOYED: Fri Jul 27 13:53:55 2018
 NAMESPACE: default
 STATUS: DEPLOYED
 
 RESOURCES:
-==> v1beta1/ClusterRoleBinding
-NAME                       AGE
-kritis-clusterrolebinding  0s
-
-==> v1/ClusterRole
-NAME                AGE
-kritis-clusterrole  0s
-
-==> v1beta1/ValidatingWebhookConfiguration
-kritis-validation-hook  0s
-
-==> v1/Pod(related)
-NAME                                     READY  STATUS             RESTARTS  AGE
-kritis-validation-hook-59f47c77b8-7qb4b  0/1    ContainerCreating  0         0s
-
 ==> v1beta1/CustomResourceDefinition
 NAME                                      AGE
-attestationauthorities.kritis.grafeas.io  0s
-imagesecuritypolicies.kritis.grafeas.io   0s
+attestationauthorities.kritis.grafeas.io  1s
+imagesecuritypolicies.kritis.grafeas.io   1s
 
 ==> v1/Service
-NAME                    TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)  AGE
-kritis-validation-hook  ClusterIP  10.63.249.175  <none>       443/TCP  0s
+NAME                    TYPE       CLUSTER-IP    EXTERNAL-IP  PORT(S)  AGE
+kritis-validation-hook  ClusterIP  10.63.247.40  <none>       443/TCP  1s
 
 ==> v1beta2/Deployment
 NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-kritis-validation-hook  1        1        1           0          0s
+kritis-validation-hook  1        1        1           0          1s
 
+==> v1beta1/ClusterRoleBinding
+NAME                       AGE
+kritis-clusterrolebinding  1s
 
-+ kritis::delete_preinstall
-+ kubectl delete -f preinstall/preinstall.yaml --namespace default
-serviceaccount "kritis-preinstall-serviceaccount" deleted
-clusterrolebinding.rbac.authorization.k8s.io "kritis-preinstall-clusterrolebinding" deleted
-pod "preinstall-kritis" deleted
+==> v1/ClusterRole
+NAME                AGE
+kritis-clusterrole  1s
+
+==> v1beta1/ValidatingWebhookConfiguration
+kritis-validation-hook-deployments  1s
+
+==> v1/Pod(related)
+NAME                                     READY  STATUS             RESTARTS  AGE
+kritis-validation-hook-5b86964479-tdm24  0/1    ContainerCreating  0         1s
+```
+
+Installation will also create two pods, called `kritis-preinstall` and `kritis-postinstall`.
+```
+$ kubectl get pods
+NAME                                      READY     STATUS              RESTARTS   AGE
+kritis-postinstall                        1/1       Running             0          5s
+kritis-preinstall                         0/1       ContainerCreating   0          5s
+kritis-validation-hook-7c84c48f47-lsjpg   0/1       ContainerCreating   0          5s
+```
+
+`kritis-preinstall` creates a `CertificateSigningRequest` and a TLS Secret for the webhook.
+
+`kritis-postinstall` creates the `ValidatingWebhookConfiguration`.
+
+```
+$ kubectl get pods
+NAME                                      READY     STATUS             RESTARTS   AGE
+kritis-postinstall                        0/1       Completed          0          2m
+kritis-preinstall                         0/1       Completed          0          2m
+kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0          2m
+```
+Once `kritis-preinstall` and `kritis-postinstall` have status `Completed`, and `kritis-validation-hook-xxxx` is `Running`, kritis is installed in your cluster.
+
+### Optional Flags
+Using the --set flag, you can set custom values when installing kritis:
+
+|  Value                | Default      | Description  |   
+|-----------------------|--------------|--------------|
+| serviceNamespace      | default      | The namespace to install kritis in |   
+| gacSecret.name        | gac-ca-admin | The name of the secret created above with container analysis permissions | 
+
+For example, to install kritis in the namespace `test`, you could run:
+```
+helm install ./kritis-charts --set serviceNamespace=test
 ```
 
 ## Deleting Kritis
@@ -159,10 +159,32 @@ pod "preinstall-kritis" deleted
 You can delete kritis by deleting the helm deployment:
 ```shell
 $ helm ls
-NAME           	REVISION	UPDATED                 	STATUS  	CHART       	NAMESPACE
-piquant-seagull	1       	Tue Jul 24 13:03:24 2018	DEPLOYED	kritis-0.1.0	default  
-$ helm delete piquant-seagull
-release "piquant-seagull" deleted
+NAME        	REVISION	UPDATED                 	STATUS  	CHART         NAMESPACE
+loopy-numbat	1       	Fri Jul 27 14:25:44 2018	DEPLOYED	kritis-0.1.0  default  
+$ helm delete loopy-numbat
+release "loopy-numbat" deleted
+```
+
+This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhook created during installation.
 
 ```
-Note: This will not delete the CertificateSigningRequest or TLS secret created during preinstall, or the container analysis secret created above.
+$ kubectl get pods kritis-predelete
+NAME                 READY     STATUS             RESTARTS   AGE
+kritis-predelete     0/1       Completed          0          13s
+
+$ kubectl logs kritis-predelete
+level=info msg="contents of /var/run/secrets/kubernetes.io/serviceaccount/namespace: default"
+level=info msg="[kubectl delete validatingwebhookconfiguration kritis-validation-hook --namespace default]"
+level=info msg="validatingwebhookconfiguration.admissionregistration.k8s.io \"kritis-validation-hook\" deleted\n"
+level=info msg="deleted validatingwebhookconfiguration kritis-validation-hook"
+level=info msg="[kubectl delete secret tls-webhook-secret --namespace default]"
+level=info msg="secret \"tls-webhook-secret\" deleted\n"
+level=info msg="deleted secret tls-webhook-secret"
+level=info msg="[kubectl delete csr tls-webhook-secret-cert --namespace default]"
+level=info msg="certificatesigningrequest.certificates.k8s.io \"tls-webhook-secret-cert\" deleted\n"
+level=info msg="deleted csr tls-webhook-secret-cert"
+```
+
+Kritis will be deleted from your cluster once this pod has reached `Completed` status.
+
+Note: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
