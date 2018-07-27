@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.serviceName }}
+  namespace: {{ .Values.serviceNamespace }}
   labels:
     app: {{ .Values.serviceName }}
     chart: {{ template "kritis.chart" . }}

@@ -13,7 +13,7 @@ items:
     name: edit
   subjects:
   - kind: ServiceAccount
-    namespace: default
+    namespace: {{ .Values.serviceNamespace }}
     name: default
 
 # to let the admission server read imagewhitelist/imagesecuritypolicies
