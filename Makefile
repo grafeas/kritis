@@ -82,25 +82,25 @@ build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
 out/preinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/install/preinstall
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/helm-hooks/preinstall
 
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
-	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f install/preinstall/Dockerfile .
+	docker build -t gcr.io/kritis-project/preinstall:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=preinstall
 
 out/postinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/install/postinstall
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/helm-hooks/postinstall
 
 .PHONY: postinstall-image
 postinstall-image:  out/postinstall
-	docker build -t gcr.io/kritis-project/postinstall:$(IMAGE_TAG) -f install/postinstall/Dockerfile .
+	docker build -t gcr.io/kritis-project/postinstall:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=postinstall
 
 out/predelete: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/delete
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/helm-hooks/predelete
 
 .PHONY: predelete-image
 predelete-image:  out/delete
-	docker build -t gcr.io/kritis-project/predelete:$(IMAGE_TAG) -f delete/Dockerfile .
+	docker build -t gcr.io/kritis-project/predelete:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=predelete
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -119,7 +119,22 @@ integration-in-docker: integration-build-push-image
 		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/kritis-integration:$(IMAGE_TAG) .
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/preinstall:$(IMAGE_TAG) . \
+		--build-arg stage=preinstall
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/postinstall:$(IMAGE_TAG) . \
+		--build-arg stage=postinstall
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/predelete:$(IMAGE_TAG) . \
+		--build-arg stage=predelete
 	docker push gcr.io/$(GCP_PROJECT)/kritis-integration:$(IMAGE_TAG)
+	docker push gcr.io/$(GCP_PROJECT)/preinstall:$(IMAGE_TAG)
+	docker push gcr.io/$(GCP_PROJECT)/postinstall:$(IMAGE_TAG)
+	docker push gcr.io/$(GCP_PROJECT)/predelete:$(IMAGE_TAG)
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \

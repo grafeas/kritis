@@ -15,7 +15,8 @@
 FROM golang:1.10
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
-RUN make out/preinstall 
+ARG stage
+RUN make out/${stage} 
 
 
 FROM golang:1.10
@@ -25,4 +26,4 @@ ENV KUBECTL_VERSION v1.10.0
 RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
     chmod +x /usr/local/bin/kubectl
 
-COPY --from=0 /go/src/github.com/grafeas/kritis/out/preinstall /preinstall
+COPY --from=0 /go/src/github.com/grafeas/kritis/out/${stage}  /${stage} 

@@ -54,7 +54,7 @@ func createCertificates() {
     "kritis-validation-hook",
     "kritis-validation-hook.kube-system",
     "kritis-validation-hook.%s",
-    "kritis-validation-hook.%s.svc"
+    "kritis-validation-hook.%s.svc",
     "kritis-validation-hook-deployments",
     "kritis-validation-hook-deployments.kube-system",
     "kritis-validation-hook-deployments.%s",
@@ -135,7 +135,6 @@ func createTLSSecret() {
 	if err := ioutil.WriteFile("server.crt", decoded, 0644); err != nil {
 		logrus.Fatalf("unable to copy decoded cert to server.crt: %v", err)
 	}
-	// time.Sleep(5 * time.Second)
 	foundSecret := false
 	var secretErr error
 	for i := 0; i < 10; i++ {

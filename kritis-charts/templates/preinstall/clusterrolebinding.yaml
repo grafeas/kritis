@@ -6,8 +6,8 @@ metadata:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "2"
     "helm.sh/hook-delete-policy": hook-succeeded
-    "helm.sh/hook-delete-policy": "hook-failed"
-    "helm.sh/hook-delete-policy": "before-hook-creation"
+    "helm.sh/hook-delete-policy": hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

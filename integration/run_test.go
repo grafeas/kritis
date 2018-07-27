@@ -177,6 +177,12 @@ func initKritis(t *testing.T) func() {
 		"--namespace", "default",
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
+		"--set", fmt.Sprintf("preinstall.pod.image=%s",
+			"gcr.io/kritis-int-test/preinstall"),
+		"--set", fmt.Sprintf("postinstall.pod.image=%s",
+			"gcr.io/kritis-int-test/postinstall"),
+		"--set", fmt.Sprintf("predelete.pod.image=%s",
+			"gcr.io/kritis-int-test/predelete"),
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
@@ -186,11 +192,17 @@ func initKritis(t *testing.T) func() {
 		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
-	// Wait for validation hook pod to start running
+
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		t.Fatalf("error getting kubernetes clientset: %v", err)
 	}
+	// Wait for postinstall pod to finish
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "kritis-postinstall"); err != nil {
+		t.Fatalf("postinstall pod didn't complete: %v", err)
+	}
+	// Wait for validation hook pod to start running
+
 	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Fatalf("error getting pods: %v", err)
