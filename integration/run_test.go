@@ -15,7 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package integration
 
 import (
@@ -174,28 +173,8 @@ func deleteFailedDeployments() {
 func initKritis(t *testing.T) func() {
 	deleteFailedDeployments()
 
-	preinstallCmd := exec.Command("./install/install-kritis.sh", "-p", "-n", "default")
-	preinstallCmd.Dir = "../"
-	defer func() {
-		deletePreinstall := exec.Command("kubectl", "delete", "pod", "preinstall-kritis")
-		integration_util.RunCmdOut(deletePreinstall)
-	}()
-	_, err := integration_util.RunCmdOut(preinstallCmd)
-	if err != nil {
-		t.Fatalf("preinstall err: %v \n %s", err, getPreinstallLogs(t))
-	}
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "preinstall-kritis"); err != nil {
-		t.Fatalf("preinstall pod didn't complete: %v \n %s", err, getPreinstallLogs(t))
-	}
-	helmCmd := exec.Command("kubectl", "get", "secret",
-		"tls-webhook-secret", "-o", "jsonpath='{.data.tls\\.crt}'")
-	kubeCA, err := integration_util.RunCmdOut(helmCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
-	helmCmd = exec.Command("helm", "install", "./kritis-charts",
+	helmCmd := exec.Command("helm", "install", "./kritis-charts",
 		"--namespace", "default",
-		"--set", fmt.Sprintf("caBundle=%s", kubeCA),
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
@@ -206,6 +185,22 @@ func initKritis(t *testing.T) func() {
 	if err != nil {
 		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
+	}
+	// Wait for validation hook pod to start running
+	client, err := kubernetesutil.GetClientset()
+	if err != nil {
+		t.Fatalf("error getting kubernetes clientset: %v", err)
+	}
+	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
+	if err != nil {
+		t.Fatalf("error getting pods: %v", err)
+	}
+	for _, pod := range podList.Items {
+		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
+			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), pod.Name); err != nil {
+				t.Fatalf("%s didn't start running: %v", pod.Name, err)
+			}
+		}
 	}
 	// parsing out release name from 'helm init' output
 	helmNameString := strings.Split(string(out[:]), "\n")[0]
