@@ -19,7 +19,9 @@ package main
 import (
 	"flag"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/install"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -40,6 +42,10 @@ func init() {
 }
 
 func main() {
+	logrus.Infof("running postinstall\nversion %s\ncommit: %s",
+		version.Version,
+		version.Commit,
+	)
 	waitForPreinstallPod()
 	waitForTLSSecret()
 	getCaBundle()

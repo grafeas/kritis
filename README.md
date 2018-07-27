@@ -312,3 +312,6 @@ This is necessary because tags are mutable, and kritis may not get the correct v
 
 We provide [resolve-tags](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md), which can be run as a kubectl plugin or as a standalone binary to resolve all images from tags to digests in Kubernetes yamls.
 
+## Releasing
+For notes on how to release kritis, see:
+[RELEASING.md](https://github.com/grafeas/kritis/blob/master/RELEASING.md)

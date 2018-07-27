@@ -196,7 +196,6 @@ func initKritis(t *testing.T) func() {
 		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
-
 	// parsing out release name from 'helm init' output
 	helmNameString := strings.Split(string(out[:]), "\n")[0]
 	kritisRelease := strings.Split(helmNameString, "   ")[1]
