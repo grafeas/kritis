@@ -26,7 +26,7 @@ kubectl plugin resolve-tags -f <path to file> --apply true
 
 ## resolve-tags binary
 
-resolve-tags can also be run as a binary. 
+resolve-tags can also be run as a binary.
 This is useful if you want to pass in multiple files at a time.
 To build the binary, run:
 
@@ -45,3 +45,4 @@ To apply subsitutions using `kubectl apply -f`, you can run:
 ```
 kubectl plugin resolve-tags -f <path to file> -a
 ```
+This will apply the digest to the objects defined in file.
