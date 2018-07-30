@@ -165,7 +165,7 @@ func createCRDExamples(t *testing.T) {
 
 func deleteFailedDeployments() {
 	helmCmd := exec.Command("sh", "-c",
-		"helm delete $(helm list --failed --short)")
+		"helm ls --short | xargs -L1 helm delete")
 	helmCmd.Dir = "../artifacts"
 	integration_util.RunCmdOut(helmCmd)
 }

@@ -66,7 +66,7 @@ func createCertificates() {
 	"size": 256
 }
 }`
-	cert = fmt.Sprintf(cert, namespace, namespace)
+	cert = fmt.Sprintf(cert, namespace, namespace, namespace, namespace)
 	certCmd := exec.Command("cfssl", "genkey", "-")
 	certCmd.Stdin = bytes.NewReader([]byte(cert))
 	output := install.RunCommand(certCmd)
