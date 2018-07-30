@@ -20,4 +20,6 @@ spec:
       - {{ .Values.serviceName }}
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
+      - "--deployment-webhook-name"
+      - {{ .Values.serviceNameDeployments }}
     command: {{ .Values.postinstall.pod.command }}

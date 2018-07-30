@@ -18,6 +18,8 @@ spec:
     args:
     - "--webhook-name"
     - {{ .Values.serviceName }}
+    - "--deployment-webhook-name"
+    - {{ .Values.serviceNameDeployments }}
     - "--tls-secret-name"
     - {{ .Values.tlsSecretName }}
     - "--csr-name"
