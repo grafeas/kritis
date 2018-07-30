@@ -23,15 +23,17 @@ import (
 )
 
 var (
-	namespace     = install.RetrieveNamespace()
-	tlsSecretName string
-	certificate   string
-	webhookName   string
-	serviceName   string
+	namespace             = install.RetrieveNamespace()
+	tlsSecretName         string
+	certificate           string
+	webhookName           string
+	deploymentWebhookName string
+	serviceName           string
 )
 
 func init() {
 	flag.StringVar(&webhookName, "webhook-name", "", "The name of the validation webhook.")
+	flag.StringVar(&deploymentWebhookName, "deployment-webhook-name", "", "The name of the deployment validation webhook.")
 	flag.StringVar(&serviceName, "service-name", "", "The name of the service for the webhook.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.Parse()
@@ -42,4 +44,5 @@ func main() {
 	waitForTLSSecret()
 	getCaBundle()
 	createValidationWebhook()
+	createValidationDeploymentWebhook()
 }

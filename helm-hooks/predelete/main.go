@@ -23,14 +23,16 @@ import (
 )
 
 var (
-	namespace     = install.RetrieveNamespace()
-	tlsSecretName string
-	csrName       string
-	webhookName   string
+	namespace             = install.RetrieveNamespace()
+	tlsSecretName         string
+	csrName               string
+	webhookName           string
+	deploymentWebhookName string
 )
 
 func init() {
 	flag.StringVar(&webhookName, "webhook-name", "", "The name of the validation webhook.")
+	flag.StringVar(&deploymentWebhookName, "deployment-webhook-name", "", "The name of the validation webhook.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.Parse()
@@ -38,7 +40,7 @@ func init() {
 
 // The kritis predelete hook is reponsible for deleting the webhook, TLS secret and CSR
 func main() {
-	deleteWebhook()
+	deleteWebhooks()
 	deleteTLSSecret()
 	deleteCSR()
 }

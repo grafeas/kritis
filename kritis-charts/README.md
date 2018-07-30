@@ -1,16 +1,26 @@
 # kritis
 
 ## Setting up Kritis
-
+In order to setup Kritis, let define some variables.
+```
+PROJECT_ID=<your project id>
+CLUSTER_NAME=<your cluster>
+gcloud config set project $PROJECT_ID
+```
 ### Creating a Kubernetes Cluster
 
 To run the kritis admission webhook, you will need access to a version 1.9.2+ Kubernetes cluster.
 You can create one by running
+
 ```
-gcloud container clusters create <CLUSTER NAME> \
+gcloud container clusters create $CLUSTER_NAME \
 --cluster-version 1.9.7-gke.3 \
 --zone us-central1-a \
---num-nodes 1
+--num-nodes 6
+```
+Now, add run command to add kubectl config to connect to this cluster.
+```
+gcloud container clusters get-credentials $CLUSTER_NAME -zone us-central1-a --project $PROJECT_ID
 ```
 
 ### Enabling the Container Analysis API
@@ -22,44 +32,46 @@ kritis can only inspect images hosted in projects that have both of these enable
 ### Creating a Container Analysis Secret
 You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images. You can create the secret through the Google Cloud Console or on the command line with gcloud.
 
-#### Creating Container Analysis Secret via Google Cloud Console
-To create the secret:
-1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
-2. Download a JSON key for the service account
-3. Rename the key to `gac.json`
-4. Create a Kubernetes secret by running:
+#### Creating Container Analysis Secret via Command Line
+Before you start, lets define variables for your serviceaccount and glcoud project.
 ```
-kubectl create secret generic gac-ca-admin --from-file=<path to kritis.json>
+ACC_NAME=kritis-ca-admin
+ACC_DISP_NAME="Kritis Service Account"
 ```
 
-#### Creating Container Analysis Secret via Command Line
 1. First create the service account
 ```
-gcloud iam service-accounts create ACC_NAME --display-name DISPLAY_NAME
+gcloud iam service-accounts create $ACC_NAME --display-name "$ACC_DISP_NAME"
 ```
-This should create a service account ACC_NAME@PROJECT_ID.iam.gserviceaccount.com.
-The project id can be found from `gcloud config list project`.
+This should create a service account $ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com.
 
 2. Create a key for the service account
 ```
-gcloud iam service-accounts keys create ~/gac.json --iam-account=ACC_NAME@PROJECT_ID.iam.gserviceaccount.com
-```
-
-3. Create a kubernetes secret for the service account
-```
-kubectl create secret generic <SECRET NAME> --from-file=~/gac.json
+gcloud iam service-accounts keys create ~/gac.json --iam-account=$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
 3. Create policy bindings for the necessary roles:
 
 ```
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.viewer
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.viewer
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.editor
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.editor
 
-gcloud projects add-iam-policy-binding PROJECT_ID--member=serviceAccount:ACC_NAME@PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
+```
+
+#### Creating Container Analysis Secret via Google Cloud Console
+To create the secret:
+1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
+2. Download a JSON key for the service account
+3. Rename the key to `gac.json`
+
+Now, you can create a kubernetes secret by running this command.
+Create a Kubernetes secret by running:
+```
+kubectl create secret generic gac-ca-admin --from-file=`ls ~/gac.json`
 ```
 
 ### Installing Helm
@@ -165,7 +177,7 @@ $ helm delete loopy-numbat
 release "loopy-numbat" deleted
 ```
 
-This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhook created during installation.
+This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation.
 
 ```
 $ kubectl get pods kritis-predelete

@@ -24,8 +24,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func deleteWebhook() {
+func deleteWebhooks() {
 	deleteObject("validatingwebhookconfiguration", webhookName)
+	deleteObject("validatingwebhookconfiguration", deploymentWebhookName)
 }
 
 func deleteTLSSecret() {

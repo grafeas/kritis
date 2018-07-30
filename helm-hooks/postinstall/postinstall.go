@@ -95,3 +95,33 @@ webhooks:
 	webhookCmd.Stdin = bytes.NewReader([]byte(webhookSpec))
 	install.RunCommand(webhookCmd)
 }
+
+func createValidationDeploymentWebhook() {
+	webhookSpec := `apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: %s
+webhooks:
+  - name: kritis-validation-hook-deployments.grafeas.io
+    rules:
+      - apiGroups:
+        - "*" # TODO(aaron-prindle) minimize this capture group
+        apiVersions:
+        - "*" # TODO(aaron-prindle) minimize this capture group
+        operations:
+          - CREATE
+          # - UPDATE # TODO(aaron-prindle) add back update when whitelist and helm do not collide
+        resources:
+          - deployments
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: %s
+      service:
+        name: %s
+        namespace: %s`
+	webhookSpec = fmt.Sprintf(webhookSpec, deploymentWebhookName, certificate, serviceName, namespace)
+	fmt.Println(webhookSpec)
+	webhookCmd := exec.Command("kubectl", "apply", "-f", "-")
+	webhookCmd.Stdin = bytes.NewReader([]byte(webhookSpec))
+	install.RunCommand(webhookCmd)
+}

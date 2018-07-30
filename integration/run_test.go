@@ -170,8 +170,6 @@ func deleteFailedDeployments() {
 		"helm ls --short | xargs -L1 helm delete")
 	helmCmd.Dir = "../artifacts"
 	integration_util.RunCmdOut(helmCmd)
-	deletePodsCmd := exec.Command("kubectl", "delete", "pods", "--all")
-	integration_util.RunCmdOut(deletePodsCmd)
 }
 
 func initKritis(t *testing.T) func() {
