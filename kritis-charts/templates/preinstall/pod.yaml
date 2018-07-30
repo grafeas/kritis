@@ -20,4 +20,5 @@ spec:
       - {{ .Values.csrName }}
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
+      - {{ .Values.preinstall.deleteCSR }}
     command: {{ .Values.preinstall.pod.command }}
