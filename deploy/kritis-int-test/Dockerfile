@@ -42,7 +42,7 @@ RUN curl -LO https://github.com/GoogleCloudPlatform/docker-credential-gcr/releas
     rm docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
     docker-credential-gcr configure-docker
 
-ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
+ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:${PATH}
 
 FROM runtime_deps as builder
 

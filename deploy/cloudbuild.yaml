@@ -18,6 +18,12 @@ steps:
            "-t", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "."]
   - name: "gcr.io/cloud-builders/docker"
     args: ["tag", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "gcr.io/kritis-project/postinstall:latest"]
+  # Build predelete container
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "helm-hook/predelete/Dockerfile",
+           "-t", "gcr.io/kritis-project/predelete:${COMMIT_SHA}", "."]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["tag", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "gcr.io/kritis-project/postinstall:latest"]
   # Build container to build resolve-tags
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile_resolve",

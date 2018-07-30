@@ -18,7 +18,7 @@ BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
 VERSION ?= v0.0.1
 
-GCP_PROJECT ?= kritis-int-test
+GCP_TEST_PROJECT ?= kritis-int-test
 
 %.exe: %
 	mv $< $@
@@ -87,25 +87,25 @@ out/preinstall: $(GO_FILES)
 
 .PHONY: preinstall-image
 preinstall-image:  out/preinstall
-	docker build -t gcr.io/kritis-project/preinstall:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=preinstall
+	docker build -t $(REGISTRY)/preinstall:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=preinstall
 
 out/postinstall: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(REPOPATH)/helm-hooks/postinstall
 
 .PHONY: postinstall-image
 postinstall-image:  out/postinstall
-	docker build -t gcr.io/kritis-project/postinstall:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=postinstall
+	docker build -t $(REGISTRY)/postinstall:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=postinstall
 
 out/predelete: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/helm-hooks/predelete
 
 .PHONY: predelete-image
-predelete-image:  out/delete
-	docker build -t gcr.io/kritis-project/predelete:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=predelete
+predelete-image:  out/predelete
+	docker build -t $(REGISTRY)/predelete:$(VERSION) -f helm-hooks/Dockerfile . --build-arg stage=predelete
 
 .PHONY: helm-release-image
 helm-release-image:
-	docker build -t gcr.io/kritis-project/helm-release:$(VERSION) -f helm-release/Dockerfile .
+	docker build -t $(REGISTRY)/helm-release:$(VERSION) -f helm-release/Dockerfile .
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -113,33 +113,54 @@ clean:
 integration: cross
 	go test -v -tags integration $(REPOPATH)/integration -timeout 10m -- --remote=true
 
-.PHONY: integration-build-push-image
-integration-build-push-image: out/kritis-server
-	docker build -t gcr.io/$(GCP_PROJECT)/kritis-server:$(VERSION) -f deploy/Dockerfile .
-	docker push gcr.io/$(GCP_PROJECT)/kritis-server:$(VERSION)
-
-.PHONY: integration-in-docker
-integration-in-docker: integration-build-push-image
+.PHONY: build-push-image-version
+build-push-image-version: out/kritis-server out/preinstall out/postinstall out/predelete
 	docker build \
 		-f deploy/kritis-int-test/Dockerfile \
 		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/kritis-integration:$(VERSION) .
+		-t $(REGISTRY)/kritis-integration:$(VERSION) .
 	docker build \
 		-f helm-hooks/Dockerfile \
-		-t gcr.io/$(GCP_PROJECT)/preinstall:$(VERSION) . \
+		-t $(REGISTRY)/preinstall:$(VERSION) . \
 		--build-arg stage=preinstall
 	docker build \
 		-f helm-hooks/Dockerfile \
-		-t gcr.io/$(GCP_PROJECT)/postinstall:$(VERSION) . \
+		-t $(REGISTRY)/postinstall:$(VERSION) . \
 		--build-arg stage=postinstall
 	docker build \
 		-f helm-hooks/Dockerfile \
-		-t gcr.io/$(GCP_PROJECT)/predelete:$(VERSION) . \
+		-t $(REGISTRY)/predelete:$(VERSION) . \
 		--build-arg stage=predelete
-	docker push gcr.io/$(GCP_PROJECT)/kritis-integration:$(VERSION)
-	docker push gcr.io/$(GCP_PROJECT)/preinstall:$(VERSION)
-	docker push gcr.io/$(GCP_PROJECT)/postinstall:$(VERSION)
-	docker push gcr.io/$(GCP_PROJECT)/predelete:$(VERSION)
+	docker push $(REGISTRY)/kritis-integration:$(VERSION)
+	docker push $(REGISTRY)/preinstall:$(VERSION)
+	docker push $(REGISTRY)/postinstall:$(VERSION)
+	docker push $(REGISTRY)/predelete:$(VERSION)
+
+.PHONY: build-push-image-commit
+build-push-image-commit: out/kritis-server out/preinstall out/postinstall out/predelete
+	docker build \
+		-f deploy/kritis-int-test/Dockerfile \
+		--target integration \
+		-t $(REGISTRY)/kritis-integration:$(COMMIT) .
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t $(REGISTRY)/preinstall:$(COMMIT) . \
+		--build-arg stage=preinstall
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t $(REGISTRY)/postinstall:$(COMMIT) . \
+		--build-arg stage=postinstall
+	docker build \
+		-f helm-hooks/Dockerfile \
+		-t $(REGISTRY)/predelete:$(COMMIT) . \
+		--build-arg stage=predelete
+	docker push $(REGISTRY)/kritis-integration:$(COMMIT)
+	docker push $(REGISTRY)/preinstall:$(COMMIT)
+	docker push $(REGISTRY)/postinstall:$(COMMIT)
+	docker push $(REGISTRY)/predelete:$(COMMIT)
+
+.PHONY: integration-in-docker
+integration-in-docker: build-push-image-commit
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
@@ -147,4 +168,4 @@ integration-in-docker: integration-build-push-image
 		-e REMOTE_INTEGRATION=true \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
-		gcr.io/$(GCP_PROJECT)/kritis-integration
+		$(REGISTRY)/kritis-integration:$(COMMIT)

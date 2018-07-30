@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
+var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
@@ -179,12 +180,17 @@ func initKritis(t *testing.T) func() {
 		"--namespace", "default",
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
-		"--set", fmt.Sprintf("preinstall.pod.image=%s",
-			"gcr.io/kritis-int-test/preinstall:latest"),
-		"--set", fmt.Sprintf("postinstall.pod.image=%s",
-			"gcr.io/kritis-int-test/postinstall:latest"),
-		"--set", fmt.Sprintf("predelete.pod.image=%s",
-			"gcr.io/kritis-int-test/predelete:latest"),
+		"--set", fmt.Sprintf("image.tag=%s",
+			version.Commit),
+		"--set", fmt.Sprintf("preinstall.pod.image=%s:%s",
+			"gcr.io/kritis-int-test/preinstall",
+			version.Commit),
+		"--set", fmt.Sprintf("postinstall.pod.image=%s:%s",
+			"gcr.io/kritis-int-test/postinstall",
+			version.Commit),
+		"--set", fmt.Sprintf("predelete.pod.image=%s:%s",
+			"gcr.io/kritis-int-test/predelete",
+			version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"

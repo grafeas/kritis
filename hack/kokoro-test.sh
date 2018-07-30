@@ -36,7 +36,7 @@ if [ GO_TEST_EXIT_CODE -ne 0 ]; then
     exit $GO_TEST_EXIT_CODE
 fi
 
-make integration-build-push-image
-make integration-in-docker
+REGISTRY=gcr.io/kritis-int-test make build-push-image-commit
+REGISTRY=gcr.io/kritis-int-test make integration-in-docker
 
 popd
