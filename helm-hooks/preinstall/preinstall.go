@@ -77,6 +77,9 @@ func createCertificates() {
 }
 
 func createCertificateSigningRequest() {
+	if !deleteCSR {
+		return
+	}
 	certificate := retrieveRequestCertificate()
 	csr := `apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
@@ -99,6 +102,9 @@ spec:
 }
 
 func approveCertificateSigningRequest() {
+	if !deleteCSR {
+		return
+	}
 	approvalCmd := exec.Command("kubectl", "certificate", "approve", csrName)
 	install.RunCommand(approvalCmd)
 }

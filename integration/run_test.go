@@ -164,6 +164,8 @@ func createCRDExamples(t *testing.T) {
 }
 
 func deleteFailedDeployments() {
+	deleteWebhookCmd := exec.Command("kubectl", "delete", "validatingwebhookconfiguration", "--all")
+	integration_util.RunCmdOut(deleteWebhookCmd)
 	helmCmd := exec.Command("sh", "-c",
 		"helm ls --short | xargs -L1 helm delete")
 	helmCmd.Dir = "../artifacts"
@@ -178,17 +180,19 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
 		"--set", fmt.Sprintf("preinstall.pod.image=%s",
-			"gcr.io/kritis-int-test/preinstall"),
+			"gcr.io/kritis-int-test/preinstall:latest"),
 		"--set", fmt.Sprintf("postinstall.pod.image=%s",
-			"gcr.io/kritis-int-test/postinstall"),
+			"gcr.io/kritis-int-test/postinstall:latest"),
 		"--set", fmt.Sprintf("predelete.pod.image=%s",
-			"gcr.io/kritis-int-test/predelete"),
+			"gcr.io/kritis-int-test/predelete:latest"),
 		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
 	)
 	helmCmd.Dir = "../"
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
+		getPreinstallLogs(t)
+		getPostinstallLogs(t)
 		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
@@ -221,6 +225,8 @@ func initKritis(t *testing.T) func() {
 	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Errorf("error getting pods: %v", err)
+		getPreinstallLogs(t)
+		getPostinstallLogs(t)
 		return deleteFunc
 	}
 	for _, pod := range podList.Items {
@@ -235,11 +241,21 @@ func initKritis(t *testing.T) func() {
 }
 
 func getPreinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "preinstall-kritis")
+	cmd := exec.Command("kubectl", "logs", "kritis-preinstall")
 	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
-		t.Fatalf("kritis preinstall: %s %v", output, err)
+		t.Errorf("kritis preinstall: %s %v", output, err)
+	}
+	return string(output)
+}
+
+func getPostinstallLogs(t *testing.T) string {
+	cmd := exec.Command("kubectl", "logs", "kritis-postinstall")
+	cmd.Dir = "../"
+	output, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Errorf("kritis preinstall: %s %v", output, err)
 	}
 	return string(output)
 }

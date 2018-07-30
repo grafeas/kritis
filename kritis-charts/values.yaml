@@ -55,6 +55,7 @@ gacSecret:
 preinstall:
   serviceAccount: "kritis-preinstall-serviceaccount"
   clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
+  deleteCSR: "--delete-csr=true"
   pod:
     name: "kritis-preinstall"
     image: "gcr.io/kritis-project/preinstall:latest"

@@ -11,7 +11,7 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   restartPolicy: Never
-  serviceAccountName: kritis-preinstall-serviceaccount
+  serviceAccountName: {{ .Values.preinstall.serviceAccount }}
   containers:
   - name: {{ .Values.preinstall.pod.name }}
     image: {{ .Values.preinstall.pod.image }}
@@ -20,4 +20,5 @@ spec:
       - {{ .Values.csrName }}
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
+      - {{ .Values.preinstall.deleteCSR }}
     command: {{ .Values.preinstall.pod.command }}

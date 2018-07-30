@@ -41,6 +41,7 @@ func init() {
 
 func main() {
 	waitForPreinstallPod()
+	waitForTLSSecret()
 	getCaBundle()
 	createValidationWebhook()
 	createValidationDeploymentWebhook()
