@@ -243,7 +243,7 @@
     "openpgp/s2k",
     "ssh/terminal"
   ]
-  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+  revision = "c126467f60eb25f8f27e5a981f32a87e3965053f"
 
 [[projects]]
   branch = "master"
@@ -618,6 +618,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6772a1d0e4503eacf10ad1d67142219f87567e9445045c194eb50631bb0262cc"
+  inputs-digest = "6e6e35f83230f45896a07aab36d6a3cc606d79244f60fce07b2fce4e9bdf88e5"
   solver-name = "gps-cdcl"
   solver-version = 1
