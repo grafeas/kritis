@@ -102,7 +102,7 @@ func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message strin
 		return "", errors.Wrap(err, "Error while signing:")
 	}
 	// Finally Sign the Text.
-	w, err := Sign(armorWriter, signer, nil, &pgpConfig)
+	w, err := openpgp.Sign(armorWriter, signer, nil, &pgpConfig)
 	if err != nil {
 		return "", errors.Wrap(err, "Error while signing:")
 	}
