@@ -113,7 +113,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration
 integration: cross
-	go test -v -tags integration $(REPOPATH)/integration -timeout 10m -- --remote=true
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
