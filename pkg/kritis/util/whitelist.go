@@ -24,18 +24,19 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// CheckGlobalWhitelist returns true if all images are globally whitelisted
-func CheckGlobalWhitelist(images []string) bool {
+// RemoveGloballyWhitelistedImages returns all images that aren't globally whitelisted
+func RemoveGloballyWhitelistedImages(images []string) []string {
+	notWhitelisted := []string{}
 	for _, image := range images {
 		whitelisted, err := imageInWhitelist(image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
 		}
 		if !whitelisted {
-			return false
+			notWhitelisted = append(notWhitelisted, image)
 		}
 	}
-	return true
+	return notWhitelisted
 }
 
 func imageInWhitelist(image string) (bool, error) {

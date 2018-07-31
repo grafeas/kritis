@@ -416,6 +416,45 @@ func TestKritisPods(t *testing.T) {
 				}
 			},
 		},
+		{
+			description: "kritis-server-global-whitelist",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml"},
+			pods: []testObject{
+				{
+					name: "kritis-server-global-whitelist",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "kritis-server-global-whitelist-with-vulnz",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
+			pods: []testObject{
+				{
+					name: "kritis-server-global-whitelist-with-vulnz",
+				},
+			},
+			shouldSucceed: false,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
+				cmd.Dir = "../"
+				integration_util.RunCmdOut(cmd)
+			},
+		},
 	}
 
 	// CRDs themselves are non-namespaced so we have to delete them each run

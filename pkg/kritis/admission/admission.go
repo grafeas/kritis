@@ -171,8 +171,9 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 }
 
 func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
-	if util.CheckGlobalWhitelist(images) {
-		glog.Infof("%s are all whitelisted, returning successful status", images)
+	images = util.RemoveGloballyWhitelistedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally whitelisted, returning successful status", images)
 		return
 	}
 	// Validate images in the pod against ImageSecurityPolicies in the same namespace
@@ -220,7 +221,6 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 			}
 		}
 	}
-
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
