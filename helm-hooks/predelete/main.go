@@ -28,6 +28,8 @@ var (
 	csrName               string
 	webhookName           string
 	deploymentWebhookName string
+	deleteCRD             bool
+	deleteCsr             bool
 )
 
 func init() {
@@ -35,6 +37,8 @@ func init() {
 	flag.StringVar(&deploymentWebhookName, "deployment-webhook-name", "", "The name of the validation webhook.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
+	flag.BoolVar(&deleteCsr, "delete-csr", true, "Delete kritis csr")
+	flag.BoolVar(&deleteCRD, "delete-crd", true, "Delete kritis CRDs")
 	flag.Parse()
 }
 
@@ -42,5 +46,10 @@ func init() {
 func main() {
 	deleteWebhooks()
 	deleteTLSSecret()
-	deleteCSR()
+	if deleteCsr {
+		deleteCSR()
+	}
+	if deleteCRD {
+		deleteCRDs()
+	}
 }

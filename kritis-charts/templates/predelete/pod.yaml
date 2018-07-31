@@ -25,4 +25,6 @@ spec:
     - {{ .Values.tlsSecretName }}
     - "--csr-name"
     - {{ .Values.csrName }}
+    - {{ .Values.predelete.deleteCSR }}
+    - {{ .Values.predelete.deleteCRDs }}
     command: {{ .Values.predelete.pod.command }}
