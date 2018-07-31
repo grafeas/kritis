@@ -16,15 +16,16 @@ limitations under the License.
 package util
 
 import (
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-func Test_CheckGlobalWhitelist(t *testing.T) {
+func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
 	tests := []struct {
 		name     string
 		images   []string
-		expected bool
+		expected []string
 	}{
 		{
 			name: "images in whitelist",
@@ -32,7 +33,7 @@ func Test_CheckGlobalWhitelist(t *testing.T) {
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			},
-			expected: true,
+			expected: []string{},
 		},
 		{
 			name: "some images not whitelisted",
@@ -40,12 +41,12 @@ func Test_CheckGlobalWhitelist(t *testing.T) {
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			},
-			expected: false,
+			expected: []string{"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := CheckGlobalWhitelist(test.images)
+			actual := RemoveGloballyWhitelistedImages(test.images)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
 		})
 	}

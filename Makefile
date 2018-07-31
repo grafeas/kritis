@@ -73,6 +73,7 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
+TEST_REGISTRY?=gcr.io/kritis-int-test
 REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 KRITIS_PROJECT = $(REPOPATH)/kritis
@@ -84,26 +85,22 @@ out/kritis-server: $(GO_FILES)
 build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
-out/preinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(REPOPATH)/helm-hooks/preinstall
+.PHONY: build-test-image
+build-test-image: out/kritis-server
+	docker build -t $(TEST_REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
-.PHONY: preinstall-image
-preinstall-image:  out/preinstall
-	docker build -t $(REGISTRY)/preinstall:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=preinstall
+HELM_HOOKS = preinstall postinstall predelete
 
-out/postinstall: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(REPOPATH)/helm-hooks/postinstall
+$(HELM_HOOKS): $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o out/$@ $(REPOPATH)/helm-hooks/$@
 
-.PHONY: postinstall-image
-postinstall-image:  out/postinstall
-	docker build -t $(REGISTRY)/postinstall:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=postinstall
+.PHONY: %-image
+%-image: $(HELM_HOOKS)
+	docker build -t $(REGISTRY)/$*:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=$*
 
-out/predelete: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -o $@ $(REPOPATH)/helm-hooks/predelete
-
-.PHONY: predelete-image
-predelete-image:  out/predelete
-	docker build -t $(REGISTRY)/predelete:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=predelete
+.PHONY: %-test-image
+%-test-image: $(HELM_HOOKS)
+	docker build -t $(TEST_REGISTRY)/$*:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=$*
 
 .PHONY: helm-release-image
 helm-release-image:
@@ -115,12 +112,23 @@ clean:
 integration: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
+.PHONY: integration-local
+integration-local: cross build-push-test-image
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
+
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
 	docker push $(REGISTRY)/kritis-server:$(IMAGE_TAG)
 	docker push $(REGISTRY)/preinstall:$(IMAGE_TAG)
 	docker push $(REGISTRY)/postinstall:$(IMAGE_TAG)
 	docker push $(REGISTRY)/predelete:$(IMAGE_TAG)
+
+.PHONY: build-push-test-image
+build-push-test-image: build-test-image preinstall-test-image postinstall-test-image predelete-test-image
+	docker push $(TEST_REGISTRY)/kritis-server:$(IMAGE_TAG)
+	docker push $(TEST_REGISTRY)/preinstall:$(IMAGE_TAG)
+	docker push $(TEST_REGISTRY)/postinstall:$(IMAGE_TAG)
+	docker push $(TEST_REGISTRY)/predelete:$(IMAGE_TAG)
 
 .PHONY: integration-in-docker
 integration-in-docker: build-push-image
