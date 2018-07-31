@@ -17,3 +17,4 @@ limitations under the License.
 package version
 
 var Commit = "undefined"
+var Version = "undefined"

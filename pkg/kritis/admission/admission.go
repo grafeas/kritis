@@ -116,9 +116,10 @@ func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.Admissi
 }
 
 func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
-	glog.Infof("Starting admission review handler, version: %s",
-		version.Commit)
-
+	glog.Infof("Starting admission review handler\nversion: %s\ncommit: %s",
+		version.Version,
+		version.Commit,
+	)
 	ar, err := deserializeRequest(w, r)
 	if err != nil {
 		glog.Errorf("Error reading body: %v", err)

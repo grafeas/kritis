@@ -15,6 +15,7 @@ spec:
   containers:
   - name: {{ .Values.preinstall.pod.name }}
     image: {{ .Values.preinstall.pod.image }}
+    imagePullPolicy: {{ .Values.image.pullPolicy }}
     args:
       - "--csr-name"
       - {{ .Values.csrName }}

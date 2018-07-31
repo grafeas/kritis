@@ -3,4 +3,25 @@ steps:
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile",
            "-t", "gcr.io/kritis-project/kritis-server:$TAG_NAME", "."]
-images: ["gcr.io/kritis-project/kritis-server:$TAG_NAME"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/preinstall:$TAG_NAME", ".",
+           "--build-arg", "stage=preinstall"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/postinstall:$TAG_NAME", ".",
+           "--build-arg", "stage=postinstall"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/predelete:$TAG_NAME", ".",
+           "--build-arg", "stage=predelete"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "helm-release/Dockerfile",
+           "-t", "gcr.io/kritis-project/helm-release:$TAG_NAME", "."]
+  - name: "gcr.io/kritis-project/helm-release:$TAG_NAME"
+
+images: ["gcr.io/kritis-project/kritis-server:$TAG_NAME",
+         "gcr.io/kritis-project/preinstall:$TAG_NAME",
+         "gcr.io/kritis-project/postinstall:$TAG_NAME",
+         "gcr.io/kritis-project/predelete:$TAG_NAME",
+]

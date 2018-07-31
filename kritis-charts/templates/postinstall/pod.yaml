@@ -13,6 +13,7 @@ spec:
   containers:
   - name: {{ .Values.postinstall.pod.name }}
     image: {{ .Values.postinstall.pod.image }}
+    imagePullPolicy: {{ .Values.image.pullPolicy }}
     args:
       - "--webhook-name" 
       - {{ .Values.serviceName }}

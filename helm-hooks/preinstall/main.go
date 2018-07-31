@@ -19,7 +19,9 @@ package main
 import (
 	"flag"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/install"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -37,6 +39,10 @@ func init() {
 }
 
 func main() {
+	logrus.Infof("running preinstall\nversion %s\ncommit: %s",
+		version.Version,
+		version.Commit,
+	)
 	// First, delete the CertificateSigningRequest and Secret if they already exist
 	deleteExistingObjects()
 	// Create the certificates
