@@ -23,6 +23,7 @@ import (
 	"crypto"
 	"encoding/base64"
 	"fmt"
+	"hash"
 	"io/ioutil"
 	"strings"
 
@@ -53,6 +54,10 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	if err != nil {
 		return err
 	}
+	publicKey, err := parsePublicKey(string(pemPublicKey))
+	if err != nil {
+		return err
+	}
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
@@ -66,6 +71,9 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	armorBlock, err := armor.Decode(buf)
 	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
 
+	return publicKey.VerifySignature(hash.Hash(), md.Signature)
+
+	fmt.Printf("signed by\n %s \n%s", md.SignedBy.PublicKey, pemPublicKey)
 	// Verify Signature using the Public Key
 	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
 	if err != nil {
@@ -75,6 +83,8 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	if string(plaintext) != message {
 		return fmt.Errorf("Signature could not be verified. Got: %q, Want: %q", plaintext, message)
 	}
+	fmt.Println("====================\n", string(plaintext))
+	fmt.Println("=======actual=======\n", message)
 	return nil
 }
 
