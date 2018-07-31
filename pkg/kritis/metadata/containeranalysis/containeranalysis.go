@@ -26,9 +26,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	"github.com/grafeas/kritis/pkg/kritis/util"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
@@ -64,16 +64,24 @@ func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata
 	if err != nil {
 		return nil, err
 	}
-	vulnz := []metadata.Vulnerability{}
-	for _, occ := range occs {
-		vulnz = append(vulnz, GetVulnerabilityFromOccurence(occ))
+	vulnz := make([]metadata.Vulnerability, len(occs))
+	for i, occ := range occs {
+		vulnz[i] = GetVulnerabilityFromOccurence(occ)
 	}
 	return vulnz, nil
 }
 
 // GetAttestation gets AttesationAuthority Occurrences for a specified image.
-func (c ContainerAnalysis) GetAttestations(containerImage string) ([]*containeranalysispb.Occurrence, error) {
-	return c.fethcOccurrence(containerImage, AttestationAuthority)
+func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PgpAttestation, error) {
+	occs, err := c.fethcOccurrence(containerImage, AttestationAuthority)
+	if err != nil {
+		return nil, err
+	}
+	pgpAttestations := make([]metadata.PgpAttestation, len(occs))
+	for i, occ := range occs {
+		pgpAttestations[i] = GetPgpAttestationFromOccurrence(occ)
+	}
+	return pgpAttestations, nil
 }
 
 func (c ContainerAnalysis) fethcOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
@@ -112,7 +120,13 @@ func GetVulnerabilityFromOccurence(occ *containeranalysispb.Occurrence) metadata
 	}
 	return vulnerability
 }
-
+func GetPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metadata.PgpAttestation {
+	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
+	return metadata.PgpAttestation{
+		Signature: pgp.GetSignature(),
+		KeyId:     pgp.GetPgpKeyId(),
+	}
+}
 func isFixAvaliable(pis []*containeranalysispb.VulnerabilityType_PackageIssue) bool {
 	for _, pi := range pis {
 		if pi.GetFixedLocation().GetVersion().Kind == containeranalysispb.VulnerabilityType_Version_MAXIMUM {
@@ -201,7 +215,11 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 	// Create Attestation Signature
-	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)
+	host, err := container.NewAtomicContainerSig(containerImage, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+	sig, err := host.CreateAttestationSignature(pgpSigningKey)
 	if err != nil {
 		return nil, err
 	}

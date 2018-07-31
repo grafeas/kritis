@@ -22,11 +22,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
@@ -47,6 +50,7 @@ type config struct {
 	fetchMetadataClient         func() (metadata.MetadataFetcher, error)
 	fetchImageSecurityPolicies  func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	validateImageSecurityPolicy func(isp kritisv1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error)
+	validateAttestations        func(image string, metadataClient metadata.MetadataFetcher, ns string) bool
 }
 
 var (
@@ -57,6 +61,7 @@ var (
 		fetchMetadataClient:         metadataClient,
 		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		validateAttestations:        hasValidImageAttestations,
 	}
 
 	defaultViolationStrategy = violation.LoggingStrategy{}
@@ -171,6 +176,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 }
 
 func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
+	images = util.GetUniqueImages(images)
 	if util.CheckGlobalWhitelist(images) {
 		glog.Infof("%s are all whitelisted, returning successful status", images)
 		return
@@ -194,6 +200,13 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	}
 	for _, isp := range isps {
 		for _, image := range images {
+			glog.Infof("Check if %s as valid Attestations.", image)
+			if admissionConfig.validateAttestations(image, metadataClient, ns) {
+				glog.Info("Valid Attestations Found.")
+				return
+			}
+			glog.Info("No Valid Attestations Found. Proceeding with next checks")
+
 			glog.Infof("Getting vulnz for %s", image)
 			violations, err := admissionConfig.validateImageSecurityPolicy(isp, image, metadataClient)
 			if err != nil {
@@ -221,6 +234,40 @@ func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 		}
 	}
 
+}
+
+// hasValidImageAttestations return true if any one image attestation is verified.
+func hasValidImageAttestations(image string, metadataClient metadata.MetadataFetcher, ns string) bool {
+	host, err := container.NewAtomicContainerSig(image, map[string]string{})
+	if err != nil {
+		glog.Info(err)
+		return false
+	}
+	pgpAttestations, err := metadataClient.GetAttestations(image)
+	if err != nil {
+		glog.Infof("Error while fetching attestations %s", err)
+		return false
+	}
+	if len(pgpAttestations) == 0 {
+		glog.Infof(`No attestations found for this image.
+This normally happens when you deploy a pod before kritis or no attestation authority is deployed.
+Please see instructions `)
+	}
+	valid := false
+	for _, pgpAttestation := range pgpAttestations {
+		// Get Secret from key id.
+		secret, err := secrets.GetSecret(ns, pgpAttestation.KeyId)
+		if err != nil {
+			glog.Infof("Could not find secret %s in namespace %s for attestation verification", secret.SecretName, ns)
+		}
+
+		if err = host.VerifyAttestationSignature(secret, pgpAttestation.Signature); err != nil {
+			glog.Infof("Could not find verify attestation for attestation authority", secret.SecretName)
+		} else {
+			valid = true
+		}
+	}
+	return valid
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {

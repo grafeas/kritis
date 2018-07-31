@@ -27,7 +27,8 @@ const (
 )
 
 const (
-	SuccessMessage = "Successfully admitted."
+	SuccessMessage    = "Successfully admitted."
+	PodAlreadyRunning = "Pod already running."
 )
 
 const (
