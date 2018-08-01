@@ -122,15 +122,6 @@ var CRD_EXAMPLES = []string{
 	"image-security-policy-example.yaml",
 }
 
-func deleteCRDs() {
-	for _, crd := range CRDS {
-		crdCmd := exec.Command("kubectl", "delete", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts"
-		integration_util.RunCmdOut(crdCmd)
-	}
-}
-
 func deleteCRDExamples() {
 	for _, crd := range CRDS {
 		crdCmd := exec.Command("kubectl", "delete", "-f",
@@ -458,7 +449,6 @@ func TestKritisPods(t *testing.T) {
 	}
 
 	// CRDs themselves are non-namespaced so we have to delete them each run
-	deleteCRDs()
 	deleteCRDExamples()
 
 	deleteKritis := initKritis(t)

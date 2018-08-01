@@ -37,6 +37,11 @@ func deleteCSR() {
 	deleteObject("csr", csrName)
 }
 
+func deleteCRDs() {
+	deleteObject("crd", "attestationauthorities.kritis.grafeas.io")
+	deleteObject("crd", "imagesecuritypolicies.kritis.grafeas.io")
+}
+
 func deleteObject(object, name string) {
 	getCommand := exec.Command("kubectl", "get", object, name, "--namespace", namespace)
 	getCommand.Stderr = os.Stderr

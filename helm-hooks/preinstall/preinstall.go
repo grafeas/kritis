@@ -34,7 +34,7 @@ func deleteExistingObjects() {
 	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
 	csrCmd.Stderr = os.Stderr
 	_, err := csrCmd.Output()
-	if err == nil && deleteCSR {
+	if err == nil && createNewCSR {
 		deleteCSRCmd := exec.Command("kubectl", "delete", "csr", csrName, "--namespace", namespace)
 		install.RunCommand(deleteCSRCmd)
 	}
@@ -77,9 +77,6 @@ func createCertificates() {
 }
 
 func createCertificateSigningRequest() {
-	if !deleteCSR {
-		return
-	}
 	certificate := retrieveRequestCertificate()
 	csr := `apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
@@ -101,10 +98,13 @@ spec:
 	install.RunCommand(kubectlCmd)
 }
 
+func csrExists() bool {
+	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
+	_, err := csrCmd.Output()
+	return err == nil
+}
+
 func approveCertificateSigningRequest() {
-	if !deleteCSR {
-		return
-	}
 	approvalCmd := exec.Command("kubectl", "certificate", "approve", csrName)
 	install.RunCommand(approvalCmd)
 }
@@ -159,4 +159,14 @@ func createTLSSecret() {
 
 	tlsSecretCmd := exec.Command("kubectl", "create", "secret", "tls", tlsSecretName, "--cert=server.crt", "--key=server-key.pem", "--namespace", namespace)
 	install.RunCommand(tlsSecretCmd)
+}
+
+func installCRDs() {
+	attestationAuthorityCmd := exec.Command("kubectl", "create", "-f", "-")
+	attestationAuthorityCmd.Stdin = bytes.NewReader([]byte(attestationAuthorityCRD))
+	install.RunCommand(attestationAuthorityCmd)
+
+	ispCommand := exec.Command("kubectl", "create", "-f", "-")
+	ispCommand.Stdin = bytes.NewReader([]byte(imageSecurityPolicyCRD))
+	install.RunCommand(ispCommand)
 }

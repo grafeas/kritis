@@ -21,5 +21,6 @@ spec:
       - {{ .Values.csrName }}
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
-      - {{ .Values.preinstall.deleteCSR }}
+      - {{ .Values.preinstall.createNewCSR }}
+      - {{ .Values.preinstall.installCRDs }}
     command: {{ .Values.preinstall.pod.command }}

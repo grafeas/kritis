@@ -28,13 +28,15 @@ var (
 	namespace     = install.RetrieveNamespace()
 	csrName       string
 	tlsSecretName string
-	deleteCSR     bool
+	createNewCSR  bool
+	installCRD    bool
 )
 
 func init() {
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
-	flag.BoolVar(&deleteCSR, "delete-csr", true, "Delete the csr passed in to csr-name, default tls-webhook-secret-cert")
+	flag.BoolVar(&createNewCSR, "create-new-csr", true, "Set to false in order to only create a new CSR if one is not present.")
+	flag.BoolVar(&installCRD, "install-crds", true, "Install the kritis CRD definitions.")
 	flag.Parse()
 }
 
@@ -45,12 +47,19 @@ func main() {
 	)
 	// First, delete the CertificateSigningRequest and Secret if they already exist
 	deleteExistingObjects()
-	// Create the certificates
-	createCertificates()
-	// Create the certificate signing request
-	createCertificateSigningRequest()
-	// Approve the certificate signing request
-	approveCertificateSigningRequest()
+	if createNewCSR || !csrExists() {
+		// Create the certificates
+		createCertificates()
+		// Create the certificate signing request
+		createCertificateSigningRequest()
+		// Approve the certificate signing request
+		approveCertificateSigningRequest()
+	}
 	// Create the TLS secret
 	createTLSSecret()
+
+	// Create CRDs if flag is set
+	if installCRD {
+		installCRDs()
+	}
 }
