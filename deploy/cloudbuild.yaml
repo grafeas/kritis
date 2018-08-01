@@ -8,22 +8,22 @@ steps:
            "-t", "gcr.io/kritis-project/kritis-server:latest", "."]
   # Build preinstall container
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-f", "helm-hook/preinstall/Dockerfile",
-           "-t", "gcr.io/kritis-project/preinstall:${COMMIT_SHA}", "."]
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/preinstall:${COMMIT_SHA}", ".", "--build-arg", "stage=preinstall"]
   - name: "gcr.io/cloud-builders/docker"
     args: ["tag", "gcr.io/kritis-project/preinstall:${COMMIT_SHA}", "gcr.io/kritis-project/preinstall:latest"]
   # Build postinstall container
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-f", "helm-hook/postinstall/Dockerfile",
-           "-t", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "."]
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", ".", "--build-arg", "stage=postinstall"]
   - name: "gcr.io/cloud-builders/docker"
     args: ["tag", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "gcr.io/kritis-project/postinstall:latest"]
   # Build predelete container
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-f", "helm-hook/predelete/Dockerfile",
-           "-t", "gcr.io/kritis-project/predelete:${COMMIT_SHA}", "."]
+    args: ["build", "-f", "helm-hooks/Dockerfile",
+           "-t", "gcr.io/kritis-project/predelete:${COMMIT_SHA}", ".", "--build-arg", "stage=predelete"]
   - name: "gcr.io/cloud-builders/docker"
-    args: ["tag", "gcr.io/kritis-project/postinstall:${COMMIT_SHA}", "gcr.io/kritis-project/postinstall:latest"]
+    args: ["tag", "gcr.io/kritis-project/predelete:${COMMIT_SHA}", "gcr.io/kritis-project/predelete:latest"]
   # Build container to build resolve-tags
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-f", "deploy/Dockerfile_resolve",
@@ -39,4 +39,8 @@ steps:
 images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}",
          "gcr.io/kritis-project/kritis-server:latest",
          "gcr.io/kritis-project/preinstall:${COMMIT_SHA}",
-         "gcr.io/kritis-project/preinstall:latest"]
+         "gcr.io/kritis-project/preinstall:latest",
+         "gcr.io/kritis-project/postinstall:${COMMIT_SHA}",
+         "gcr.io/kritis-project/postinstall:latest",
+         "gcr.io/kritis-project/predelete:${COMMIT_SHA}",
+         "gcr.io/kritis-project/predelete:latest"]
