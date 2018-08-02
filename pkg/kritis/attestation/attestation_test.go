@@ -17,6 +17,7 @@ limitations under the License.
 package attestation
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -51,22 +52,28 @@ func TestAttestations(t *testing.T) {
 }
 
 func TestGPGArmorSignIntegration(t *testing.T) {
-	testMessage := "test"
-	actualSig, err := CreateMessageAttestation(testutil.PublicTestKey, testutil.PrivateTestKey, testMessage)
-	if err != nil {
-		t.Fatalf("unexpected error %s", err)
-	}
-	if actualSig != expectedSig {
-		//t.Fatalf("Signature created using gpg --armor --sign do not match.\nExpected %s \nGot %s", expectedSig, actualSig)
-	}
-	if err := VerifyMessageAttestation(testutil.PublicTestKey, actualSig, testMessage); err != nil {
+	if err := VerifyMessageAttestation(testutil.PublicTestKey, base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }
 
 // Base64 encoded signarute.
 // Created using gpg --armor --sign -u test@kritis.org < test | base64
-var expectedSig = "LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpvd0did012TXdNVzRyanR6aW1DeTZHTEdOZCtUdUpOS2l5dVQ4aXYwaWpQVG81TTA5MVFySlJkbGxtUW1KK1lvCldWVXJaYWFrNXBWa2xsU0MyQ241eWRtcFJicEZxV21wUmFsNXlhbEtWa3JweVVWNm1mbjYyU0FkeGJvRlJmbFoKcWNrbE1HNXhhbEZaYXBGU3JZNVNabTVpZWlxU0VibUplWmxwcWNVbHVpbVo2VUFLYUZCeFJxS1JxWmxWa25HYQpjV3B5Y2xxS2tYbXlwWVdaaWJHaFVXS2FzYm1sbVlHWmVhcDVTcEtSaFlHQmVhS2hxWmxacW1HcWdZbFJzcW1GCm1WRnFhb3B4V3BwaGtsR3lCY2l5a3NvQ2tOTVNTL0p6TTVNVmt2UHpTaEl6ODFLTEZJRCt5MHNzS1MxS1ZhcXQKNWVwa1BNTEN3TWpGb0NlbXlIS3BlZW5YcjEvZnJKcjNzZlVvTEdSWW1VQmhJU0JUQW5TZUE4US9ldmxGNlF4YwpuQUl3SlJmdWMvOFZxOWUzMmRYUHNmZjNqRVc1dDJLYjdBcmtPSFVuSldTdG5QZzAraXpQOWZtYlZuU1g4blM5Cm1YQTM1SVpSZzhLeUtSZVZWWS9mUFdIL1lzL1NNTlk5RDF2TThqWUVoTmJlbEF4N2FXR3k0SER3MHJ0ZW5xeUMKaG05c29uc01yT2YwM3Z0bGtOZXdSWFBIM0EwZnI1NmVzQzNZdVlGeitZYnNLYjg2N3o1UUQxWHo5LzUyNFpOKwo2dVBqQzFuV0hud1F4QlFXbVBoMWUrdGF0MjcrdmJOZnQ1eWQ3Rmk5N2NEakh1YzlISXNlUGVsYnRtaUc4Wk5OCmRYdWw5UmFhRkQ2ck81WEMzOGJyZTNTTlMwN09rVmpabnhjYS84NE1Menc3MVdIdFJ1K3ZwcDI1RzliLzRIUTQKeVBaZFMxRWtSbVdlNXZYSm4zNVZab3V2anJuRXdWSmQwQ1h3MmEvcXlmeTlzN2VJRmdwVVRVNHlyalg1djNIMwpzZktHSzc0Yy9kK0x1bFFqMy95N2V5U1AvWXVRcUxpTThqR1c1enQyZGUrWmZkdXRPTVAwK1dYTGlhZVgzazkxCjJHclpkVEl5cmtzd3grTmRXV1hETnpIM1MweTdYM0ltU1U0cW1SVmVvK2Q4ZFoydFVXdjhEdmZuaXlWTGxlNnYKT3l4VG1yYy9WdlpkaGswQVF5Mno2VDZtcGpVRlh6LzFtNnpudjk0TkFBPT0KPXRCeDMKLS0tLS1FTkQgUEdQIE1FU1NBR0UtLS0tLQo="
+var expectedSig = `-----BEGIN PGP MESSAGE-----
+
+owEB4gEd/pANAwAKAa6LaZQRYxWjAcsKYgBbY13WdGVzdIkBxAQAAQoALhYhBNKD
+pfX19eyqnvGFxa6LaZQRYxWjBQJbY13WEBx0ZXN0QGtyaXRpcy5vcmcACgkQrotp
+lBFjFaOHFgwArVh3UFF1EJP87y9dglPjeZyr+Q7cgUm2h6LuUUj9hlThZAIhVKZD
+sGOr6mm1050G1JBLE3KJuSBHcgg0NjcId26HxHV4bva1L1QTgLQczlpADZ1LdPYQ
+e4y5CCDRt2lwZ0Kq1/Nk2Qz/+379Etj/E0+nH+jV+pWOZsSQbf5I7BDBhtX/insa
+zf3IjS4D4vDtg29oyFol8M2Otv1Cx7FJJuS+78Kg/+8caVq6KNwnLkm7RFM1HdV9
+wOGFnSUgRs1Amnqvhc6damKj3AUYU7R7MSGvrpT0m4N2ExlaTuR3brT6OQsFLTRy
+HdZ7AbFoW1WH8Mt24c0PDjVCnpTwf7YLOlltmZRJ3+bjImPHiE1oTFeu1EJFNd/Y
+k8FqtwuKIPTvYPRUD0zlHPgJdkKoO9z56Yt8wTOxlp8+dtDmVJZwDsBT/Nqp5j+W
+NkTyozw6wFSDJ/0pMKYKf7jgYyaJyFfM78RV+a5fBbIb9WO+vk72zaYENqNsV86d
+/bGUkqbPBGK+
+=oQuR
+-----END PGP MESSAGE-----`
 
 var invalidSig = "invalid sig"
 

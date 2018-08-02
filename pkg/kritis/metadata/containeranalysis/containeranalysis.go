@@ -60,7 +60,7 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 
 // GetVulnerabilites gets Package Vulnerabilities Occurrences for a specified image.
 func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	occs, err := c.fethcOccurrence(containerImage, PkgVulnerability)
+	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata
 
 // GetAttestation gets AttesationAuthority Occurrences for a specified image.
 func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PgpAttestation, error) {
-	occs, err := c.fethcOccurrence(containerImage, AttestationAuthority)
+	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.Pg
 	return pgpAttestations, nil
 }
 
-func (c ContainerAnalysis) fethcOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
+func (c ContainerAnalysis) fetchOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)

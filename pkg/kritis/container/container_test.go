@@ -143,7 +143,7 @@ func TestValidateAttestationSignature(t *testing.T) {
 	}
 }
 
-func TestGPGArmorSignIntegration(t *testing.T) {
+func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
