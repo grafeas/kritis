@@ -39,8 +39,8 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "kritis", "name of the integration test cluster")
-var gcpProject = flag.String("gcp-project", "priya-wadhwa", "the gcp project where the integration test cluster lives")
+var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
 var client kubernetes.Interface
@@ -161,7 +161,6 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 			"gcr.io/kritis-int-test/predelete",
 			version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
-		"--set", "preinstall.installCRDs=--install-crds=false",
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
 		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
 		"--set", fmt.Sprintf("tlsSecretName=tls-webhook-secret-%s", ns.Name),
