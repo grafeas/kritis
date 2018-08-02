@@ -39,8 +39,8 @@ import (
 )
 
 var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
-var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
+var gkeClusterName = flag.String("gke-cluster-name", "kritis", "name of the integration test cluster")
+var gcpProject = flag.String("gcp-project", "priya-wadhwa", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 
 var client kubernetes.Interface
@@ -84,6 +84,7 @@ func TestMain(m *testing.M) {
 
 func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
 	namespaceName := integration_util.RandomID()
+	logrus.Infof("Running integration tests in namespace %s", namespaceName)
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      namespaceName,
@@ -125,7 +126,7 @@ func createCRDExamples(t *testing.T) {
 	}
 }
 
-func createGACSecret(t *testing.T) {
+func createGACSecret(t *testing.T, ns *v1.Namespace) {
 	crdCmd := exec.Command("gsutil", "cp", "gs://kritis/gac.json", "/tmp")
 	crdCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(crdCmd)
@@ -135,7 +136,7 @@ func createGACSecret(t *testing.T) {
 
 	crdCmd = exec.Command("kubectl", "create",
 		"secret", "generic", "gac-ca-admin",
-		"--from-file=/tmp/gac.json")
+		"--from-file=/tmp/gac.json", "--namespace", ns.Name)
 	crdCmd.Dir = "../"
 	_, err = integration_util.RunCmdOut(crdCmd)
 	if err != nil {
@@ -160,10 +161,12 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 			"gcr.io/kritis-int-test/predelete",
 			version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
-		"--set", "preinstall.createNewCSR=--create-new-csr=true",
-		"--set", "preinstall.installCRDs=--install-crds=true",
-		"--set", "predelete.deleteCSR=--delete-csr=true",
-		"--set", "predelete.deleteCRDs=--delete-crds=true",
+		"--set", "preinstall.installCRDs=--install-crds=false",
+		"--set", "predelete.deleteCRDs=--delete-crd=false",
+		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
+		"--set", fmt.Sprintf("tlsSecretName=tls-webhook-secret-%s", ns.Name),
+		"--set", fmt.Sprintf("clusterRoleBindingName=kritis-clusterrolebinding-%s", ns.Name),
+		"--set", fmt.Sprintf("clusterRoleName=kritis-clusterrole-%s", ns.Name),
 	)
 	helmCmd.Dir = "../"
 
@@ -171,7 +174,6 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	if err != nil {
 		getPreinstallLogs(t)
 		getPostinstallLogs(t)
-		deleteFailedDeployments()
 		t.Fatalf("testing error: %v", err)
 	}
 	// parsing out release name from 'helm init' output
@@ -431,7 +433,7 @@ func TestKritisPods(t *testing.T) {
 
 	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
-	createGACSecret(t)
+	createGACSecret(t, ns)
 	deleteKritis := initKritis(t, ns)
 	defer deleteKritis()
 	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
