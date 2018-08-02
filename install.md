@@ -30,10 +30,13 @@ Instructions can be found in the `Before you Begin` section of the [Getting Imag
 kritis can only inspect images hosted in projects that have both of these enabled, and have already been scanned for vulnerabilities.
 
 ### Creating a Container Analysis Secret
-You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images. You can create the secret through the Google Cloud Console or on the command line with gcloud.
+You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images.
+You can create the secret through the Google Cloud Console or on the command line with gcloud.
 
 #### Creating Container Analysis Secret via Command Line
-Before you start, lets define variables for your serviceaccount and glcoud project.
+Before you start, please make sure you are running as a user with permissions to create service accounts.
+
+First, lets define variables for your serviceaccount and glcoud project.
 ```
 ACC_NAME=kritis-ca-admin
 ACC_DISP_NAME="Kritis Service Account"
@@ -204,3 +207,34 @@ level=info msg="deleted csr tls-webhook-secret-cert"
 Kritis will be deleted from your cluster once this pod has reached `Completed` status.
 
 Note: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
+
+# Troubleshooting
+
+## Logs
+If you're unable to install or delete kritis, looking at logs for the following pods could provide more information:
+* kritis-validation-hook-xxx
+* kritis-preinstall (during installation)
+* kritis-postinstall (during installation)
+* kritis-predelete (during deletion)
+
+```
+$ kubectl get pods
+NAME                                      READY     STATUS             RESTARTS   AGE
+kritis-postinstall                        0/1       Completed          0          2m
+kritis-preinstall                         0/1       Completed          0          2m
+kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0          2m
+
+$ kubectl logs kritis-postinstall
+   ...
+```
+
+## Deleting Kritis
+If you're unable to delete kritis via `helm delete [DEPLOYMENT NAME]`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
+
+```shell
+$ kubectl delete validatingwebhookconfiguration kritis-validation-hook --namespace [YOUR NAMESPACE]
+
+$ kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments --namespace [YOUR NAMESPACE]
+```
+
+`helm delete` should work at this point.
