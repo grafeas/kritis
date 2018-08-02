@@ -162,11 +162,11 @@ func createTLSSecret() {
 }
 
 func installCRDs() {
-	attestationAuthorityCmd := exec.Command("kubectl", "create", "-f", "-")
+	attestationAuthorityCmd := exec.Command("kubectl", "apply", "-f", "-")
 	attestationAuthorityCmd.Stdin = bytes.NewReader([]byte(attestationAuthorityCRD))
 	install.RunCommand(attestationAuthorityCmd)
 
-	ispCommand := exec.Command("kubectl", "create", "-f", "-")
+	ispCommand := exec.Command("kubectl", "apply", "-f", "-")
 	ispCommand.Stdin = bytes.NewReader([]byte(imageSecurityPolicyCRD))
 	install.RunCommand(ispCommand)
 }
