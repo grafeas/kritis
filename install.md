@@ -169,7 +169,11 @@ For example, to install kritis in the namespace `test`, you could run:
 helm install ./kritis-charts --set serviceNamespace=test
 ```
 
-## Deleting Kritis
+## Tutorial
+
+Once you have installed Kritis, you may want to follow our [tutorial](tutorial.md) to learn how your can manage and test your Kritis configuration.
+
+## Uninstalling Kritis
 
 You can delete kritis by deleting the helm deployment:
 ```shell
