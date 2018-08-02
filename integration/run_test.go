@@ -127,7 +127,7 @@ func createCRDExamples(t *testing.T) {
 }
 
 func createGACSecret(t *testing.T, ns *v1.Namespace) {
-	crdCmd := exec.Command("gsutil", "cp", "gs://kritis/gac.json", "/tmp")
+	crdCmd := exec.Command("gsutil", "cp", "gs://kritis-test-files/gac.json", "/tmp")
 	crdCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(crdCmd)
 	if err != nil {
