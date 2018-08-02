@@ -28,8 +28,10 @@ pushd $GOPATH/src/github.com/grafeas/kritis
 echo "Check format"
 ./hack/check-fmt.sh
 
-echo "Running gcloud auth login..."
-gcloud auth login
+echo "Copying kritis int test creds..."
+mkdir -p $HOME/tmp
+cp $KOKORO_ROOT/src/keystore/72508_kritis_int_test $HOME/tmp/gac.json
+
 
 echo "Running unit and integration tests..."
 go test -cover -v -timeout 60s -tags=integration `go list ./...  | grep -v vendor`

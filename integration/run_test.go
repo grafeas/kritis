@@ -42,6 +42,7 @@ var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
 var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
 var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
+var gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for kritis-int-test project")
 
 var client kubernetes.Interface
 
@@ -127,18 +128,12 @@ func createCRDExamples(t *testing.T) {
 }
 
 func createGACSecret(t *testing.T, ns *v1.Namespace) {
-	crdCmd := exec.Command("gsutil", "cp", "gs://kritis-test-files/gac.json", "/tmp")
+	crdCmd := exec.Command("kubectl", "create",
+		"secret", "generic", "gac-ca-admin",
+		fmt.Sprintf("--from-file=%s", *gacCredentials),
+		"--namespace", ns.Name)
 	crdCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(crdCmd)
-	if err != nil {
-		t.Fatalf("testing error: %v", err)
-	}
-
-	crdCmd = exec.Command("kubectl", "create",
-		"secret", "generic", "gac-ca-admin",
-		"--from-file=/tmp/gac.json", "--namespace", ns.Name)
-	crdCmd.Dir = "../"
-	_, err = integration_util.RunCmdOut(crdCmd)
 	if err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
@@ -171,8 +166,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
-		getPreinstallLogs(t)
-		getPostinstallLogs(t)
+		getPreinstallLogs(t, ns)
+		getPostinstallLogs(t, ns)
 		t.Fatalf("testing error: %v", err)
 	}
 	// parsing out release name from 'helm init' output
@@ -203,8 +198,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	podList, err := client.CoreV1().Pods(ns.Name).List(meta_v1.ListOptions{})
 	if err != nil {
 		t.Errorf("error getting pods: %v", err)
-		getPreinstallLogs(t)
-		getPostinstallLogs(t)
+		getPreinstallLogs(t, ns)
+		getPostinstallLogs(t, ns)
 		return deleteFunc
 	}
 	for _, pod := range podList.Items {
@@ -218,8 +213,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	return deleteFunc
 }
 
-func getPreinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "kritis-preinstall")
+func getPreinstallLogs(t *testing.T, ns *v1.Namespace) string {
+	cmd := exec.Command("kubectl", "logs", "kritis-preinstall", "-n", ns.Name)
 	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
@@ -228,8 +223,8 @@ func getPreinstallLogs(t *testing.T) string {
 	return string(output)
 }
 
-func getPostinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "kritis-postinstall")
+func getPostinstallLogs(t *testing.T, ns *v1.Namespace) string {
+	cmd := exec.Command("kubectl", "logs", "kritis-postinstall", "-n", ns.Name)
 	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
