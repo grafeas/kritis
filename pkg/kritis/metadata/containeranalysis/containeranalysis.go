@@ -72,8 +72,16 @@ func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata
 }
 
 // GetAttestation gets AttesationAuthority Occurrences for a specified image.
-func (c ContainerAnalysis) GetAttestations(containerImage string) ([]*containeranalysispb.Occurrence, error) {
-	return c.fethcOccurrence(containerImage, AttestationAuthority)
+func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PgpAttestation, error) {
+	occs, err := c.fethcOccurrence(containerImage, AttestationAuthority)
+	if err != nil {
+		return nil, err
+	}
+	pgpAttestations := make([]metadata.PgpAttestation, len(occs))
+	for i, occ := range occs {
+		pgpAttestations[i] = getPgpAttestationFromOccurrence(occ)
+	}
+	return pgpAttestations, nil
 }
 
 func (c ContainerAnalysis) fethcOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
@@ -250,4 +258,12 @@ func (c ContainerAnalysis) DeleteOccurrence(occurrenceId string) error {
 		Name: occurrenceId,
 	}
 	return c.client.DeleteOccurrence(c.ctx, req)
+}
+
+func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metadata.PgpAttestation {
+	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
+	return metadata.PgpAttestation{
+		Signature: pgp.GetSignature(),
+		KeyId:     pgp.GetPgpKeyId(),
+	}
 }

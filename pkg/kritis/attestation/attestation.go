@@ -23,9 +23,7 @@ import (
 	"crypto"
 	"encoding/base64"
 	"fmt"
-	"hash"
 	"io/ioutil"
-	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
@@ -54,37 +52,41 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	if err != nil {
 		return err
 	}
-	publicKey, err := parsePublicKey(string(pemPublicKey))
-	if err != nil {
-		return err
-	}
+
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
 
-	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(string(pemPublicKey)))
+	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(pemPublicKey))
 	if err != nil {
 		return err
 	}
 	buf := bytes.NewBuffer([]byte(attestation))
 	armorBlock, err := armor.Decode(buf)
+	if err != nil {
+		return errors.Wrap(err, "could not decode armor signature")
+	}
 	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
+	if err != nil {
+		return errors.Wrap(err, "could not read armor signature")
+	}
 
-	return publicKey.VerifySignature(hash.Hash(), md.Signature)
-
-	fmt.Printf("signed by\n %s \n%s", md.SignedBy.PublicKey, pemPublicKey)
-	// Verify Signature using the Public Key
+	// MessageDetails.UnverifiedBody signature is not verified until we read it.
+	// This will call PublicKey.VerifySignature for the keys in the keyring.
 	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not verify armor signature")
+	}
+	// Make sure after reading the UnverifiedBody above, there is no signature error.
+	if md.SignatureError != nil || md.Signature == nil {
+		return fmt.Errorf("Bad signature found: %s or No signature found for given key", md.SignatureError)
 	}
 
+	// Finally, make sure the signature is over the right message.
 	if string(plaintext) != message {
-		return fmt.Errorf("Signature could not be verified. Got: %q, Want: %q", plaintext, message)
+		return fmt.Errorf("Signature could not be verified. Got: %s, Want: %s", string(plaintext), message)
 	}
-	fmt.Println("====================\n", string(plaintext))
-	fmt.Println("=======actual=======\n", message)
 	return nil
 }
 
@@ -93,37 +95,35 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 // privKeyEnc: Base64 Decoded Private Key
 // message: Message to attest
 func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message string) (string, error) {
-
 	// Create a PgpKey from Encoded Public Key
 	pgpKey, err := NewPgpKey(privKeyEnc, pubKeyEnc)
 	if err != nil {
-		return "", errors.Wrap(err, "Error while signing:")
+		return "", errors.Wrap(err, "creating PGP key")
 	}
 	// First Create a signer Entitiy from public and private keys.
 	signer, err := createEntityFromKeys(pgpKey.PublicKey(), pgpKey.PrivateKey())
 	if err != nil {
-		return "", errors.Wrap(err, "Error while signing:")
+		return "", errors.Wrap(err, "creating entity keys")
 	}
 
 	b := new(bytes.Buffer)
 	// Armor Decode it.
 	armorWriter, errEncode := armor.Encode(b, openpgp.SignatureType, make(map[string]string))
 	if errEncode != nil {
-		return "", errors.Wrap(err, "Error while signing:")
+		return "", errors.Wrap(err, "encoding data")
 	}
 	// Finally Sign the Text.
 	w, err := openpgp.Sign(armorWriter, signer, nil, &pgpConfig)
 	if err != nil {
-		return "", errors.Wrap(err, "Error while signing:")
+		return "", errors.Wrap(err, "opengpg signing")
 	}
 
 	_, err = w.Write([]byte(message))
 	if err != nil {
-		return "", errors.Wrap(err, "Error while signing:")
+		return "", errors.Wrap(err, "writing signed data")
 	}
 	w.Close()
 	armorWriter.Close()
-
 	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
 }
 

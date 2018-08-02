@@ -35,7 +35,7 @@ var tcAttestations = []struct {
 
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
-		publicKey, privateKey := testutil.CreateBase64KeyPair(t)
+		publicKey, privateKey := testutil.CreateBase64KeyPair(t, "test")
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {
@@ -49,6 +49,24 @@ func TestAttestations(t *testing.T) {
 		})
 	}
 }
+
+func TestGPGArmorSignIntegration(t *testing.T) {
+	testMessage := "test"
+	actualSig, err := CreateMessageAttestation(testutil.PublicTestKey, testutil.PrivateTestKey, testMessage)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+	if actualSig != expectedSig {
+		//t.Fatalf("Signature created using gpg --armor --sign do not match.\nExpected %s \nGot %s", expectedSig, actualSig)
+	}
+	if err := VerifyMessageAttestation(testutil.PublicTestKey, actualSig, testMessage); err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+}
+
+// Base64 encoded signarute.
+// Created using gpg --armor --sign -u test@kritis.org < test | base64
+var expectedSig = "LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpvd0did012TXdNVzRyanR6aW1DeTZHTEdOZCtUdUpOS2l5dVQ4aXYwaWpQVG81TTA5MVFySlJkbGxtUW1KK1lvCldWVXJaYWFrNXBWa2xsU0MyQ241eWRtcFJicEZxV21wUmFsNXlhbEtWa3JweVVWNm1mbjYyU0FkeGJvRlJmbFoKcWNrbE1HNXhhbEZaYXBGU3JZNVNabTVpZWlxU0VibUplWmxwcWNVbHVpbVo2VUFLYUZCeFJxS1JxWmxWa25HYQpjV3B5Y2xxS2tYbXlwWVdaaWJHaFVXS2FzYm1sbVlHWmVhcDVTcEtSaFlHQmVhS2hxWmxacW1HcWdZbFJzcW1GCm1WRnFhb3B4V3BwaGtsR3lCY2l5a3NvQ2tOTVNTL0p6TTVNVmt2UHpTaEl6ODFLTEZJRCt5MHNzS1MxS1ZhcXQKNWVwa1BNTEN3TWpGb0NlbXlIS3BlZW5YcjEvZnJKcjNzZlVvTEdSWW1VQmhJU0JUQW5TZUE4US9ldmxGNlF4YwpuQUl3SlJmdWMvOFZxOWUzMmRYUHNmZjNqRVc1dDJLYjdBcmtPSFVuSldTdG5QZzAraXpQOWZtYlZuU1g4blM5Cm1YQTM1SVpSZzhLeUtSZVZWWS9mUFdIL1lzL1NNTlk5RDF2TThqWUVoTmJlbEF4N2FXR3k0SER3MHJ0ZW5xeUMKaG05c29uc01yT2YwM3Z0bGtOZXdSWFBIM0EwZnI1NmVzQzNZdVlGeitZYnNLYjg2N3o1UUQxWHo5LzUyNFpOKwo2dVBqQzFuV0hud1F4QlFXbVBoMWUrdGF0MjcrdmJOZnQ1eWQ3Rmk5N2NEakh1YzlISXNlUGVsYnRtaUc4Wk5OCmRYdWw5UmFhRkQ2ck81WEMzOGJyZTNTTlMwN09rVmpabnhjYS84NE1Menc3MVdIdFJ1K3ZwcDI1RzliLzRIUTQKeVBaZFMxRWtSbVdlNXZYSm4zNVZab3V2anJuRXdWSmQwQ1h3MmEvcXlmeTlzN2VJRmdwVVRVNHlyalg1djNIMwpzZktHSzc0Yy9kK0x1bFFqMy95N2V5U1AvWXVRcUxpTThqR1c1enQyZGUrWmZkdXRPTVAwK1dYTGlhZVgzazkxCjJHclpkVEl5cmtzd3grTmRXV1hETnpIM1MweTdYM0ltU1U0cW1SVmVvK2Q4ZFoydFVXdjhEdmZuaXlWTGxlNnYKT3l4VG1yYy9WdlpkaGswQVF5Mno2VDZtcGpVRlh6LzFtNnpudjk0TkFBPT0KPXRCeDMKLS0tLS1FTkQgUEdQIE1FU1NBR0UtLS0tLQo="
 
 var invalidSig = "invalid sig"
 

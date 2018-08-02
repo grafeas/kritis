@@ -55,10 +55,10 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
-func CreateBase64KeyPair(t *testing.T) (string, string) {
+func CreateBase64KeyPair(t *testing.T, name string) (string, string) {
 	// Create a new pair of key
 	var key *openpgp.Entity
-	key, err := openpgp.NewEntity("kritis", "test", "kritis@grafeas.com", nil)
+	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
 	CheckError(t, false, err)
 	// Get Pem encoded Public Key
 	pubKeyBaseEnc := getBase64EncodedKey(key, openpgp.PublicKeyType, t)
@@ -87,7 +87,7 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
 }
 
 func CreateSecret(t *testing.T, name string) *secrets.PgpSigningSecret {
-	pub, priv := CreateBase64KeyPair(t)
+	pub, priv := CreateBase64KeyPair(t, name)
 	return &secrets.PgpSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,

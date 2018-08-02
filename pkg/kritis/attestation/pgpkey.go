@@ -17,10 +17,11 @@ limitations under the License.
 package attestation
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
-	"strings"
 
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
@@ -34,27 +35,20 @@ type PgpKey struct {
 }
 
 func NewPgpKey(privateKeyEnc string, publicKeyEnc string) (*PgpKey, error) {
-	var publicKey *packet.PublicKey = nil
-	var privateKey *packet.PrivateKey = nil
+	var publicKey *packet.PublicKey
+	var privateKey *packet.PrivateKey
+	var err error
 
 	if privateKeyEnc != "" {
-		pemPrivateKey, err := base64.StdEncoding.DecodeString(privateKeyEnc)
+		privateKey, err = parsePrivateKey(string(privateKeyEnc))
 		if err != nil {
-			return nil, err
-		}
-		privateKey, err = parsePrivateKey(string(pemPrivateKey))
-		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "parsing private key")
 		}
 	}
 	if publicKeyEnc != "" {
-		pemPublicKey, err := base64.StdEncoding.DecodeString(publicKeyEnc)
+		publicKey, err = parsePublicKey(string(publicKeyEnc))
 		if err != nil {
-			return nil, err
-		}
-		publicKey, err = parsePublicKey(string(pemPublicKey))
-		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "parsing public key")
 		}
 	}
 	return &PgpKey{
@@ -96,7 +90,11 @@ func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
 }
 
 func parseKey(key string, keytype string) (packet.Packet, error) {
-	r := strings.NewReader(key)
+	pemKeyString, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return nil, err
+	}
+	r := bytes.NewReader(pemKeyString)
 	block, err := armor.Decode(r)
 	if err != nil {
 		return nil, err

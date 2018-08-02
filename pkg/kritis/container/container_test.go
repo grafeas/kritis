@@ -108,43 +108,51 @@ func TestCreateAttestationSignature(t *testing.T) {
 }
 
 func TestValidateAttestationSignature(t *testing.T) {
-	secret1 := testutil.CreateSecret(t, "test")
-	secret2 := testutil.CreateSecret(t, "test-another")
-
+	secret := testutil.CreateSecret(t, "test")
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	inputSig, err := container.CreateAttestationSignature(secret1)
+	inputSig, err := container.CreateAttestationSignature(secret)
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
 
 	tests := []struct {
 		name      string
-		inputSig  string
 		shouldErr bool
-		testSig   string
+		publickey string
 	}{
-		// {
-		// 	name:      "samesecret",
-		// 	inputSig:  inputSig,
-		// 	shouldErr: false,
-		// 	testSig:   inputSig,
-		// },
 		{
-			name:      "anotherSecret",
-			inputSig:  inputSig,
+			name:      "verify using same public key",
+			shouldErr: false,
+			publickey: secret.PublicKey,
+		},
+		{
+			name:      "verify using another public key",
 			shouldErr: true,
-			testSig:   inputSig,
+			publickey: testutil.PublicTestKey,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			verificationErr := container.VerifyAttestationSignature(secret2.PublicKey, test.inputSig)
-			verificationErr = container.VerifyAttestationSignature(secret1.PublicKey, test.inputSig)
+			verificationErr := container.VerifyAttestationSignature(test.publickey, inputSig)
 			testutil.CheckError(t, test.shouldErr, verificationErr)
 		})
 	}
 }
+
+func TestGPGArmorSignIntegration(t *testing.T) {
+	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
+	if err != nil {
+		t.Fatalf("Unexpected error %s", err)
+	}
+	if err := container.VerifyAttestationSignature(testutil.PublicTestKey, expectedSig); err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+}
+
+// Base64 encoded signarute.
+// Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt> | base64
+var expectedSig = "LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpvd0did012TXdNVzRyanR6aW1DeTZHTEcwd2Uwa3hpaWszMU9WaXNsRjJXV1pDWW41aWhaVlN0bHBxVG1sV1NXClZJTFlLZm5KMmFsRnVrV3BhYWxGcVhuSnFVcFdTdW5KUlhxWitmclpJQjNGdWdWRitWbXB5U1V3Ym5GcVVWbHEKa1ZLdGpsSm1ibUo2S3BJUnVZbDVtV21weFNXNktabnBRQXBvVUhGR29wR3BtVldTY1pweGFuSnlXb3FSZWJLbApoWm1Kc2FGUllwcXh1YVdaZ1psNXFubEtrcEdGZ1lGNW9xR3BtVm1xWWFxQmlWR3lxWVdaVVdwcWluRmFtbUdTClViSUZ5TEtTeWdLUTB4Skw4bk16a3hXUzgvTktFalB6VW9zVWlqUFQ4eEpMU290U2xXcHJPeG1Qc0RBd2NqSG8KaVNteVhHcGUrdlhyMXplcjVuMXNQUW9MRGxZbVVGQUl5SlFBWGVjQThZNWVmbEU2QXhlbkFFekppK2ZjL3dNeQpDOFVQOFM5WnZzQjVXdmczNVNYNlMrWFNXdlAxanEvYUovek9Za2VkaHVHUm9BdWVwL25rY3Zaa0JQWHN0RlppCmMzcnNwZDl3NktDN2tHOXY3NTc0WSsxWHN2bVAvTGtjWFNYOXNxRnc3ZG5mRXlkVSt5NHhmdi9sUzkycFMzOFcKdjJPNmZWQTEzWFhCNnFlZE1YS3JGMmpvdXUrZWwzMm5ZTEhsdS9BS3FmUyt2d2NtQ1BleHJqK1JkM1A5Vm9HNApLY21yVkp1ZWxpek9uelhWYVpXT1VzQnBqdVJYejN4Vys0bE5YckZ0WWNTVGpoVlI4cE1NNDNXRStlZVUzWCtYCjZSRzR1ZTNNZlptYmxpZmJUM1JYaUY2YyttSnk1Zy96TkFrZHRoMGZRb0k5RnBWL3NWazgvVVRHQmVZSmYrMlkKSTdOa3BwMzRPdW5CaXFpM2RYYWR5NXdNMWVyYWx1ZThPY0ZhVmhJUlZMS3QyS3B2YzJIRys1MC9lVk5aQ2dKZQo3VkxvVzVZcG0vMVg3ZTZKTUNPRFZRL1dxTXlJWWxsbTV6L3pZNmlVWDVVVzc2eWdxdGRUNWxuZGJCS3QzQ041Cm4ySGRoTjJucXo0K3VoRzdVbStWVkdUMXlRS3puOHV1K0hCZnZhdDNMVkh2MDlFVFF1MUMxNXFtWnZheXVWMWkKMWxMeE9jVDBiLzNYTjIyZjdrNFg4MWI3cmdZQQo9ZU9GVwotLS0tLUVORCBQR1AgTUVTU0FHRS0tLS0tCg=="
