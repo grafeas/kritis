@@ -1,6 +1,6 @@
 ## Kritis Tutorial
 
-First, run through the [installation guide](install.md).
+Before proceeding, please make sure you have run through the [installation guide](install.md).
 
 ### 1. Setting up an ImageSecurityPolicy
 
