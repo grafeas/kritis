@@ -52,7 +52,7 @@ func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability
 
 // ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
 func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Violation {
-	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
+	maxSeverity := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {
 		return Violation(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
 			vulnz.CVE, image, maxSeverity))

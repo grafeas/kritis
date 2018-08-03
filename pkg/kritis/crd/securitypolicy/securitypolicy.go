@@ -76,7 +76,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			continue
 		}
 		// Check ifFixesNotAvailable
-		if isp.Spec.PackageVulernerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
+		if isp.Spec.PackageVulnerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
 			violations = append(violations, SecurityPolicyViolation{
 				Vulnerability: v,
 				Violation:     FixesNotAvailableViolation,
@@ -108,7 +108,7 @@ func imageInWhitelist(isp v1beta1.ImageSecurityPolicy, image string) bool {
 }
 
 func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
-	for _, w := range isp.Spec.PackageVulernerabilityRequirements.WhitelistCVEs {
+	for _, w := range isp.Spec.PackageVulnerabilityRequirements.WhitelistCVEs {
 		if w == cve {
 			return true
 		}
@@ -117,7 +117,7 @@ func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
 }
 
 func severityWithinThreshold(isp v1beta1.ImageSecurityPolicy, severity string) bool {
-	maxSeverity := isp.Spec.PackageVulernerabilityRequirements.MaximumSeverity
+	maxSeverity := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {
 		return false
 	}
