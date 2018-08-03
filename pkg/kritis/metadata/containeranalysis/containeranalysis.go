@@ -60,7 +60,7 @@ func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
 
 // GetVulnerabilites gets Package Vulnerabilities Occurrences for a specified image.
 func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	occs, err := c.fethcOccurrence(containerImage, PkgVulnerability)
+	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +72,19 @@ func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata
 }
 
 // GetAttestation gets AttesationAuthority Occurrences for a specified image.
-func (c ContainerAnalysis) GetAttestations(containerImage string) ([]*containeranalysispb.Occurrence, error) {
-	return c.fethcOccurrence(containerImage, AttestationAuthority)
+func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
+	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
+	if err != nil {
+		return nil, err
+	}
+	p := make([]metadata.PGPAttestation, len(occs))
+	for i, occ := range occs {
+		p[i] = getPgpAttestationFromOccurrence(occ)
+	}
+	return p, nil
 }
 
-func (c ContainerAnalysis) fethcOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
+func (c ContainerAnalysis) fetchOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
@@ -196,7 +204,7 @@ func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthor
 
 func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PgpSigningSecret) (*containeranalysispb.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
@@ -250,4 +258,12 @@ func (c ContainerAnalysis) DeleteOccurrence(occurrenceId string) error {
 		Name: occurrenceId,
 	}
 	return c.client.DeleteOccurrence(c.ctx, req)
+}
+
+func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metadata.PGPAttestation {
+	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
+	return metadata.PGPAttestation{
+		Signature: pgp.GetSignature(),
+		KeyId:     pgp.GetPgpKeyId(),
+	}
 }

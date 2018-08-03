@@ -33,7 +33,7 @@ func waitForPreinstallPod() {
 	if err != nil {
 		logrus.Fatalf("error getting kubernetes client: %v", err)
 	}
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "kritis-preinstall"); err != nil {
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(namespace), "kritis-preinstall"); err != nil {
 		logrus.Fatalf("preinstall pod didn't complete: %v", err)
 	}
 }

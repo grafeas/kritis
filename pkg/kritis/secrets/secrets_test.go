@@ -17,9 +17,9 @@ package secrets
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -28,9 +28,9 @@ var tests = []struct {
 	name       string
 	secretName string
 	shdErr     bool
-	expected   *PgpSigningSecret
+	expected   *PGPSigningSecret
 }{
-	{"good", "good-sec", false, &PgpSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
+	{"good", "good-sec", false, &PGPSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
 	{"bad1", "bad1-sec", true, nil},
 	{"bad2", "bad2-sec", true, nil},
 	{"notfound", "not-present", true, nil},
@@ -41,7 +41,12 @@ func TestSecrets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, err := GetSecret("test", tc.secretName)
-			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.expected, actual)
+			if !tc.shdErr && err != nil {
+				t.Fatalf("expected error: %v but found %v", tc.shdErr, err)
+			}
+			if !reflect.DeepEqual(tc.expected, actual) {
+				t.Fatalf("expected: %v but found %v", tc.expected, actual)
+			}
 		})
 	}
 }

@@ -16,13 +16,34 @@ limitations under the License.
 
 package metadata
 
+import (
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+)
+
 type MetadataFetcher interface {
 	// GetVulnerabilities returns package vulnerabilities for a container
 	GetVulnerabilities(containerImage string) ([]Vulnerability, error)
+	// Create Attesatation Occurrence for an image.
+	CreateAttestationOccurence(note *containeranalysispb.Note,
+		containerImage string,
+		pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error)
+	// Get Attestation Note for an Attestation Authority.
+	GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error)
+	// Get Attestation Occurrences for given image.
+	GetAttestations(containerImage string) ([]PGPAttestation, error)
 }
 
 type Vulnerability struct {
 	Severity        string
 	HasFixAvailable bool
 	CVE             string
+}
+
+// PGPAttestation represents the Signature and the Singer Key Id from the
+// containeranalysis Occurrence_Attestation instance.
+type PGPAttestation struct {
+	Signature string
+	KeyId     string
 }

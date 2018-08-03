@@ -17,6 +17,7 @@ limitations under the License.
 package attestation
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -35,7 +36,7 @@ var tcAttestations = []struct {
 
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
-		publicKey, privateKey := testutil.CreateBase64KeyPair(t)
+		publicKey, privateKey := testutil.CreateBase64KeyPair(t, "test")
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {
@@ -49,6 +50,30 @@ func TestAttestations(t *testing.T) {
 		})
 	}
 }
+
+func TestGPGArmorSignIntegration(t *testing.T) {
+	if err := VerifyMessageAttestation(testutil.PublicTestKey, base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+}
+
+// Base64 encoded signature.
+// Created using echo  test >  test && gpg --armor --sign -u test@kritis.org < test | base64
+var expectedSig = `-----BEGIN PGP MESSAGE-----
+
+owEB4gEd/pANAwAKAa6LaZQRYxWjAcsKYgBbY13WdGVzdIkBxAQAAQoALhYhBNKD
+pfX19eyqnvGFxa6LaZQRYxWjBQJbY13WEBx0ZXN0QGtyaXRpcy5vcmcACgkQrotp
+lBFjFaOHFgwArVh3UFF1EJP87y9dglPjeZyr+Q7cgUm2h6LuUUj9hlThZAIhVKZD
+sGOr6mm1050G1JBLE3KJuSBHcgg0NjcId26HxHV4bva1L1QTgLQczlpADZ1LdPYQ
+e4y5CCDRt2lwZ0Kq1/Nk2Qz/+379Etj/E0+nH+jV+pWOZsSQbf5I7BDBhtX/insa
+zf3IjS4D4vDtg29oyFol8M2Otv1Cx7FJJuS+78Kg/+8caVq6KNwnLkm7RFM1HdV9
+wOGFnSUgRs1Amnqvhc6damKj3AUYU7R7MSGvrpT0m4N2ExlaTuR3brT6OQsFLTRy
+HdZ7AbFoW1WH8Mt24c0PDjVCnpTwf7YLOlltmZRJ3+bjImPHiE1oTFeu1EJFNd/Y
+k8FqtwuKIPTvYPRUD0zlHPgJdkKoO9z56Yt8wTOxlp8+dtDmVJZwDsBT/Nqp5j+W
+NkTyozw6wFSDJ/0pMKYKf7jgYyaJyFfM78RV+a5fBbIb9WO+vk72zaYENqNsV86d
+/bGUkqbPBGK+
+=oQuR
+-----END PGP MESSAGE-----`
 
 var invalidSig = "invalid sig"
 
