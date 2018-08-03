@@ -17,7 +17,7 @@ limitations under the License.
 package metadata
 
 type MetadataFetcher interface {
-	// Get Package Vulnerabilites
+	// GetVulnerabilities returns package vulnerabilities for a container
 	GetVulnerabilities(containerImage string) ([]Vulnerability, error)
 }
 

@@ -42,7 +42,7 @@ func init() {
 	flag.Parse()
 }
 
-// The kritis predelete hook is reponsible for deleting the webhook, TLS secret and CSR
+// The kritis predelete hook is responsible for deleting the webhook, TLS secret and CSR
 func main() {
 	deleteWebhooks()
 	deleteTLSSecret()

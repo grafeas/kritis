@@ -49,7 +49,7 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 }
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
-// It returns a list of vulnerabilites that don't pass
+// It returns a list of vulnerabilities that don't pass
 func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
