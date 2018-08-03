@@ -35,7 +35,7 @@ For more documentation, see [Container Analysis Overview](https://cloud.google.c
 
 ## Step #4: Create a cluster
 
-You may skip this step if you already have a cluster configured.
+kritis requires a cluster running Kubernetes v1.9.2 or newer. You may create one named `kritis-test` by executing:
 
 ```shell
 gcloud components update
@@ -43,7 +43,7 @@ gcloud config set project $PROJECT
 gcloud config set compute/zone us-central1-a
 gcloud container clusters create kritis-test --num-nodes=2
 ```
-After creating your cluster, you need to get authentication credentials to interact with the cluster. This command will also configure  `kubectl` to use the cluster you created:
+After creating your cluster, you need to get authentication credentials to interact with the cluster. This command will also configure  `kubectl` for your newly created cluster:
 
 ```shell
 gcloud container clusters get-credentials kritis-test
