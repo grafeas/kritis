@@ -29,7 +29,7 @@ echo "Check format"
 ./hack/check-fmt.sh
 
 echo "Copying kritis int test creds..."
-mkdir -p $HOME/tmp
+mkdir -p $HOME/tmp/
 cp $KOKORO_ROOT/src/keystore/72508_kritis_int_test $HOME/tmp/gac.json
 
 
