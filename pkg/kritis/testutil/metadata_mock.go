@@ -46,7 +46,7 @@ func (m MockMetadataClient) GetAttestations(containerImage string) ([]metadata.P
 	return m.PGPAttestations, nil
 }
 
-func EmptyMockMetadata() func() (metadata.MetadataFetcher, error) {
+func NilFetcher() func() (metadata.MetadataFetcher, error) {
 	return func() (metadata.MetadataFetcher, error) {
 		return nil, nil
 	}

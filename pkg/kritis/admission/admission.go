@@ -52,11 +52,10 @@ type config struct {
 var (
 	// For testing
 	admissionConfig = config{
-		retrievePod:                 unmarshalPod,
-		retrieveDeployment:          unmarshalDeployment,
-		fetchMetadataClient:         metadataClient,
-		fetchImageSecurityPolicies:  securitypolicy.ImageSecurityPolicies,
-		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                unmarshalPod,
+		retrieveDeployment:         unmarshalDeployment,
+		fetchMetadataClient:        metadataClient,
+		fetchImageSecurityPolicies: securitypolicy.ImageSecurityPolicies,
 	}
 
 	defaultViolationStrategy = violation.LoggingStrategy{}
@@ -173,7 +172,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 func reviewImages(images []string, ns string, ar *v1beta1.AdmissionReview) {
 	images = util.RemoveGloballyWhitelistedImages(images)
 	if len(images) == 0 {
-		glog.Infof("images are all globally whitelisted, returning successful status", images)
+		glog.Info("images are all globally whitelisted, returning successful status")
 		return
 	}
 	// Validate images in the pod against ImageSecurityPolicies in the same namespace

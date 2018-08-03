@@ -27,7 +27,6 @@ import (
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/admission/v1beta1"
@@ -80,10 +79,9 @@ func Test_UnqualifiedImage(t *testing.T) {
 	}
 
 	mockConfig := config{
-		retrievePod:                 mockPod,
-		fetchMetadataClient:         testutil.EmptyMockMetadata(),
-		fetchImageSecurityPolicies:  mockISP,
-		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                mockPod,
+		fetchMetadataClient:        testutil.NilFetcher(),
+		fetchImageSecurityPolicies: mockISP,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -108,10 +106,9 @@ func Test_ValidISP(t *testing.T) {
 		}, nil
 	}
 	mockConfig := config{
-		retrievePod:                 mockValidPod(),
-		fetchMetadataClient:         testutil.EmptyMockMetadata(),
-		fetchImageSecurityPolicies:  mockISP,
-		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                mockValidPod(),
+		fetchMetadataClient:        testutil.NilFetcher(),
+		fetchImageSecurityPolicies: mockISP,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
@@ -148,10 +145,9 @@ func Test_InvalidISP(t *testing.T) {
 		}, nil
 	}
 	mockConfig := config{
-		retrievePod:                 mockValidPod(),
-		fetchMetadataClient:         mockMetadata,
-		fetchImageSecurityPolicies:  mockISP,
-		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
+		retrievePod:                mockValidPod(),
+		fetchMetadataClient:        mockMetadata,
+		fetchImageSecurityPolicies: mockISP,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,
