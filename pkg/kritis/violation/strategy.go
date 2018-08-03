@@ -78,6 +78,5 @@ type MemoryStrategy struct {
 
 func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []securitypolicy.SecurityPolicyViolation) error {
 	ms.Violations[image] = true
-	fmt.Println("called", ms)
 	return nil
 }

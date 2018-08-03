@@ -18,7 +18,6 @@ package cron
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -69,8 +68,6 @@ type imageViolations struct {
 }
 
 func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
-	fmt.Println(image)
-	fmt.Println(isp)
 	if ok := iv.imageMap[image]; ok {
 		return []securitypolicy.SecurityPolicyViolation{
 			{
