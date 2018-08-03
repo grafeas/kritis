@@ -18,11 +18,14 @@ gcloud projects list
 
 ## Step #2: Enable Billing on your Google Cloud Project
 
-Ensure that your new project has a billing account associated to it, otherwise the requisite API's will fail to enable: https://console.cloud.google.com/billing
+Your project will need billing enabled to use the Container Analysis API: 
+https://console.cloud.google.com/billing
 
 ## Step #3: Enable the requisite API's for your Google Cloud Project
 
-NOTE: You will need to get your Google Account whitelisted to use the Container Analysis API. Join the [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users) to be whitelisted. It will take 1-5 business days to approve the request. Once approved, you will need to visit following links to enable the necessary API's:
+NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
+
+Once approved, visit following links:
 
 *  [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
 * [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
@@ -40,7 +43,7 @@ gcloud config set project $PROJECT
 gcloud config set compute/zone us-central1-a
 gcloud container clusters create kritis-test --num-nodes=2
 ```
-After creating your cluster, you need to get authentication credentials to interact with the cluster. This command configures `kubectl` to use the cluster you created:
+After creating your cluster, you need to get authentication credentials to interact with the cluster. This command will also configure  `kubectl` to use the cluster you created:
 
 ```shell
 gcloud container clusters get-credentials kritis-test
@@ -50,14 +53,14 @@ For more documentation, see [Kubernetes Engine: Creating a Cluster](https://clou
 
 ## Step #5: Create service account & configure roles
 
-Create a service account named `kritis-ca-admin`, and download the key for it:
+This creates a service account named `kritis-ca-admin`:
 
 ```shell
 gcloud iam service-accounts create kritis-ca-admin \
   --display-name "Kritis Service Account"
 ```
 
-And lastly, bind the service account to the appropriate roles:
+Which must be bound to the appropriate roles:
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT \
@@ -86,7 +89,7 @@ gcloud iam service-accounts keys create gac.json \
   --iam-account kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com
 ```
 
-Upload the service key to Kubernetes:
+Then upload the service key to your Kubernetes cluster:
 
 ```shell
 kubectl create secret generic gac-ca-admin --from-file=gac.json
@@ -96,20 +99,24 @@ kubectl create secret generic gac-ca-admin --from-file=gac.json
 
 kritis requires [helm](https://docs.helm.sh/using_helm/) to be installed. 
 
-Once installed, execute the following to give Helm permission to your cluster:
+Once installed, execute the following to create an account for helm in your cluster:
 
 ```
 kubectl create serviceaccount --namespace kube-system tiller
 
 kubectl create clusterrolebinding tiller-cluster-rule \
   --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
+```
 
+This will then configure the tiller account:
+
+```
 kubectl patch deploy \
   --namespace kube-system \
   tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 ```
 
-Then execute the following to deploy it into your cluster:
+Then execute the following to deploy helm:
 
 ```shell
 helm init --wait
@@ -128,16 +135,17 @@ Using the --set flag, you can set custom installion values:
 
 |  Value                | Default      | Description  |   
 |-----------------------|--------------|--------------|
-| serviceNamespace      | default      | The namespace to install kritis in |   
-| gacSecret.name        | gac-ca-admin | The name of the secret created above with container analysis permissions | 
+| serviceNamespace      | default      | namespace to install kritis within |   
+| gacSecret.name        | gac-ca-admin | name of the secret created above with container analysis permissions | 
 
-Installation will create 3 Pods:
+The kritis installation will create 3 pods:
 
 - `kritis-preinstall` creates a `CertificateSigningRequest` and TLS Secret for the webhook
 - `kritis-postinstall` creates the `ValidatingWebhookConfiguration`
 - `kritis-validation-hook-xxx` serves the webhook
 
-You may view the status of the Pod deployment using:
+The deployment status may be viewed using:
+
 
 ```shell
 kubectl get pods
