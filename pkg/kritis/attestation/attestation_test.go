@@ -57,8 +57,8 @@ func TestGPGArmorSignIntegration(t *testing.T) {
 	}
 }
 
-// Base64 encoded signarute.
-// Created using gpg --armor --sign -u test@kritis.org < test | base64
+// Base64 encoded signature.
+// Created using echo  test >  test && gpg --armor --sign -u test@kritis.org < test | base64
 var expectedSig = `-----BEGIN PGP MESSAGE-----
 
 owEB4gEd/pANAwAKAa6LaZQRYxWjAcsKYgBbY13WdGVzdIkBxAQAAQoALhYhBNKD

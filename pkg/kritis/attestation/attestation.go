@@ -80,12 +80,12 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	}
 	// Make sure after reading the UnverifiedBody above, there is no signature error.
 	if md.SignatureError != nil || md.Signature == nil {
-		return fmt.Errorf("Bad signature found: %s or No signature found for given key", md.SignatureError)
+		return fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
 	}
 
 	// Finally, make sure the signature is over the right message.
 	if string(plaintext) != message {
-		return fmt.Errorf("Signature could not be verified. Got: %s, Want: %s", string(plaintext), message)
+		return fmt.Errorf("signature could not be verified. got: %s, want: %s", string(plaintext), message)
 	}
 	return nil
 }

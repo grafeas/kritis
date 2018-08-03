@@ -28,9 +28,9 @@ var tests = []struct {
 	name       string
 	secretName string
 	shdErr     bool
-	expected   *PgpSigningSecret
+	expected   *PGPSigningSecret
 }{
-	{"good", "good-sec", false, &PgpSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
+	{"good", "good-sec", false, &PGPSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
 	{"bad1", "bad1-sec", true, nil},
 	{"bad2", "bad2-sec", true, nil},
 	{"notfound", "not-present", true, nil},

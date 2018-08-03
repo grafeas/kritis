@@ -41,7 +41,7 @@ var (
 			vulnz1,
 			vulnz2,
 		},
-		PgpAttestations: nil,
+		PGPAttestations: nil,
 	}
 )
 

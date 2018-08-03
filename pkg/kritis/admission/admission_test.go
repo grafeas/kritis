@@ -139,7 +139,7 @@ func Test_InvalidISP(t *testing.T) {
 					Severity: "MEDIUM",
 				},
 			},
-			PgpAttestations: []metadata.PgpAttestation{
+			PGPAttestations: []metadata.PGPAttestation{
 				{
 					Signature: "sig",
 					KeyId:     "secret",

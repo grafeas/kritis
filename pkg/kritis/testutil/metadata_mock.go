@@ -25,7 +25,7 @@ import (
 
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
-	PgpAttestations []metadata.PgpAttestation
+	PGPAttestations []metadata.PGPAttestation
 }
 
 func (m MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
@@ -34,7 +34,7 @@ func (m MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadat
 
 func (m MockMetadataClient) CreateAttestationOccurence(note *containeranalysispb.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PgpSigningSecret) (*containeranalysispb.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
 	return nil, nil
 }
 
@@ -42,8 +42,8 @@ func (m MockMetadataClient) GetAttestationNote(aa kritisv1beta1.AttestationAutho
 	return nil, nil
 }
 
-func (m MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PgpAttestation, error) {
-	return m.PgpAttestations, nil
+func (m MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
+	return m.PGPAttestations, nil
 }
 
 func EmptyMockMetadata() func() (metadata.MetadataFetcher, error) {

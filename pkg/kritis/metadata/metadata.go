@@ -28,11 +28,11 @@ type MetadataFetcher interface {
 	// Create Attesatation Occurrence for an image.
 	CreateAttestationOccurence(note *containeranalysispb.Note,
 		containerImage string,
-		pgpSigningKey *secrets.PgpSigningSecret) (*containeranalysispb.Occurrence, error)
+		pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error)
 	// Get Attestation Note for an Attestation Authority.
 	GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error)
 	// Get Attestation Occurrences for given image.
-	GetAttestations(containerImage string) ([]PgpAttestation, error)
+	GetAttestations(containerImage string) ([]PGPAttestation, error)
 }
 
 type Vulnerability struct {
@@ -41,7 +41,9 @@ type Vulnerability struct {
 	CVE             string
 }
 
-type PgpAttestation struct {
+// PGPAttestation represents the Signature and the Singer Key Id from the
+// containeranalysis Occurrence_Attestation instance.
+type PGPAttestation struct {
 	Signature string
 	KeyId     string
 }

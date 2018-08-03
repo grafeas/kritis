@@ -89,7 +89,7 @@ func (acs *AtomicContainerSig) Json() (string, error) {
 	return string(bytes), nil
 }
 
-func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PgpSigningSecret) (string, error) {
+func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
 	hostStr, err := acs.Json()
 	if err != nil {
 		return "", err
