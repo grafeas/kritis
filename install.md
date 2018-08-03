@@ -1,8 +1,18 @@
 # Installing Kritis
 
+## Requirements
+
+The only supported backend for vulnerability data is the [Google Cloud Container Analysis API](https://cloud.google.com/container-registry/docs/container-analysis). The current requirements for installation are:
+
+- [Google Cloud](https://cloud.google.com) account with [billing](https://console.cloud.google.com/billing) enabled
+- [Kubernetes](https://kubernetes.io/) 1.9.2+
+- [Helm](https://helm.sh/)
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/)
+
 ## Step #1: Create a Google Cloud Project
 
-At the moment, the only API implementation is within Google Cloud, so you will need to follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate). For more details, read [Google Cloud: Creating and Managing Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
+
+Follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate).
 
 For convenience, you may your project ID as an environment variable:
 
@@ -10,18 +20,13 @@ For convenience, you may your project ID as an environment variable:
 PROJECT=<project ID assigned to you>
 ```
 
-If you have forgotten your project ID, you may use:
+If you do not know your project ID, you may use:
 
 ```shell
 gcloud projects list
 ```
 
 ## Step #2: Enable Billing on your Google Cloud Project
-
-Your project will need billing enabled to use the Container Analysis API: 
-https://console.cloud.google.com/billing
-
-## Step #3: Enable the requisite API's for your Google Cloud Project
 
 NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
 
@@ -33,7 +38,7 @@ Once approved, visit following links:
 
 For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis). 
 
-## Step #4: Create a cluster
+## Step #3: Create a cluster
 
 kritis requires a cluster running Kubernetes v1.9.2 or newer. You may create one named `kritis-test` by executing:
 
@@ -51,7 +56,7 @@ gcloud container clusters get-credentials kritis-test
 
 For more documentation, see [Kubernetes Engine: Creating a Cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster).
 
-## Step #5: Create service account & configure roles
+## Step #4: Create service account & configure roles
 
 This creates a service account named `kritis-ca-admin`:
 
@@ -80,7 +85,7 @@ gcloud projects add-iam-policy-binding $PROJECT \
   --role=roles/containeranalysis.occurrences.editor
 ```
 
-## Step #6: Upload the Service Account Key
+## Step #5: Upload the Service Account Key
 
 Download the service key from Google Cloud:
 
@@ -95,11 +100,9 @@ Then upload the service key to your Kubernetes cluster:
 kubectl create secret generic gac-ca-admin --from-file=gac.json
 ```
 
-## Step #7: Install and Configure Helm
+## Step #6: Install and Configure Helm
 
-kritis requires [helm](https://docs.helm.sh/using_helm/) to be installed. 
-
-Once installed, execute the following to create an account for helm in your cluster:
+Install [helm](https://docs.helm.sh/using_helm/), and execute the following to create an account for helm in your cluster:
 
 ```
 kubectl create serviceaccount --namespace kube-system tiller
@@ -108,7 +111,7 @@ kubectl create clusterrolebinding tiller-cluster-rule \
   --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
 ```
 
-This will then configure the tiller account:
+Cnfigure the tiller account:
 
 ```
 kubectl patch deploy \
@@ -116,7 +119,8 @@ kubectl patch deploy \
   tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 ```
 
-Then execute the following to deploy helm:
+Then deploy helm:
+
 
 ```shell
 helm init --wait
@@ -131,7 +135,7 @@ Install kritis via helm:
 helm install ./kritis-charts/
 ```
 
-Using the --set flag, you can set custom installion values:
+You may use the --set flag, to override the installation defaults:
 
 |  Value                | Default      | Description  |   
 |-----------------------|--------------|--------------|
