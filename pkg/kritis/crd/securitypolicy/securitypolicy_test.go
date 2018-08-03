@@ -51,7 +51,7 @@ func (m mockMetadataClient) GetVulnerabilities(containerImage string) ([]metadat
 func Test_ValidISP(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "MEDIUM",
 			},
 		},
@@ -68,7 +68,7 @@ func Test_ValidISP(t *testing.T) {
 func Test_UnqualifiedImage(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "MEDIUM",
 			},
 		},
@@ -87,7 +87,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 func Test_BlockallPass(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "BLOCKALL",
 				WhitelistCVEs: []string{
 					"cve1",
@@ -108,7 +108,7 @@ func Test_BlockallPass(t *testing.T) {
 func Test_BlockallFail(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "BLOCKALL",
 				WhitelistCVEs: []string{
 					"cve1",
@@ -130,7 +130,7 @@ func Test_BlockallFail(t *testing.T) {
 func Test_MaxSeverityFail(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "LOW",
 			},
 		},
@@ -150,7 +150,7 @@ func Test_WhitelistedImage(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
 			ImageWhitelist: []string{"image"},
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "LOW",
 			},
 		},
@@ -168,7 +168,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
 			ImageWhitelist: []string{"image"},
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "LOW",
 				WhitelistCVEs: []string{
 					"cve2",
@@ -188,7 +188,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity:       "LOW",
 				OnlyFixesNotAvailable: true,
 			},
@@ -207,7 +207,7 @@ func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity:       "CRITICAL",
 				OnlyFixesNotAvailable: true,
 				WhitelistCVEs:         []string{"cve2"},
@@ -260,7 +260,7 @@ func Test_severityWithinThreshold(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			isp := v1beta1.ImageSecurityPolicy{
 				Spec: v1beta1.ImageSecurityPolicySpec{
-					PackageVulernerabilityRequirements: v1beta1.PackageVulernerabilityRequirements{
+					PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 						MaximumSeverity:       test.maxSeverity,
 						OnlyFixesNotAvailable: true,
 					},

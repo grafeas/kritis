@@ -32,8 +32,8 @@ type ImageSecurityPolicy struct {
 	Spec ImageSecurityPolicySpec `json:"spec"`
 }
 
-// PackageVulernerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy
-type PackageVulernerabilityRequirements struct {
+// PackageVulnerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy
+type PackageVulnerabilityRequirements struct {
 	MaximumSeverity       string   `json:"maximumSeverity"`
 	OnlyFixesNotAvailable bool     `json:"onlyFixesNotAvailable"`
 	WhitelistCVEs         []string `json:"whitelistCVEs"`
@@ -42,7 +42,7 @@ type PackageVulernerabilityRequirements struct {
 // ImageSecurityPolicy is the spec for a ImageSecurityPolicy resource
 type ImageSecurityPolicySpec struct {
 	ImageWhitelist                     []string                           `json:"imageWhitelist"`
-	PackageVulernerabilityRequirements PackageVulernerabilityRequirements `json:"packageVulnerabilityRequirements"`
+	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
