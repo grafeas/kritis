@@ -116,6 +116,7 @@ func Test_isRegistryGCR(t *testing.T) {
 		})
 	}
 }
+
 func TestGetProjectFromNoteRef(t *testing.T) {
 	tests := []struct {
 		name   string

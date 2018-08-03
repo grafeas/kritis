@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/spf13/cobra"
 )
@@ -31,8 +32,8 @@ func ExitIfErr(cmd *cobra.Command, err error) {
 	}
 }
 
-func CreateAttestationSignature(image string, pgpSigningKey *secrets.PgpSigningSecret) (string, error) {
-	hostSig, err := NewAtomicContainerSig(image, map[string]string{})
+func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
+	hostSig, err := container.NewAtomicContainerSig(image, map[string]string{})
 	if err != nil {
 		return "", err
 	}
