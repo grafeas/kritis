@@ -85,7 +85,7 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 
 	// Finally, make sure the signature is over the right message.
 	if string(plaintext) != message {
-		return fmt.Errorf("signature could not be verified. got: %s, want: %s", string(plaintext), message)
+		return fmt.Errorf("signature could not be verified. got: %s, want: %s", plaintext, message)
 	}
 	return nil
 }
