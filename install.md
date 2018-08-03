@@ -1,240 +1,239 @@
-# kritis
+# Installing Kritis
 
-## Setting up Kritis
-In order to setup Kritis, let define some variables.
-```
-PROJECT_ID=<your project id>
-CLUSTER_NAME=<your cluster>
-gcloud config set project $PROJECT_ID
-```
-### Creating a Kubernetes Cluster
+## Requirements
 
-To run the kritis admission webhook, you will need access to a version 1.9.2+ Kubernetes cluster.
-You can create one by running
+The only currently supported backend for vulnerability data is the [Google Cloud Container Analysis API](https://cloud.google.com/container-registry/docs/container-analysis). You will need access to it, along with:
 
-```
-gcloud container clusters create $CLUSTER_NAME \
---cluster-version 1.9.7-gke.3 \
---zone us-central1-a \
---num-nodes 6
-```
-Now, add run command to add kubectl config to connect to this cluster.
-```
-gcloud container clusters get-credentials $CLUSTER_NAME -zone us-central1-a --project $PROJECT_ID
+- [Google Cloud](https://cloud.google.com) account with [billing enabled](https://console.cloud.google.com/billing)
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/) (gcloud)
+- [Kubernetes](https://kubernetes.io/) 1.9.2+
+- [Helm](https://helm.sh/)
+
+## Step #1: Create a Google Cloud Project
+
+
+Follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate).
+
+For convenience, you may your project ID as an environment variable:
+
+```shell
+PROJECT=<project ID assigned to you>
 ```
 
-### Enabling the Container Analysis API
+If you do not know your project ID, you may use:
 
-You will need to enable the Container Analysis API and enable Vulnerability Scanning in your Google Cloud Console project.
-Instructions can be found in the `Before you Begin` section of the [Getting Image Vulnerabilities](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities#before_you_begin) docs.
-kritis can only inspect images hosted in projects that have both of these enabled, and have already been scanned for vulnerabilities.
-
-### Creating a Container Analysis Secret
-You will need to create a Kubernetes secret, which will provide kritis with the auth required to get vulnerability information for images.
-You can create the secret through the Google Cloud Console or on the command line with gcloud.
-
-#### Creating Container Analysis Secret via Command Line
-Before you start, please make sure you are running as a user with permissions to create service accounts.
-
-First, lets define variables for your serviceaccount and glcoud project.
-```
-ACC_NAME=kritis-ca-admin
-ACC_DISP_NAME="Kritis Service Account"
+```shell
+gcloud projects list
 ```
 
-1. First create the service account
+## Step #2: Enable the requisite API's for your Google Cloud Project
+
+NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
+
+Once approved, visit following links:
+
+*  [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
+* [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
+* [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
+
+For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis). 
+
+## Step #3: Create a cluster
+
+kritis requires a cluster running Kubernetes v1.9.2 or newer. You may create one named `kritis-test` by executing:
+
+```shell
+gcloud components update
+gcloud config set project $PROJECT
+gcloud config set compute/zone us-central1-a
+gcloud container clusters create kritis-test --num-nodes=2
 ```
-gcloud iam service-accounts create $ACC_NAME --display-name "$ACC_DISP_NAME"
-```
-This should create a service account $ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com.
+After creating your cluster, you need to get authentication credentials to interact with the cluster. This command will also configure  `kubectl` for your newly created cluster:
 
-2. Create a key for the service account
-```
-gcloud iam service-accounts keys create ~/gac.json --iam-account=$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com
-```
-
-3. Create policy bindings for the necessary roles:
-
-```
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.viewer
-
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
-
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.notes.editor
-
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$ACC_NAME@$PROJECT_ID.iam.gserviceaccount.com --role=roles/containeranalysis.occurrences.viewer
-```
-
-#### Creating Container Analysis Secret via Google Cloud Console
-To create the secret:
-1. Create a service account with `Container Analysis Notes Viewer`, `Container Analysis Notes Editor`, `Container Analysis Occurrences Viewer`, and `Container Analysis Occurrences Editor` permissions in the Google Cloud Console project that hosts the images kritis will be inspecting
-2. Download a JSON key for the service account
-3. Rename the key to `gac.json`
-
-Now, you can create a kubernetes secret by running this command.
-Create a Kubernetes secret by running:
-```
-kubectl create secret generic gac-ca-admin --from-file=`ls ~/gac.json`
+```shell
+gcloud container clusters get-credentials kritis-test
 ```
 
-### Installing Helm
-You will need [helm](https://docs.helm.sh/using_helm/) installed to install kritis.
+For more documentation, see [Kubernetes Engine: Creating a Cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster).
 
-After installing helm, run
-```
-helm init
-```
-to install helm into your cluster.
+## Step #4: Create service account & configure roles
 
-You may also need to run these commands to give helm permissions in your cluster:
+This creates a service account named `kritis-ca-admin`:
+
+```shell
+gcloud iam service-accounts create kritis-ca-admin \
+  --display-name "Kritis Service Account"
+```
+
+Which must be bound to the appropriate roles:
+
+```shell
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+  --role=roles/containeranalysis.notes.viewer
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+  --role=roles/containeranalysis.notes.editor
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+  --role=roles/containeranalysis.occurrences.viewer
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+  --role=roles/containeranalysis.occurrences.editor
+```
+
+## Step #5: Upload the Service Account Key
+
+Download the service key from Google Cloud:
+
+```shell
+gcloud iam service-accounts keys create gac.json \
+  --iam-account kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com
+```
+
+Then upload the service key to your Kubernetes cluster:
+
+```shell
+kubectl create secret generic gac-ca-admin --from-file=gac.json
+```
+
+## Step #6: Install and Configure Helm
+
+Install [helm](https://docs.helm.sh/using_helm/), and execute the following to create an account for helm in your cluster:
+
 ```
 kubectl create serviceaccount --namespace kube-system tiller
-kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+
+kubectl create clusterrolebinding tiller-cluster-rule \
+  --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
 ```
+
+Cnfigure the tiller account:
+
+```
+kubectl patch deploy \
+  --namespace kube-system \
+  tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+```
+
+Then deploy helm:
+
+
+```shell
+helm init --wait
+```
+
 
 ## Installing Kritis
-You can install kritis via helm:
+
+Install kritis via helm:
 
 ```
-$ helm install ./kritis-charts/
-
-NAME:   innocent-parrot
-LAST DEPLOYED: Fri Jul 27 13:53:55 2018
-NAMESPACE: default
-STATUS: DEPLOYED
-
-RESOURCES:
-==> v1beta1/CustomResourceDefinition
-NAME                                      AGE
-attestationauthorities.kritis.grafeas.io  1s
-imagesecuritypolicies.kritis.grafeas.io   1s
-
-==> v1/Service
-NAME                    TYPE       CLUSTER-IP    EXTERNAL-IP  PORT(S)  AGE
-kritis-validation-hook  ClusterIP  10.63.247.40  <none>       443/TCP  1s
-
-==> v1beta2/Deployment
-NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-kritis-validation-hook  1        1        1           0          1s
-
-==> v1beta1/ClusterRoleBinding
-NAME                       AGE
-kritis-clusterrolebinding  1s
-
-==> v1/ClusterRole
-NAME                AGE
-kritis-clusterrole  1s
-
-==> v1beta1/ValidatingWebhookConfiguration
-kritis-validation-hook-deployments  1s
-
-==> v1/Pod(related)
-NAME                                     READY  STATUS             RESTARTS  AGE
-kritis-validation-hook-5b86964479-tdm24  0/1    ContainerCreating  0         1s
+helm install ./kritis-charts/
 ```
 
-Installation will also create two pods, called `kritis-preinstall` and `kritis-postinstall`.
-```
-$ kubectl get pods
-NAME                                      READY     STATUS              RESTARTS   AGE
-kritis-postinstall                        1/1       Running             0          5s
-kritis-preinstall                         0/1       ContainerCreating   0          5s
-kritis-validation-hook-7c84c48f47-lsjpg   0/1       ContainerCreating   0          5s
+You may use the --set flag, to override the installation defaults:
+
+|  Value                | Default      | Description  |   
+|-----------------------|--------------|--------------|
+| serviceNamespace      | default      | namespace to install kritis within |   
+| gacSecret.name        | gac-ca-admin | name of the secret created above with container analysis permissions | 
+
+The kritis installation will create 3 pods:
+
+- `kritis-preinstall` creates a `CertificateSigningRequest` and TLS Secret for the webhook
+- `kritis-postinstall` creates the `ValidatingWebhookConfiguration`
+- `kritis-validation-hook-xxx` serves the webhook
+
+The deployment status may be viewed using:
+
+
+```shell
+kubectl get pods
 ```
 
-`kritis-preinstall` creates a `CertificateSigningRequest` and a TLS Secret for the webhook.
-
-`kritis-postinstall` creates the `ValidatingWebhookConfiguration`.
+Sample output:
 
 ```
-$ kubectl get pods
 NAME                                      READY     STATUS             RESTARTS   AGE
 kritis-postinstall                        0/1       Completed          0          2m
 kritis-preinstall                         0/1       Completed          0          2m
 kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0          2m
 ```
-Once `kritis-preinstall` and `kritis-postinstall` have status `Completed`, and `kritis-validation-hook-xxxx` is `Running`, kritis is installed in your cluster.
 
-### Optional Flags
-Using the --set flag, you can set custom values when installing kritis:
-
-|  Value                | Default      | Description  |   
-|-----------------------|--------------|--------------|
-| serviceNamespace      | default      | The namespace to install kritis in |   
-| gacSecret.name        | gac-ca-admin | The name of the secret created above with container analysis permissions | 
-
-For example, to install kritis in the namespace `test`, you could run:
-```
-helm install ./kritis-charts --set serviceNamespace=test
-```
+The installation is complete once:
+*  `kritis-preinstall` and `kritis-postinstall` have status `Completed`
+* `kritis-validation-hook-xxx` is `Running`
 
 ## Tutorial
 
-Once you have installed Kritis, you may want to follow our [tutorial](tutorial.md) to learn how your can manage and test your Kritis configuration.
+Once installed, follow our [tutorial](tutorial.md) to learn how to test and manage Kritis.
 
 ## Uninstalling Kritis
 
-You can delete kritis by deleting the helm deployment:
+Find the name of your helm release to delete:
+
 ```shell
-$ helm ls
+helm ls
+```
+
+example: 
+
+```
 NAME        	REVISION	UPDATED                 	STATUS  	CHART         NAMESPACE
 loopy-numbat	1       	Fri Jul 27 14:25:44 2018	DEPLOYED	kritis-0.1.0  default  
-$ helm delete loopy-numbat
-release "loopy-numbat" deleted
 ```
 
-This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation.
+Then delete the name of the release:
 
-```
-$ kubectl get pods kritis-predelete
-NAME                 READY     STATUS             RESTARTS   AGE
-kritis-predelete     0/1       Completed          0          13s
-
-$ kubectl logs kritis-predelete
-level=info msg="contents of /var/run/secrets/kubernetes.io/serviceaccount/namespace: default"
-level=info msg="[kubectl delete validatingwebhookconfiguration kritis-validation-hook --namespace default]"
-level=info msg="validatingwebhookconfiguration.admissionregistration.k8s.io \"kritis-validation-hook\" deleted\n"
-level=info msg="deleted validatingwebhookconfiguration kritis-validation-hook"
-level=info msg="[kubectl delete secret tls-webhook-secret --namespace default]"
-level=info msg="secret \"tls-webhook-secret\" deleted\n"
-level=info msg="deleted secret tls-webhook-secret"
-level=info msg="[kubectl delete csr tls-webhook-secret-cert --namespace default]"
-level=info msg="certificatesigningrequest.certificates.k8s.io \"tls-webhook-secret-cert\" deleted\n"
-level=info msg="deleted csr tls-webhook-secret-cert"
+```shell
+helm delete <name>
 ```
 
-Kritis will be deleted from your cluster once this pod has reached `Completed` status.
+This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation. You may view the status using:
 
-Note: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
+```
+kubectl get pods kritis-predelete
+```
+
+And the logs using:
+
+```
+kubectl logs kritis-predelete
+```
+
+Kritis will be deleted from your cluster once this Pod has reached `Completed` status.
+
+NOTE: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
 
 # Troubleshooting
 
 ## Logs
 If you're unable to install or delete kritis, looking at logs for the following pods could provide more information:
-* kritis-validation-hook-xxx
-* kritis-preinstall (during installation)
-* kritis-postinstall (during installation)
-* kritis-predelete (during deletion)
+* `kritis-validation-hook-xxx`
+* `kritis-preinstall` (during installation)
+* `kritis-postinstall` (during installation)
+* `kritis-predelete` (during deletion)
+
+You can view their status using:
 
 ```
-$ kubectl get pods
-NAME                                      READY     STATUS             RESTARTS   AGE
-kritis-postinstall                        0/1       Completed          0          2m
-kritis-preinstall                         0/1       Completed          0          2m
-kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0          2m
-
-$ kubectl logs kritis-postinstall
-   ...
+kubectl get pods
 ```
 
-## Deleting Kritis
-If you're unable to delete kritis via `helm delete [DEPLOYMENT NAME]`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
+## Deleting Kritis Manually
+
+If you're unable to delete kritis via `helm delete <DEPLOYMENT NAME>`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
 
 ```shell
-$ kubectl delete validatingwebhookconfiguration kritis-validation-hook --namespace [YOUR NAMESPACE]
+kubectl delete validatingwebhookconfiguration kritis-validation-hook \
+  --namespace <YOUR NAMESPACE>
 
-$ kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments --namespace [YOUR NAMESPACE]
+kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments \
+  --namespace <YOUR NAMESPACE>
 ```
 
 `helm delete` should work at this point.
