@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package container
 
 import (
 	"encoding/json"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 )
 
 // AtomicContainerSig represents Red Hat’s Atomic Host attestation signature format
@@ -85,4 +87,20 @@ func (acs *AtomicContainerSig) Json() (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
+	hostStr, err := acs.Json()
+	if err != nil {
+		return "", err
+	}
+	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
+}
+
+func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, attestationHash string) error {
+	hostStr, err := acs.Json()
+	if err != nil {
+		return err
+	}
+	return attestation.VerifyMessageAttestation(publicKey, attestationHash, hostStr)
 }

@@ -78,12 +78,10 @@ func Test_UnqualifiedImage(t *testing.T) {
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
 	}
-	mockMetadata := func() (metadata.MetadataFetcher, error) {
-		return mockMetadataClient{}, nil
-	}
+
 	mockConfig := config{
 		retrievePod:                 mockPod,
-		fetchMetadataClient:         mockMetadata,
+		fetchMetadataClient:         testutil.EmptyMockMetadata(),
 		fetchImageSecurityPolicies:  mockISP,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
@@ -111,7 +109,7 @@ func Test_ValidISP(t *testing.T) {
 	}
 	mockConfig := config{
 		retrievePod:                 mockValidPod(),
-		fetchMetadataClient:         mockMetadata(),
+		fetchMetadataClient:         testutil.EmptyMockMetadata(),
 		fetchImageSecurityPolicies:  mockISP,
 		validateImageSecurityPolicy: securitypolicy.ValidateImageSecurityPolicy,
 	}
@@ -135,10 +133,16 @@ func Test_InvalidISP(t *testing.T) {
 		}}, nil
 	}
 	mockMetadata := func() (metadata.MetadataFetcher, error) {
-		return mockMetadataClient{
-			vulnz: []metadata.Vulnerability{
+		return testutil.MockMetadataClient{
+			Vulnz: []metadata.Vulnerability{
 				{
 					Severity: "MEDIUM",
+				},
+			},
+			PGPAttestations: []metadata.PGPAttestation{
+				{
+					Signature: "sig",
+					KeyId:     "secret",
 				},
 			},
 		}, nil
@@ -180,20 +184,6 @@ func Test_GlobalWhitelist(t *testing.T) {
 		status:     constants.SuccessStatus,
 		message:    constants.SuccessMessage,
 	})
-}
-
-type mockMetadataClient struct {
-	vulnz []metadata.Vulnerability
-}
-
-func (m mockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	return m.vulnz, nil
-}
-
-func mockMetadata() func() (metadata.MetadataFetcher, error) {
-	return func() (metadata.MetadataFetcher, error) {
-		return nil, nil
-	}
 }
 
 func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
@@ -244,7 +234,7 @@ func RunTest(t *testing.T, tc testConfig) {
 // If one is not found, it validates against image security policies
 // TODO: Check for attestations
 func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
-	glog.Info("Starting admission review handler version %s ...", version.Commit)
+	glog.Infof("Starting admission review handler version %s ...", version.Commit)
 	pod, _, err := admissionConfig.retrievePod(r)
 	if err != nil {
 		glog.Error(err)

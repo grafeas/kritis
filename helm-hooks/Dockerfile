@@ -16,7 +16,7 @@ FROM golang:1.10
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 ARG stage
-RUN make out/${stage} 
+RUN make ${stage} 
 
 
 FROM golang:1.10

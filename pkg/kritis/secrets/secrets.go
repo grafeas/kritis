@@ -30,16 +30,16 @@ var (
 	getSecretFunc = getSecret
 )
 
-// PgpSigningSecret represents gpg private, public key pair secret in your kubernetes cluster.
+// PGPSigningSecret represents gpg private, public key pair secret in your kubernetes cluster.
 // The secret expects private and public key to be stored in "private" and "public" keys. e.g.
 // kubectl create secret generic my-secret --from-file=public=pub.gpg --from-file=private=priv.key
-type PgpSigningSecret struct {
+type PGPSigningSecret struct {
 	PublicKey  string
 	PrivateKey string
 	SecretName string
 }
 
-func GetSecret(namespace string, name string) (*PgpSigningSecret, error) {
+func GetSecret(namespace string, name string) (*PGPSigningSecret, error) {
 	secret, err := getSecretFunc(namespace, name)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func GetSecret(namespace string, name string) (*PgpSigningSecret, error) {
 	if !ok {
 		return nil, fmt.Errorf("Invalid Secret %s. Could not find key %s", name, constants.PublicKey)
 	}
-	return &PgpSigningSecret{
+	return &PGPSigningSecret{
 		PublicKey:  string(pub),
 		PrivateKey: string(priv),
 		SecretName: secret.Name,
