@@ -2,12 +2,12 @@
 
 ## Requirements
 
-The only supported backend for vulnerability data is the [Google Cloud Container Analysis API](https://cloud.google.com/container-registry/docs/container-analysis). The current requirements for installation are:
+The only currently supported backend for vulnerability data is the [Google Cloud Container Analysis API](https://cloud.google.com/container-registry/docs/container-analysis). You will need access to it, along with:
 
-- [Google Cloud](https://cloud.google.com) account with [billing](https://console.cloud.google.com/billing) enabled
+- [Google Cloud](https://cloud.google.com) account with [billing enabled](https://console.cloud.google.com/billing)
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/) (gcloud)
 - [Kubernetes](https://kubernetes.io/) 1.9.2+
 - [Helm](https://helm.sh/)
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/)
 
 ## Step #1: Create a Google Cloud Project
 
@@ -26,7 +26,7 @@ If you do not know your project ID, you may use:
 gcloud projects list
 ```
 
-## Step #2: Enable Billing on your Google Cloud Project
+## Step #2: Enable the requisite API's for your Google Cloud Project
 
 NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
 
