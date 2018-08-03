@@ -371,7 +371,6 @@ func TestKritisPods(t *testing.T) {
 
 	ns, deleteNs := setupNamespace(t)
 	defer deleteNs()
-	createCRDExamples(t, ns)
 	createGACSecret(t, ns)
 	deleteKritis := initKritis(t, ns)
 	defer deleteKritis()
@@ -379,6 +378,8 @@ func TestKritisPods(t *testing.T) {
 		"kritis-validation-hook", 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
+	createCRDExamples(t, ns)
+	waitForCRDExamples(t, ns)
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
 			defer testCase.cleanup(t)

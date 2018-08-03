@@ -139,7 +139,7 @@ integration-in-docker: build-push-image
 		-t $(REGISTRY)/kritis-integration:$(IMAGE_TAG) .
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/tmp:/tmp/kritis-int-test \
+		-v $(HOME)/tmp:/tmp \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \
