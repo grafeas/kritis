@@ -90,11 +90,11 @@ func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
 }
 
 func parseKey(key string, keytype string) (packet.Packet, error) {
-	pemKeyString, err := base64.StdEncoding.DecodeString(key)
+	s, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		return nil, err
 	}
-	r := bytes.NewReader(pemKeyString)
+	r := bytes.NewReader(s)
 	block, err := armor.Decode(r)
 	if err != nil {
 		return nil, err
