@@ -41,7 +41,7 @@ type PackageVulnerabilityRequirements struct {
 
 // ImageSecurityPolicy is the spec for a ImageSecurityPolicy resource
 type ImageSecurityPolicySpec struct {
-	ImageWhitelist                     []string                           `json:"imageWhitelist"`
+	ImageWhitelist                   []string                         `json:"imageWhitelist"`
 	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
