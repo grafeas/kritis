@@ -101,9 +101,12 @@ Once installed, execute the following to give Helm permission to your cluster:
 ```
 kubectl create serviceaccount --namespace kube-system tiller
 
-kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+kubectl create clusterrolebinding tiller-cluster-rule \
+  --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
 
-kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+kubectl patch deploy \
+  --namespace kube-system \
+  tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 ```
 
 Then execute the following to deploy it into your cluster:
@@ -132,7 +135,7 @@ Installation will create 3 Pods:
 
 - `kritis-preinstall` creates a `CertificateSigningRequest` and TLS Secret for the webhook.
 - `kritis-postinstall` creates the `ValidatingWebhookConfiguration`.
-- `kritis-validation-hook-xxx` operates the webhook
+- `kritis-validation-hook-xxxx` operates the webhook
 
 You may view the status of the Pod deployment using:
 
@@ -148,7 +151,10 @@ kritis-postinstall                        0/1       Completed          0        
 kritis-preinstall                         0/1       Completed          0          2m
 kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0          2m
 ```
-Once `kritis-preinstall` and `kritis-postinstall` have status `Completed`, and `kritis-validation-hook-xxxx` is `Running`, kritis is installed in your cluster.
+
+The installation is complete once:
+*  `kritis-preinstall` and `kritis-postinstall` have status `Completed`
+* `kritis-validation-hook-xxxx` is `Running`
 
 ## Tutorial
 
@@ -211,9 +217,11 @@ kubectl get pods
 If you're unable to delete kritis via `helm delete <DEPLOYMENT NAME>`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
 
 ```shell
-kubectl delete validatingwebhookconfiguration kritis-validation-hook --namespace <YOUR NAMESPACE>
+kubectl delete validatingwebhookconfiguration kritis-validation-hook \
+  --namespace <YOUR NAMESPACE>
 
-kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments --namespace <YOUR NAMESPACE>
+kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments \
+  --namespace <YOUR NAMESPACE>
 ```
 
 `helm delete` should work at this point.
