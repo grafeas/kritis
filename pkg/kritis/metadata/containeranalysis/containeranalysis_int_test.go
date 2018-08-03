@@ -75,7 +75,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	// Test Create Attestation Occurence
 	pub, priv := testutil.CreateBase64KeyPair(t, "test")
-	secret := &secrets.PgpSigningSecret{
+	secret := &secrets.PGPSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,
 		SecretName: "test",
