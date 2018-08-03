@@ -4,7 +4,7 @@
 
 At the moment, the only API implementation is within Google Cloud, so you will need to follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate). For more details, read [Google Cloud: Creating and Managing Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects).
 
-For convenience, we recommend exporting your project as an environment variable:
+For convenience, you may your project ID as an environment variable:
 
 ```shell
 PROJECT=<project ID assigned to you>
@@ -22,15 +22,23 @@ Ensure that your new project has a billing account associated to it, otherwise t
 
 ## Step #3: Enable the requisite API's for your Google Cloud Project
 
-NOTE: You will need to get your Google Account whitelisted to use this API. Join the [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users) to be whitelisted. It will take 1-5 business days before the request is approved.
+NOTE: You will need to get your Google Account whitelisted to use the Container Analysis API. Join the [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users) to be whitelisted. It will take 1-5 business days to approve the request. Once approved:
 
-Enable the Container Analysis API for the project: [ENABLE THE CONTAINER ANALYSIS API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
+Enable the Container Analysis API: 
 
-Enable vulnerability scanning under the Container Registry page settings: [ENABLE VULNERABILITY SCANNING](https://console.cloud.google.com/gcr/settings)
+<div style="background-color: #039be5; color: #fff; padding: 8px 16px; box-shadow: 0 2px 5px 0 rgba(0,0,0,0,.26); display: inline-block;"><a href style="color: #fff" href="https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities">ENABLE THE CONTAINER ANALYSIS API</a></div>
 
-For full documentation, read the [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis).
+Enable the Kubernetes API:
 
-If you haven't already, enable the Kubernetes API as well: [ENABLE THE KUBERNETES API](https://console.cloud.google.com/projectselector/kubernetes)
+<div style="background-color: #039be5; color: #fff; padding: 8px 16px; box-shadow: 0 2px 5px 0 rgba(0,0,0,0,.26); display: inline-block;"><a href style="color: #fff" href="https://console.cloud.google.com/projectselector/kubernetes">ENABLE THE KUBERNETES API</a></div>
+
+
+Enable vulnerability scanning:
+
+<div style="background-color: #039be5; color: #fff; padding: 8px 16px; box-shadow: 0 2px 5px 0 rgba(0,0,0,0,.26); display: inline-block;"><a href style="color: #fff" href="https://console.cloud.google.com/gcr/settings">ENABLE VULNERABILITY SCANNING</a></div>
+
+For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis). 
+
 
 
 ## Step #4: Create a cluster
