@@ -232,7 +232,7 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 		NoteName:    note.GetName(),
 		Details:     attestationDetails,
 	}
-	// Create the AttestationAuthrity Occurence in the Project AttestationAuthority Note.
+	// Create the AttestationAuthrity Occurrence in the Project AttestationAuthority Note.
 	req := &containeranalysispb.CreateOccurrenceRequest{
 		Occurrence: occ,
 		Parent:     fmt.Sprintf("projects/%s", strings.Split(containerImage, "/")[1]),

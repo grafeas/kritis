@@ -23,7 +23,7 @@ import (
 )
 
 type MetadataFetcher interface {
-	// Get Package Vulnerabilites for a given image.
+	// GetVulnerabilities returns package vulnerabilities for a given image.
 	GetVulnerabilities(containerImage string) ([]Vulnerability, error)
 	// Create Attesatation Occurrence for an image.
 	CreateAttestationOccurence(note *containeranalysispb.Note,
