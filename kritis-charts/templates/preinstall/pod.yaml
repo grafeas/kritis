@@ -22,5 +22,4 @@ spec:
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
       - {{ .Values.preinstall.createNewCSR }}
-      - {{ .Values.preinstall.installCRDs }}
     command: {{ .Values.preinstall.pod.command }}

@@ -36,7 +36,6 @@ func init() {
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.BoolVar(&createNewCSR, "create-new-csr", true, "Set to false in order to only create a new CSR if one is not present.")
-	flag.BoolVar(&installCRD, "install-crds", true, "Install the kritis CRD definitions.")
 	flag.Parse()
 }
 
@@ -57,9 +56,6 @@ func main() {
 	}
 	// Create the TLS secret
 	createTLSSecret()
+	installCRDs()
 
-	// Create CRDs if flag is set
-	if installCRD {
-		installCRDs()
-	}
 }

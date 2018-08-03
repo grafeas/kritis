@@ -36,6 +36,8 @@ serviceNamePods: kritis-validation-hook
 serviceNameDeployments: kritis-validation-hook-deployments
 tlsSecretName: tls-webhook-secret
 csrName: tls-webhook-secret-cert
+clusterRoleBindingName: kritis-clusterrolebinding
+clusterRoleName: kritis-clusterrole
 cronInterval: 1h
 
 image:
@@ -56,7 +58,6 @@ preinstall:
   serviceAccount: "kritis-preinstall-serviceaccount"
   clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
   createNewCSR: "--create-new-csr=true"
-  installCRDs: "--install-crds=true"
   pod:
     name: "kritis-preinstall"
     image: "gcr.io/kritis-project/preinstall:v0.0.1"

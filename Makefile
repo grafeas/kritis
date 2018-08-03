@@ -37,6 +37,7 @@ SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
+LOCAL_GAC_CREDENTIALS_PATH=/tmp/gac.json
 
 .PHONY: test
 test: cross
@@ -114,7 +115,7 @@ integration: cross
 
 .PHONY: integration-local
 integration-local: cross build-push-test-image
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true --gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
@@ -138,6 +139,7 @@ integration-in-docker: build-push-image
 		-t $(REGISTRY)/kritis-integration:$(IMAGE_TAG) .
 	docker run \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/tmp:/tmp \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e REMOTE_INTEGRATION=true \

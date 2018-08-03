@@ -38,14 +38,20 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-var gkeZone = flag.String("gke-zone", "us-central1-a", "gke zone")
-var gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
-var gcpProject = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
-var remote = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
+const (
+	kritisPreinstall  = "kritis-preinstall"
+	kritisPostinstall = "kritis-postinstall"
+)
 
-var client kubernetes.Interface
-
-var context *api.Context
+var (
+	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
+	gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
+	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
+	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for kritis-int-test project")
+	client         kubernetes.Interface
+	context        *api.Context
+)
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -83,92 +89,44 @@ func TestMain(m *testing.M) {
 }
 
 func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
-	// TODO(aaron-prindle) add back namespace functionality
-	// namespaceName := integration_util.RandomID()
-
-	namespaceName := "default"
-	// ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
-	// 	ObjectMeta: meta_v1.ObjectMeta{
-	// 		Name:      namespaceName,
-	// 		Namespace: namespaceName,
-	// 	},
-	// })
-	ns, err := client.CoreV1().Namespaces().Get(namespaceName, meta_v1.GetOptions{})
+	namespaceName := integration_util.RandomID()
+	logrus.Infof("Running integration tests in namespace %s", namespaceName)
+	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      namespaceName,
+			Namespace: namespaceName,
+		},
+	})
 	if err != nil {
 		t.Fatalf("creating namespace: %s", err)
 	}
 
-	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", "default")
+	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
 	if err := integration_util.RunCmd(kubectlCmd); err != nil {
 		t.Fatalf("kubectl config set-context --namespace: %v", err)
 	}
 
-	os.Setenv("KRITIS_DEPLOY_NAMESPACE", namespaceName)
-
 	return ns, func() {
-		client.CoreV1().Namespaces().Delete("default", &meta_v1.DeleteOptions{})
-		os.Setenv("KRITIS_DEPLOY_NAMESPACE", "")
+		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
 	}
 }
 
-var CRDS = []string{
-	"attestation-authority-crd.yaml",
-	"image-security-policy-crd.yaml",
-}
-
-var CRD_EXAMPLES = []string{
-	// TODO(aaron-prindle) add back attestation-authority-example.yaml
-	// "attestation-authority-example.yaml",
-	"image-security-policy-example.yaml",
-}
-
-func deleteCRDExamples() {
-	for _, crd := range CRDS {
-		crdCmd := exec.Command("kubectl", "delete", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts/integration-examples"
-		integration_util.RunCmdOut(crdCmd)
+func createGACSecret(t *testing.T, ns *v1.Namespace) {
+	crdCmd := exec.Command("kubectl", "create",
+		"secret", "generic", "gac-ca-admin",
+		fmt.Sprintf("--from-file=%s", *gacCredentials),
+		"--namespace", ns.Name)
+	crdCmd.Dir = "../"
+	_, err := integration_util.RunCmdOut(crdCmd)
+	if err != nil {
+		logrus.Infof("error creating gac secret; if running locally, please make sure you have container analysis credentials for kritis-int-test at %s on your machine", *gacCredentials)
+		t.Fatalf("error creating gac secret %v", err)
 	}
 }
 
-func createCRDs(t *testing.T) {
-	for _, crd := range CRDS {
-		crdCmd := exec.Command("kubectl", "create", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts"
-		_, err := integration_util.RunCmdOut(crdCmd)
-		if err != nil {
-			t.Fatalf("testing error: %v", err)
-		}
-	}
-}
-
-func createCRDExamples(t *testing.T) {
-	for _, crd := range CRD_EXAMPLES {
-		crdCmd := exec.Command("kubectl", "create", "-f",
-			crd)
-		crdCmd.Dir = "../artifacts/integration-examples"
-		_, err := integration_util.RunCmdOut(crdCmd)
-		if err != nil {
-			t.Fatalf("testing error: %v", err)
-		}
-	}
-}
-
-func deleteFailedDeployments() {
-	deleteWebhookCmd := exec.Command("kubectl", "delete", "validatingwebhookconfiguration", "--all")
-	integration_util.RunCmdOut(deleteWebhookCmd)
-	helmCmd := exec.Command("sh", "-c",
-		"helm ls --short | xargs -L1 helm delete")
-	helmCmd.Dir = "../artifacts"
-	integration_util.RunCmdOut(helmCmd)
-}
-
-func initKritis(t *testing.T) func() {
-	deleteFailedDeployments()
-
+func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	helmCmd := exec.Command("helm", "install", "./kritis-charts",
-		"--namespace", "default",
+		"--namespace", ns.Name,
 		"--set", fmt.Sprintf("image.repository=%s",
 			"gcr.io/kritis-int-test/kritis-server"),
 		"--set", fmt.Sprintf("image.tag=%s",
@@ -182,16 +140,18 @@ func initKritis(t *testing.T) func() {
 		"--set", fmt.Sprintf("predelete.pod.image=%s:%s",
 			"gcr.io/kritis-int-test/predelete",
 			version.Commit),
-		"--set", fmt.Sprintf("serviceNamespace=%s", "default"),
+		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
+		"--set", "predelete.deleteCRDs=--delete-crd=false",
+		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
+		"--set", fmt.Sprintf("tlsSecretName=tls-webhook-secret-%s", ns.Name),
+		"--set", fmt.Sprintf("clusterRoleBindingName=kritis-clusterrolebinding-%s", ns.Name),
+		"--set", fmt.Sprintf("clusterRoleName=kritis-clusterrole-%s", ns.Name),
 	)
 	helmCmd.Dir = "../"
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
-		getPreinstallLogs(t)
-		getPostinstallLogs(t)
-		deleteFailedDeployments()
-		t.Fatalf("testing error: %v", err)
+		t.Fatalf("testing error: %v \n %s \n %s", err, getPodLogs(t, kritisPreinstall, ns), getPodLogs(t, kritisPostinstall, ns))
 	}
 	// parsing out release name from 'helm init' output
 	helmNameString := strings.Split(string(out[:]), "\n")[0]
@@ -212,65 +172,26 @@ func initKritis(t *testing.T) func() {
 		return deleteFunc
 	}
 	// Wait for postinstall pod to finish
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods("default"), "kritis-postinstall"); err != nil {
+	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPostinstall); err != nil {
 		t.Errorf("postinstall pod didn't complete: %v", err)
 		return deleteFunc
 	}
 	// Wait for validation hook pod to start running
 
-	podList, err := client.CoreV1().Pods("default").List(meta_v1.ListOptions{})
+	podList, err := client.CoreV1().Pods(ns.Name).List(meta_v1.ListOptions{})
 	if err != nil {
-		t.Errorf("error getting pods: %v", err)
-		getPreinstallLogs(t)
-		getPostinstallLogs(t)
+		t.Errorf("error getting pods: %v \n %s \n %s", err, getPodLogs(t, kritisPreinstall, ns), getPodLogs(t, kritisPostinstall, ns))
 		return deleteFunc
 	}
 	for _, pod := range podList.Items {
 		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
-			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), pod.Name); err != nil {
+			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), pod.Name); err != nil {
 				t.Errorf("%s didn't start running: %v", pod.Name, err)
 				return deleteFunc
 			}
 		}
 	}
 	return deleteFunc
-}
-
-func getPreinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "kritis-preinstall")
-	cmd.Dir = "../"
-	output, err := integration_util.RunCmdOut(cmd)
-	if err != nil {
-		t.Errorf("kritis preinstall: %s %v", output, err)
-	}
-	return string(output)
-}
-
-func getPostinstallLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "kritis-postinstall")
-	cmd.Dir = "../"
-	output, err := integration_util.RunCmdOut(cmd)
-	if err != nil {
-		t.Errorf("kritis preinstall: %s %v", output, err)
-	}
-	return string(output)
-}
-
-func getKritisLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "-l",
-		"app=kritis-validation-hook")
-	cmd.Dir = "../"
-	output, err := integration_util.RunCmdOut(cmd)
-	if err != nil {
-		t.Fatalf("kritis: %s %v", output, err)
-	}
-	cmd = exec.Command("kubectl", "get", "imagesecuritypolicy")
-	cmd.Dir = "../"
-	output2, err := integration_util.RunCmdOut(cmd)
-	if err != nil {
-		t.Fatalf("kritis: %s %v", output2, err)
-	}
-	return string(output[:]) + "\n" + string(output2[:])
 }
 
 func TestKritisPods(t *testing.T) {
@@ -448,22 +369,19 @@ func TestKritisPods(t *testing.T) {
 		},
 	}
 
-	// CRDs themselves are non-namespaced so we have to delete them each run
-	deleteCRDExamples()
-
-	deleteKritis := initKritis(t)
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+	createGACSecret(t, ns)
+	deleteKritis := initKritis(t, ns)
 	defer deleteKritis()
-	if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default",
+	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
 		"kritis-validation-hook", 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
-	createCRDExamples(t)
-	time.Sleep(5 * time.Second)
+	createCRDExamples(t, ns)
+	waitForCRDExamples(t, ns)
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
-			// TODO(aaron-prindle) add back namespaces
-			// ns, deleteNs := setupNamespace(t)
-			// defer deleteNs()
 			defer testCase.cleanup(t)
 
 			cmd := exec.Command(testCase.args[0], testCase.args[1:]...)
@@ -482,21 +400,21 @@ func TestKritisPods(t *testing.T) {
 			}
 
 			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods("default"), p.name); err != nil {
+				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
 					t.Fatalf("Timed out waiting for pod ready\n%s",
 						getKritisLogs(t))
 				}
 			}
 
 			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, "default", d.name, 10*time.Minute); err != nil {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
 					t.Fatalf("Timed out waiting for deployment to stabilize\n%s",
 						getKritisLogs(t))
 				}
 				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments("default").Get(d.name, meta_v1.GetOptions{})
+					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
 					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s\n%s", "default", d, getKritisLogs(t))
+						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
 					}
 					testCase.deploymentValidation(t, deployment)
 				}
