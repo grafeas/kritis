@@ -43,6 +43,8 @@ type testConfig struct {
 	message    string
 }
 
+// TODO (tejaldesai): Move these tests to review/review_test.go and mock
+// review.Reviewer here.
 func Test_BreakglassAnnotation(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
@@ -159,6 +161,15 @@ func Test_InvalidISP(t *testing.T) {
 }
 
 func Test_GlobalWhitelist(t *testing.T) {
+	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
+		return []kritisv1beta1.ImageSecurityPolicy{{
+			Spec: kritisv1beta1.ImageSecurityPolicySpec{
+				PackageVulernerabilityRequirements: kritisv1beta1.PackageVulernerabilityRequirements{
+					MaximumSeverity: "LOW",
+				},
+			},
+		}}, nil
+	}
 	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
 			Spec: v1.PodSpec{
@@ -171,7 +182,9 @@ func Test_GlobalWhitelist(t *testing.T) {
 		}, v1beta1.AdmissionReview{}, nil
 	}
 	mockConfig := config{
-		retrievePod: mockPod,
+		retrievePod:                mockPod,
+		fetchMetadataClient:        testutil.NilFetcher(),
+		fetchImageSecurityPolicies: mockISP,
 	}
 	RunTest(t, testConfig{
 		mockConfig: mockConfig,

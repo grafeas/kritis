@@ -18,19 +18,16 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
-
-	"github.com/grafeas/kritis/pkg/kritis/violation"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/api/core/v1"
-
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/violation"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestStartCancels(t *testing.T) {
@@ -71,7 +68,9 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(image string, isp v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error) {
+func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
+	fmt.Println(image)
+	fmt.Println(isp)
 	if ok := iv.imageMap[image]; ok {
 		return []securitypolicy.SecurityPolicyViolation{
 			{
@@ -189,11 +188,11 @@ func TestCheckPods(t *testing.T) {
 		tt.args.cfg.ViolationStrategy = &th
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CheckPods(tt.args.cfg, tt.args.isps); err != nil {
-				t.Errorf("CheckPods() error = %v", err)
+				t.Fatalf("CheckPods() error = %v", err)
 			}
 		})
 		if (len(th.Violations) != 0) != tt.wantViolations {
-			t.Errorf("got violations %v, expected to have %v", th.Violations, tt.wantViolations)
+			t.Fatalf("got violations %v, expected to have %v", th.Violations, tt.wantViolations)
 		}
 	}
 }

@@ -32,12 +32,12 @@ type Strategy interface {
 type LoggingStrategy struct {
 }
 
-func (l *LoggingStrategy) HandleViolation(image string, ns string, violations []securitypolicy.SecurityPolicyViolation) error {
+func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error {
 	glog.Info("HandleViolation via LoggingStrategy")
 	if len(violations) == 0 {
 		return nil
 	}
-	glog.Warningf("Found violations in image %s, ns %s", image, ns)
+	glog.Warningf("Found violations in image %s, ns %s", image, pod.Namespace)
 	for _, v := range violations {
 		glog.Warning(v.Reason)
 	}
@@ -78,5 +78,6 @@ type MemoryStrategy struct {
 
 func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []securitypolicy.SecurityPolicyViolation) error {
 	ms.Violations[image] = true
+	fmt.Println("called", ms)
 	return nil
 }
