@@ -133,9 +133,9 @@ Using the --set flag, you can set custom installion values:
 
 Installation will create 3 Pods:
 
-- `kritis-preinstall` creates a `CertificateSigningRequest` and TLS Secret for the webhook.
-- `kritis-postinstall` creates the `ValidatingWebhookConfiguration`.
-- `kritis-validation-hook-xxxx` operates the webhook
+- `kritis-preinstall` creates a `CertificateSigningRequest` and TLS Secret for the webhook
+- `kritis-postinstall` creates the `ValidatingWebhookConfiguration`
+- `kritis-validation-hook-xxx` serves the webhook
 
 You may view the status of the Pod deployment using:
 
@@ -154,7 +154,7 @@ kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0        
 
 The installation is complete once:
 *  `kritis-preinstall` and `kritis-postinstall` have status `Completed`
-* `kritis-validation-hook-xxxx` is `Running`
+* `kritis-validation-hook-xxx` is `Running`
 
 ## Tutorial
 
@@ -201,10 +201,10 @@ NOTE: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created 
 
 ## Logs
 If you're unable to install or delete kritis, looking at logs for the following pods could provide more information:
-* kritis-validation-hook-xxx
-* kritis-preinstall (during installation)
-* kritis-postinstall (during installation)
-* kritis-predelete (during deletion)
+* `kritis-validation-hook-xxx`
+* `kritis-preinstall` (during installation)
+* `kritis-postinstall` (during installation)
+* `kritis-predelete` (during deletion)
 
 You can view their status using:
 
