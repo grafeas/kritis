@@ -42,9 +42,8 @@ func New(client metadata.MetadataFetcher, vs violation.Strategy, validate securi
 	}
 }
 
-// Review reviews a given images against ImageSecurityPolicies and return error
-// if voilations are found and handles violation as per violation strategy
-// Returns error if violations are present.
+// Review reviews a set of images against a set of policies
+// Returns error if violations are found and handles them as per violation strategy
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
 	images = util.RemoveGloballyWhitelistedImages(images)
 	if len(images) == 0 {
@@ -67,7 +66,7 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 					}
 				}
 				if err := r.vs.HandleViolation(image, pod, violations); err != nil {
-					return fmt.Errorf("%s. error handling voilation %v", errMsg, err)
+					return fmt.Errorf("%s. error handling violation %v", errMsg, err)
 				}
 				return fmt.Errorf(errMsg)
 			}

@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// ValidateFunc defines the type for Validating Imagbe Security Polices
+// ValidateFunc defines the type for Validating Image Security Policies
 type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error)
 
 // ImageSecurityPolicies returns all ISP's in the specified namespaces
