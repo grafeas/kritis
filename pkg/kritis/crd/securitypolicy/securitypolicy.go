@@ -85,7 +85,11 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			continue
 		}
 		// Next, see if the severity is below or at threshold
-		if severityWithinThreshold(isp, v.Severity) {
+		err, ok := severityWithinThreshold(isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity, v.Severity)
+		if err != nil {
+			return violations, fmt.Errorf("severityWithinThreshold: %v", err)
+		}
+		if ok {
 			continue
 		}
 		// Else, add to list of CVEs in violation
@@ -116,10 +120,17 @@ func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
 	return false
 }
 
-func severityWithinThreshold(isp v1beta1.ImageSecurityPolicy, severity string) bool {
-	maxSeverity := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
+func severityWithinThreshold(maxSeverity string, severity string) (error, bool) {
 	if maxSeverity == constants.BLOCKALL {
-		return false
+		return nil, false
 	}
-	return ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity]
+	_, ok := ca.VulnerabilityType_Severity_value[maxSeverity]
+	if !ok {
+		return fmt.Errorf("invalid maximum severity level: %s", maxSeverity), false
+	}
+	_, ok = ca.VulnerabilityType_Severity_value[severity]
+	if !ok {
+		return fmt.Errorf("invalid severity level: %s", severity), false
+	}
+	return nil, ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity]
 }
