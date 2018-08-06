@@ -163,10 +163,10 @@ func getProjectFromNoteReference(ref string) (string, error) {
 	return str[2], nil
 }
 
-func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
+func (c ContainerAnalysis) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	aaNote := &containeranalysispb.AttestationAuthority{
 		Hint: &containeranalysispb.AttestationAuthority_AttestationAuthorityHint{
@@ -187,11 +187,10 @@ func (c ContainerAnalysis) CreateAttestationNote(aa kritisv1beta1.AttestationAut
 		NoteId: aa.Name,
 		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
-	_, err = c.client.CreateNote(c.ctx, req)
-	return err
+	return c.client.CreateNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+func (c ContainerAnalysis) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
 		return nil, err
@@ -242,7 +241,7 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 }
 
 // These following methods are used for Testing.
-func (c ContainerAnalysis) DeleteAttestationNote(aa kritisv1beta1.AttestationAuthority) error {
+func (c ContainerAnalysis) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
 	noteProject, err := getProjectFromNoteReference(aa.NoteReference)
 	if err != nil {
 		return err

@@ -30,7 +30,9 @@ type MetadataFetcher interface {
 		containerImage string,
 		pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error)
 	// Get Attestation Note for an Attestation Authority.
-	GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error)
+	GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error)
+	// Create Attestation Note for an Attestation Authority.
+	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error)
 	// Get Attestation Occurrences for given image.
 	GetAttestations(containerImage string) ([]PGPAttestation, error)
 }
