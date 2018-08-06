@@ -276,7 +276,7 @@ func Test_severityWithinThreshold(t *testing.T) {
 			expected:    true,
 		},
 		{
-			name:        "test bloackall max severity",
+			name:        "test blockall max severity",
 			maxSeverity: "BLOCKALL",
 			severity:    "LOW",
 			expected:    false,
