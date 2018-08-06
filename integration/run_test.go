@@ -146,6 +146,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		"--set", fmt.Sprintf("tlsSecretName=tls-webhook-secret-%s", ns.Name),
 		"--set", fmt.Sprintf("clusterRoleBindingName=kritis-clusterrolebinding-%s", ns.Name),
 		"--set", fmt.Sprintf("clusterRoleName=kritis-clusterrole-%s", ns.Name),
+		"--set", fmt.Sprintf("serviceName=kritis-validation-hook-%s", ns.Name),
+		"--set", fmt.Sprintf("serviceNameDeployments=kritis-validation-hook-deployments%s", ns.Name),
 	)
 	helmCmd.Dir = "../"
 
