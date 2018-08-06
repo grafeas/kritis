@@ -28,15 +28,19 @@ import (
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
+	Occ             map[string]string
 }
 
 func (m MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
 
-func (m MockMetadataClient) CreateAttestationOccurence(note *containeranalysispb.Note,
-	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
+func (m MockMetadataClient) CreateAttestationOccurence(n *containeranalysispb.Note, image string,
+	s *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
+	if m.Occ == nil {
+		m.Occ = map[string]string{}
+	}
+	m.Occ[image] = s.SecretName
 	return nil, nil
 }
 
