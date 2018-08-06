@@ -17,6 +17,8 @@ limitations under the License.
 package testutil
 
 import (
+	"fmt"
+
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
@@ -38,8 +40,19 @@ func (m MockMetadataClient) CreateAttestationOccurence(note *containeranalysispb
 	return nil, nil
 }
 
-func (m MockMetadataClient) GetAttestationNote(aa kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	return nil, nil
+func (m MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+	if aa == nil {
+		return nil, fmt.Errorf("could not get note")
+	}
+	return &containeranalysispb.Note{
+		Name: aa.Name,
+	}, nil
+}
+
+func (m MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+	return &containeranalysispb.Note{
+		Name: aa.Name,
+	}, nil
 }
 
 func (m MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {

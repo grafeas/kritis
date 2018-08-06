@@ -50,7 +50,7 @@ func TestGetVulnerabilities(t *testing.T) {
 
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := NewContainerAnalysisClient()
-	aa := kritisv1beta1.AttestationAuthority{
+	aa := &kritisv1beta1.AttestationAuthority{
 		NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
@@ -59,7 +59,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	err = d.CreateAttestationNote(aa)
+	_, err = d.CreateAttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)
 	}
