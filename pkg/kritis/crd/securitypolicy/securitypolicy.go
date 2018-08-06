@@ -124,12 +124,10 @@ func severityWithinThreshold(maxSeverity string, severity string) (error, bool) 
 	if maxSeverity == constants.BLOCKALL {
 		return nil, false
 	}
-	_, ok := ca.VulnerabilityType_Severity_value[maxSeverity]
-	if !ok {
+	if _, ok := ca.VulnerabilityType_Severity_value[maxSeverity]; !ok {
 		return fmt.Errorf("invalid maximum severity level: %s", maxSeverity), false
 	}
-	_, ok = ca.VulnerabilityType_Severity_value[severity]
-	if !ok {
+	if _, ok := ca.VulnerabilityType_Severity_value[severity]; !ok {
 		return fmt.Errorf("invalid severity level: %s", severity), false
 	}
 	return nil, ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity]
