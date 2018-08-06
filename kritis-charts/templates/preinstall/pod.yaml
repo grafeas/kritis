@@ -22,4 +22,8 @@ spec:
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
       - {{ .Values.preinstall.createNewCSR }}
+      - "--kritis-service-name"
+      - {{ .Values.serviceName }}
+      - "--kritis-service-name-deployments"
+      - {{ .Values.serviceNameDeployments }}
     command: {{ .Values.preinstall.pod.command }}

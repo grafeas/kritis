@@ -45,7 +45,7 @@ const (
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
-	gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for kritis-int-test project")
@@ -147,7 +147,7 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		"--set", fmt.Sprintf("clusterRoleBindingName=kritis-clusterrolebinding-%s", ns.Name),
 		"--set", fmt.Sprintf("clusterRoleName=kritis-clusterrole-%s", ns.Name),
 		"--set", fmt.Sprintf("serviceName=kritis-validation-hook-%s", ns.Name),
-		"--set", fmt.Sprintf("serviceNameDeployments=kritis-validation-hook-deployments%s", ns.Name),
+		"--set", fmt.Sprintf("serviceNameDeployments=kritis-validation-hook-deployments-%s", ns.Name),
 	)
 	helmCmd.Dir = "../"
 
@@ -377,7 +377,7 @@ func TestKritisPods(t *testing.T) {
 	deleteKritis := initKritis(t, ns)
 	defer deleteKritis()
 	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
-		"kritis-validation-hook", 2*time.Minute); err != nil {
+		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
 	createCRDExamples(t, ns)
