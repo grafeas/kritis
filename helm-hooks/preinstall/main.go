@@ -25,17 +25,21 @@ import (
 )
 
 var (
-	namespace     = install.RetrieveNamespace()
-	csrName       string
-	tlsSecretName string
-	createNewCSR  bool
-	installCRD    bool
+	namespace              = install.RetrieveNamespace()
+	csrName                string
+	tlsSecretName          string
+	createNewCSR           bool
+	installCRD             bool
+	serviceName            string
+	serviceNameDeployments string
 )
 
 func init() {
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
 	flag.BoolVar(&createNewCSR, "create-new-csr", true, "Set to false in order to only create a new CSR if one is not present.")
+	flag.StringVar(&serviceName, "kritis-service-name", "", "The name of the kritis service for pods.")
+	flag.StringVar(&serviceNameDeployments, "kritis-service-name-deployments", "", "The name of the kritis service for deployments.")
 	flag.Parse()
 }
 

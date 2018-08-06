@@ -24,11 +24,23 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/install"
 	"github.com/sirupsen/logrus"
 )
+
+type Cert struct {
+	Namespace              string
+	ServiceName            string
+	ServiceNameDeployments string
+}
+
+type Csr struct {
+	CsrName     string
+	Certificate string
+}
 
 func deleteExistingObjects() {
 	csrCmd := exec.Command("kubectl", "get", "csr", csrName, "--namespace", namespace)
@@ -49,24 +61,33 @@ func deleteExistingObjects() {
 }
 
 func createCertificates() {
-	cert := `{
+	certTmpl := Cert{namespace, serviceName, serviceNameDeployments}
+	tmpl := template.New("cert")
+	tmpl, err := tmpl.Parse(`{
 "hosts": [
-    "kritis-validation-hook",
-    "kritis-validation-hook.kube-system",
-    "kritis-validation-hook.%s",
-    "kritis-validation-hook.%s.svc",
-    "kritis-validation-hook-deployments",
-    "kritis-validation-hook-deployments.kube-system",
-    "kritis-validation-hook-deployments.%s",
-    "kritis-validation-hook-deployments.%s.svc"
+    "{{ .ServiceName }}",
+    "{{ .ServiceName }}.kube-system",
+    "{{ .ServiceName }}.{{ .Namespace }}",
+    "{{ .ServiceName }}.{{ .Namespace }}.svc",
+    "{{ .ServiceNameDeployments }}",
+    "{{ .ServiceNameDeployments }}.kube-system",
+    "{{ .ServiceNameDeployments }}.{{ .Namespace }}",
+    "{{ .ServiceNameDeployments }}.{{ .Namespace }}.svc"
 
 ],
 "key": {
 	"algo": "ecdsa",
 	"size": 256
 }
-}`
-	cert = fmt.Sprintf(cert, namespace, namespace, namespace, namespace)
+}`)
+	if err != nil {
+		logrus.Fatalf("error creating template for cert: %v", err)
+	}
+	var tpl bytes.Buffer
+	if err := tmpl.Execute(&tpl, certTmpl); err != nil {
+		logrus.Fatalf("error parsing template for cert: %v", err)
+	}
+	cert := tpl.String()
 	certCmd := exec.Command("cfssl", "genkey", "-")
 	certCmd.Stdin = bytes.NewReader([]byte(cert))
 	output := install.RunCommand(certCmd)
@@ -78,20 +99,29 @@ func createCertificates() {
 
 func createCertificateSigningRequest() {
 	certificate := retrieveRequestCertificate()
-	csr := `apiVersion: certificates.k8s.io/v1beta1
+	csrTmpl := Csr{csrName, certificate}
+	tmpl := template.New("csr")
+	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
-    name: %s
+    name: {{ .CsrName }}
 spec:
     groups:
     - system:authenticated
-    request: %s
+    request: {{ .Certificate }}
     usages:
     - digital signature
     - key encipherment
-    - server auth`
-	csr = fmt.Sprintf(csr, csrName, certificate)
+    - server auth`)
+	if err != nil {
+		logrus.Fatalf("error creating template for csr: %v", err)
+	}
+	var tpl bytes.Buffer
+	if err := tmpl.Execute(&tpl, csrTmpl); err != nil {
+		logrus.Fatalf("error parsing template for csr: %v", err)
 
+	}
+	csr := tpl.String()
 	kubectlCmd := exec.Command("kubectl", "apply", "-f", "-")
 	kubectlCmd.Stdin = bytes.NewReader([]byte(csr))
 	fmt.Println(csr)
