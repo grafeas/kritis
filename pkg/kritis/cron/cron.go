@@ -21,11 +21,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/grafeas/kritis/pkg/kritis/pods"
-
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/pods"
+	"github.com/grafeas/kritis/pkg/kritis/review"
+
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -38,12 +39,12 @@ var (
 
 // For testing.
 type podLister func(string) ([]corev1.Pod, error)
-type violationChecker func(string, v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error)
 
 type Config struct {
 	PodLister            podLister
-	ViolationChecker     violationChecker
+	Client               metadata.MetadataFetcher
 	ViolationStrategy    violation.Strategy
+	ViolationChecker     securitypolicy.ValidateFunc
 	SecurityPolicyLister func(namespace string) ([]v1beta1.ImageSecurityPolicy, error)
 }
 
@@ -51,16 +52,13 @@ var (
 	defaultViolationStrategy = &violation.AnnotationStrategy{}
 )
 
-func NewCronConfig(cs *kubernetes.Clientset, ca containeranalysis.ContainerAnalysis) *Config {
-
-	vc := func(image string, isp v1beta1.ImageSecurityPolicy) ([]securitypolicy.SecurityPolicyViolation, error) {
-		return securitypolicy.ValidateImageSecurityPolicy(isp, image, ca)
-	}
+func NewCronConfig(cs *kubernetes.Clientset, client metadata.MetadataFetcher) *Config {
 
 	cfg := Config{
 		PodLister:            pods.Pods,
-		ViolationChecker:     vc,
+		Client:               client,
 		ViolationStrategy:    defaultViolationStrategy,
+		ViolationChecker:     securitypolicy.ValidateImageSecurityPolicy,
 		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}
 	return &cfg
@@ -91,22 +89,16 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 
 // CheckPods checks all running pods against defined policies.
 func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
+	r := review.New(cfg.Client, cfg.ViolationStrategy, cfg.ViolationChecker)
 	for _, isp := range isps {
 		ps, err := cfg.PodLister(isp.Namespace)
 		if err != nil {
 			return err
 		}
 		for _, p := range ps {
-			for _, c := range pods.Images(p) {
-				v, err := cfg.ViolationChecker(c, isp)
-				if err != nil {
-					return err
-				}
-				if len(v) != 0 {
-					if err := cfg.ViolationStrategy.HandleViolation(c, &p, v); err != nil {
-						glog.Errorf("handling violations: %s", err)
-					}
-				}
+			glog.Infof("Checking po %s", p.Name)
+			if err := r.Review(pods.Images(p), isps, &p); err != nil {
+				glog.Error(err)
 			}
 		}
 	}
