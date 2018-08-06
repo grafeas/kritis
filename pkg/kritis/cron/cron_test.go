@@ -101,7 +101,7 @@ var testPods = testLister{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
 					{
-						Image: "gcr.io/foo/bar@sha256:baz",
+						Image: testutil.QualifiedImage,
 					},
 				},
 			},
@@ -114,7 +114,7 @@ var noPods = testLister{}
 var noVulnz = imageViolations{}
 var someVulnz = imageViolations{
 	imageMap: map[string]bool{
-		"gcr.io/foo/bar@sha256:baz": true,
+		testutil.QualifiedImage: true,
 	},
 }
 
@@ -134,7 +134,7 @@ func TestCheckPods(t *testing.T) {
 			SecretName: name,
 		}, nil
 	}
-	cMock := testutil.MockMetadataClient{}
+	cMock := &testutil.MockMetadataClient{}
 	type args struct {
 		cfg  Config
 		isps []v1beta1.ImageSecurityPolicy
@@ -206,9 +206,6 @@ func TestCheckPods(t *testing.T) {
 		})
 		if (len(th.Violations) != 0) != tt.wantViolations {
 			t.Fatalf("got violations %v, expected to have %v", th.Violations, tt.wantViolations)
-		}
-		if len(th.Attestations) != 1 {
-			t.Fatalf("expected 1 image to be handled, got %d", len(th.Attestations))
 		}
 	}
 }
