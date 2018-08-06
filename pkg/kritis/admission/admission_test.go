@@ -132,7 +132,7 @@ func Test_InvalidISP(t *testing.T) {
 		}}, nil
 	}
 	mockMetadata := func() (metadata.MetadataFetcher, error) {
-		return testutil.MockMetadataClient{
+		return &testutil.MockMetadataClient{
 			Vulnz: []metadata.Vulnerability{
 				{
 					Severity: "MEDIUM",

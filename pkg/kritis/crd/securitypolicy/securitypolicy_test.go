@@ -24,6 +24,27 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
+var (
+	vulnz1 = metadata.Vulnerability{
+		CVE:             "cve1",
+		Severity:        "LOW",
+		HasFixAvailable: true,
+	}
+
+	vulnz2 = metadata.Vulnerability{
+		CVE:             "cve2",
+		Severity:        "MEDIUM",
+		HasFixAvailable: false,
+	}
+	mockMetadataClient = &testutil.MockMetadataClient{
+		Vulnz: []metadata.Vulnerability{
+			vulnz1,
+			vulnz2,
+		},
+		PGPAttestations: nil,
+	}
+)
+
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
 		name        string
@@ -44,7 +65,7 @@ func Test_ValidISP(t *testing.T) {
 					},
 				},
 			}
-			mc := testutil.MockMetadataClient{
+			mc := &testutil.MockMetadataClient{
 				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity}},
 			}
 			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
@@ -72,7 +93,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", testutil.MockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
 	expected := []SecurityPolicyViolation{
 		{
 			Vulnerability: metadata.Vulnerability{},
@@ -92,7 +113,7 @@ func Test_BlockallPass(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{
 			{CVE: "l", Severity: "LOW"},
 			{CVE: "m", Severity: "MEDIUM"},
@@ -117,7 +138,7 @@ func Test_BlockallFail(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
@@ -139,7 +160,7 @@ func Test_MaxSeverityFail(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{
 			{CVE: "l", Severity: "LOW"},
 			{CVE: "m", Severity: "MEDIUM"},
@@ -166,7 +187,7 @@ func Test_WhitelistedImage(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, "image", mc)
@@ -188,7 +209,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{
 			{CVE: "c", Severity: "CRITICAL"},
 		},
@@ -211,7 +232,7 @@ func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{
 			{CVE: "l", Severity: "LOW", HasFixAvailable: true},
 			{CVE: "lnofix", Severity: "LOW", HasFixAvailable: false},
@@ -244,7 +265,7 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 			},
 		},
 	}
-	mc := testutil.MockMetadataClient{
+	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true}},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)

@@ -70,6 +70,11 @@ func NewConfig(v securitypolicy.ValidateFunc, s secrets.Fetcher) *Config {
 	}
 }
 
+// For testing
+var (
+	authFetcher = authority.Authorities
+)
+
 // Review reviews a set of images against a set of policies
 // Returns error if violations are found and handles them as per violation strategy
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
@@ -82,22 +87,22 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 		for _, image := range images {
 			glog.Infof("Check if %s as valid Attestations.", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, isp.Namespace, pod)
-			fmt.Println(isAttested, r.isWebhook)
 			// Skip vulnerability check for Webhook if attestations found.
 			if isAttested && r.isWebhook {
 				continue
 			}
 
 			glog.Infof("Getting vulnz for %s", image)
-			fmt.Println("Getting vuln")
 			violations, err := r.config.validate(isp, image, r.client)
 			if err != nil {
 				return fmt.Errorf("error validating image security policy %v", err)
 			}
 			if len(violations) != 0 {
-				glog.Info(r.handleViolations(image, pod, violations))
+				return r.handleViolations(image, pod, violations)
 			} else if r.isWebhook {
-				r.addAttestations(image, attestations, isp.Namespace)
+				if err := r.addAttestations(image, attestations, isp.Namespace); err != nil {
+					glog.Infof("error adding attestations %s", err)
+				}
 			}
 		}
 	}
@@ -161,9 +166,12 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []secur
 
 func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, ns string) error {
 	// Get all AttestationAuthorities in this namespace.
-	auths, err := authority.Authorities(ns)
+	auths, err := authFetcher(ns)
 	if err != nil {
 		return err
+	}
+	if len(auths) == 0 {
+		return fmt.Errorf("no attestation quthorities configured for namespace %s", ns)
 	}
 	// Get all AttestationAuthorities which have not attested the image.
 	errMsgs := []string{}

@@ -82,7 +82,7 @@ func TestHasValidAttestations(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			cMock := testutil.MockMetadataClient{
+			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
 			r := New(cMock, nil, true, &Config{
@@ -97,34 +97,23 @@ func TestHasValidAttestations(t *testing.T) {
 	}
 }
 
-func testValidate(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
-	if image == testutil.QualifiedImage {
-		return []securitypolicy.SecurityPolicyViolation{
-			{
-				Vulnerability: metadata.Vulnerability{
-					Severity: "foo",
-				},
-				Violation: 1,
-			},
-		}, nil
-	}
-	return nil, nil
-}
-
 func TestReview(t *testing.T) {
 	sec := testutil.CreateSecret(t, "sec")
-	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, sec)
+	vulnImage := testutil.QualifiedImage
+	sigVuln, err := util.CreateAttestationSignature(vulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	anotherSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
+
+	noVulnImage := testutil.IntTestImage
+	sigNoVuln, err := util.CreateAttestationSignature(noVulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sig, KeyId: "sec"}}
+	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyId: "sec"}}
 	var isps = []v1beta1.ImageSecurityPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -132,7 +121,26 @@ func TestReview(t *testing.T) {
 			},
 		},
 	}
-	noVulnImage := testutil.IntTestImage
+	authFetcher = func(ns string) ([]v1beta1.AttestationAuthority, error) {
+		return []v1beta1.AttestationAuthority{{
+			NoteReference:        "provider/test",
+			PrivateKeySecretName: "test",
+			PublicKeyData:        sec.PublicKey,
+		}}, nil
+	}
+	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
+		if image == vulnImage {
+			return []securitypolicy.SecurityPolicyViolation{
+				{
+					Vulnerability: metadata.Vulnerability{
+						Severity: "foo",
+					},
+					Violation: 1,
+				},
+			}, nil
+		}
+		return nil, nil
+	}
 	tests := []struct {
 		name              string
 		image             string
@@ -140,25 +148,28 @@ func TestReview(t *testing.T) {
 		attestations      []metadata.PGPAttestation
 		handledViolations int
 		isAttested        bool
-		attestImage       bool
+		shdAttestImage    bool
+		shdErr            bool
 	}{
 		{
-			name:              "vulnz w attestation for Webhook shd not handle vuln",
-			image:             testutil.QualifiedImage,
+			name:              "vulnz w attestation for Webhook shd not handle voilations",
+			image:             vulnImage,
 			isWebhook:         true,
 			attestations:      validAtts,
 			handledViolations: 0,
 			isAttested:        true,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            false,
 		},
 		{
-			name:              "vulnz w/o attestation for Webhook shd handle vuln",
-			image:             testutil.QualifiedImage,
+			name:              "vulnz w/o attestation for Webhook shd handle voilations",
+			image:             vulnImage,
 			isWebhook:         true,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            true,
 		},
 		{
 			name:              "no vulnz w/o attestation for webhook shd add attestation",
@@ -167,25 +178,28 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 0,
 			isAttested:        false,
-			attestImage:       true,
+			shdAttestImage:    true,
+			shdErr:            false,
 		},
 		{
 			name:              "vulnz w attestation for cron shd handle vuln",
-			image:             testutil.QualifiedImage,
+			image:             vulnImage,
 			isWebhook:         false,
 			attestations:      validAtts,
 			handledViolations: 1,
 			isAttested:        true,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            true,
 		},
 		{
 			name:              "vulnz w/o attestation for cron shd handle vuln",
-			image:             testutil.QualifiedImage,
+			image:             vulnImage,
 			isWebhook:         false,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            true,
 		},
 		{
 			name:              "no vulnz w/o attestation for cron shd verify attestations",
@@ -194,16 +208,18 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 0,
 			isAttested:        false,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            false,
 		},
 		{
 			name:              "no vulnz w attestation for cron shd verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.PGPAttestation{{Signature: anotherSig, KeyId: "sec"}},
+			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyId: "sec"}},
 			handledViolations: 0,
 			isAttested:        true,
-			attestImage:       false,
+			shdAttestImage:    false,
+			shdErr:            false,
 		},
 	}
 	for _, tc := range tests {
@@ -212,15 +228,15 @@ func TestReview(t *testing.T) {
 			Attestations: map[string]bool{},
 		}
 		t.Run(tc.name, func(t *testing.T) {
-			cMock := testutil.MockMetadataClient{
+			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
 			r := New(cMock, &th, tc.isWebhook, &Config{
 				validate: testValidate,
 				secret:   sMock,
 			})
-			if err := r.Review([]string{tc.image}, isps, nil); err != nil {
-				t.Fatalf("unexpected error %s", err)
+			if err := r.Review([]string{tc.image}, isps, nil); (err != nil) != tc.shdErr {
+				t.Fatalf("expected review to return error %t, actual error %s", tc.shdErr, err)
 			}
 			if len(th.Violations) != tc.handledViolations {
 				t.Fatalf("expected to handle %d violations. Got %d", tc.handledViolations, len(th.Violations))
@@ -229,7 +245,7 @@ func TestReview(t *testing.T) {
 			if th.Attestations[tc.image] != tc.isAttested {
 				t.Fatalf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
 			}
-			if (len(cMock.Occ) != 0) != tc.attestImage {
+			if (len(cMock.Occ) != 0) != tc.shdAttestImage {
 				t.Fatalf("expected an image to be attested, but found none")
 			}
 		})
