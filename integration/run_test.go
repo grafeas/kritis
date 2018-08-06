@@ -162,6 +162,12 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		helmCmd.Dir = "../"
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
+			deleteObject(t, "validatingwebhookconfiguration",
+				fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
+			deleteObject(t, "validatingwebhookconfiguration",
+				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
+			deleteObject(t, "csr",
+				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
 			t.Fatalf("testing error: %v", err)
 		}
 	}
