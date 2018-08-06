@@ -24,6 +24,9 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/review"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -124,6 +127,14 @@ var isps = []v1beta1.ImageSecurityPolicy{
 }
 
 func TestCheckPods(t *testing.T) {
+	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
+		return &secrets.PGPSigningSecret{
+			PublicKey:  "public",
+			PrivateKey: "private",
+			SecretName: name,
+		}, nil
+	}
+	cMock := testutil.MockMetadataClient{}
 	type args struct {
 		cfg  Config
 		isps []v1beta1.ImageSecurityPolicy
@@ -137,8 +148,9 @@ func TestCheckPods(t *testing.T) {
 			name: "no vulnz",
 			args: args{
 				cfg: Config{
-					ViolationChecker: noVulnz.violationChecker,
-					PodLister:        testPods.list,
+					Client:       cMock,
+					ReviewConfig: review.NewConfig(noVulnz.violationChecker, sMock),
+					PodLister:    testPods.list,
 				},
 				isps: isps,
 			},
@@ -148,8 +160,9 @@ func TestCheckPods(t *testing.T) {
 			name: "vulnz",
 			args: args{
 				cfg: Config{
-					ViolationChecker: someVulnz.violationChecker,
-					PodLister:        testPods.list,
+					Client:       cMock,
+					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
+					PodLister:    testPods.list,
 				},
 				isps: isps,
 			},
@@ -159,8 +172,9 @@ func TestCheckPods(t *testing.T) {
 			name: "no isps",
 			args: args{
 				cfg: Config{
-					ViolationChecker: someVulnz.violationChecker,
-					PodLister:        testPods.list,
+					Client:       cMock,
+					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
+					PodLister:    testPods.list,
 				},
 				isps: []v1beta1.ImageSecurityPolicy{},
 			},
@@ -170,8 +184,9 @@ func TestCheckPods(t *testing.T) {
 			name: "no pods",
 			args: args{
 				cfg: Config{
-					ViolationChecker: someVulnz.violationChecker,
-					PodLister:        noPods.list,
+					Client:       cMock,
+					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
+					PodLister:    noPods.list,
 				},
 				isps: isps,
 			},
@@ -180,7 +195,8 @@ func TestCheckPods(t *testing.T) {
 	}
 	for _, tt := range tests {
 		th := violation.MemoryStrategy{
-			Violations: map[string]bool{},
+			Violations:   map[string]bool{},
+			Attestations: map[string]bool{},
 		}
 		tt.args.cfg.ViolationStrategy = &th
 		t.Run(tt.name, func(t *testing.T) {
@@ -190,6 +206,9 @@ func TestCheckPods(t *testing.T) {
 		})
 		if (len(th.Violations) != 0) != tt.wantViolations {
 			t.Fatalf("got violations %v, expected to have %v", th.Violations, tt.wantViolations)
+		}
+		if len(th.Attestations) != 1 {
+			t.Fatalf("expected 1 image to be handled, got %d", len(th.Attestations))
 		}
 	}
 }
