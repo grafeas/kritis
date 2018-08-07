@@ -27,7 +27,7 @@ sudo cp $RESOLVE_TAGS_DIR/resolve-tags /usr/local/bin/
 ```
 
 ## Quickstart
-=
+
 ### Running the resolve-tags kubectl plugin
 
 You can run the plugin as follows:
