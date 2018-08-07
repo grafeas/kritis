@@ -340,7 +340,7 @@ func TestKritisPods(t *testing.T) {
 			description: "java-with-vuln-breakglass-deployment",
 			args: []string{"kubectl", "apply", "-f",
 				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
-			pods: []testObject{
+			deployments: []testObject{
 				{
 					name: "java-with-vuln-breakglass-deployment",
 				},
@@ -430,8 +430,9 @@ func TestKritisPods(t *testing.T) {
 
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s",
-						getKritisLogs(t))
+					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
+						getKritisLogs(t),
+						output)
 				}
 			}
 
