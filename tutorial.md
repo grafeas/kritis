@@ -36,7 +36,52 @@ This `ImageSecurityPolicy` specifies two `nginx` images that are whitelisted and
 It sets the maximum CVE severity allowed in any image to `HIGH`, and whitelists two CVEs which should be ignored during validation.
 It also sets `onlyFixesNotAvailable: true`, meaning that images that contain CVEs with fixes available should be denied.
 
-### 2. Deploying An Image With Vulnerabilities
+### 2. Setting up an AttestationAuthority
+Kritis relies on user defined AttestationAuthorities to attest images admitted. Attested images will be always admitted in future.
+To create a gpg public, private key pair run,
+```shell
+gpg --quick-generate-key --yes my.attestator@example.com
+
+gpg --armor --export my.attestator@example.com > gpg.pub
+
+gpg --list-keys my.attestor@example.com
+pub   rsa3072 2018-06-14 [SC] [expires: 2020-06-13]
+      C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C
+uid           [ultimate] my.attestator@example.com
+sub   rsa3072 2018-06-14 [E]
+
+gpg --export-secret-keys --armor C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C > gpg.priv
+```
+Now create a secret using the exported public and private keys
+```shell
+kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv
+```
+Finally create an attestation authority
+```shell
+PUBLIC_KEY=`base64 gpg.pub -w 0`
+PROJECT=<your project>
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: kritis.grafeas.io/v1beta1
+kind: AttestationAuthority
+metadata:
+    name: my-attestator
+    namespace: default
+spec:
+    noteReference: v1alpha1/projects/$PROJECT
+    privateKeySecretName: my-attestator
+    publicKeyData: $PUBLIC_KEY
+EOF
+```
+
+
+The `AttestationAuthority` should be configured:
+```shell
+attestationauthority.kritis.grafeas.io/my-attestator created
+```
+This `AttestationAuthority` will create Attestation Note in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestator` which we created.
+
+### 3. Deploying An Image With Vulnerabilities
 Now that we have kritis installed and an `ImageSecurityPolicy` to validate against, we can go ahead and start deploying some images!
 
 First, let's try to deploy a java image:
@@ -65,7 +110,7 @@ gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db280
 
 Kritis denied this pod deployment because violations not allowed by the `ImageSecurityPolicy` were found in the image.
 
-### 3. Checking Kritis Logs
+### 4. Checking Kritis Logs
 
 We can learn more about why a deployment failed by looking at logs for the kritis validation hook pod.
 ```
@@ -83,7 +128,7 @@ $ kubectl logs -f kritis-validation-hook-56d9d7d4f5-54mqt
 The logs show that this image contains CVEs with fixes available.
 Since our `ImageSecurityPolicy` was configured to deny such images, our request to deploy this pod was denied.
 
-### 4. Force Deployment With a Breakglass Annotation
+### 5. Force Deployment With a Breakglass Annotation
 Say we want to force deploy this image even though it doesn't pass validation checks.
 
 We can add a breakglass annotation to the pod spec which instructs kritis to always allow the pod:
@@ -111,7 +156,7 @@ The pod should be created:
 ```shell
 pod/java-with-vuln created
 ```
-### 5. Deploying a Tagged Image
+### 6. Deploying a Tagged Image
 Kritis expects all images it inspects to be fully qualified with a digest, since it can't retrieve vulnerability information for tagged images.
 
 We can try to deploy a tagged image:

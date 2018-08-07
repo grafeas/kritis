@@ -158,7 +158,7 @@ func getResourceUrl(containerImage string) string {
 func getProjectFromNoteReference(ref string) (string, error) {
 	str := strings.Split(ref, "/")
 	if len(str) < 3 {
-		return "", fmt.Errorf("Invalid Note Reference. Should be in format <api>/projects/<project_id")
+		return "", fmt.Errorf("Invalid Note Reference %s. Should be in format <api>/projects/<project_id>", ref)
 	}
 	return str[2], nil
 }

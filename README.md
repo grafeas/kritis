@@ -124,29 +124,7 @@ In order to create notes, the service account `gac-ca-admin` must have `containe
 
 The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
 
-To create a gpg public, private key pair run,
-```
-$gpg --quick-generate-key --yes kritis.attestor@example.com
-
-$gpg --armor --export kritis.attestor@example.com > gpg.pub
-
-$gpg --list-keys kritis.attestor@example.com
-pub   rsa3072 2018-06-14 [SC] [expires: 2020-06-13]
-      C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C
-uid           [ultimate] kritis.attestor@example.com
-sub   rsa3072 2018-06-14 [E]
-
-$gpg --export-secret-keys --armor C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C > gpg.priv
-```
-
-Now create a secret using the exported public and private keys
-```
-kubectl create secret foo --from-file=public=gpg.pub --from-file=private=gpg.priv
-```
 The publicKeyData is the base encoded PEM public key.
-```
-cat gpg.pub | base64
-```
 
 ## Qualifying Images with Resolve-Tags
 When deploying pods, images must be fully qualified with digests.
