@@ -41,7 +41,7 @@ clusterRoleBindingName: kritis-clusterrolebinding
 clusterRoleName: kritis-clusterrole
 cronInterval: 1h
 
-repo: gcr.io/kritis-project/
+repository: gcr.io/kritis-project/
 
 # kritis-server-webhook.yaml values
 caBundle: ""
