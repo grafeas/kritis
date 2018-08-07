@@ -337,6 +337,27 @@ func TestKritisPods(t *testing.T) {
 			},
 		},
 		{
+			description: "java-with-vuln-breakglass-deployment",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+			pods: []testObject{
+				{
+					name: "java-with-vuln-breakglass-deployment",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kritis: %s %v", output, err)
+				}
+			},
+		},
+		{
 			description: "kritis-server-global-whitelist",
 			args: []string{"kubectl", "apply", "-f",
 				"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml"},

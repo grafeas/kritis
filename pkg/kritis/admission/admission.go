@@ -152,6 +152,10 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
+	if checkBreakglassDeployment(deployment) {
+		glog.Infof("found breakglass annotation, returning successful status")
+		return
+	}
 	for _, c := range deployment.Spec.Template.Spec.Containers {
 		reviewImages([]string{c.Image}, deployment.Namespace, nil, ar)
 	}
@@ -194,7 +198,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 	// First, check for a breakglass annotation on the pod
-	if checkBreakglass(pod) {
+	if checkBreakglassPod(pod) {
 		glog.Infof("found breakglass annotation, returning successful status")
 		return
 	}
@@ -234,8 +238,17 @@ func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.Admission
 	return &deployment, ar, nil
 }
 
-func checkBreakglass(pod *v1.Pod) bool {
+func checkBreakglassPod(pod *v1.Pod) bool {
 	annotations := pod.GetAnnotations()
+	if annotations == nil {
+		return false
+	}
+	_, ok := annotations[kritisconstants.Breakglass]
+	return ok
+}
+
+func checkBreakglassDeployment(deployment *appsv1.Deployment) bool {
+	annotations := deployment.GetAnnotations()
 	if annotations == nil {
 		return false
 	}

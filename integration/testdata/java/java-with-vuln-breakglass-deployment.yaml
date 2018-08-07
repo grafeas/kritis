@@ -1,0 +1,21 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: java-with-vuln-breakglass-deployment
+  annotations: {
+    "kritis.grafeas.io/breakglass": "true"
+  }
+spec:
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template: # create pods using pod definition in this template
+    metadata:
+      # unlike pod-nginx.yaml, the name is not included in the meta data as a unique name is
+      # generated from the deployment name
+      labels:
+        app: java-with-vuln
+    spec:
+      containers:
+      - name: java-with-vuln
+        image: gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+        ports:
+        - containerPort: 80
