@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: kritis-server
+  image: kritis-server
   tag: v0.0.1
   name: kritis-server
   pullPolicy: Always

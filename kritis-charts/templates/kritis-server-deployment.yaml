@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: {{ .Values.image.name }}
-        image: "{{ .Values.repository }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.repository }}{{ .Values.image.image }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args: ["--tls-cert-file=/var/tls/tls.crt",
                "--tls-key-file=/var/tls/tls.key",
