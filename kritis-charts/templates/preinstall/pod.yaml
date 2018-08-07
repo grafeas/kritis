@@ -14,7 +14,7 @@ spec:
   serviceAccountName: {{ .Values.preinstall.serviceAccount }}
   containers:
   - name: {{ .Values.preinstall.pod.name }}
-    image: "{{ .Values.repository }}{{{ .Values.preinstall.pod.image }}:{{ .Values.image.tag }}"
+    image: "{{ .Values.repository }}{{ .Values.preinstall.pod.image }}:{{ .Values.image.tag }}"
     imagePullPolicy: {{ .Values.image.pullPolicy }}
     args:
       - "--csr-name"
