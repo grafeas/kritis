@@ -14,7 +14,7 @@ spec:
   serviceAccountName: {{ .Values.preinstall.serviceAccount }}
   containers:
   - name: {{ .Values.preinstall.pod.name }}
-    image: {{ .Values.preinstall.pod.image }}
+    image: "{{ .Values.repository }}{{ .Values.preinstall.pod.image }}:{{ .Values.image.tag }}"
     imagePullPolicy: {{ .Values.image.pullPolicy }}
     args:
       - "--csr-name"
@@ -22,4 +22,8 @@ spec:
       - "--tls-secret-name"
       - {{ .Values.tlsSecretName }}
       - {{ .Values.preinstall.createNewCSR }}
+      - "--kritis-service-name"
+      - {{ .Values.serviceName }}
+      - "--kritis-service-name-deployments"
+      - {{ .Values.serviceNameDeployments }}
     command: {{ .Values.preinstall.pod.command }}

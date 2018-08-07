@@ -5,8 +5,9 @@
 replicaCount: 1
 
 image:
-  repository: gcr.io/kritis-project/kritis-server
+  image: kritis-server
   tag: v0.0.1
+  name: kritis-server
   pullPolicy: Always
 
 service:
@@ -40,11 +41,7 @@ clusterRoleBindingName: kritis-clusterrolebinding
 clusterRoleName: kritis-clusterrole
 cronInterval: 1h
 
-image:
-  repository: gcr.io/kritis-project/kritis-server
-  tag: v0.0.1
-  name: kritis-server
-  pullPolicy: Always
+repo: gcr.io/kritis-project/
 
 # kritis-server-webhook.yaml values
 caBundle: ""
@@ -60,13 +57,13 @@ preinstall:
   createNewCSR: "--create-new-csr=true"
   pod:
     name: "kritis-preinstall"
-    image: "gcr.io/kritis-project/preinstall:v0.0.1"
+    image: preinstall
     command: ["/preinstall"]
 
 postinstall:
   pod:
     name: "kritis-postinstall"
-    image: "gcr.io/kritis-project/postinstall:v0.0.1"
+    image: postinstall
     command: ["/postinstall"]
 
 
@@ -75,5 +72,5 @@ predelete:
   deleteCRDs: "--delete-crd=true"
   pod:
     name: "kritis-predelete"
-    image: "gcr.io/kritis-project/predelete:v0.0.1"
+    image: predelete
     command: ["/predelete"]

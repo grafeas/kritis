@@ -111,6 +111,35 @@ The pod should be created:
 ```shell
 pod/java-with-vuln created
 ```
+Here is an example for a deployment:
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: java-with-vuln-breakglass-deployment
+  annotations: {
+    "kritis.grafeas.io/breakglass": "true"
+  }
+spec:
+  replicas: 2
+  template:
+    metadata:
+      annotations:
+        kritis.grafeas.io/breakglass: "true"
+      labels:
+        app: java-with-vuln
+    spec:
+      containers:
+      - name: java-with-vuln
+        image: gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+        ports:
+        - containerPort: 80
+EOF
+```
+
+
 ### 5. Deploying a Tagged Image
 Kritis expects all images it inspects to be fully qualified with a digest, since it can't retrieve vulnerability information for tagged images.
 

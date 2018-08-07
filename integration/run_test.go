@@ -45,7 +45,7 @@ const (
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
-	gkeClusterName = flag.String("gke-cluster-name", "cluster-3", "name of the integration test cluster")
+	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
 	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
 	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for kritis-int-test project")
@@ -127,18 +127,9 @@ func createGACSecret(t *testing.T, ns *v1.Namespace) {
 func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	helmCmd := exec.Command("helm", "install", "./kritis-charts",
 		"--namespace", ns.Name,
-		"--set", fmt.Sprintf("image.repository=%s",
-			"gcr.io/kritis-int-test/kritis-server"),
+		"--set", fmt.Sprintf("repository=%s",
+			"gcr.io/kritis-int-test/"),
 		"--set", fmt.Sprintf("image.tag=%s",
-			version.Commit),
-		"--set", fmt.Sprintf("preinstall.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/preinstall",
-			version.Commit),
-		"--set", fmt.Sprintf("postinstall.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/postinstall",
-			version.Commit),
-		"--set", fmt.Sprintf("predelete.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/predelete",
 			version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
@@ -146,6 +137,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		"--set", fmt.Sprintf("tlsSecretName=tls-webhook-secret-%s", ns.Name),
 		"--set", fmt.Sprintf("clusterRoleBindingName=kritis-clusterrolebinding-%s", ns.Name),
 		"--set", fmt.Sprintf("clusterRoleName=kritis-clusterrole-%s", ns.Name),
+		"--set", fmt.Sprintf("serviceName=kritis-validation-hook-%s", ns.Name),
+		"--set", fmt.Sprintf("serviceNameDeployments=kritis-validation-hook-deployments-%s", ns.Name),
 	)
 	helmCmd.Dir = "../"
 
@@ -162,6 +155,12 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		helmCmd.Dir = "../"
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
+			deleteObject(t, "validatingwebhookconfiguration",
+				fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
+			deleteObject(t, "validatingwebhookconfiguration",
+				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
+			deleteObject(t, "csr",
+				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
 			t.Fatalf("testing error: %v", err)
 		}
 	}
@@ -248,7 +247,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -269,7 +268,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -324,7 +323,28 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "java-with-vuln-breakglass-deployment",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+			deployments: []testObject{
+				{
+					name: "java-with-vuln-breakglass-deployment",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -345,7 +365,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -375,7 +395,7 @@ func TestKritisPods(t *testing.T) {
 	deleteKritis := initKritis(t, ns)
 	defer deleteKritis()
 	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
-		"kritis-validation-hook", 2*time.Minute); err != nil {
+		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
 		t.Fatalf("Timed out waiting for deployment to stabilize")
 	}
 	createCRDExamples(t, ns)
@@ -391,7 +411,8 @@ func TestKritisPods(t *testing.T) {
 				if !testCase.shouldSucceed {
 					return
 				}
-				t.Fatalf("kritis: %s %v\n%s", output, err, getKritisLogs(t))
+				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
+					err, getKritisLogs(t))
 
 			}
 			if !testCase.shouldSucceed {
@@ -401,8 +422,9 @@ func TestKritisPods(t *testing.T) {
 
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s",
-						getKritisLogs(t))
+					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
+						getKritisLogs(t),
+						output)
 				}
 			}
 
