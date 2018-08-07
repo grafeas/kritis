@@ -247,7 +247,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -268,7 +268,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -323,7 +323,28 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "java-with-vuln-breakglass-deployment",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+			deployments: []testObject{
+				{
+					name: "java-with-vuln-breakglass-deployment",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -344,7 +365,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -390,7 +411,8 @@ func TestKritisPods(t *testing.T) {
 				if !testCase.shouldSucceed {
 					return
 				}
-				t.Fatalf("kritis: %s %v\n%s", output, err, getKritisLogs(t))
+				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
+					err, getKritisLogs(t))
 
 			}
 			if !testCase.shouldSucceed {
@@ -400,8 +422,9 @@ func TestKritisPods(t *testing.T) {
 
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s",
-						getKritisLogs(t))
+					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
+						getKritisLogs(t),
+						output)
 				}
 			}
 
