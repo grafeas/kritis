@@ -7,6 +7,7 @@ replicaCount: 1
 image:
   repository: kritis-server
   tag: v0.0.1
+  name: kritis-server
   pullPolicy: Always
 
 service:
@@ -41,12 +42,6 @@ clusterRoleName: kritis-clusterrole
 cronInterval: 1h
 
 repo: gcr.io/kritis-project/
-
-image:
-  repository: kritis-server
-  tag: v0.0.1
-  name: kritis-server
-  pullPolicy: Always
 
 # kritis-server-webhook.yaml values
 caBundle: ""
