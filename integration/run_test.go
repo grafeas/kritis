@@ -256,7 +256,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -277,7 +277,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -332,7 +332,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -353,7 +353,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -374,7 +374,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -420,7 +420,8 @@ func TestKritisPods(t *testing.T) {
 				if !testCase.shouldSucceed {
 					return
 				}
-				t.Fatalf("kritis: %s %v\n%s", output, err, getKritisLogs(t))
+				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
+					err, getKritisLogs(t))
 
 			}
 			if !testCase.shouldSucceed {
