@@ -30,10 +30,10 @@ steps:
            "-t", "resolve-tags", "."]
   # Do the go build
   - name: "resolve-tags"
-    args: ["make", "out/resolve-tags"]
+    args: ["make", "cross-tar"]
   # Copy over resolve-tags to bucket
   - name: "gcr.io/cloud-builders/gsutil"
-    args: ["cp", "out/resolve-tags", "gs://resolve-tags/$COMMIT_SHA/"]
+    args: ["cp", "out/resolve-tags*", "gs://resolve-tags/$COMMIT_SHA/"]
   - name: "gcr.io/cloud-builders/gsutil"
     args: ["cp", "gs://resolve-tags/$COMMIT_SHA/*", "gs://resolve-tags/latest/"]
 images: ["gcr.io/kritis-project/kritis-server:${COMMIT_SHA}",
