@@ -1,11 +1,10 @@
-## Before You Begin
+# Kritis Tutorial
 
-This tutorial has the following requirements:
+## Before you begin
 
-- Kritis (see [Kritis Installation guide](install.md)).
-- Google Cloud SDK
+First [Install Kritis](install.md) to your cluster.
 
-Configure gcloud for your intended project before continuing. If you do not recall the name, use `gcloud projects list`:
+Configure gcloud to point to the correct project before continuing. If you do not recall the name, use `gcloud projects list`:
 
 ```shell
 gcloud config set project <project ID>
@@ -16,9 +15,10 @@ For convenience, save the project ID as an environment variable:
 ```shell
 PROJECT=<project ID assigned to you>
 ```
-### 1. Defining the ImageSecurityPolicy
 
-Kritis relies on a user-defined *ImageSecurityPolicy* (ISP) to determine whether a pod meets a specific criteria for deployment. Begin by creating an ImageSecurityPolicy that restricts one from deploying a HIGH severity vulnerability,  unless they are are within our set of white-listed [CVEs](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures), or contained within a set of white-listed images.
+### 1. Defining an ImageSecurityPolicy
+
+Kritis relies on a user-defined *ImageSecurityPolicy* (ISP) to determine whether a pod meets the criteria for deployment. Create an ISP that restricts Kubernetes from deploying a HIGH severity vulnerability, unless it is within a set of white-listed [CVEs]:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
@@ -29,13 +29,9 @@ metadata:
   name: my-isp
   namespace: default
 spec:
-  imageWhitelist:
-  - gcr.io/$PROJECT/nginx-digest-whitelist:latest
-  - gcr.io/$PROJECT/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
     whitelistCVEs:
-      - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
 EOF
 ```
@@ -45,18 +41,20 @@ EOF
 The [Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/) only reveals vulnerability information for images owned by your project. This makes a copy of a sample vulnerable image into your container registry:
 
 ```shell
-% gcloud container images add-tag \
-  gcr.io/kritis-tutorial/nginx-digest-whitelist:latest \
-  gcr.io/$PROJECT/nginx-digest-whitelist:latest
+gcloud container images add-tag \
+  gcr.io/kritis-tutorial/java-with-vuln:latest \
+  gcr.io/$PROJECT/java-with-vuln:latest
 ```
+
 For more information about copying images, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
-### 3. Deploy a vulnerable pod
+### 3. Deploying a vulnerable image
 
 Deploy a pod containing our vulnerable image:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -73,23 +71,18 @@ EOF
 The following error will appear:
 
 ```shell
-"kritis-validation-hook.grafeas.io" denied the request: found violations in
-gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+"kritis-validation-hook.grafeas.io" denied the request: found violations in gcr.io/$PROJECT/java-with-vuln@sha256:<hash>
 ```
 
-Be amazed!
+Learn more by inspecting the *kritis-validation-hook* logs:
 
-
-### 3. Checking logs
-
-Learn why the deployment failed by examining the logs for the *kritis-validation-hook* pod.
-```
-kubectl get pods
+```shell
+kubectl logs -l app=kritis-validation-hook
 ```
 
-The output will show which CVE's caused the failure:
+Example output:
 
-```
+```shell
 NAME                                      READY     STATUS    RESTARTS   AGE
 kritis-validation-hook-56d9d7d4f5-54mqt   1/1       Running   0          3m
 $ kubectl logs -f kritis-validation-hook-56d9d7d4f5-54mqt
@@ -98,32 +91,98 @@ $ kubectl logs -f kritis-validation-hook-56d9d7d4f5-54mqt
         which has fixes available
     found CVE projects/goog-vulnz/notes/CVE-2015-8985 in gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
         which has fixes available
-
 ```
 
-### 4. Force Deployment With a Breakglass Annotation
+### 4. Deploying an image by tag name
 
-To force the deployment of an image that normally fails validation, add a *breakglass* annotation to the pod spec.
+Create an example YAML which uses the `latest` image tag:
 
 ```shell
-cat <<EOF | kubectl apply -f - \
+cat <<EOF > resolve.yaml
+
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vuln
-  annotations: {
-    "kritis.grafeas.io/breakglass": "true"
-  }
+  name: java-with-vuln-tagged
 spec:
   containers:
-  - name: java-with-vuln
+  - name: java-with-vuln-tagged
+    image: gcr.io/$PROJECT/java-with-vuln:latest
+    ports:
+    - containerPort: 80
+EOF
+```
+
+Apply the YAML:
+
+```shell
+kubectl apply -f resolve.yaml
+```
+
+### 5. Whitelist an image
+
+To whitelist an image, specify a path containing a tag (such as `latest`), or sha256:
+
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: kritis.grafeas.io/v1beta1
+kind: ImageSecurityPolicy
+metadata:
+  name: my-isp
+  namespace: default
+spec:
+  imageWhitelist:
+    - gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+  packageVulnerabilityRequirements:
+    maximumSeverity: MEDIUM
+    whitelistCVEs:
+      - providers/goog-vulnz/notes/CVE-2017-1000081
+EOF
+```
+
+Then deploy the java-with-vuln pod with the whitelist in place:
+
+```shell
+cat <<EOF | kubectl apply -f - \
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-with-vuln-whitelist
+spec:
+  containers:
+  - name: java-with-vuln-whitelist
     image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
     ports:
     - containerPort: 80
 EOF
 ```
 
-Here is an example for a deployment:
+### 6. Force deployment with a breakglass annotation
+
+To force the deployment of an image that normally fails validation, add a *breakglass* annotation to the pod spec:
+
+```shell
+cat <<EOF | kubectl apply -f - \
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-with-vuln-breakglass
+  annotations: {
+    "kritis.grafeas.io/breakglass": "true"
+  }
+spec:
+  containers:
+  - name: java-with-vuln-breakglass
+    image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+    ports:
+    - containerPort: 80
+EOF
+```
+
+The annotation can also be provided for a deployment:
+
 ```shell
 cat <<EOF | kubectl apply -f - \
 apiVersion: apps/v1beta1
@@ -150,48 +209,4 @@ spec:
 EOF
 ```
 
-### 5. Deploying a tagged image
-Kritis expects all images it inspects to be fully qualified with a digest, since it can't retrieve vulnerability information for tagged images.
-
-We can try to deploy a tagged image:
-```shell
-cat <<EOF | kubectl apply -f - \
-
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-no-digest
-spec:
-  containers:
-  - name: nginx-no-digest
-    image: gcr.io/$PROJECT/nginx-no-digest:latest
-    ports:
-    - containerPort: 80
-EOF
-```
-which should result in an error:
-```shell
-"kritis-validation-hook.grafeas.io" denied the request: gcr.io/$PROJECT/nginx-no-digest:latest
-    is not a fully qualified image
-```
-
-### 6. Deploying a whitelisted Image
-
-To deploy a tagged image, you can add that image to the `imageWhitelist` in your `ImageSecurityPolicy`.
-
-We can try to deploy a tagged whitelisted image:
-```shell
-cat <<EOF | kubectl apply -f - \
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-no-digest-whitelist
-spec:
-  containers:
-  - name: nginx-no-digest-whitelist
-    image: gcr.io/$PROJECT/nginx-digest-whitelist:latest
-    ports:
-    - containerPort: 80
-EOF
-```
 That brings us to the end of the tutorial!
