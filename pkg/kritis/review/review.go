@@ -51,6 +51,7 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 		return nil
 	}
 	for _, isp := range isps {
+		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
 		for _, image := range images {
 			glog.Infof("Getting vulnz for %s", image)
 			violations, err := r.validate(isp, image, r.client)
@@ -70,6 +71,7 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 				}
 				return fmt.Errorf(errMsg)
 			}
+			glog.Infof("Found no violations in %s", image)
 		}
 	}
 	return nil
