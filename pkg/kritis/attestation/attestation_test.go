@@ -36,7 +36,7 @@ var tcAttestations = []struct {
 
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
-		publicKey, privateKey := testutil.CreateBase64KeyPair(t, "test")
+		publicKey, privateKey := testutil.CreateKeyPair(t, "test")
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {

@@ -136,12 +136,12 @@ Please see instructions `)
 	}
 	for _, a := range attestations {
 		// Get Secret from key id.
-		secret, err := r.config.secret(ns, a.KeyId)
+		s, err := r.config.secret(ns, a.KeyId)
 		if err != nil {
 			glog.Infof("Could not find secret %s in namespace %s for attestation verification", a.KeyId, ns)
 			continue
 		}
-		if err = host.VerifyAttestationSignature(secret.PublicKey, a.Signature); err != nil {
+		if err = host.VerifyAttestationSignature(s.PublicKey, a.Signature); err != nil {
 			glog.Infof("Could not find verify attestation for attestation authority %s", a.KeyId)
 		} else {
 			return true
@@ -187,7 +187,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Get secret for this Authority
-		s, err := r.config.secret(ns, a.PrivateKeySecretName)
+		s, err := r.config.secret(ns, a.Spec.PrivateKeySecretName)
 		if err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
@@ -195,7 +195,6 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 		if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
-
 	}
 	if len(errMsgs) == 0 {
 		return nil
@@ -211,7 +210,7 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAtte
 	}
 
 	for _, a := range auths {
-		_, ok := m[a.PrivateKeySecretName]
+		_, ok := m[a.Spec.PrivateKeySecretName]
 		if !ok {
 			l = append(l, a)
 		}

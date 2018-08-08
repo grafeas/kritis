@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2018 Google LLC
 
@@ -51,9 +49,11 @@ func TestGetVulnerabilities(t *testing.T) {
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := NewContainerAnalysisClient()
 	aa := &kritisv1beta1.AttestationAuthority{
-		NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
+		},
+		Spec: kritisv1beta1.AttestationAuthoritySpec{
+			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
 		},
 	}
 	if err != nil {
@@ -74,7 +74,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
 	// Test Create Attestation Occurence
-	pub, priv := testutil.CreateBase64KeyPair(t, "test")
+	pub, priv := testutil.CreateKeyPair(t, "test")
 	secret := &secrets.PGPSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,
@@ -94,4 +94,11 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatal("Shd have created atleast 1 occurrence")
 	}
 
+	occurrences, err = d.GetAttestations("gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8")
+	fmt.Println("occ", occurrences)
+	for _, occ := range occurrences {
+		fmt.Println(d.DeleteOccurrence(occ.OccName))
+	}
+	occurrences, err = d.GetAttestations("gcr.io/tejaldesai-personal/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8")
+	fmt.Println(occurrences)
 }

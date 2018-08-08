@@ -39,12 +39,13 @@ It also sets `onlyFixesNotAvailable: true`, meaning that images that contain CVE
 ### 2. Setting up an AttestationAuthority
 Kritis relies on user defined AttestationAuthorities to attest images admitted. Attested images will be always admitted in future.
 To create a gpg public, private key pair run,
+Note: Please create a key with Empty Passphase. We are working on adding support for [passphrase](https://github.com/grafeas/kritis/issues/186)
 ```shell
 gpg --quick-generate-key --yes my.attestator@example.com
 
 gpg --armor --export my.attestator@example.com > gpg.pub
 
-gpg --list-keys my.attestor@example.com
+gpg --list-keys my.attestator@example.com
 pub   rsa3072 2018-06-14 [SC] [expires: 2020-06-13]
       C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C
 uid           [ultimate] my.attestator@example.com

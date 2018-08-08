@@ -18,7 +18,6 @@ package testutil
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"reflect"
 	"testing"
@@ -55,22 +54,16 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
-func CreateBase64KeyPair(t *testing.T, name string) (string, string) {
+func CreateKeyPair(t *testing.T, name string) (string, string) {
 	// Create a new pair of key
 	var key *openpgp.Entity
 	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
 	CheckError(t, false, err)
 	// Get Pem encoded Public Key
-	pubKeyBaseEnc := getBase64EncodedKey(key, openpgp.PublicKeyType, t)
+	pubKeyBaseEnc := getKey(key, openpgp.PublicKeyType, t)
 	// Get Pem encoded Private Key
-	privKeyBaseEnc := getBase64EncodedKey(key, openpgp.PrivateKeyType, t)
-	return pubKeyBaseEnc, privKeyBaseEnc
-}
-
-func getBase64EncodedKey(key *openpgp.Entity, keyType string, t *testing.T) string {
-	keyBytes := getKey(key, keyType, t)
-	// base64 encoded Key
-	return base64.StdEncoding.EncodeToString(keyBytes)
+	privKeyBaseEnc := getKey(key, openpgp.PrivateKeyType, t)
+	return string(pubKeyBaseEnc), string(privKeyBaseEnc)
 }
 
 func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
@@ -87,7 +80,7 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
 }
 
 func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
-	pub, priv := CreateBase64KeyPair(t, name)
+	pub, priv := CreateKeyPair(t, name)
 	return &secrets.PGPSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,

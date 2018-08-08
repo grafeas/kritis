@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
@@ -45,20 +46,15 @@ var pgpConfig = packet.Config{
 	RSABits: constants.RSABits,
 }
 
-// VerifyMessageAttestation verifies if the image is attested using the Base64
-// encoded public key.
-func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message string) error {
-	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
-	if err != nil {
-		return err
-	}
+// VerifyMessageAttestation verifies if the image is attested using the public key.
+func VerifyMessageAttestation(pubKey string, attestationHash string, message string) error {
 
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
 
-	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(pemPublicKey))
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return err
 	}
@@ -91,12 +87,12 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 }
 
 // CreateMessageAttestation attests the message using the given public and private key.
-// pubKeyEnc: Base64 Encoded Public Key
-// privKeyEnc: Base64 Decoded Private Key
+// pubKey: Public Key
+// privKey: Private Key
 // message: Message to attest
-func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message string) (string, error) {
-	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey(privKeyEnc, pubKeyEnc)
+func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
+	// Create a PgpKey from Public, Private Key
+	pgpKey, err := NewPgpKey(privKey, pubKey)
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}
@@ -113,6 +109,7 @@ func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message strin
 		return "", errors.Wrap(err, "encoding data")
 	}
 	// Finally Sign the Text.
+
 	w, err := openpgp.Sign(armorWriter, signer, nil, &pgpConfig)
 	if err != nil {
 		return "", errors.Wrap(err, "opengpg signing")
@@ -129,6 +126,7 @@ func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message strin
 
 func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) (*openpgp.Entity, error) {
 	currentTime := pgpConfig.Now()
+	fmt.Println("en", privKey.Encrypted)
 	uid := packet.NewUserId("", "", "")
 	if uid == nil {
 		return nil, errors.New("user id field contained invalid characters")
@@ -154,10 +152,6 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 			FlagCertify:  true,
 			IssuerKeyId:  &e.PrimaryKey.KeyId,
 		},
-	}
-	err := e.Identities[uid.Id].SelfSignature.SignUserId(uid.Id, e.PrimaryKey, e.PrivateKey, &pgpConfig)
-	if err != nil {
-		return nil, err
 	}
 
 	// Set Config Hash from Config
