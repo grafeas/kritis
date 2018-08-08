@@ -1,4 +1,4 @@
-# Installation
+# Installing Kritis
 
 ## Requirements
 
@@ -31,13 +31,11 @@ NOTE: Your account must be whitelisted to enable the Container Analysis API. To 
 
 Once approved, enable the necessary API's:
 
-*  [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
-* [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
+- [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
+- [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
 
 Wait for the above API's to be fully enabled, then enable vulnerability scanning:
 
-- [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
-- [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
 - [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
 
 For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis).
