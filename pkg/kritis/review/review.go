@@ -33,40 +33,21 @@ import (
 )
 
 type Reviewer struct {
-	config    *Config
-	vs        violation.Strategy
-	client    metadata.MetadataFetcher
-	isWebhook bool
+	config *Config
+	client metadata.MetadataFetcher
 }
 
 type Config struct {
-	validate securitypolicy.ValidateFunc
-	secret   secrets.Fetcher
+	Validate  securitypolicy.ValidateFunc
+	Secret    secrets.Fetcher
+	Strategy  violation.Strategy
+	IsWebhook bool
 }
 
-func New(client metadata.MetadataFetcher, vs violation.Strategy, isWebhook bool, c *Config) Reviewer {
-	if c == nil {
-		c = Default()
-	}
+func New(client metadata.MetadataFetcher, c *Config) Reviewer {
 	return Reviewer{
-		client:    client,
-		vs:        vs,
-		isWebhook: isWebhook,
-		config:    c,
-	}
-}
-
-func Default() *Config {
-	return &Config{
-		validate: securitypolicy.ValidateImageSecurityPolicy,
-		secret:   secrets.Fetch,
-	}
-}
-
-func NewConfig(v securitypolicy.ValidateFunc, s secrets.Fetcher) *Config {
-	return &Config{
-		validate: v,
-		secret:   s,
+		client: client,
+		config: c,
 	}
 }
 
@@ -88,20 +69,21 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 			glog.Infof("Check if %s as valid Attestations.", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, isp.Namespace, pod)
 			// Skip vulnerability check for Webhook if attestations found.
-			if isAttested && r.isWebhook {
+			if isAttested && r.config.IsWebhook {
 				continue
 			}
 
 			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.validate(isp, image, r.client)
+			violations, err := r.config.Validate(isp, image, r.client)
 			if err != nil {
 				return fmt.Errorf("error validating image security policy %v", err)
 			}
 			if len(violations) != 0 {
 				return r.handleViolations(image, pod, violations)
-			} else if r.isWebhook {
+			}
+			if r.config.IsWebhook {
 				if err := r.addAttestations(image, attestations, isp.Namespace); err != nil {
-					glog.Infof("error adding attestations %s", err)
+					glog.Errorf("error adding attestations %s", err)
 				}
 			}
 		}
@@ -112,12 +94,12 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 func (r Reviewer) fetchAndVerifyAttestations(image string, ns string, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
 	attestations, err := r.client.GetAttestations(image)
 	if err != nil {
-		glog.Infof("Error while fetching attestations %s", err)
+		glog.Errorf("Error while fetching attestations %s", err)
 		return false, attestations
 	}
 	isAttested := r.hasValidImageAttestations(image, attestations, ns)
-	if err := r.vs.HandleAttestation(image, pod, isAttested); err != nil {
-		glog.Infof("error handling attestations %v", err)
+	if err := r.config.Strategy.HandleAttestation(image, pod, isAttested); err != nil {
+		glog.Errorf("error handling attestations %v", err)
 	}
 	return isAttested, attestations
 }
@@ -125,24 +107,24 @@ func (r Reviewer) fetchAndVerifyAttestations(image string, ns string, pod *v1.Po
 // hasValidImageAttestations return true if any one image attestation is verified.
 func (r Reviewer) hasValidImageAttestations(image string, attestations []metadata.PGPAttestation, ns string) bool {
 	if len(attestations) == 0 {
-		glog.Infof(`No attestations found for this image.
+		glog.Infof(`No attestations found for image %s.
 This normally happens when you deploy a pod before kritis or no attestation authority is deployed.
-Please see instructions `)
+Please see instructions `, image)
 	}
 	host, err := container.NewAtomicContainerSig(image, map[string]string{})
 	if err != nil {
-		glog.Info(err)
+		glog.Error(err)
 		return false
 	}
 	for _, a := range attestations {
 		// Get Secret from key id.
-		secret, err := r.config.secret(ns, a.KeyId)
+		secret, err := r.config.Secret(ns, a.KeyId)
 		if err != nil {
-			glog.Infof("Could not find secret %s in namespace %s for attestation verification", a.KeyId, ns)
+			glog.Errorf("Could not find secret %s in namespace %s for attestation verification", a.KeyId, ns)
 			continue
 		}
 		if err = host.VerifyAttestationSignature(secret.PublicKey, a.Signature); err != nil {
-			glog.Infof("Could not find verify attestation for attestation authority %s", a.KeyId)
+			glog.Errorf("Could not find verify attestation for attestation authority %s", a.KeyId)
 		} else {
 			return true
 		}
@@ -158,7 +140,7 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []secur
 			errMsg = fmt.Sprintf("%s is not a fully qualified image", image)
 		}
 	}
-	if err := r.vs.HandleViolation(image, pod, violations); err != nil {
+	if err := r.config.Strategy.HandleViolation(image, pod, violations); err != nil {
 		return fmt.Errorf("%s. error handling violation %v", errMsg, err)
 	}
 	return fmt.Errorf(errMsg)
@@ -187,7 +169,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Get secret for this Authority
-		s, err := r.config.secret(ns, a.PrivateKeySecretName)
+		s, err := r.config.Secret(ns, a.PrivateKeySecretName)
 		if err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}

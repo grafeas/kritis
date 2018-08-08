@@ -85,9 +85,11 @@ func TestHasValidAttestations(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
-			r := New(cMock, nil, true, &Config{
-				validate: nil,
-				secret:   sMock,
+			r := New(cMock, &Config{
+				Validate:  nil,
+				Secret:    sMock,
+				IsWebhook: true,
+				Strategy:  nil,
 			})
 			actual := r.hasValidImageAttestations(testutil.QualifiedImage, tc.attestations, "test-namespace")
 			if actual != tc.expected {
@@ -231,22 +233,24 @@ func TestReview(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
-			r := New(cMock, &th, tc.isWebhook, &Config{
-				validate: testValidate,
-				secret:   sMock,
+			r := New(cMock, &Config{
+				Validate:  testValidate,
+				Secret:    sMock,
+				IsWebhook: tc.isWebhook,
+				Strategy:  &th,
 			})
 			if err := r.Review([]string{tc.image}, isps, nil); (err != nil) != tc.shdErr {
-				t.Fatalf("expected review to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
 			}
 			if len(th.Violations) != tc.handledViolations {
-				t.Fatalf("expected to handle %d violations. Got %d", tc.handledViolations, len(th.Violations))
+				t.Errorf("expected to handle %d violations. Got %d", tc.handledViolations, len(th.Violations))
 			}
 
 			if th.Attestations[tc.image] != tc.isAttested {
-				t.Fatalf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
+				t.Errorf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
 			}
 			if (len(cMock.Occ) != 0) != tc.shdAttestImage {
-				t.Fatalf("expected an image to be attested, but found none")
+				t.Errorf("expected an image to be attested, but found none")
 			}
 		})
 	}

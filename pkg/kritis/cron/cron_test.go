@@ -136,8 +136,9 @@ func TestCheckPods(t *testing.T) {
 	}
 	cMock := &testutil.MockMetadataClient{}
 	type args struct {
-		cfg  Config
-		isps []v1beta1.ImageSecurityPolicy
+		cfg      Config
+		isps     []v1beta1.ImageSecurityPolicy
+		validate securitypolicy.ValidateFunc
 	}
 	tests := []struct {
 		name           string
@@ -148,11 +149,11 @@ func TestCheckPods(t *testing.T) {
 			name: "no vulnz",
 			args: args{
 				cfg: Config{
-					Client:       cMock,
-					ReviewConfig: review.NewConfig(noVulnz.violationChecker, sMock),
-					PodLister:    testPods.list,
+					Client:    cMock,
+					PodLister: testPods.list,
 				},
-				isps: isps,
+				isps:     isps,
+				validate: noVulnz.violationChecker,
 			},
 			wantViolations: false,
 		},
@@ -160,11 +161,11 @@ func TestCheckPods(t *testing.T) {
 			name: "vulnz",
 			args: args{
 				cfg: Config{
-					Client:       cMock,
-					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
-					PodLister:    testPods.list,
+					Client:    cMock,
+					PodLister: testPods.list,
 				},
-				isps: isps,
+				isps:     isps,
+				validate: someVulnz.violationChecker,
 			},
 			wantViolations: true,
 		},
@@ -172,11 +173,11 @@ func TestCheckPods(t *testing.T) {
 			name: "no isps",
 			args: args{
 				cfg: Config{
-					Client:       cMock,
-					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
-					PodLister:    testPods.list,
+					Client:    cMock,
+					PodLister: testPods.list,
 				},
-				isps: []v1beta1.ImageSecurityPolicy{},
+				validate: someVulnz.violationChecker,
+				isps:     []v1beta1.ImageSecurityPolicy{},
 			},
 			wantViolations: false,
 		},
@@ -184,11 +185,11 @@ func TestCheckPods(t *testing.T) {
 			name: "no pods",
 			args: args{
 				cfg: Config{
-					Client:       cMock,
-					ReviewConfig: review.NewConfig(someVulnz.violationChecker, sMock),
-					PodLister:    noPods.list,
+					Client:    cMock,
+					PodLister: noPods.list,
 				},
-				isps: isps,
+				isps:     isps,
+				validate: someVulnz.violationChecker,
 			},
 			wantViolations: false,
 		},
@@ -198,7 +199,12 @@ func TestCheckPods(t *testing.T) {
 			Violations:   map[string]bool{},
 			Attestations: map[string]bool{},
 		}
-		tt.args.cfg.ViolationStrategy = &th
+		tt.args.cfg.ReviewConfig = &review.Config{
+			Validate:  tt.args.validate,
+			Secret:    sMock,
+			IsWebhook: false,
+			Strategy:  &th,
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CheckPods(tt.args.cfg, tt.args.isps); err != nil {
 				t.Fatalf("CheckPods() error = %v", err)

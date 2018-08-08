@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -58,7 +57,7 @@ func main() {
 
 	if showVersion {
 		fmt.Println(version.Commit)
-		os.Exit(0)
+		return
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -69,7 +68,7 @@ func main() {
 		if err := cron.RunInForeground(*cronConfig); err != nil {
 			glog.Fatalf("Error Checking pods: %s", err)
 		}
-		os.Exit(0)
+		return
 	}
 
 	// Kick off back ground cron job.
@@ -94,17 +93,17 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
+// StartCron starts the cron.StartCronJob in background.
 func StartCronJob() error {
 	d, err := time.ParseDuration(cronInterval)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	config, err := getCronConfig()
 	if err != nil {
 		return err
 	}
-	go cron.Start(ctx, *config, d)
+	go cron.Start(context.Background(), *config, d)
 	return nil
 }
 
