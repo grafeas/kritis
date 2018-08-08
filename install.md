@@ -1,4 +1,4 @@
-# Installing Kritis
+# Installation
 
 ## Requirements
 
@@ -10,7 +10,6 @@ The only currently supported backend for vulnerability data is the [Google Cloud
 - [Helm](https://helm.sh/)
 
 ## Step #1: Create a Google Cloud Project
-
 
 Follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate).
 
@@ -32,11 +31,11 @@ NOTE: Your account must be whitelisted to enable the Container Analysis API. To 
 
 Once approved, visit following links:
 
-*  [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
-* [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
-* [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
+- [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
+- [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
+- [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
 
-For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis). 
+For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis).
 
 ## Step #3: Create a cluster
 
@@ -48,6 +47,7 @@ gcloud config set project $PROJECT
 gcloud config set compute/zone us-central1-a
 gcloud container clusters create kritis-test --num-nodes=2
 ```
+
 After creating your cluster, you need to get authentication credentials to interact with the cluster. This command will also configure  `kubectl` for your newly created cluster:
 
 ```shell
@@ -104,7 +104,7 @@ kubectl create secret generic gac-ca-admin --from-file=gac.json
 
 Install [helm](https://docs.helm.sh/using_helm/), and execute the following to create an account for helm in your cluster:
 
-```
+```shell
 kubectl create serviceaccount --namespace kube-system tiller
 
 kubectl create clusterrolebinding tiller-cluster-rule \
@@ -113,7 +113,7 @@ kubectl create clusterrolebinding tiller-cluster-rule \
 
 Cnfigure the tiller account:
 
-```
+```shell
 kubectl patch deploy \
   --namespace kube-system \
   tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
@@ -121,26 +121,30 @@ kubectl patch deploy \
 
 Then deploy helm:
 
-
 ```shell
 helm init --wait
 ```
 
+## Installing Kritis to your cluster
 
-## Installing Kritis
+Install the `resolve-tags` plug-in:
 
-Install kritis via helm:
-
+```shell
+make plugin-install
 ```
+
+Install kritis to your cluster via helm:
+
+```shell
 helm install ./kritis-charts/
 ```
 
 You may use the --set flag, to override the installation defaults:
 
-|  Value                | Default      | Description  |   
+|  Value                | Default      | Description  |
 |-----------------------|--------------|--------------|
-| serviceNamespace      | default      | namespace to install kritis within |   
-| gacSecret.name        | gac-ca-admin | name of the secret created above with container analysis permissions | 
+| serviceNamespace      | default      | namespace to install kritis within |
+| gacSecret.name        | gac-ca-admin | name of the secret created above with container analysis permissions |
 
 The kritis installation will create 3 pods:
 
@@ -150,14 +154,13 @@ The kritis installation will create 3 pods:
 
 The deployment status may be viewed using:
 
-
 ```shell
 kubectl get pods
 ```
 
 Sample output:
 
-```
+```shell
 NAME                                      READY     STATUS             RESTARTS   AGE
 kritis-postinstall                        0/1       Completed          0          2m
 kritis-preinstall                         0/1       Completed          0          2m
@@ -165,8 +168,9 @@ kritis-validation-hook-7c84c48f47-lsjpg   1/1       Running            0        
 ```
 
 The installation is complete once:
-*  `kritis-preinstall` and `kritis-postinstall` have status `Completed`
-* `kritis-validation-hook-xxx` is `Running`
+
+- `kritis-preinstall` and `kritis-postinstall` have status `Completed`
+- `kritis-validation-hook-xxx` is `Running`
 
 ## Tutorial
 
@@ -180,11 +184,11 @@ Find the name of your helm release to delete:
 helm ls
 ```
 
-example: 
+example:
 
-```
-NAME        	REVISION	UPDATED                 	STATUS  	CHART         NAMESPACE
-loopy-numbat	1       	Fri Jul 27 14:25:44 2018	DEPLOYED	kritis-0.1.0  default  
+```shell
+NAME          REVISION  UPDATED                   STATUS    CHART         NAMESPACE
+loopy-numbat    1       Fri Jul 27 14:25:44 2018  DEPLOYED  kritis-0.1.0  default  
 ```
 
 Then delete the name of the release:
@@ -195,13 +199,13 @@ helm delete <name>
 
 This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation. You may view the status using:
 
-```
+```shell
 kubectl get pods kritis-predelete
 ```
 
 And the logs using:
 
-```
+```shell
 kubectl logs kritis-predelete
 ```
 
@@ -209,22 +213,24 @@ Kritis will be deleted from your cluster once this Pod has reached `Completed` s
 
 NOTE: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
 
-# Troubleshooting
+## Troubleshooting
 
-## Logs
+### Logs
+
 If you're unable to install or delete kritis, looking at logs for the following pods could provide more information:
-* `kritis-validation-hook-xxx`
-* `kritis-preinstall` (during installation)
-* `kritis-postinstall` (during installation)
-* `kritis-predelete` (during deletion)
+
+- `kritis-validation-hook-xxx`
+- `kritis-preinstall` (during installation)
+- `kritis-postinstall` (during installation)
+- `kritis-predelete` (during deletion)
 
 You can view their status using:
 
-```
+```shell
 kubectl get pods
 ```
 
-## Deleting Kritis Manually
+### Deleting Kritis Manually
 
 If you're unable to delete kritis via `helm delete <DEPLOYMENT NAME>`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
 
