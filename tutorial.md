@@ -4,20 +4,25 @@ This tutorial has the following requirements:
 
 - Kritis (see [Kritis Installation guide](install.md)).
 - Google Cloud SDK
-- Docker
 
-For convenience, you set the $PROJECT environment variable with the name of your Google Cloud Project, which can be found using `gcloud projects`:
+Configure gcloud for your intended project before continuing. If you do not recall the name, use `gcloud projects list`:
 
 ```shell
-PROJECT=my-project
+gcloud config set project <project ID>
 ```
 
+For convenience, save the project ID as an environment variable:
+
+```shell
+PROJECT=<project ID assigned to you>
+```
 ### 1. Defining the ImageSecurityPolicy
 
 Kritis relies on a user-defined *ImageSecurityPolicy* (ISP) to determine whether a pod meets a specific criteria for deployment. Begin by creating an ImageSecurityPolicy that restricts one from deploying a HIGH severity vulnerability,  unless they are are within our set of white-listed [CVEs](https://en.wikipedia.org/wiki/Common_Vulnerabilities_and_Exposures), or contained within a set of white-listed images.
 
 ```shell
 cat <<EOF | kubectl apply -f - \
+
 apiVersion: kritis.grafeas.io/v1beta1
 kind: ImageSecurityPolicy
 metadata:
@@ -37,12 +42,16 @@ EOF
 
 ### 2. Upload a vulnerable image
 
-Kritis can only retrieve vulnerability information from images managed by projects you are a member of due to limitations with the [Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/). First, copy 
+The [Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/) only reveals vulnerability information for images owned by your project. This makes a copy of a sample vulnerable image into your container registry:
 
- only displays vulnerabilities for projects you are a member of. 
-For more information, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
+```shell
+% gcloud container images add-tag \
+  gcr.io/kritis-tutorial/nginx-digest-whitelist:latest \
+  gcr.io/$PROJECT/nginx-digest-whitelist:latest
+```
+For more information about copying images, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
-### 3. Deploying a vulnerable pod
+### 3. Deploy a vulnerable pod
 
 Deploy a pod containing our vulnerable image:
 
@@ -114,14 +123,9 @@ spec:
 EOF
 ```
 
-The pod should be created:
-```shell
-pod/java-with-vuln created
-```
 Here is an example for a deployment:
 ```shell
 cat <<EOF | kubectl apply -f - \
-
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -146,7 +150,7 @@ spec:
 EOF
 ```
 
-### 5. Deploying a Tagged Image
+### 5. Deploying a tagged image
 Kritis expects all images it inspects to be fully qualified with a digest, since it can't retrieve vulnerability information for tagged images.
 
 We can try to deploy a tagged image:
@@ -171,14 +175,13 @@ which should result in an error:
     is not a fully qualified image
 ```
 
-### 6. Deploying a Tagged Whitelisted Image
+### 6. Deploying a whitelisted Image
 
 To deploy a tagged image, you can add that image to the `imageWhitelist` in your `ImageSecurityPolicy`.
 
 We can try to deploy a tagged whitelisted image:
 ```shell
 cat <<EOF | kubectl apply -f - \
-
 apiVersion: v1
 kind: Pod
 metadata:
@@ -191,10 +194,4 @@ spec:
     - containerPort: 80
 EOF
 ```
-
-The pod should be created:
-```shell
-pod/nginx-no-digest-whitelist created
-```
-
 That brings us to the end of the tutorial!
