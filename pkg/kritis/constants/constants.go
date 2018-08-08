@@ -46,5 +46,8 @@ const (
 var (
 	// GlobalImageWhitelist is a list of images that are globally whitelisted
 	// They should always pass the webhook check
-	GlobalImageWhitelist = []string{"gcr.io/kritis-project/kritis-server"}
+	GlobalImageWhitelist = []string{"gcr.io/kritis-project/kritis-server",
+		"gcr.io/kritis-project/preinstall",
+		"gcr.io/kritis-project/postinstall",
+		"gcr.io/kritis-project/predelete"}
 )
