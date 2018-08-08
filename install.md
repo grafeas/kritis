@@ -14,7 +14,7 @@ The only currently supported backend for vulnerability data is the [Google Cloud
 
 Follow the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate).
 
-For convenience, you may your project ID as an environment variable:
+For convenience, save the project ID as an environment variable:
 
 ```shell
 PROJECT=<project ID assigned to you>
@@ -30,10 +30,13 @@ gcloud projects list
 
 NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
 
-Once approved, visit following links:
+Once approved, enable the necessary API's:
 
 *  [Enable the Container Analysis API](https://console.cloud.google.com/flows/enableapi?apiid=containeranalysis.googleapis.com&redirect=https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
 * [Enable the Kubernetes API](https://console.cloud.google.com/projectselector/kubernetes)
+
+Wait for the above API's to be fully enabled, then enable vulnerability scanning:
+
 * [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
 
 For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis). 
@@ -108,24 +111,15 @@ Install [helm](https://docs.helm.sh/using_helm/), and execute the following to c
 kubectl create serviceaccount --namespace kube-system tiller
 
 kubectl create clusterrolebinding tiller-cluster-rule \
-  --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
+  --clusterrole=cluster-admin \
+  --serviceaccount=kube-system:tiller
 ```
 
-Cnfigure the tiller account:
-
-```
-kubectl patch deploy \
-  --namespace kube-system \
-  tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-```
-
-Then deploy helm:
-
+Deploy helm:
 
 ```shell
-helm init --wait
+helm init --service-account=tiller --wait
 ```
-
 
 ## Installing Kritis
 
