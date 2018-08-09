@@ -128,7 +128,7 @@ Install the `resolve-tags` plug-in:
 make plugin-install
 ```
 
-Install kritis to your cluster via helm:
+Install kritis to your cluster:
 
 ```shell
 helm install ./kritis-charts/
