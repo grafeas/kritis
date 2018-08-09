@@ -40,13 +40,13 @@ func NewPgpKey(privateKeyEnc string, publicKeyEnc string) (*PgpKey, error) {
 	var err error
 
 	if privateKeyEnc != "" {
-		privateKey, err = parsePrivateKey(string(privateKeyEnc))
+		privateKey, err = parsePrivateKey(privateKeyEnc)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing private key")
 		}
 	}
 	if publicKeyEnc != "" {
-		publicKey, err = parsePublicKey(string(publicKeyEnc))
+		publicKey, err = parsePublicKey(publicKeyEnc)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing public key")
 		}
