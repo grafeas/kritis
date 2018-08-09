@@ -104,7 +104,7 @@ func createCertificateSigningRequest() {
 	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
-    name: {{ .CsrName }}
+    name: {{ .Name }}
 spec:
     groups:
     - system:authenticated
