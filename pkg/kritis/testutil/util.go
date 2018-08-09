@@ -77,7 +77,7 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) string {
 		CheckError(t, false, key.Serialize(wr))
 	}
 	wr.Close()
-	return string(gotWriter.Bytes())
+	return gotWriter.String()
 }
 
 func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
