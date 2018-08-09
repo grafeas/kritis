@@ -32,6 +32,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/review"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/admission/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -187,9 +188,14 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		createDeniedResponse(ar, errMsg)
 		return
 	}
-	r := review.New(client, defaultViolationStrategy, securitypolicy.ValidateImageSecurityPolicy)
 
-	glog.Infof("Got isps %v", isps)
+	r := review.New(client, &review.Config{
+		Strategy:  defaultViolationStrategy,
+		IsWebhook: true,
+		Secret:    secrets.Fetch,
+		Validate:  securitypolicy.ValidateImageSecurityPolicy,
+	})
+
 	if err := r.Review(images, isps, pod); err != nil {
 		createDeniedResponse(ar, err.Error())
 	}

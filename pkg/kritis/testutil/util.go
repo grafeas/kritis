@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 )
@@ -83,4 +84,13 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
 	}
 	wr.Close()
 	return gotWriter.Bytes()
+}
+
+func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
+	pub, priv := CreateBase64KeyPair(t, name)
+	return &secrets.PGPSigningSecret{
+		PrivateKey: priv,
+		PublicKey:  pub,
+		SecretName: name,
+	}
 }

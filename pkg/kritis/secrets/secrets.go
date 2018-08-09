@@ -39,18 +39,22 @@ type PGPSigningSecret struct {
 	SecretName string
 }
 
-func GetSecret(namespace string, name string) (*PGPSigningSecret, error) {
+// Fetcher is the function used to fetch kubernetes secret.
+type Fetcher func(namespace string, name string) (*PGPSigningSecret, error)
+
+// Fetch fetches kubernetes secret
+func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 	secret, err := getSecretFunc(namespace, name)
 	if err != nil {
 		return nil, err
 	}
 	pub, ok := secret.Data[constants.PublicKey]
 	if !ok {
-		return nil, fmt.Errorf("Invalid Secret %s. Could not find key %s", name, constants.PublicKey)
+		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, constants.PublicKey)
 	}
 	priv, ok := secret.Data[constants.PrivateKey]
 	if !ok {
-		return nil, fmt.Errorf("Invalid Secret %s. Could not find key %s", name, constants.PublicKey)
+		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, constants.PublicKey)
 	}
 	return &PGPSigningSecret{
 		PublicKey:  string(pub),
