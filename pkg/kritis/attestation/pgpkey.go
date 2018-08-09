@@ -38,14 +38,14 @@ func NewPgpKey(privateKeyStr string, publicKeyStr string) (*PgpKey, error) {
 	var privateKey *packet.PrivateKey
 	var err error
 
-	if privateKeyEnc != "" {
-		privateKey, err = parsePrivateKey(privateKeyEnc)
+	if privateKeyStr != "" {
+		privateKey, err = parsePrivateKey(privateKeyStr)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing private key")
 		}
 	}
-	if publicKeyEnc != "" {
-		publicKey, err = parsePublicKey(publicKeyEnc)
+	if publicKeyStr != "" {
+		publicKey, err = parsePublicKey(publicKeyStr)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing public key")
 		}
