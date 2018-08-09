@@ -4,7 +4,7 @@
 
 First [Install Kritis](install.md) to your cluster.
 
-First, configure gcloud to point to the correct project. You may use  `gcloud projects list` to see a list of your projects. 
+First, configure gcloud to point to the correct project. You may use  `gcloud projects list` to see a list of your projects.
 
 ```shell
 gcloud config set project <project ID>
