@@ -62,7 +62,7 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 	if err != nil {
 		return err
 	}
-	buf := bytes.NewBuffer([]byte(attestation))
+	buf := bytes.NewBuffer(attestation)
 	armorBlock, err := armor.Decode(buf)
 	if err != nil {
 		return errors.Wrap(err, "could not decode armor signature")
