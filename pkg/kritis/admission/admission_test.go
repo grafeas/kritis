@@ -131,7 +131,7 @@ func Test_InvalidISP(t *testing.T) {
 			},
 		}}, nil
 	}
-	mockMetadata := func() (metadata.MetadataFetcher, error) {
+	mockMetadata := func() (metadata.Fetcher, error) {
 		return &testutil.MockMetadataClient{
 			Vulnz: []metadata.Vulnerability{
 				{
@@ -141,7 +141,7 @@ func Test_InvalidISP(t *testing.T) {
 			PGPAttestations: []metadata.PGPAttestation{
 				{
 					Signature: "sig",
-					KeyId:     "secret",
+					KeyID:     "secret",
 				},
 			},
 		}, nil

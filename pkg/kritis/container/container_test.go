@@ -57,10 +57,10 @@ func Test_ContainerSigCreation(t *testing.T) {
 			actual, err := NewAtomicContainerSig(image, nil)
 			expected := AtomicContainerSig{
 				Critical: &Critical{
-					Identity: &ContainerIdentity{
+					Identity: &Identity{
 						DockerRef: test.imageName,
 					},
-					Image: &ContainerImage{
+					Image: &Image{
 						DockerDigest: test.imageDigest,
 					},
 					Type: "atomic container signature",

@@ -43,7 +43,7 @@ type podLister func(string) ([]corev1.Pod, error)
 
 type Config struct {
 	PodLister            podLister
-	Client               metadata.MetadataFetcher
+	Client               metadata.Fetcher
 	ReviewConfig         *review.Config
 	SecurityPolicyLister func(namespace string) ([]v1beta1.ImageSecurityPolicy, error)
 }
@@ -52,7 +52,7 @@ var (
 	defaultViolationStrategy = &violation.AnnotationStrategy{}
 )
 
-func NewCronConfig(cs *kubernetes.Clientset, client metadata.MetadataFetcher) *Config {
+func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
 
 	cfg := Config{
 		PodLister: pods.Pods,

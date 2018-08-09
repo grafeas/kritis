@@ -40,7 +40,7 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
-// The ContainerAnalysis struct implements MetadataFetcher Interface.
+// The ContainerAnalysis struct implements Fetcher Interface.
 type ContainerAnalysis struct {
 	client *gen.Client
 	ctx    context.Context
@@ -91,7 +91,7 @@ func (c ContainerAnalysis) fetchOccurrence(containerImage string, kind string) (
 	}
 	project := strings.Split(containerImage, "/")[1]
 	req := &containeranalysispb.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", getResourceUrl(containerImage), kind),
+		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", getResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
 		Parent:   fmt.Sprintf("projects/%s", project),
 	}
@@ -151,8 +151,8 @@ func isRegistryGCR(r string) bool {
 	return true
 }
 
-func getResourceUrl(containerImage string) string {
-	return fmt.Sprintf("%s%s", constants.ResourceUrlPrefix, containerImage)
+func getResourceURL(containerImage string) string {
+	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)
 }
 
 func getProjectFromNoteReference(ref string) (string, error) {
@@ -227,7 +227,7 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 		},
 	}
 	occ := &containeranalysispb.Occurrence{
-		ResourceUrl: getResourceUrl(containerImage),
+		ResourceUrl: getResourceURL(containerImage),
 		NoteName:    note.GetName(),
 		Details:     attestationDetails,
 	}
@@ -252,9 +252,9 @@ func (c ContainerAnalysis) DeleteAttestationNote(aa *kritisv1beta1.AttestationAu
 	return c.client.DeleteNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) DeleteOccurrence(occurrenceId string) error {
+func (c ContainerAnalysis) DeleteOccurrence(ID string) error {
 	req := &containeranalysispb.DeleteOccurrenceRequest{
-		Name: occurrenceId,
+		Name: ID,
 	}
 	return c.client.DeleteOccurrence(c.ctx, req)
 }
@@ -263,6 +263,6 @@ func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metada
 	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
 	return metadata.PGPAttestation{
 		Signature: pgp.GetSignature(),
-		KeyId:     pgp.GetPgpKeyId(),
+		KeyID:     pgp.GetPgpKeyId(),
 	}
 }

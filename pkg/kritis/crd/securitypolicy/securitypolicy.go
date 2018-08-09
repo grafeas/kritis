@@ -30,7 +30,7 @@ import (
 )
 
 // ValidateFunc defines the type for Validating Image Security Policies
-type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error)
+type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error)
 
 // ImageSecurityPolicies returns all ISP's in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
@@ -53,15 +53,15 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]SecurityPolicyViolation, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
 		return nil, nil
 	}
-	var violations []SecurityPolicyViolation
+	var violations []Violation
 	// Next, check if image in qualified
 	if !resolve.FullyQualifiedImage(image) {
-		violations = append(violations, SecurityPolicyViolation{
+		violations = append(violations, Violation{
 			Violation: UnqualifiedImageViolation,
 			Reason:    UnqualifiedImageViolationReason(image),
 		})
@@ -80,7 +80,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		}
 		// Check ifFixesNotAvailable
 		if isp.Spec.PackageVulnerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
-			violations = append(violations, SecurityPolicyViolation{
+			violations = append(violations, Violation{
 				Vulnerability: v,
 				Violation:     FixesNotAvailableViolation,
 				Reason:        FixesNotAvailableViolationReason(image, v),
@@ -88,7 +88,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			continue
 		}
 		// Next, see if the severity is below or at threshold
-		err, ok := severityWithinThreshold(isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity, v.Severity)
+		ok, err := severityWithinThreshold(isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity, v.Severity)
 		if err != nil {
 			return violations, fmt.Errorf("severityWithinThreshold: %v", err)
 		}
@@ -96,7 +96,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			continue
 		}
 		// Else, add to list of CVEs in violation
-		violations = append(violations, SecurityPolicyViolation{
+		violations = append(violations, Violation{
 			Vulnerability: v,
 			Violation:     ExceedsMaxSeverityViolation,
 			Reason:        ExceedsMaxSeverityViolationReason(image, v, isp),
@@ -123,15 +123,15 @@ func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
 	return false
 }
 
-func severityWithinThreshold(maxSeverity string, severity string) (error, bool) {
+func severityWithinThreshold(maxSeverity string, severity string) (bool, error) {
 	if maxSeverity == constants.BLOCKALL {
-		return nil, false
+		return false, nil
 	}
 	if _, ok := ca.VulnerabilityType_Severity_value[maxSeverity]; !ok {
-		return fmt.Errorf("invalid maximum severity level: %s", maxSeverity), false
+		return false, fmt.Errorf("invalid maximum severity level: %s", maxSeverity)
 	}
 	if _, ok := ca.VulnerabilityType_Severity_value[severity]; !ok {
-		return fmt.Errorf("invalid severity level: %s", severity), false
+		return false, fmt.Errorf("invalid severity level: %s", severity)
 	}
-	return nil, ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity]
+	return ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity], nil
 }

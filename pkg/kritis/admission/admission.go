@@ -45,7 +45,7 @@ import (
 type config struct {
 	retrievePod                func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error)
 	retrieveDeployment         func(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error)
-	fetchMetadataClient        func() (metadata.MetadataFetcher, error)
+	fetchMetadataClient        func() (metadata.Fetcher, error)
 	fetchImageSecurityPolicies func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 }
 
@@ -114,7 +114,7 @@ func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.Admissi
 	return ar, nil
 }
 
-func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
+func ReviewHandler(w http.ResponseWriter, r *http.Request) {
 	glog.Infof("Starting admission review handler\nversion: %s\ncommit: %s",
 		version.Version,
 		version.Commit,
@@ -254,6 +254,6 @@ func checkBreakglass(meta *metav1.ObjectMeta) bool {
 }
 
 // TODO: update this once we have more metadata clients
-func metadataClient() (metadata.MetadataFetcher, error) {
+func metadataClient() (metadata.Fetcher, error) {
 	return containeranalysis.NewContainerAnalysisClient()
 }

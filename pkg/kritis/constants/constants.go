@@ -45,7 +45,7 @@ const (
 
 	// Constants for Metadata Library
 	PageSize          = int32(100)
-	ResourceUrlPrefix = "https://"
+	ResourceURLPrefix = "https://"
 )
 
 var (

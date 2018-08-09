@@ -49,25 +49,25 @@ func TestHasValidAttestations(t *testing.T) {
 		{"atleast one valid sig", true, []metadata.PGPAttestation{
 			{
 				Signature: sig,
-				KeyId:     "test-success",
+				KeyID:     "test-success",
 			}, {
 				Signature: "invalid-sig",
-				KeyId:     "test-sucess",
+				KeyID:     "test-sucess",
 			}}},
 		{"no valid sig", false, []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
-				KeyId:     "test-sucess",
+				KeyID:     "test-sucess",
 			}}},
 		{"invalid secret", false, []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
-				KeyId:     "invalid",
+				KeyID:     "invalid",
 			}}},
 		{"valid sig over another host", false, []metadata.PGPAttestation{
 			{
 				Signature: anotherSig,
-				KeyId:     "test-success",
+				KeyID:     "test-success",
 			}}},
 	}
 	secs := map[string]*secrets.PGPSigningSecret{
@@ -115,7 +115,7 @@ func TestReview(t *testing.T) {
 	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyId: "sec"}}
+	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyID: "sec"}}
 	var isps = []v1beta1.ImageSecurityPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -131,9 +131,9 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        sec.PublicKey,
 			}}}, nil
 	}
-	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
+	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]securitypolicy.Violation, error) {
 		if image == vulnImage {
-			return []securitypolicy.SecurityPolicyViolation{
+			return []securitypolicy.Violation{
 				{
 					Vulnerability: metadata.Vulnerability{
 						Severity: "foo",
@@ -218,7 +218,7 @@ func TestReview(t *testing.T) {
 			name:              "no vulnz w attestation for cron shd verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyId: "sec"}},
+			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: "sec"}},
 			handledViolations: 0,
 			isAttested:        true,
 			shdAttestImage:    false,
@@ -298,7 +298,7 @@ func makeAtt(ids []string) []metadata.PGPAttestation {
 	l := make([]metadata.PGPAttestation, len(ids))
 	for i, s := range ids {
 		l[i] = metadata.PGPAttestation{
-			KeyId: s,
+			KeyID: s,
 		}
 	}
 	return l

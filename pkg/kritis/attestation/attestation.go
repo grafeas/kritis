@@ -139,7 +139,7 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 		PrivateKey: privKey,
 		Identities: make(map[string]*openpgp.Identity),
 	}
-	isPrimaryId := true
+	isPrimaryID := true
 	e.Identities[uid.Id] = &openpgp.Identity{
 		Name:   uid.Id,
 		UserId: uid,
@@ -148,7 +148,7 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 			SigType:      packet.SigTypePositiveCert,
 			PubKeyAlgo:   packet.PubKeyAlgoRSA,
 			Hash:         pgpConfig.Hash(),
-			IsPrimaryId:  &isPrimaryId,
+			IsPrimaryId:  &isPrimaryID,
 			FlagsValid:   true,
 			FlagSign:     true,
 			FlagCertify:  true,
