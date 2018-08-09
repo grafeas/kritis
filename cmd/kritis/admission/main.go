@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -40,6 +39,7 @@ var (
 	tlsKeyFile   string
 	cronInterval string
 	showVersion  bool
+	runCron      bool
 )
 
 const (
@@ -52,11 +52,23 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
 	flag.Set("logtostderr", "true")
 	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
+	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
 	flag.Parse()
 
 	if showVersion {
 		fmt.Println(version.Commit)
-		os.Exit(0)
+		return
+	}
+	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
+	if runCron {
+		cronConfig, err := getCronConfig()
+		if err != nil {
+			glog.Fatalf("Could not run cron job in foreground: %s", err)
+		}
+		if err := cron.RunInForeground(*cronConfig); err != nil {
+			glog.Fatalf("Error Checking pods: %s", err)
+		}
+		return
 	}
 
 	// Kick off back ground cron job.
@@ -81,21 +93,29 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
+// StartCron starts the cron.StartCronJob in background.
 func StartCronJob() error {
-	checkInterval, err := time.ParseDuration(cronInterval)
+	d, err := time.ParseDuration(cronInterval)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
+	config, err := getCronConfig()
+	if err != nil {
+		return err
+	}
+	go cron.Start(context.Background(), *config, d)
+	return nil
+}
+
+func getCronConfig() (*cron.Config, error) {
 	ki, err := kubernetesutil.GetClientset()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	kcs := ki.(*kubernetes.Clientset)
-	metadataClient, err := containeranalysis.NewContainerAnalysisClient()
+	client, err := containeranalysis.NewContainerAnalysisClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	go cron.Start(ctx, *cron.NewCronConfig(kcs, *metadataClient), checkInterval)
-	return nil
+	return cron.NewCronConfig(kcs, *client), nil
 }

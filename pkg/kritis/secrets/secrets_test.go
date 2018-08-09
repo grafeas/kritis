@@ -40,7 +40,7 @@ func TestSecrets(t *testing.T) {
 	getSecretFunc = getTestSecret
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := GetSecret("test", tc.secretName)
+			actual, err := Fetch("test", tc.secretName)
 			if !tc.shdErr && err != nil {
 				t.Fatalf("expected error: %v but found %v", tc.shdErr, err)
 			}

@@ -28,19 +28,25 @@ import (
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
+	Occ             map[string]string
 }
 
-func (m MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+func (m *MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
 
-func (m MockMetadataClient) CreateAttestationOccurence(note *containeranalysispb.Note,
-	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurence(n *containeranalysispb.Note, image string,
+	s *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
+	if m.Occ == nil {
+		m.Occ = map[string]string{}
+	}
+	m.Occ = map[string]string{
+		image: s.SecretName,
+	}
 	return nil, nil
 }
 
-func (m MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+func (m *MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	if aa == nil {
 		return nil, fmt.Errorf("could not get note")
 	}
@@ -49,18 +55,21 @@ func (m MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAuth
 	}, nil
 }
 
-func (m MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	return &containeranalysispb.Note{
 		Name: aa.Name,
 	}, nil
 }
 
-func (m MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
 	return m.PGPAttestations, nil
 }
 
 func NilFetcher() func() (metadata.MetadataFetcher, error) {
 	return func() (metadata.MetadataFetcher, error) {
-		return nil, nil
+		return &MockMetadataClient{
+			Vulnz:           []metadata.Vulnerability{},
+			PGPAttestations: []metadata.PGPAttestation{},
+		}, nil
 	}
 }

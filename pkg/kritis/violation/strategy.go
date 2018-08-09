@@ -27,6 +27,7 @@ import (
 
 type Strategy interface {
 	HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error
+	HandleAttestation(image string, pod *v1.Pod, isAttested bool) error
 }
 
 type LoggingStrategy struct {
@@ -37,9 +38,19 @@ func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations 
 	if len(violations) == 0 {
 		return nil
 	}
-	glog.Warningf("Found violations in image %s, ns %s", image, pod.Namespace)
+	glog.Warningf("Found violations in image %s", image)
 	for _, v := range violations {
 		glog.Warning(v.Reason)
+	}
+	return nil
+}
+
+func (l *LoggingStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
+	glog.Info("Handling attestation via LoggingStrategy")
+	if isAttested {
+		glog.Infof("Image %s has one or more valid attestation(s)", image)
+	} else {
+		glog.Infof("No Valid Attestations Found for image %s. Proceeding with next checks", image)
 	}
 	return nil
 }
@@ -71,12 +82,35 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 
+func (a *AnnotationStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
+	// First, remove "kritis.grafeas.io/attestation" label/annotation in case it doesn't apply anymore
+	if err := pods.DeleteLabelsAndAnnotations(*pod, []string{constants.ImageAttestation}, []string{constants.ImageAttestation}); err != nil {
+		return err
+	}
+	lValue := constants.NoAttestationsLabelValue
+	aValue := constants.NoAttestationsAnnotation
+	if isAttested {
+		lValue = constants.PreviouslyAttestedLabelValue
+		aValue = constants.PreviouslyAttestedAnnotation
+	}
+	labels := map[string]string{constants.ImageAttestation: lValue}
+	annotations := map[string]string{constants.ImageAttestation: aValue}
+	glog.Info(fmt.Sprintf("Adding label %s and annotation %s", lValue, aValue))
+	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
+}
+
 // For unit testing.
 type MemoryStrategy struct {
-	Violations map[string]bool
+	Violations   map[string]bool
+	Attestations map[string]bool
 }
 
 func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []securitypolicy.SecurityPolicyViolation) error {
 	ms.Violations[image] = true
+	return nil
+}
+
+func (ms *MemoryStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
+	ms.Attestations[image] = isAttested
 	return nil
 }

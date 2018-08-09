@@ -81,7 +81,7 @@ func TestCreateAttestationSignature(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	secret := createSecret(t, "test")
+	secret := testutil.CreateSecret(t, "test")
 	tests := []struct {
 		name          string
 		signingSecret *secrets.PGPSigningSecret
@@ -108,7 +108,7 @@ func TestCreateAttestationSignature(t *testing.T) {
 }
 
 func TestValidateAttestationSignature(t *testing.T) {
-	secret := createSecret(t, "test")
+	secret := testutil.CreateSecret(t, "test")
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
@@ -150,15 +150,6 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	}
 	if err := container.VerifyAttestationSignature(testutil.PublicTestKey, expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
-	}
-}
-
-func createSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
-	pub, priv := testutil.CreateBase64KeyPair(t, name)
-	return &secrets.PGPSigningSecret{
-		PrivateKey: priv,
-		PublicKey:  pub,
-		SecretName: name,
 	}
 }
 

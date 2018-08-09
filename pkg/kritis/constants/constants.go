@@ -24,6 +24,11 @@ const (
 	InvalidImageSecPolicy           = "kritis.grafeas.io/invalidImageSecPolicy"
 	InvalidImageSecPolicyLabelValue = "invalidImageSecPolicy"
 
+	// ImageAttestation is the key for labels for indication attestaions.
+	ImageAttestation             = "kritis.grafeas.io/attestation"
+	NoAttestationsLabelValue     = "notAttested"
+	PreviouslyAttestedLabelValue = "attested"
+
 	// Breakglass is the key for the breakglass annotation
 	Breakglass = "kritis.grafeas.io/breakglass"
 
