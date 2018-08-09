@@ -387,6 +387,27 @@ func TestKritisPods(t *testing.T) {
 				integration_util.RunCmdOut(cmd)
 			},
 		},
+		{
+			description: "image-with-acceptable-vulnz",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+			pods: []testObject{
+				{
+					name: "image-with-acceptable-vulnz",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/vulnz/acceptable-vulnz.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
 	}
 
 	ns, deleteNs := setupNamespace(t)

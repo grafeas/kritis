@@ -189,7 +189,6 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	}
 	r := review.New(client, defaultViolationStrategy, securitypolicy.ValidateImageSecurityPolicy)
 
-	glog.Infof("Got isps %v", isps)
 	if err := r.Review(images, isps, pod); err != nil {
 		createDeniedResponse(ar, err.Error())
 	}
