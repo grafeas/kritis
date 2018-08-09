@@ -69,10 +69,10 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	}
 	// Now, construct labels and annotations
 	labelValue := constants.InvalidImageSecPolicyLabelValue
-	annotationValue := fmt.Sprintf("found %d CVEs.", len(violations))
+	annotationValue := fmt.Sprintf("found %d CVEs", len(violations))
 	for _, v := range violations {
 		if v.Violation == securitypolicy.UnqualifiedImageViolation {
-			annotationValue += string(v.Reason)
+			annotationValue += fmt.Sprintf(", %s", string(v.Reason))
 			break
 		}
 	}
