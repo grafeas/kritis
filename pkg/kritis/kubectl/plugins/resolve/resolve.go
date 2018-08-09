@@ -20,10 +20,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"gopkg.in/yaml.v2"
+
 	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -35,6 +38,7 @@ const (
 func Execute(files []string) (map[string]string, error) {
 	substitutes := map[string]string{}
 	for _, file := range files {
+		glog.Infof("Reading %s ...", file)
 		contents, err := ioutil.ReadFile(file)
 		if err != nil {
 			return nil, err
@@ -72,19 +76,21 @@ func executeSubstitution(contents string) (string, error) {
 
 // For testing
 var resolver = func(image string) (string, error) {
+	glog.Infof("Resolving image %s ...", image)
 	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("NewTag(%s): %v", image, err)
 	}
 	sourceImage, err := remote.Image(tag)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("remote.Image(%s): %v", tag, err)
 	}
 	digest, err := sourceImage.Digest()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Digest(%v): %v", tag, err)
 	}
 	digestName := fmt.Sprintf("%s@sha256:%s", tag.Context(), digest.Hex)
+	glog.Infof("%s resolves to %s", image, digestName)
 	return digestName, nil
 }
 
