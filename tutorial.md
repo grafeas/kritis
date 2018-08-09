@@ -46,6 +46,13 @@ gcloud container images add-tag \
   gcr.io/$PROJECT/java-with-vuln:latest
 ```
 
+It will take a moment to scan the image, but once this command outputs a long list of vulnerabilities, you are ready to proceed:
+
+```shell
+gcloud alpha container images describe --show-package-vulnerability \
+  gcr.io/$PROJECT/java-with-vuln:latest
+```
+
 For more information about copying images, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
 ### 3. Deploy a vulnerable image
@@ -132,7 +139,6 @@ Instead, to deploy images by a tag name, use the `resolve-tags` plugin:
 kubectl plugin resolve-tags -f resolve.yaml --apply true
 ```
 
-
 ### 5. Whitelist an image
 
 To whitelist an image, specify a path containing a tag (such as `latest`), or sha256:
@@ -179,6 +185,7 @@ Rather than white-listing an image, you can also force a deployment  that normal
 
 ```shell
 cat <<EOF | kubectl apply -f - \
+
 apiVersion: v1
 kind: Pod
 metadata:
@@ -199,6 +206,7 @@ The annotation can also be provided for a deployment:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
+
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
