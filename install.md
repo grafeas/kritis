@@ -111,13 +111,14 @@ Install [helm](https://docs.helm.sh/using_helm/), and execute the following to c
 kubectl create serviceaccount --namespace kube-system tiller
 
 kubectl create clusterrolebinding tiller-cluster-rule \
-  --clusterrole=cluster-admin \ --serviceaccount=kube-system:tiller
+  --clusterrole=cluster-admin \
+  --serviceaccount=kube-system:tiller
 ```
 
 Then deploy helm:
 
 ```shell
-helm init --service-account=tiller --wait
+helm init --wait --service-account tiller
 ```
 
 ## Installing Kritis to your cluster
@@ -125,7 +126,7 @@ helm init --service-account=tiller --wait
 Install the `resolve-tags` plug-in:
 
 ```shell
-make plugin-install
+make install-plugin
 ```
 
 Install kritis to your cluster:

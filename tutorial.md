@@ -4,7 +4,7 @@
 
 First [Install Kritis](install.md) to your cluster.
 
-Configure gcloud to point to the correct project before continuing. If you do not recall the name, use `gcloud projects list`:
+First, configure gcloud to point to the correct project. You may use  `gcloud projects list` to see a list of your projects. 
 
 ```shell
 gcloud config set project <project ID>
@@ -36,7 +36,7 @@ spec:
 EOF
 ```
 
-### 2. Upload a vulnerable image
+### 2. Copy a vulnerable image
 
 The [Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/) only reveals vulnerability information for images owned by your project. This makes a copy of a sample vulnerable image into your container registry:
 
@@ -48,7 +48,7 @@ gcloud container images add-tag \
 
 For more information about copying images, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
-### 3. Deploying a vulnerable image
+### 3. Deploy a vulnerable image
 
 Deploy a pod containing our vulnerable image:
 
@@ -119,6 +119,20 @@ Apply the YAML:
 kubectl apply -f resolve.yaml
 ```
 
+Unless the tag is specifically whitelisted, the following error will be displayed:
+
+```shell
+admission webhook "kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-doc-test/java-with-vuln:latest is not a fully qualified image
+```
+
+Instead, to deploy images by a tag name, use the `resolve-tags` plugin:
+
+```shell
+# TODO(tstromberg): Document how to solve UNAUTHORIZED errors here.
+kubectl plugin resolve-tags -f resolve.yaml --apply true
+```
+
+
 ### 5. Whitelist an image
 
 To whitelist an image, specify a path containing a tag (such as `latest`), or sha256:
@@ -161,7 +175,7 @@ EOF
 
 ### 6. Force deployment with a breakglass annotation
 
-To force the deployment of an image that normally fails validation, add a *breakglass* annotation to the pod spec:
+Rather than white-listing an image, you can also force a deployment  that normally fails validation, by adding a *breakglass* annotation to the pod spec:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
