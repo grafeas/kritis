@@ -25,7 +25,6 @@ import (
 
 func getPodLogs(t *testing.T, pod string, ns *v1.Namespace) string {
 	cmd := exec.Command("kubectl", "logs", pod, "-n", ns.Name)
-	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
 		t.Errorf("%s: %s %v", pod, output, err)
@@ -36,13 +35,11 @@ func getPodLogs(t *testing.T, pod string, ns *v1.Namespace) string {
 func getKritisLogs(t *testing.T) string {
 	cmd := exec.Command("kubectl", "logs", "-l",
 		"app=kritis-validation-hook")
-	cmd.Dir = "../"
 	output, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
 		t.Fatalf("kritis: %s %v", output, err)
 	}
 	cmd = exec.Command("kubectl", "get", "imagesecuritypolicy")
-	cmd.Dir = "../"
 	output2, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
 		t.Fatalf("kritis: %s %v", output2, err)
