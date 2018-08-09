@@ -8,9 +8,9 @@ It can be run as a binary or installed as a kubectl plugin.
 ## macOS
 
 ```shell
-curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-darwin-amd64.tar && \
+curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-darwin-amd64.tar.gz && \
   RESOLVE_TAGS_DIR=$HOME/.kube/plugins/resolve && \
-  mkdir -p $RESOLVE_TAGS_DIR && tar -C $RESOLVE_TAGS_DIR -xf resolve-tags-darwin-amd64.tar && \
+  mkdir -p $RESOLVE_TAGS_DIR && tar -C $RESOLVE_TAGS_DIR -xzf resolve-tags-darwin-amd64.tar.gz && \
   mv $RESOLVE_TAGS_DIR/resolve-tags-darwin-amd64 $RESOLVE_TAGS_DIR/resolve-tags && \
   sudo cp $RESOLVE_TAGS_DIR/resolve-tags /usr/local/bin/
 ```
@@ -18,9 +18,9 @@ curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-darwin-
 ## Linux
 
 ```shell
-curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-linux-amd64.tar && \
+curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-linux-amd64.tar.gz && \
   RESOLVE_TAGS_DIR=$HOME/.kube/plugins/resolve && \
-  mkdir -p $RESOLVE_TAGS_DIR && tar -C $RESOLVE_TAGS_DIR -xf resolve-tags-linux-amd64.tar && \
+  mkdir -p $RESOLVE_TAGS_DIR && tar -C $RESOLVE_TAGS_DIR -xzf resolve-tags-linux-amd64.tar.gz && \
   mv $RESOLVE_TAGS_DIR/resolve-tags-linux-amd64 $RESOLVE_TAGS_DIR/resolve-tags && \
   sudo cp $RESOLVE_TAGS_DIR/resolve-tags /usr/local/bin/
 ```

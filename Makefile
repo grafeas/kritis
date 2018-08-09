@@ -65,10 +65,10 @@ $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LD_RESOLVE_FLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
 
 .PHONY: cross-tar
-cross-tar: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform).tar)
+cross-tar: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform).tar.gz)
 
-$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%.tar: cross
-	tar -cf $@ -C $(RESOLVE_TAGS_PATH) plugin.yaml -C $(PWD)/out/ resolve-tags-$*
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%.tar.gz: cross
+	tar -czf $@ -C $(RESOLVE_TAGS_PATH) plugin.yaml -C $(PWD)/out/ resolve-tags-$*
 
 .PHONY: install-plugin
 install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
