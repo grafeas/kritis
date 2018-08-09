@@ -71,6 +71,7 @@ func setUpAttestationSecret(t *testing.T, ns string) {
 		t.Fatalf("unexpected error %s", err)
 	}
 
+	// TODO: (tejaldesai) clean this up.
 	sCmd := exec.Command("cp", templateFile, CRD_EXAMPLE_FILES[0])
 	sCmd.Dir = "../artifacts/integration-examples"
 	if _, err := integration_util.RunCmdOut(sCmd); err != nil {

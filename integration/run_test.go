@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafeas/kritis/cmd/kritis/version"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/sirupsen/logrus"
@@ -128,9 +129,7 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		"--namespace", ns.Name,
 		"--set", fmt.Sprintf("repository=%s",
 			"gcr.io/kritis-int-test/"),
-		"--set", fmt.Sprintf("image.tag=%s",
-			"latest"),
-		//			version.Commit),
+		"--set", fmt.Sprintf("image.tag=%s", version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
 		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
