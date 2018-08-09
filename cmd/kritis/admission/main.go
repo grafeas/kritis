@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -70,17 +69,6 @@ func main() {
 			glog.Fatalf("Error Checking pods: %s", err)
 		}
 		return
-	}
-	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
-	if runCron {
-		cronConfig, err := getCronConfig()
-		if err != nil {
-			glog.Fatalf("Could not run cron job in foreground: %s", err)
-		}
-		if err := cron.RunInForeground(*cronConfig); err != nil {
-			glog.Fatalf("Error Checking pods: %s", err)
-		}
-		os.Exit(0)
 	}
 
 	// Kick off back ground cron job.
