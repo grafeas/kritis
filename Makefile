@@ -39,7 +39,7 @@ RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/$(RESOLVE_TAGS_PATH)
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
-LOCAL_GAC_CREDENTIALS_PATH=/tmp/gac.json
+LOCAL_GAC_CREDENTIALS_PATH ?= /tmp/gac.json
 
 .PHONY: test
 test: cross
@@ -122,8 +122,8 @@ integration: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
 .PHONY: integration-local
-integration-local: cross build-push-test-image
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true --gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
+integration-local:
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -remote=false -gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
