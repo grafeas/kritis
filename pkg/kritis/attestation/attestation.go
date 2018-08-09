@@ -46,7 +46,7 @@ var pgpConfig = packet.Config{
 	RSABits: constants.RSABits,
 }
 
-// VerifyMessageAttestation verifies if the image is attested using the Base64
+// VerifyMessageAttestation verifies if the image is attested using the PEM
 // encoded public key.
 func VerifyMessageAttestation(pubKey string, attestationHash string, message string) error {
 
@@ -88,12 +88,12 @@ func VerifyMessageAttestation(pubKey string, attestationHash string, message str
 }
 
 // CreateMessageAttestation attests the message using the given public and private key.
-// pubKeyEnc: Base64 Encoded Public Key
-// privKeyEnc: Base64 Decoded Private Key
+// pubKey: PEM Encoded Public Key
+// privKey: PEM Decoded Private Key
 // message: Message to attest
-func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message string) (string, error) {
+func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
 	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey(privKeyEnc, pubKeyEnc)
+	pgpKey, err := NewPgpKey(privKey, pubKey)
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}
