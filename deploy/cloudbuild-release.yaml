@@ -19,7 +19,16 @@ steps:
     args: ["build", "-f", "helm-release/Dockerfile",
            "-t", "gcr.io/kritis-project/helm-release:$TAG_NAME", "."]
   - name: "gcr.io/kritis-project/helm-release:$TAG_NAME"
-
+  # Build container to build resolve-tags
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-f", "deploy/Dockerfile_resolve",
+           "-t", "resolve-tags", "."]
+  # Do the go build
+  - name: "resolve-tags"
+    args: ["make", "cross-tar"]
+  # Copy over resolve-tags to bucket
+  - name: "gcr.io/cloud-builders/gsutil"
+    args: ["cp", "out/resolve-tags*", "gs://resolve-tags/$TAG_NAME/"]
 images: ["gcr.io/kritis-project/kritis-server:$TAG_NAME",
          "gcr.io/kritis-project/preinstall:$TAG_NAME",
          "gcr.io/kritis-project/postinstall:$TAG_NAME",

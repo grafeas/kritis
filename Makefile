@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+PWD = $(shell pwd)
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
@@ -34,7 +35,8 @@ RESOLVE_TAGS_PROJECT := resolve-tags
 REPOPATH ?= $(ORG)/$(PROJECT)
 
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
-RESOLVE_TAGS_PACKAGE = $(REPOPATH)/cmd/kritis/kubectl/plugins/resolve
+RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
+RESOLVE_TAGS_PACKAGE = $(REPOPATH)/$(RESOLVE_TAGS_PATH)
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
 LOCAL_GAC_CREDENTIALS_PATH=/tmp/gac.json
@@ -61,6 +63,12 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_P
 
 $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=0 go build -ldflags $(GO_LD_RESOLVE_FLAGS) -tags $(GO_BUILD_TAGS) -o $@ $(RESOLVE_TAGS_PACKAGE)
+
+.PHONY: cross-tar
+cross-tar: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(platform).tar)
+
+$(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%.tar: cross
+	tar -cf $@ -C $(RESOLVE_TAGS_PATH) plugin.yaml -C $(PWD)/out/ resolve-tags-$*
 
 .PHONY: install-plugin
 install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
