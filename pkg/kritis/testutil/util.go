@@ -60,10 +60,10 @@ func CreateKeyPair(t *testing.T, name string) (string, string) {
 	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
 	CheckError(t, false, err)
 	// Get Pem encoded Public Key
-	pubKeyBaseEnc := getKey(key, openpgp.PublicKeyType, t)
+	pubKey := getKey(key, openpgp.PublicKeyType, t)
 	// Get Pem encoded Private Key
-	privKeyBaseEnc := getKey(key, openpgp.PrivateKeyType, t)
-	return string(pubKeyBaseEnc), string(privKeyBaseEnc)
+	privKey := getKey(key, openpgp.PrivateKeyType, t)
+	return string(pubKey), string(privKey)
 }
 
 func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {

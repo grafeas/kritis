@@ -125,10 +125,11 @@ func TestReview(t *testing.T) {
 	}
 	authFetcher = func(ns string) ([]v1beta1.AttestationAuthority, error) {
 		return []v1beta1.AttestationAuthority{{
-			NoteReference:        "provider/test",
-			PrivateKeySecretName: "test",
-			PublicKeyData:        sec.PublicKey,
-		}}, nil
+			Spec: v1beta1.AttestationAuthoritySpec{
+				NoteReference:        "provider/test",
+				PrivateKeySecretName: "test",
+				PublicKeyData:        sec.PublicKey,
+			}}}, nil
 	}
 	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.MetadataFetcher) ([]securitypolicy.SecurityPolicyViolation, error) {
 		if image == vulnImage {

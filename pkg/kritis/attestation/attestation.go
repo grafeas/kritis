@@ -87,8 +87,8 @@ func VerifyMessageAttestation(pubKey string, attestationHash string, message str
 }
 
 // CreateMessageAttestation attests the message using the given public and private key.
-// pubKey: Public Key
-// privKey: Private Key
+// pubKey: PEM encoded Public Key
+// privKey: PEM encodede Private Key
 // message: Message to attest
 func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
 	// Create a PgpKey from Public, Private Key
@@ -109,7 +109,6 @@ func CreateMessageAttestation(pubKey string, privKey string, message string) (st
 		return "", errors.Wrap(err, "encoding data")
 	}
 	// Finally Sign the Text.
-
 	w, err := openpgp.Sign(armorWriter, signer, nil, &pgpConfig)
 	if err != nil {
 		return "", errors.Wrap(err, "opengpg signing")
@@ -126,7 +125,7 @@ func CreateMessageAttestation(pubKey string, privKey string, message string) (st
 
 func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) (*openpgp.Entity, error) {
 	currentTime := pgpConfig.Now()
-	fmt.Println("en", privKey.Encrypted)
+
 	uid := packet.NewUserId("", "", "")
 	if uid == nil {
 		return nil, errors.New("user id field contained invalid characters")

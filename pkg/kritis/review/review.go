@@ -171,7 +171,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Get secret for this Authority
-		s, err := r.config.Secret(ns, a.PrivateKeySecretName)
+		s, err := r.config.Secret(ns, a.Spec.PrivateKeySecretName)
 		if err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
@@ -194,7 +194,7 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAtte
 	}
 
 	for _, a := range auths {
-		_, ok := m[a.PrivateKeySecretName]
+		_, ok := m[a.Spec.PrivateKeySecretName]
 		if !ok {
 			l = append(l, a)
 		}

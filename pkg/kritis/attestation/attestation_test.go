@@ -52,7 +52,11 @@ func TestAttestations(t *testing.T) {
 }
 
 func TestGPGArmorSignIntegration(t *testing.T) {
-	if err := VerifyMessageAttestation(testutil.PublicTestKey, base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
+	b, err := base64.StdEncoding.DecodeString(testutil.PublicTestKey)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+	if err := VerifyMessageAttestation(string(b), base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

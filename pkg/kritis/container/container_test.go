@@ -16,6 +16,7 @@ limitations under the License.
 package container
 
 import (
+	"encoding/base64"
 	"reflect"
 	"strings"
 	"testing"
@@ -148,7 +149,11 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyAttestationSignature(testutil.PublicTestKey, expectedSig); err != nil {
+	b, err := base64.StdEncoding.DecodeString(testutil.PublicTestKey)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+	if err := container.VerifyAttestationSignature(string(b), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

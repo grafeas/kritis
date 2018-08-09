@@ -1,2 +1,4 @@
 out/
+.vscode/
 .idea/
+artifacts/integration-examples/attestation-authority-example.yaml

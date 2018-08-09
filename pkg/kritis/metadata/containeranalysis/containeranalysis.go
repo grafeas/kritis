@@ -79,7 +79,6 @@ func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PG
 	}
 	p := make([]metadata.PGPAttestation, len(occs))
 	for i, occ := range occs {
-		fmt.Println(occ.GetName())
 		p[i] = getPgpAttestationFromOccurrence(occ)
 	}
 	return p, nil
@@ -159,7 +158,7 @@ func getResourceUrl(containerImage string) string {
 func getProjectFromNoteReference(ref string) (string, error) {
 	str := strings.Split(ref, "/")
 	if len(str) < 3 {
-		return "", fmt.Errorf("Invalid Note Reference %s. Should be in format <api>/projects/<project_id>", ref)
+		return "", fmt.Errorf("invalid Note Reference %s. should be in format <api>/projects/<project_id>", ref)
 	}
 	return str[2], nil
 }
