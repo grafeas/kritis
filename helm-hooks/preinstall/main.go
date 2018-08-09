@@ -29,7 +29,6 @@ var (
 	csrName                string
 	tlsSecretName          string
 	createNewCSR           bool
-	installCRD             bool
 	serviceName            string
 	serviceNameDeployments string
 )

@@ -25,9 +25,7 @@ import (
 )
 
 var (
-	goodImage    = "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
-	anotherImage = "gcr.io/kritis-project/kritis-server1@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
-	badImage     = "gcr.io/kritis-project/kritis-server:tag"
+	goodImage = "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
 )
 
 func Test_ContainerSigCreation(t *testing.T) {

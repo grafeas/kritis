@@ -24,27 +24,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-var (
-	vulnz1 = metadata.Vulnerability{
-		CVE:             "cve1",
-		Severity:        "LOW",
-		HasFixAvailable: true,
-	}
-
-	vulnz2 = metadata.Vulnerability{
-		CVE:             "cve2",
-		Severity:        "MEDIUM",
-		HasFixAvailable: false,
-	}
-	mockMetadataClient = &testutil.MockMetadataClient{
-		Vulnz: []metadata.Vulnerability{
-			vulnz1,
-			vulnz2,
-		},
-		PGPAttestations: nil,
-	}
-)
-
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
 		name        string
