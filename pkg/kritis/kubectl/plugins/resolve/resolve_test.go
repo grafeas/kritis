@@ -17,10 +17,11 @@ package resolve
 
 import (
 	"fmt"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"gopkg.in/yaml.v2"
 	"sort"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"gopkg.in/yaml.v2"
 )
 
 var testYaml1 = `apiVersion: v1
