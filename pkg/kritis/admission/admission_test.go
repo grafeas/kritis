@@ -265,7 +265,9 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	payload, err := json.Marshal(admitResponse)
 	if err != nil {
-		glog.Info(err)
+		glog.Errorf("unable to marshal %s: %v", admitResponse, err)
 	}
-	w.Write(payload)
+	if _, err := w.Write(payload); err != nil {
+		glog.Errorf("unable to write payload: %v", err)
+	}
 }
