@@ -28,7 +28,6 @@ golangci-lint run \
 	-E goimports \
 	-E golint \
 	-E interfacer \
-	-E maligned \
 	-E misspell \
 	-E unconvert \
 	-E unparam \
