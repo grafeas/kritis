@@ -127,18 +127,9 @@ func createGACSecret(t *testing.T, ns *v1.Namespace) {
 func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	helmCmd := exec.Command("helm", "install", "./kritis-charts",
 		"--namespace", ns.Name,
-		"--set", fmt.Sprintf("image.repository=%s",
-			"gcr.io/kritis-int-test/kritis-server"),
+		"--set", fmt.Sprintf("repository=%s",
+			"gcr.io/kritis-int-test/"),
 		"--set", fmt.Sprintf("image.tag=%s",
-			version.Commit),
-		"--set", fmt.Sprintf("preinstall.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/preinstall",
-			version.Commit),
-		"--set", fmt.Sprintf("postinstall.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/postinstall",
-			version.Commit),
-		"--set", fmt.Sprintf("predelete.pod.image=%s:%s",
-			"gcr.io/kritis-int-test/predelete",
 			version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
@@ -256,7 +247,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -277,7 +268,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -332,7 +323,28 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "java-with-vuln-breakglass-deployment",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+			deployments: []testObject{
+				{
+					name: "java-with-vuln-breakglass-deployment",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -353,7 +365,7 @@ func TestKritisPods(t *testing.T) {
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
-					t.Fatalf("kritis: %s %v", output, err)
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
 				}
 			},
 		},
@@ -373,6 +385,27 @@ func TestKritisPods(t *testing.T) {
 					"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
 				cmd.Dir = "../"
 				integration_util.RunCmdOut(cmd)
+			},
+		},
+		{
+			description: "image-with-acceptable-vulnz",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+			pods: []testObject{
+				{
+					name: "image-with-acceptable-vulnz",
+				},
+			},
+			shouldSucceed: true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/vulnz/acceptable-vulnz.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
 			},
 		},
 	}
@@ -399,7 +432,8 @@ func TestKritisPods(t *testing.T) {
 				if !testCase.shouldSucceed {
 					return
 				}
-				t.Fatalf("kritis: %s %v\n%s", output, err, getKritisLogs(t))
+				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
+					err, getKritisLogs(t))
 
 			}
 			if !testCase.shouldSucceed {
@@ -409,8 +443,9 @@ func TestKritisPods(t *testing.T) {
 
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s",
-						getKritisLogs(t))
+					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
+						getKritisLogs(t),
+						output)
 				}
 			}
 

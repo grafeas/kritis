@@ -58,7 +58,18 @@ func main() {
 
 	if showVersion {
 		fmt.Println(version.Commit)
-		os.Exit(0)
+		return
+	}
+	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
+	if runCron {
+		cronConfig, err := getCronConfig()
+		if err != nil {
+			glog.Fatalf("Could not run cron job in foreground: %s", err)
+		}
+		if err := cron.RunInForeground(*cronConfig); err != nil {
+			glog.Fatalf("Error Checking pods: %s", err)
+		}
+		return
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -94,17 +105,17 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
+// StartCron starts the cron.StartCronJob in background.
 func StartCronJob() error {
 	d, err := time.ParseDuration(cronInterval)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	config, err := getCronConfig()
 	if err != nil {
 		return err
 	}
-	go cron.Start(ctx, *config, d)
+	go cron.Start(context.Background(), *config, d)
 	return nil
 }
 

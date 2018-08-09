@@ -12,10 +12,10 @@ spec:
   restartPolicy: Never
   containers:
   - name: {{ .Values.postinstall.pod.name }}
-    image: {{ .Values.postinstall.pod.image }}
+    image: "{{ .Values.repository }}{{ .Values.postinstall.pod.image }}:{{ .Values.image.tag }}"
     imagePullPolicy: {{ .Values.image.pullPolicy }}
     args:
-      - "--webhook-name" 
+      - "--webhook-name"
       - {{ .Values.serviceName }}
       - "--service-name"
       - {{ .Values.serviceName }}
