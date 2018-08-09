@@ -66,23 +66,29 @@ var (
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 )
 
-var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview){
+var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview) error{
 	"Deployment": handleDeployment,
 	"Pod":        handlePod,
 }
 
-func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
 	glog.Info("handling deployment...")
 	deployment := appsv1.Deployment{}
-	json.Unmarshal(ar.Request.Object.Raw, &deployment)
+	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
+		return err
+	}
 	reviewDeployment(&deployment, admitResponse)
+	return nil
 }
 
-func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) {
+func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
 	glog.Info("handling pod...")
 	pod := v1.Pod{}
-	json.Unmarshal(ar.Request.Object.Raw, &pod)
+	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
+		return err
+	}
 	reviewPod(&pod, admitResponse)
+	return nil
 }
 
 func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
@@ -107,9 +113,11 @@ func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.Admissi
 			},
 		})
 		if err != nil {
-			glog.Info(err)
+			glog.Errorf("unable to marshal %s: %v", payload, err)
 		}
-		w.Write(payload)
+		if _, err := w.Write(payload); err != nil {
+			glog.Errorf("unable to write payload: %v", err)
+		}
 	}
 	return ar, nil
 }
@@ -139,7 +147,12 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	for k8sType, handler := range handlers {
 		if ar.Request.Kind.Kind == k8sType {
-			handler(&ar, admitResponse)
+			if err := handler(&ar, admitResponse); err != nil {
+				glog.Errorf("handler failed: %v", err)
+				http.Error(w, "Whoops! The handler failed!", http.StatusInternalServerError)
+				return
+			}
+
 		}
 	}
 
@@ -147,9 +160,11 @@ func AdmissionReviewHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	payload, err := json.Marshal(admitResponse)
 	if err != nil {
-		glog.Info(err)
+		glog.Errorf("failed to marshal response: %v", err)
 	}
-	w.Write(payload)
+	if _, err := w.Write(payload); err != nil {
+		glog.Errorf("failed to write payload: %v", err)
+	}
 }
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
@@ -199,7 +214,6 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	if err := r.Review(images, isps, pod); err != nil {
 		createDeniedResponse(ar, err.Error())
 	}
-	return
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {

@@ -50,10 +50,12 @@ func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
-	flag.Set("logtostderr", "true")
 	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
 	flag.Parse()
+	if err := flag.Set("logtostderr", "true"); err != nil {
+		glog.Fatal(errors.Wrap(err, "unable to set logtostderr"))
+	}
 
 	if showVersion {
 		fmt.Println(version.Commit)
