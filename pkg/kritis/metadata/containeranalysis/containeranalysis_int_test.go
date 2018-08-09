@@ -51,7 +51,9 @@ func TestGetVulnerabilities(t *testing.T) {
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := NewContainerAnalysisClient()
 	aa := &kritisv1beta1.AttestationAuthority{
-		NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+		Spec: kritisv1beta1.AttestationAuthoritySpec{
+			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
 		},
