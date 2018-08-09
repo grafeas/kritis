@@ -18,12 +18,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
 var testYaml = `apiVersion: v1
