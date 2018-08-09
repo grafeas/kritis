@@ -55,25 +55,19 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
-func CreateBase64KeyPair(t *testing.T, name string) (string, string) {
+func CreateKeyPair(t *testing.T, name string) (string, string) {
 	// Create a new pair of key
 	var key *openpgp.Entity
 	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
 	CheckError(t, false, err)
 	// Get Pem encoded Public Key
-	pubKeyBaseEnc := getBase64EncodedKey(key, openpgp.PublicKeyType, t)
+	pubKey := getKey(key, openpgp.PublicKeyType, t)
 	// Get Pem encoded Private Key
-	privKeyBaseEnc := getBase64EncodedKey(key, openpgp.PrivateKeyType, t)
-	return pubKeyBaseEnc, privKeyBaseEnc
+	privKey := getKey(key, openpgp.PrivateKeyType, t)
+	return pubKey, privKey
 }
 
-func getBase64EncodedKey(key *openpgp.Entity, keyType string, t *testing.T) string {
-	keyBytes := getKey(key, keyType, t)
-	// base64 encoded Key
-	return base64.StdEncoding.EncodeToString(keyBytes)
-}
-
-func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
+func getKey(key *openpgp.Entity, keyType string, t *testing.T) string {
 	gotWriter := bytes.NewBuffer(nil)
 	wr, encodingError := armor.Encode(gotWriter, keyType, nil)
 	CheckError(t, false, encodingError)
@@ -83,14 +77,22 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) []byte {
 		CheckError(t, false, key.Serialize(wr))
 	}
 	wr.Close()
-	return gotWriter.Bytes()
+	return string(gotWriter.Bytes())
 }
 
 func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
-	pub, priv := CreateBase64KeyPair(t, name)
+	pub, priv := CreateKeyPair(t, name)
 	return &secrets.PGPSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,
 		SecretName: name,
 	}
+}
+
+func Base64PublicTestKey(t *testing.T) string {
+	b, err := base64.StdEncoding.DecodeString(PublicTestKey)
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
+	return string(b)
 }

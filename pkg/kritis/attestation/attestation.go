@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
@@ -47,18 +48,14 @@ var pgpConfig = packet.Config{
 
 // VerifyMessageAttestation verifies if the image is attested using the Base64
 // encoded public key.
-func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message string) error {
-	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
-	if err != nil {
-		return err
-	}
+func VerifyMessageAttestation(pubKey string, attestationHash string, message string) error {
 
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
 
-	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(pemPublicKey))
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return err
 	}

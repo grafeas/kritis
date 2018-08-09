@@ -17,9 +17,8 @@ limitations under the License.
 package attestation
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/openpgp"
@@ -34,7 +33,7 @@ type PgpKey struct {
 	publicKey  *packet.PublicKey
 }
 
-func NewPgpKey(privateKeyEnc string, publicKeyEnc string) (*PgpKey, error) {
+func NewPgpKey(privateKeyStr string, publicKeyStr string) (*PgpKey, error) {
 	var publicKey *packet.PublicKey
 	var privateKey *packet.PrivateKey
 	var err error
@@ -90,11 +89,7 @@ func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
 }
 
 func parseKey(key string, keytype string) (packet.Packet, error) {
-	s, err := base64.StdEncoding.DecodeString(key)
-	if err != nil {
-		return nil, err
-	}
-	r := bytes.NewReader(s)
+	r := strings.NewReader(key)
 	block, err := armor.Decode(r)
 	if err != nil {
 		return nil, err
