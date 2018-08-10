@@ -164,9 +164,8 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
 			deleteObject(t, "csr",
 				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
-			deleteObject(t, "namespace", ns.Name, nil)
+			deleteObject(t, "secret", aaSecret, ns)
 			t.Fatalf("testing error: %v", err)
-			deleteObject(t, "secret", aaSecret, ns.Name)
 		}
 		// make sure kritis-predelete pod completes
 		if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPredelete); err != nil {
