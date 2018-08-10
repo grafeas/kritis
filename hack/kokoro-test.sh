@@ -38,8 +38,8 @@ cp "${KOKORO_ROOT}/src/keystore/72508_kritis_int_test" "${HOME}/tmp/gac.json"
 
 
 echo "Running unit and integration tests..."
-go test -cover -v -timeout 60s -tags=integration `go list ./... \
-  | grep -v vendor | grep -v kritis/integration`
+go test -cover -v -timeout 60s -tags=integration \
+  `go list ./... \ | grep -v vendor | grep -v kritis/integration`
 
 GO_TEST_EXIT_CODE="${PIPESTATUS[0]}"
 if [[ "${GO_TEST_EXIT_CODE}" -ne 0 ]]; then
