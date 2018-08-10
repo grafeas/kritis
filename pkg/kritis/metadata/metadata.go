@@ -48,4 +48,5 @@ type Vulnerability struct {
 type PGPAttestation struct {
 	Signature string
 	KeyID     string
+	OccName   string
 }
