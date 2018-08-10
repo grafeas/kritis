@@ -65,7 +65,6 @@ spec:
   - gcr.io/my-project/whitelist-image@sha256:<DIGEST>
   packageVulnerabilityPolicy:
     maximumSeverity: MEDIUM
-    onlyFixesNotAvailable: YES
     whitelistCVEs:
       providers/goog-vulnz/notes/CVE-2017-1000082
       providers/goog-vulnz/notes/CVE-2017-1000082
@@ -76,21 +75,23 @@ Image Security Policy Spec description:
 |-----------|---------------------------|-------------|
 |imageWhitelist | | List of images that are whitelisted and are not inspected by Admission Controller.|
 |packageVulnerabilityPolicy.whitelistCVEs |  | List of CVEs which will be ignored.|
-|packageVulnerabilityPolicy.maximumSeverity| CRITICAL|Defines the tolerance level for vulnerability found in the container image.|
-|packageVulnerabilityPolicy.onlyFixesNotAvailable|  true |when set to "true" only allow packages with vulnerabilities that have fixes out.|
+|packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
+|packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
 
 Here are the valid values for Policy Specs.
 
 |<td rowspan=1>Field | Value       | Outcome |
 |----------- |-------------|----------- |
-|<td rowspan=5>packageVulnerabilityPolicy.maximumSeverity | LOW | Only allow containers with Low Vulnz. |
-|                          | MEDIUM | Allow Containers with Low and Medium Vulnz. |
-|                                           | HIGH  | Allow Containers with Low, Medium & High Vulnz. |
-|                                           | CRITICAL |  Allow Containers with all Vulnz |
-|                                           | BLOCKALL | Block any Vulnz except listed in whitelist. |
-|<td rowspan=2>packageVulnerabilityPolicy.onlyFixesNotAvailable | true | Only all containers with vulnz not fixed |
-|                                      | false  | All containers with vulnz fixed or not fixed.|
-
+|<td rowspan=5>packageVulnerabilityPolicy.maximumSeverity | LOW | Only allow containers with low vulnerabilities. |
+|                          | MEDIUM | Allow Containers with Low and Medium vulnerabilities. |
+|                                           | HIGH  | Allow Containers with Low, Medium & High vulnerabilities. |
+|                                           | ALLOW_ALL | Allow all vulnerabilities.  |
+|                                           | BLOCK_ALL | Block all vulnerabilities except listed in whitelist. |
+|<td rowspan=5>packageVulnerabilityPolicy.maximumFixUnavailableSeverity | LOW | Only allow containers with low unpatchable vulnerabilities. |
+|                          | MEDIUM | Allow Containers with Low and Medium unpatchable vulnerabilities. |
+|                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchaable vulnerabilities. |
+|                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
+|                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in whitelist. |
 
 ### AttestationAuthority CRD
 The webhook will attest valid images once they pass the validity check. This is important because re-deployments can occur from scaling events,rescheduling, termination, etc. Attested images are always admitted in custer.

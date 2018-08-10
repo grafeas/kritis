@@ -63,7 +63,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 	if !resolve.FullyQualifiedImage(image) {
 		violations = append(violations, Violation{
 			Violation: UnqualifiedImageViolation,
-			Reason:    UnqualifiedImageViolationReason(image),
+			Reason:    UnqualifiedImageReason(image),
 		})
 		return violations, nil
 	}
@@ -72,34 +72,49 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 	if err != nil {
 		return nil, err
 	}
+	maxSev := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
+	if maxSev == "" {
+		maxSev = "CRITICAL"
+	}
+
+	maxNoFixSev := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
+	if maxNoFixSev == "" {
+		maxNoFixSev = "ALLOW_ALL"
+	}
 
 	for _, v := range vulnz {
 		// First, check if the vulnerability is whitelisted
 		if cveInWhitelist(isp, v.CVE) {
 			continue
 		}
-		// Check ifFixesNotAvailable
-		if isp.Spec.PackageVulnerabilityRequirements.OnlyFixesNotAvailable && !v.HasFixAvailable {
+
+		// Allow operators to set a higher threshold for CVE's that have no fix available.
+		if !v.HasFixAvailable {
+			ok, err := severityWithinThreshold(maxNoFixSev, v.Severity)
+			if err != nil {
+				return violations, err
+			}
+			if ok {
+				continue
+			}
 			violations = append(violations, Violation{
 				Vulnerability: v,
-				Violation:     FixesNotAvailableViolation,
-				Reason:        FixesNotAvailableViolationReason(image, v),
+				Violation:     FixUnavailableViolation,
+				Reason:        FixUnavailableReason(image, v, isp),
 			})
 			continue
 		}
-		// Next, see if the severity is below or at threshold
-		ok, err := severityWithinThreshold(isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity, v.Severity)
+		ok, err := severityWithinThreshold(maxSev, v.Severity)
 		if err != nil {
-			return violations, fmt.Errorf("severityWithinThreshold: %v", err)
+			return violations, err
 		}
 		if ok {
 			continue
 		}
-		// Else, add to list of CVEs in violation
 		violations = append(violations, Violation{
 			Vulnerability: v,
-			Violation:     ExceedsMaxSeverityViolation,
-			Reason:        ExceedsMaxSeverityViolationReason(image, v, isp),
+			Violation:     SeverityViolation,
+			Reason:        SeverityReason(image, v, isp),
 		})
 	}
 	return violations, nil
@@ -124,11 +139,14 @@ func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
 }
 
 func severityWithinThreshold(maxSeverity string, severity string) (bool, error) {
-	if maxSeverity == constants.BLOCKALL {
+	if maxSeverity == constants.BlockAll {
 		return false, nil
 	}
+	if maxSeverity == constants.AllowAll {
+		return true, nil
+	}
 	if _, ok := ca.VulnerabilityType_Severity_value[maxSeverity]; !ok {
-		return false, fmt.Errorf("invalid maximum severity level: %s", maxSeverity)
+		return false, fmt.Errorf("invalid max severity level: %s", maxSeverity)
 	}
 	if _, ok := ca.VulnerabilityType_Severity_value[severity]; !ok {
 		return false, fmt.Errorf("invalid severity level: %s", severity)
