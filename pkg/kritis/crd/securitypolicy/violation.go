@@ -18,12 +18,13 @@ package securitypolicy
 
 import (
 	"fmt"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 )
 
-type Violation string
+type Reason string
 
 // A list of security policy violations
 // TODO: Add Attestation checking violations
@@ -33,30 +34,30 @@ const (
 	ExceedsMaxSeverityViolation
 )
 
-// SecurityPolicyViolation represents a vulnerability that violates an ISP
-type SecurityPolicyViolation struct {
+// Violation represents a vulnerability that violates an ISP
+type Violation struct {
 	Vulnerability metadata.Vulnerability
 	Violation     int
-	Reason        Violation
+	Reason        Reason
 }
 
 // UnqualifiedImageViolationReason returns a detailed reason if the image is unqualified
-func UnqualifiedImageViolationReason(image string) Violation {
-	return Violation(fmt.Sprintf("%s is not a fully qualified image", image))
+func UnqualifiedImageViolationReason(image string) Reason {
+	return Reason(fmt.Sprintf("%s is not a fully qualified image", image))
 }
 
 // FixesAvailableViolationReason returns a detailed reason if a CVE doesn't have a fix available
-func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) Violation {
-	return Violation(fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image))
+func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) Reason {
+	return Reason(fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image))
 }
 
 // ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
-func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Violation {
+func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
 	maxSeverity := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if maxSeverity == constants.BLOCKALL {
-		return Violation(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
 			vulnz.CVE, image, maxSeverity))
 	}
-	return Violation(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
+	return Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
 		vulnz.Severity, maxSeverity))
 }

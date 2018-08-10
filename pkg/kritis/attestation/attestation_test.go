@@ -36,7 +36,7 @@ var tcAttestations = []struct {
 
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
-		publicKey, privateKey := testutil.CreateBase64KeyPair(t, "test")
+		publicKey, privateKey := testutil.CreateKeyPair(t, "test")
 		t.Run(tc.name, func(t *testing.T) {
 			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
 			if err != nil {
@@ -52,7 +52,7 @@ func TestAttestations(t *testing.T) {
 }
 
 func TestGPGArmorSignIntegration(t *testing.T) {
-	if err := VerifyMessageAttestation(testutil.PublicTestKey, base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
+	if err := VerifyMessageAttestation(testutil.Base64PublicTestKey(t), base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

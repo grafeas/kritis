@@ -34,7 +34,7 @@ import (
 
 type Reviewer struct {
 	config *Config
-	client metadata.MetadataFetcher
+	client metadata.Fetcher
 }
 
 type Config struct {
@@ -44,7 +44,7 @@ type Config struct {
 	IsWebhook bool
 }
 
-func New(client metadata.MetadataFetcher, c *Config) Reviewer {
+func New(client metadata.Fetcher, c *Config) Reviewer {
 	return Reviewer{
 		client: client,
 		config: c,
@@ -120,13 +120,13 @@ Please see instructions `, image)
 	}
 	for _, a := range attestations {
 		// Get Secret from key id.
-		secret, err := r.config.Secret(ns, a.KeyId)
+		secret, err := r.config.Secret(ns, a.KeyID)
 		if err != nil {
-			glog.Errorf("Could not find secret %s in namespace %s for attestation verification", a.KeyId, ns)
+			glog.Errorf("Could not find secret %s in namespace %s for attestation verification", a.KeyID, ns)
 			continue
 		}
 		if err = host.VerifyAttestationSignature(secret.PublicKey, a.Signature); err != nil {
-			glog.Errorf("Could not find verify attestation for attestation authority %s", a.KeyId)
+			glog.Errorf("Could not find verify attestation for attestation authority %s", a.KeyID)
 		} else {
 			return true
 		}
@@ -134,7 +134,7 @@ Please see instructions `, image)
 	return false
 }
 
-func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []securitypolicy.SecurityPolicyViolation) error {
+func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []securitypolicy.Violation) error {
 	errMsg := fmt.Sprintf("found violations in %s", image)
 	// Check if one of the violations is that the image is not fully qualified
 	for _, v := range violations {
@@ -171,7 +171,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Get secret for this Authority
-		s, err := r.config.Secret(ns, a.PrivateKeySecretName)
+		s, err := r.config.Secret(ns, a.Spec.PrivateKeySecretName)
 		if err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
@@ -191,11 +191,11 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAtte
 	l := []v1beta1.AttestationAuthority{}
 	m := map[string]bool{}
 	for _, a := range atts {
-		m[a.KeyId] = true
+		m[a.KeyID] = true
 	}
 
 	for _, a := range auths {
-		_, ok := m[a.PrivateKeySecretName]
+		_, ok := m[a.Spec.PrivateKeySecretName]
 		if !ok {
 			l = append(l, a)
 		}

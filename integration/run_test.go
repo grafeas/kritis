@@ -144,7 +144,10 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
-		t.Fatalf("testing error: %v \n %s \n %s", err, getPodLogs(t, kritisPreinstall, ns), getPodLogs(t, kritisPostinstall, ns))
+		t.Fatalf("testing error: %v \n %s \n %s \n %s", err,
+			getWebhooksInCluster(t),
+			getPodLogs(t, kritisPreinstall, ns),
+			getPodLogs(t, kritisPostinstall, ns))
 	}
 	// parsing out release name from 'helm init' output
 	helmNameString := strings.Split(string(out[:]), "\n")[0]
@@ -152,7 +155,6 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	deleteFunc := func() {
 		// cleanup
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
-		helmCmd.Dir = "../"
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
 			deleteObject(t, "validatingwebhookconfiguration",

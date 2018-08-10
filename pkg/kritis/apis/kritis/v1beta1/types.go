@@ -63,6 +63,11 @@ type AttestationAuthority struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	Spec AttestationAuthoritySpec `json:"spec"`
+}
+
+// AttestationAuthoritySpec is the spec for a AttestationAuthority resource
+type AttestationAuthoritySpec struct {
 	NoteReference        string `json:"noteReference"`
 	PrivateKeySecretName string `json:"privateKeySecretName"`
 	PublicKeyData        string `json:"publicKeyData"`

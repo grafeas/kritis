@@ -25,9 +25,7 @@ import (
 )
 
 var (
-	goodImage    = "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
-	anotherImage = "gcr.io/kritis-project/kritis-server1@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
-	badImage     = "gcr.io/kritis-project/kritis-server:tag"
+	goodImage = "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
 )
 
 func Test_ContainerSigCreation(t *testing.T) {
@@ -59,10 +57,10 @@ func Test_ContainerSigCreation(t *testing.T) {
 			actual, err := NewAtomicContainerSig(image, nil)
 			expected := AtomicContainerSig{
 				Critical: &Critical{
-					Identity: &ContainerIdentity{
+					Identity: &Identity{
 						DockerRef: test.imageName,
 					},
-					Image: &ContainerImage{
+					Image: &Image{
 						DockerDigest: test.imageDigest,
 					},
 					Type: "atomic container signature",
@@ -148,7 +146,7 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyAttestationSignature(testutil.PublicTestKey, expectedSig); err != nil {
+	if err := container.VerifyAttestationSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

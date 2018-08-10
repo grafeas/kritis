@@ -37,7 +37,7 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 	if err != nil {
 		return "", err
 	}
-	hostStr, err := hostSig.Json()
+	hostStr, err := hostSig.JSON()
 	if err != nil {
 		return "", err
 	}

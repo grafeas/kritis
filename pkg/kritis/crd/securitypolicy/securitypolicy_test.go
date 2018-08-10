@@ -24,27 +24,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-var (
-	vulnz1 = metadata.Vulnerability{
-		CVE:             "cve1",
-		Severity:        "LOW",
-		HasFixAvailable: true,
-	}
-
-	vulnz2 = metadata.Vulnerability{
-		CVE:             "cve2",
-		Severity:        "MEDIUM",
-		HasFixAvailable: false,
-	}
-	mockMetadataClient = &testutil.MockMetadataClient{
-		Vulnz: []metadata.Vulnerability{
-			vulnz1,
-			vulnz2,
-		},
-		PGPAttestations: nil,
-	}
-)
-
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
 		name        string
@@ -94,7 +73,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 		},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
-	expected := []SecurityPolicyViolation{
+	expected := []Violation{
 		{
 			Vulnerability: metadata.Vulnerability{},
 			Violation:     UnqualifiedImageViolation,
@@ -142,7 +121,7 @@ func Test_BlockallFail(t *testing.T) {
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []SecurityPolicyViolation{
+	expected := []Violation{
 		{
 			Vulnerability: mc.Vulnz[0],
 			Violation:     ExceedsMaxSeverityViolation,
@@ -168,7 +147,7 @@ func Test_MaxSeverityFail(t *testing.T) {
 		},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []SecurityPolicyViolation{
+	expected := []Violation{
 		{
 			Vulnerability: mc.Vulnz[2],
 			Violation:     ExceedsMaxSeverityViolation,
@@ -241,7 +220,7 @@ func Test_OnlyFixesNotAvailableFail(t *testing.T) {
 		},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []SecurityPolicyViolation{
+	expected := []Violation{
 		{
 			Vulnerability: mc.Vulnz[1],
 			Violation:     FixesNotAvailableViolation,
@@ -312,7 +291,7 @@ func Test_severityWithinThreshold(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err, got := severityWithinThreshold(test.maxSeverity, test.severity)
+			got, err := severityWithinThreshold(test.maxSeverity, test.severity)
 			if err != nil {
 				t.Errorf("%s: severityWithinThreshold(%s, %s) encountered error: %v", test.maxSeverity, test.severity, test.name, err)
 			}
