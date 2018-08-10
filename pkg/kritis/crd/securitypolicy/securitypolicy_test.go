@@ -17,6 +17,8 @@ limitations under the License.
 package securitypolicy
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -45,7 +47,7 @@ func Test_ValidISP(t *testing.T) {
 				},
 			}
 			mc := &testutil.MockMetadataClient{
-				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity}},
+				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity, HasFixAvailable: true}},
 			}
 			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
 			if test.expectErr {
@@ -77,84 +79,68 @@ func Test_UnqualifiedImage(t *testing.T) {
 		{
 			Vulnerability: metadata.Vulnerability{},
 			Violation:     UnqualifiedImageViolation,
-			Reason:        UnqualifiedImageViolationReason(""),
+			Reason:        UnqualifiedImageReason(""),
 		},
 	}
 	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 
-func Test_BlockallPass(t *testing.T) {
-	isp := v1beta1.ImageSecurityPolicy{
-		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
-				MaximumSeverity: "BLOCKALL",
-				WhitelistCVEs:   []string{"l", "m", "c"},
-			},
-		},
-	}
+func Test_SeverityThresholds(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{
-			{CVE: "l", Severity: "LOW"},
-			{CVE: "m", Severity: "MEDIUM"},
-			{CVE: "c", Severity: "CRITICAL"},
+			{CVE: "l", Severity: "LOW", HasFixAvailable: true},
+			{CVE: "l_nofix", Severity: "LOW", HasFixAvailable: false},
+			{CVE: "m", Severity: "MEDIUM", HasFixAvailable: true},
+			{CVE: "m_nofix", Severity: "MEDIUM", HasFixAvailable: false},
+			{CVE: "h", Severity: "HIGH", HasFixAvailable: true},
+			{CVE: "h_nofix", Severity: "HIGH", HasFixAvailable: false},
+			{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true},
+			{CVE: "c_nofix", Severity: "CRITICAL", HasFixAvailable: false},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	if err != nil {
-		t.Errorf("error validating isp: %v", err)
+	var tests = []struct {
+		name                      string
+		maxSeverity               string
+		maxFixUnavailableSeverity string
+		want                      []string
+	}{
+		{"default to allow all", "", "", []string{}},
+		{"critical", "CRITICAL", "", []string{}}, // same as allow all.
+		{"high", "HIGH", "", []string{"c"}},
+		{"medium", "MEDIUM", "", []string{"h", "c"}},
+		{"low", "LOW", "", []string{"m", "h", "c"}},
+		{"block all", "BLOCK_ALL", "", []string{"l", "m", "h", "c"}},
+		{"block all fixable, but allow all unfixable", "BLOCK_ALL", "ALLOW_ALL", []string{"l", "m", "h", "c"}},
+		{"explicit allow all", "ALLOW_ALL", "", []string{}},
+		{"allow all but unfixable", "ALLOW_ALL", "BLOCK_ALL", []string{"l_nofix", "m_nofix", "h_nofix", "c_nofix"}},
+		{"medium fixable + high unfixable", "MEDIUM", "HIGH", []string{"h", "c", "c_nofix"}},
+		{"high fixable + medium unfixable", "HIGH", "MEDIUM", []string{"c", "c_nofix", "h_nofix"}},
 	}
-	if violations != nil {
-		t.Errorf("got unexpected violations: %v", violations)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			isp := v1beta1.ImageSecurityPolicy{
+				Spec: v1beta1.ImageSecurityPolicySpec{
+					PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
+						MaximumSeverity:               test.maxSeverity,
+						MaximumFixUnavailableSeverity: test.maxFixUnavailableSeverity,
+					},
+				},
+			}
+			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			if err != nil {
+				t.Errorf("%s: error validating isp: %v", test.name, err)
+			}
+			got := []string{}
+			for _, v := range vs {
+				got = append(got, v.Vulnerability.CVE)
+			}
+			sort.Strings(got)
+			sort.Strings(test.want)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("%s: got %s, want %s", test.name, got, test.want)
+			}
+		})
 	}
-}
-
-func Test_BlockallFail(t *testing.T) {
-	isp := v1beta1.ImageSecurityPolicy{
-		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
-				MaximumSeverity: "BLOCKALL",
-				WhitelistCVEs:   []string{"m"},
-			},
-		},
-	}
-	mc := &testutil.MockMetadataClient{
-		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
-	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []Violation{
-		{
-			Vulnerability: mc.Vulnz[0],
-			Violation:     ExceedsMaxSeverityViolation,
-			Reason:        ExceedsMaxSeverityViolationReason(testutil.QualifiedImage, mc.Vulnz[0], isp),
-		},
-	}
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
-}
-
-func Test_MaxSeverityFail(t *testing.T) {
-	isp := v1beta1.ImageSecurityPolicy{
-		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
-				MaximumSeverity: "MEDIUM",
-			},
-		},
-	}
-	mc := &testutil.MockMetadataClient{
-		Vulnz: []metadata.Vulnerability{
-			{CVE: "l", Severity: "LOW"},
-			{CVE: "m", Severity: "MEDIUM"},
-			{CVE: "c", Severity: "CRITICAL"},
-		},
-	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []Violation{
-		{
-			Vulnerability: mc.Vulnz[2],
-			Violation:     ExceedsMaxSeverityViolation,
-			Reason:        ExceedsMaxSeverityViolationReason(testutil.QualifiedImage, mc.Vulnz[2], isp),
-		},
-	}
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
 }
 
 func Test_WhitelistedImage(t *testing.T) {
@@ -201,46 +187,13 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 		t.Errorf("got unexpected violations: %v", violations)
 	}
 }
-
-func Test_OnlyFixesNotAvailableFail(t *testing.T) {
-	isp := v1beta1.ImageSecurityPolicy{
-		Spec: v1beta1.ImageSecurityPolicySpec{
-			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
-				MaximumSeverity:       "MEDIUM",
-				OnlyFixesNotAvailable: true,
-			},
-		},
-	}
-	mc := &testutil.MockMetadataClient{
-		Vulnz: []metadata.Vulnerability{
-			{CVE: "l", Severity: "LOW", HasFixAvailable: true},
-			{CVE: "lnofix", Severity: "LOW", HasFixAvailable: false},
-			{CVE: "m", Severity: "MEDIUM", HasFixAvailable: true},
-			{CVE: "mnofix", Severity: "MEDIUM", HasFixAvailable: false},
-		},
-	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
-	expected := []Violation{
-		{
-			Vulnerability: mc.Vulnz[1],
-			Violation:     FixesNotAvailableViolation,
-			Reason:        FixesNotAvailableViolationReason(testutil.QualifiedImage, mc.Vulnz[1]),
-		},
-		{
-			Vulnerability: mc.Vulnz[3],
-			Violation:     FixesNotAvailableViolation,
-			Reason:        FixesNotAvailableViolationReason(testutil.QualifiedImage, mc.Vulnz[3]),
-		},
-	}
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
-}
 func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
 			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
-				MaximumSeverity:       "CRITICAL",
-				OnlyFixesNotAvailable: true,
-				WhitelistCVEs:         []string{"c"},
+				MaximumSeverity:               "CRITICAL",
+				MaximumFixUnavailableSeverity: "BLOCK_ALL",
+				WhitelistCVEs:                 []string{"c"},
 			},
 		},
 	}
@@ -253,51 +206,5 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	}
 	if violations != nil {
 		t.Errorf("got unexpected violations: %v", violations)
-	}
-}
-
-func Test_severityWithinThreshold(t *testing.T) {
-	var tests = []struct {
-		name        string
-		maxSeverity string
-		severity    string
-		expected    bool
-	}{
-		{
-			name:        "test severity below max",
-			maxSeverity: "CRITICAL",
-			severity:    "LOW",
-			expected:    true,
-		},
-		{
-			name:        "test severity equal to max",
-			maxSeverity: "LOW",
-			severity:    "LOW",
-			expected:    true,
-		},
-		{
-			name:        "test blockall max severity",
-			maxSeverity: "BLOCKALL",
-			severity:    "LOW",
-			expected:    false,
-		},
-		{
-			name:        "test severity above max",
-			maxSeverity: "LOW",
-			severity:    "MEDIUM",
-			expected:    false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := severityWithinThreshold(test.maxSeverity, test.severity)
-			if err != nil {
-				t.Errorf("%s: severityWithinThreshold(%s, %s) encountered error: %v", test.maxSeverity, test.severity, test.name, err)
-			}
-			if got != test.expected {
-				t.Errorf("%s: severityWithinThreshold(%s, %s) = %v, wanted %v", test.name, test.maxSeverity, test.severity, got, test.expected)
-			}
-		})
 	}
 }

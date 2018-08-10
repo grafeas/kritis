@@ -34,9 +34,11 @@ type ImageSecurityPolicy struct {
 
 // PackageVulnerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy
 type PackageVulnerabilityRequirements struct {
-	MaximumSeverity       string   `json:"maximumSeverity"`
-	OnlyFixesNotAvailable bool     `json:"onlyFixesNotAvailable"`
-	WhitelistCVEs         []string `json:"whitelistCVEs"`
+	// CVE's with fixes.
+	MaximumSeverity string `json:"maximumSeverity"`
+	// CVE's without fixes.
+	MaximumFixUnavailableSeverity string   `json:"maximumFixNotAvailableSeverity"`
+	WhitelistCVEs                 []string `json:"whitelistCVEs"`
 }
 
 // ImageSecurityPolicy is the spec for a ImageSecurityPolicy resource

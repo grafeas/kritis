@@ -17,8 +17,10 @@ limitations under the License.
 package constants
 
 const (
-	// Used for blocking all images with CVEs, except for whitelisted CVEs
-	BLOCKALL = "BLOCKALL"
+	// AllowAll is the value used to allow all images with CVEs, except for whitelisted CVEs
+	AllowAll = "ALLOW_ALL"
+	// BlockAll is the value used to block all images with CVEs, except for whitelisted CVEs
+	BlockAll = "BLOCK_ALL"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
 	InvalidImageSecPolicy           = "kritis.grafeas.io/invalidImageSecPolicy"

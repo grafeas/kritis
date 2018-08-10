@@ -30,8 +30,8 @@ type Reason string
 // TODO: Add Attestation checking violations
 const (
 	UnqualifiedImageViolation int = iota
-	FixesNotAvailableViolation
-	ExceedsMaxSeverityViolation
+	FixUnavailableViolation
+	SeverityViolation
 )
 
 // Violation represents a vulnerability that violates an ISP
@@ -41,23 +41,29 @@ type Violation struct {
 	Reason        Reason
 }
 
-// UnqualifiedImageViolationReason returns a detailed reason if the image is unqualified
-func UnqualifiedImageViolationReason(image string) Reason {
+// UnqualifiedImageReason returns a detailed reason if the image is unqualified
+func UnqualifiedImageReason(image string) Reason {
 	return Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
-// FixesAvailableViolationReason returns a detailed reason if a CVE doesn't have a fix available
-func FixesNotAvailableViolationReason(image string, vulnz metadata.Vulnerability) Reason {
-	return Reason(fmt.Sprintf("found CVE %s in %s which has fixes available", vulnz.CVE, image))
+// FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity
+func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
+	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
+	if ms == constants.BlockAll {
+		return Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't whitelisted, violating max severity %s",
+			v.CVE, image, ms))
+	}
+	return Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
+		v.CVE, image, v.Severity, ms))
 }
 
-// ExceedsMaxSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
-func ExceedsMaxSeverityViolationReason(image string, vulnz metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
-	maxSeverity := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
-	if maxSeverity == constants.BLOCKALL {
+// SeverityReason returns a detailed reason if a CVE exceeds max severity
+func SeverityReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
+	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
+	if ms == constants.BlockAll {
 		return Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
-			vulnz.CVE, image, maxSeverity))
+			v.CVE, image, ms))
 	}
-	return Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s", vulnz.CVE, image,
-		vulnz.Severity, maxSeverity))
+	return Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",
+		v.CVE, image, v.Severity, ms))
 }
