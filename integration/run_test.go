@@ -41,6 +41,7 @@ import (
 const (
 	kritisPreinstall  = "kritis-preinstall"
 	kritisPostinstall = "kritis-postinstall"
+	kritisPredelete   = "kritis-predelete"
 )
 
 var (
@@ -157,13 +158,13 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
-			deleteObject(t, "csr",
-				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
+			cleanupKritis(t, ns)
 			t.Fatalf("testing error: %v", err)
+		}
+		// make sure kritis-predelete pod completes
+		if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPredelete); err != nil {
+			cleanupKritis(t, ns)
+			t.Fatalf("predelete pod didn't complete: %v \n %s", err, getPodLogs(t, kritisPredelete, ns))
 		}
 	}
 
@@ -195,7 +196,7 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	return deleteFunc
 }
 
-func TestKritisPods(t *testing.T) {
+func TestKritisISPLogic(t *testing.T) {
 	type testObject struct {
 		name string
 	}
@@ -462,6 +463,181 @@ func TestKritisPods(t *testing.T) {
 						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
 					}
 					testCase.deploymentValidation(t, deployment)
+				}
+			}
+		})
+	}
+}
+
+func TestKritisCron(t *testing.T) {
+	type testObject struct {
+		name string
+	}
+
+	type testRunCase struct {
+		description          string
+		dir                  string
+		args                 []string
+		deployments          []testObject
+		pods                 []testObject
+		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
+		shouldSucceed        bool
+		shouldLabel          bool
+
+		remoteOnly bool
+		cleanup    func(t *testing.T)
+	}
+
+	var testCases = []testRunCase{
+		{
+			description: "nginx-no-digest-breakglass",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
+			pods: []testObject{
+				{
+					name: "nginx-no-digest-breakglass",
+				},
+			},
+			shouldSucceed: true,
+			shouldLabel:   true,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "image-with-acceptable-vulnz",
+			args: []string{"kubectl", "apply", "-f",
+				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+			pods: []testObject{
+				{
+					name: "image-with-acceptable-vulnz",
+				},
+			},
+			shouldSucceed: true,
+			shouldLabel:   false,
+			dir:           "../",
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"integration/testdata/vulnz/acceptable-vulnz.yaml")
+				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+	}
+
+	ns, deleteNs := setupNamespace(t)
+	defer deleteNs()
+	createGACSecret(t, ns)
+	deleteKritis := initKritis(t, ns)
+	defer deleteKritis()
+	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
+		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
+		t.Fatalf("Timed out waiting for deployment to stabilize")
+	}
+	createCRDExamples(t, ns)
+	waitForCRDExamples(t, ns)
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			defer testCase.cleanup(t)
+
+			cmd := exec.Command(testCase.args[0], testCase.args[1:]...)
+			cmd.Dir = testCase.dir
+			output, err := integration_util.RunCmdOut(cmd)
+			if err != nil {
+				if !testCase.shouldSucceed {
+					return
+				}
+				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
+					err, getKritisLogs(t))
+
+			}
+			if !testCase.shouldSucceed {
+				t.Fatalf("deployment should have failed but succeeded\n%s",
+					getKritisLogs(t))
+			}
+
+			for _, p := range testCase.pods {
+				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
+					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
+						getKritisLogs(t),
+						output)
+				}
+			}
+
+			for _, d := range testCase.deployments {
+				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
+					t.Fatalf("Timed out waiting for deployment to stabilize\n%s",
+						getKritisLogs(t))
+				}
+				if testCase.deploymentValidation != nil {
+					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
+					if err != nil {
+						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
+					}
+					testCase.deploymentValidation(t, deployment)
+				}
+			}
+			// get
+			cmd = exec.Command("kubectl", "get", "po")
+			pods, err := integration_util.RunCmdOut(cmd)
+			if err != nil {
+				t.Fatalf("kubectl get for kritis-server failed: %s %v", output, err)
+			}
+			logrus.Infof("kubectl get po output: %s", pods)
+
+			cmd = exec.Command("kubectl", "get", "po",
+				"-l", "label=kritis-validation-hook",
+				"-o", "custom-columns=:metadata.name",
+				"--no-headers=true")
+			kritisPod, err := integration_util.RunCmdOut(cmd)
+			if err != nil {
+				t.Fatalf("kubectl get for kritis-server failed: %s %v", output, err)
+			}
+
+			// as kubectl exec opens a tty, output is not monitored
+			cmd = exec.Command("kubectl", "exec", strings.TrimSpace(string(kritisPod)),
+				"--",
+				"/kritis/kritis-server", "--run-cron")
+			err = cmd.Start()
+			if err != nil {
+				logrus.Infof("Error starting cmd %s: %v",
+					strings.Join(cmd.Args, " "),
+					err)
+				os.Exit(1)
+			}
+
+			err = cmd.Wait()
+			if err != nil {
+				logrus.Infof("Error waiting for cmd %s: %v",
+					strings.Join(cmd.Args, " "),
+					err)
+				os.Exit(1)
+			}
+			// check labels on pods
+			cmd = exec.Command("kubectl", "get", "pods",
+				"-l",
+				"kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy")
+			output, err = integration_util.RunCmdOut(cmd)
+			if err != nil {
+				t.Fatalf("kubectl get pod with cron labels failed: %s %v", output, err)
+			}
+			if testCase.shouldLabel {
+				if len(output) < 0 {
+					t.Fatalf("expected cron to label pod: %s", output)
+				}
+			} else {
+				if len(output) != 0 {
+					t.Fatalf("expected cron to not label pod: %s", output)
 				}
 			}
 		})

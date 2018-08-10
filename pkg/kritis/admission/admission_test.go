@@ -90,7 +90,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 		httpStatus: http.StatusOK,
 		allowed:    false,
 		status:     constants.FailureStatus,
-		message:    "image:tag is not a fully qualified image",
+		message:    `image:tag is not a fully qualified image.\n\t\t\t  You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.\n\t\t\t  Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`,
 	})
 }
 

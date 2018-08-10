@@ -43,7 +43,7 @@ type Violation struct {
 
 // UnqualifiedImageReason returns a detailed reason if the image is unqualified
 func UnqualifiedImageReason(image string) Reason {
-	return Reason(fmt.Sprintf("%s is not a fully qualified image", image))
+	return Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
 // FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity

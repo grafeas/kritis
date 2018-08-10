@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.serviceNamespace }}
   labels:
     app: {{ .Values.serviceName }}
+    label: {{ .Values.serviceLabel }}
     chart: {{ template "kritis.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -13,11 +14,13 @@ spec:
   selector:
     matchLabels:
       app: {{ .Values.serviceName }}
+      label: {{ .Values.serviceLabel }}
       release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: {{ .Values.serviceName }}
+        label: {{ .Values.serviceLabel }}
         release: {{ .Release.Name }}
     spec:
       containers:
