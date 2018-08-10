@@ -146,7 +146,7 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyAttestationSignature(testutil.PublicTestKey, expectedSig); err != nil {
+	if err := container.VerifyAttestationSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

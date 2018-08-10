@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
@@ -45,20 +46,16 @@ var pgpConfig = packet.Config{
 	RSABits: constants.RSABits,
 }
 
-// VerifyMessageAttestation verifies if the image is attested using the Base64
+// VerifyMessageAttestation verifies if the image is attested using the PEM
 // encoded public key.
-func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message string) error {
-	pemPublicKey, err := base64.StdEncoding.DecodeString(pubKeyEnc)
-	if err != nil {
-		return err
-	}
+func VerifyMessageAttestation(pubKey string, attestationHash string, message string) error {
 
 	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
 	if err != nil {
 		return err
 	}
 
-	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(pemPublicKey))
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return err
 	}
@@ -91,12 +88,12 @@ func VerifyMessageAttestation(pubKeyEnc string, attestationHash string, message 
 }
 
 // CreateMessageAttestation attests the message using the given public and private key.
-// pubKeyEnc: Base64 Encoded Public Key
-// privKeyEnc: Base64 Decoded Private Key
+// pubKey: PEM Encoded Public Key
+// privKey: PEM Decoded Private Key
 // message: Message to attest
-func CreateMessageAttestation(pubKeyEnc string, privKeyEnc string, message string) (string, error) {
+func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
 	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey(privKeyEnc, pubKeyEnc)
+	pgpKey, err := NewPgpKey(privKey, pubKey)
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}

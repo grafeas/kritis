@@ -76,7 +76,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
 	// Test Create Attestation Occurence
-	pub, priv := testutil.CreateBase64KeyPair(t, "test")
+	pub, priv := testutil.CreateKeyPair(t, "test")
 	secret := &secrets.PGPSigningSecret{
 		PrivateKey: priv,
 		PublicKey:  pub,
