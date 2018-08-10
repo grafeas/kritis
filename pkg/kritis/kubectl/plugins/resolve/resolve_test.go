@@ -17,10 +17,11 @@ package resolve
 
 import (
 	"fmt"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"gopkg.in/yaml.v2"
 	"sort"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"gopkg.in/yaml.v2"
 )
 
 var testYaml1 = `apiVersion: v1
@@ -212,9 +213,9 @@ func Test_recursiveReplaceImage(t *testing.T) {
 		},
 		{
 			name:         "replace no images",
-			yaml:         formatTestYaml1(),
+			yaml:         formatTestYaml1(t),
 			replacements: map[string]string{},
-			expected:     formatTestYaml1(),
+			expected:     formatTestYaml1(t),
 		},
 	}
 	for _, test := range tests {
@@ -254,9 +255,12 @@ spec:
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
 }
 
-func formatTestYaml1() yaml.MapSlice {
+func formatTestYaml1(t *testing.T) yaml.MapSlice {
 	m := yaml.MapSlice{}
-	yaml.Unmarshal([]byte(testYaml1), &m)
+	err := yaml.Unmarshal([]byte(testYaml1), &m)
+	if err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
 	return m
 }
 
