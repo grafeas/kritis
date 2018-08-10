@@ -256,6 +256,7 @@ spec:
 }
 
 func formatTestYaml1(t *testing.T) yaml.MapSlice {
+	t.Helper()
 	m := yaml.MapSlice{}
 	err := yaml.Unmarshal([]byte(testYaml1), &m)
 	if err != nil {
