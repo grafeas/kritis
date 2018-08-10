@@ -45,7 +45,7 @@ spec:
   containers:
   - name: digest
     image: gcr.io/google-appengine/debian9@sha256:547f82a1a5a194b22d1178f4c6aae3de006152757c0da267fd3a68b03e8b6d85
-    env: 
+    env:
     key: ENV
     value: ENV_VALUE
     moreImages:
@@ -275,20 +275,21 @@ metadata:
 spec:
     containers:
     - name: tag
-      image: %s
-    env: 
+      image: "%s"
+    env:
         key: ENV
-        value: ENV_VALUE 
+        value: ENV_VALUE
     containers:
     - name: key1
-        values: 
-        image: image:digest	   
+      image: "image:digest"
+      ports:
+      - containerPort: 80
     - name: key2
-        value: value 
+      value: value
     - name: key3
-        value: 6
+      value: 6
     moreImages:
-    image: %s
+        image: "%s"
     nest:
         value:  0
         value1: 1
@@ -297,14 +298,14 @@ spec:
         nest:
             nest:
             - name: digest
-            image: %s
+            image: "%s"
 `
 	y := fmt.Sprintf(testYaml, args[0], args[1], args[2])
 
 	m := yaml.MapSlice{}
 	err := yaml.Unmarshal([]byte(y), &m)
 	if err != nil {
-		t.Fatalf("unmarshal failed: %v", err)
+		t.Fatalf("unmarshal failed. YAML:\n%s\nerror: %v", y, err)
 	}
 	return m
 }
