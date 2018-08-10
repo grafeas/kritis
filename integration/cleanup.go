@@ -17,12 +17,22 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"os/exec"
 	"testing"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	"k8s.io/api/core/v1"
 )
+
+func cleanupKritis(t *testing.T, ns *v1.Namespace) {
+	deleteObject(t, "validatingwebhookconfiguration",
+		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
+	deleteObject(t, "validatingwebhookconfiguration",
+		fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
+	deleteObject(t, "csr",
+		fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
+}
 
 func deleteObject(t *testing.T, object, name string, ns *v1.Namespace) {
 	deleteCmd := exec.Command("kubectl", "delete", object, name)
