@@ -2,7 +2,7 @@
 
 ## Before you begin
 
-First [Install Kritis](install.md) to your cluster.
+First **[Install Kritis](install.md)** to your cluster.
 
 Configure gcloud to use the correct project. You may use `gcloud projects list` to see a list of them.
 
@@ -232,3 +232,5 @@ EOF
 ```
 
 That brings us to the end of the tutorial!
+
+You can uninstall kritis by following these [instructions](install.md#Uninstalling-Kritis).
