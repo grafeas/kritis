@@ -5,7 +5,7 @@ It can be run as a binary or installed as a kubectl plugin.
 
 ## Installation
 
-## macOS
+## Mac OS X
 
 ```shell
 curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-darwin-amd64.tar.gz && \
