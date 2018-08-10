@@ -22,7 +22,7 @@ if ! [ -x "$(command -v golangci-lint)" ]; then
 	${DIR}/install_golint.sh -b $GOPATH/bin v1.9.3
 fi
 
-# TODO(tstromberg): enable golint, deadcode once code base is ready.
+# TODO(tstromberg): enable golint, deadcode, megacheck once code base is ready.
 golangci-lint run \
 	--no-config \
 	-E goconst \
