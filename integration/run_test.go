@@ -41,6 +41,7 @@ import (
 const (
 	kritisPreinstall  = "kritis-preinstall"
 	kritisPostinstall = "kritis-postinstall"
+	kritisPredelete   = "kritis-predelete"
 )
 
 var (
@@ -157,13 +158,13 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
-			deleteObject(t, "csr",
-				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
+			cleanupKritis(t, ns)
 			t.Fatalf("testing error: %v", err)
+		}
+		// make sure kritis-predelete pod completes
+		if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPredelete); err != nil {
+			cleanupKritis(t, ns)
+			t.Fatalf("predelete pod didn't complete: %v \n %s", err, getPodLogs(t, kritisPredelete, ns))
 		}
 	}
 
