@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var testYaml1 = `apiVersion: v1
@@ -204,12 +204,12 @@ func Test_recursiveReplaceImage(t *testing.T) {
 		},
 		{
 			name: "replace some images",
-			yaml: formatMapSlice([]string{"image:tag", "something", "image:tag2"}),
+			yaml: formatMapSlice(t, []string{"image:tag", "something", "image:tag2"}),
 			replacements: map[string]string{
 				"image:tag":  "image:digest",
 				"image:tag2": "image:digest2",
 			},
-			expected: formatMapSlice([]string{"image:digest", "something", "image:digest2"}),
+			expected: formatMapSlice(t, []string{"image:digest", "something", "image:digest2"}),
 		},
 		{
 			name:         "replace no images",
@@ -265,7 +265,8 @@ func formatTestYaml1(t *testing.T) yaml.MapSlice {
 	return m
 }
 
-func formatMapSlice(args []string) yaml.MapSlice {
+func formatMapSlice(t *testing.T, args []string) yaml.MapSlice {
+	t.Helper()
 	testYaml := `apiVersion: v1
 kind: Pod
 metadata:
@@ -301,6 +302,9 @@ spec:
 	y := fmt.Sprintf(testYaml, args[0], args[1], args[2])
 
 	m := yaml.MapSlice{}
-	yaml.Unmarshal([]byte(y), &m)
+	err := yaml.Unmarshal([]byte(y), &m)
+	if err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
 	return m
 }
