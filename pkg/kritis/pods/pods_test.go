@@ -19,10 +19,11 @@ package pods
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func Test_Images(t *testing.T) {
