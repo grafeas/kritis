@@ -42,7 +42,7 @@ func RunCommand(cmd *exec.Cmd) []byte {
 	logrus.Info(cmd.Args)
 	logrus.Info(string(output))
 	if err != nil {
-		logrus.Error(string(stderr.Bytes()))
+		logrus.Error(stderr.String())
 		logrus.Fatal(err)
 	}
 	return output
