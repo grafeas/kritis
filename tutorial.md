@@ -66,6 +66,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: java-with-vuln
+  labels: {
+    "kritis.grafeas.io/tutorial":""
+  }
 spec:
   containers:
   - name: java-with-vuln
@@ -111,6 +114,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: java-with-vuln-tagged
+  labels: {
+    "kritis.grafeas.io/tutorial":""
+  }
 spec:
   containers:
   - name: java-with-vuln-tagged
@@ -170,6 +176,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: java-with-vuln-whitelist
+  labels: {
+    "kritis.grafeas.io/tutorial":""
+  }
 spec:
   containers:
   - name: java-with-vuln-whitelist
@@ -190,6 +199,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: java-with-vuln-breakglass
+  labels: {
+    "kritis.grafeas.io/tutorial":""
+  }
   annotations: {
     "kritis.grafeas.io/breakglass": "true"
   }
@@ -211,6 +223,9 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: java-with-vuln-breakglass-deployment
+  labels: {
+    "kritis.grafeas.io/tutorial":""
+  }
   annotations: {
     "kritis.grafeas.io/breakglass": "true"
   }
@@ -232,5 +247,19 @@ EOF
 ```
 
 That brings us to the end of the tutorial!
+
+### 7. Cleanup
+
+You can delete all pods and deployments created in this tutorial by running:
+
+```
+kubectl delete pods,deployments --selector=kritis.grafeas.io/tutorial
+```
+
+To delete the image you pushed to your project run:
+
+```
+gcloud container images delete gcr.io/$PROJECT/java-with-vuln:latest
+```
 
 You can uninstall kritis by following these [instructions](install.md#Uninstalling-Kritis).
