@@ -25,6 +25,7 @@ fi
 # TODO(tstromberg): enable golint, deadcode once code base is ready.
 golangci-lint run \
 	--no-config \
+	-E goconst \
 	-E gofmt \
 	-E goimports \
 	-E interfacer \
