@@ -37,8 +37,8 @@ type Cert struct {
 	ServiceNameDeployments string
 }
 
-type Csr struct {
-	CsrName     string
+type CSR struct {
+	Name        string
 	Certificate string
 }
 
@@ -61,7 +61,7 @@ func deleteExistingObjects() {
 }
 
 func createCertificates() {
-	certTmpl := Cert{namespace, serviceName, serviceNameDeployments}
+	certTmpl := Cert{Namespace: namespace, ServiceName: serviceName, ServiceNameDeployments: serviceNameDeployments}
 	tmpl := template.New("cert")
 	tmpl, err := tmpl.Parse(`{
 "hosts": [
@@ -99,12 +99,12 @@ func createCertificates() {
 
 func createCertificateSigningRequest() {
 	certificate := retrieveRequestCertificate()
-	csrTmpl := Csr{csrName, certificate}
+	csrTmpl := CSR{Name: csrName, Certificate: certificate}
 	tmpl := template.New("csr")
 	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
-    name: {{ .CsrName }}
+    name: {{ .Name }}
 spec:
     groups:
     - system:authenticated
