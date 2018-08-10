@@ -37,7 +37,7 @@ kind: AttestationAuthority
 metadata:
   name: test-attestor
 spec:
-  noteReference: v1alpha1/projects/image-signing
+  noteReference: v1alpha1/projects/krits-int-test
   privateKeySecretName: %s
   publicKeyData: %s`
 )
