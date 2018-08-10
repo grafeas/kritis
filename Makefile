@@ -115,6 +115,10 @@ $(HELM_HOOKS): $(GO_FILES)
 helm-release-image:
 	docker build -t $(REGISTRY)/helm-release:$(IMAGE_TAG) -f helm-release/Dockerfile .
 
+.PHONY: helm-install-from-head
+helm-install-from-head:
+	helm install --set repository=$(TEST_REGISTRY)/ --set image.tag=$(COMMIT) ./kritis-charts
+
 clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration
