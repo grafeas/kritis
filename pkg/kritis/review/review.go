@@ -139,7 +139,9 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []secur
 	// Check if one of the violations is that the image is not fully qualified
 	for _, v := range violations {
 		if v.Violation == securitypolicy.UnqualifiedImageViolation {
-			errMsg = fmt.Sprintf("%s is not a fully qualified image", image)
+			errMsg = fmt.Sprintf(`%s is not a fully qualified image.
+			  You can run "kubectl plugin resolve-tags" to qualify all images with a digest.
+			  Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`, image)
 		}
 	}
 	if err := r.config.Strategy.HandleViolation(image, pod, violations); err != nil {
