@@ -14,30 +14,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+# -e: if command fails, script exits
+# -u: treat unset variables as an error and immediately exit
+# -f: disable filename expansion
+# -x: debug mode
+set -euf -x
 
-source "$KOKORO_GFILE_DIR/common.sh"
+source "${KOKORO_GFILE_DIR}/common.sh"
 
 # Get everything into GOPATH
-sudo mkdir -p $GOPATH/src/github.com/grafeas/kritis/
+sudo mkdir -p "${GOPATH}/src/github.com/grafeas/kritis/"
 CWD=`pwd`
-sudo cp -ar $CWD/github/kritis/. $GOPATH/src/github.com/grafeas/kritis
+sudo cp -ar "${CWD}/github/kritis/." "${GOPATH}/src/github.com/grafeas/kritis"
 
-pushd $GOPATH/src/github.com/grafeas/kritis
+pushd "${GOPATH}/src/github.com/grafeas/kritis"
 
 echo "Check format"
 ./hack/check-fmt.sh
 
 echo "Copying kritis int test creds..."
-mkdir -p $HOME/tmp/
-cp $KOKORO_ROOT/src/keystore/72508_kritis_int_test $HOME/tmp/gac.json
+mkdir -p "${HOME}/tmp/"
+cp "${KOKORO_ROOT}/src/keystore/72508_kritis_int_test" "${HOME}/tmp/gac.json"
 
 
 echo "Running unit and integration tests..."
-go test -cover -v -timeout 60s -tags=integration `go list ./...  | grep -v vendor | grep -v kritis/integration`
-GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
-if [ GO_TEST_EXIT_CODE -ne 0 ]; then
-    exit $GO_TEST_EXIT_CODE
+go test -cover -v -timeout 60s -tags=integration `go list ./... \
+  | grep -v vendor | grep -v kritis/integration`
+
+GO_TEST_EXIT_CODE="${PIPESTATUS[0]}"
+if [[ "${GO_TEST_EXIT_CODE}" -ne 0 ]]; then
+    exit "${GO_TEST_EXIT_CODE}"
 fi
 
 REGISTRY=gcr.io/kritis-int-test make build-push-image
