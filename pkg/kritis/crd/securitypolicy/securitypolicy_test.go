@@ -109,12 +109,12 @@ func Test_SeverityThresholds(t *testing.T) {
 		{"high", "HIGH", "", []string{"c"}},
 		{"medium", "MEDIUM", "", []string{"h", "c"}},
 		{"low", "LOW", "", []string{"m", "h", "c"}},
-		{"BLOCK_ALL", "BLOCK_ALL", "", []string{"l", "m", "h", "c"}},
-		{"BLOCK_ALL + explicit allow unfixable", "BLOCK_ALL", "ALLOW_ALL", []string{"l", "m", "h", "c"}},
+		{"block all", "BLOCK_ALL", "", []string{"l", "m", "h", "c"}},
+		{"block all fixable, but allow all unfixable", "BLOCK_ALL", "ALLOW_ALL", []string{"l", "m", "h", "c"}},
 		{"explicit allow all", "ALLOW_ALL", "", []string{}},
 		{"allow all but unfixable", "ALLOW_ALL", "BLOCK_ALL", []string{"l_nofix", "m_nofix", "h_nofix", "c_nofix"}},
-		{"medium + high unfixable", "MEDIUM", "HIGH", []string{"h", "c", "c_nofix"}},
-		{"high + medium unfixable", "HIGH", "MEDIUM", []string{"c", "c_nofix", "h_nofix"}},
+		{"medium fixable + high unfixable", "MEDIUM", "HIGH", []string{"h", "c", "c_nofix"}},
+		{"high fixable + medium unfixable", "HIGH", "MEDIUM", []string{"c", "c_nofix", "h_nofix"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
