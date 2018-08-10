@@ -155,7 +155,6 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 	deleteFunc := func() {
 		// cleanup
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
-		helmCmd.Dir = "../"
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
 			deleteObject(t, "validatingwebhookconfiguration",
