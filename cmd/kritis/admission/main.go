@@ -80,7 +80,7 @@ func main() {
 
 	// Start the Kritis Server.
 	glog.Info("Running the server")
-	http.HandleFunc("/", admission.AdmissionReviewHandler)
+	http.HandleFunc("/", admission.ReviewHandler)
 	httpsServer := NewServer(Addr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }

@@ -44,9 +44,9 @@ func NewAtomicContainerSig(image string, optional map[string]string) (*AtomicCon
 }
 
 type Critical struct {
-	Identity *ContainerIdentity `json:"identity"`
-	Image    *ContainerImage    `json:"image"`
-	Type     string             `json:"type"`
+	Identity *Identity `json:"identity"`
+	Image    *Image    `json:"image"`
+	Type     string    `json:"type"`
 }
 
 func NewCritical(image string) (*Critical, error) {
@@ -55,33 +55,33 @@ func NewCritical(image string) (*Critical, error) {
 		return nil, err
 	}
 	return &Critical{
-		Identity: NewContainerIdentity(digest.Repository.Name()),
-		Image:    NewContainerImage(digest.DigestStr()),
+		Identity: NewIdentity(digest.Repository.Name()),
+		Image:    NewImage(digest.DigestStr()),
 		Type:     constants.AtomicContainerSigType,
 	}, nil
 }
 
-type ContainerIdentity struct {
+type Identity struct {
 	DockerRef string `json:"docker-reference"`
 }
 
-func NewContainerIdentity(image string) *ContainerIdentity {
-	return &ContainerIdentity{
+func NewIdentity(image string) *Identity {
+	return &Identity{
 		DockerRef: image,
 	}
 }
 
-type ContainerImage struct {
+type Image struct {
 	DockerDigest string `json:"docker-manifest-digest"`
 }
 
-func NewContainerImage(digest string) *ContainerImage {
-	return &ContainerImage{
+func NewImage(digest string) *Image {
+	return &Image{
 		DockerDigest: digest,
 	}
 }
 
-func (acs *AtomicContainerSig) Json() (string, error) {
+func (acs *AtomicContainerSig) JSON() (string, error) {
 	bytes, err := json.Marshal(acs)
 	if err != nil {
 		return "", err
@@ -90,7 +90,7 @@ func (acs *AtomicContainerSig) Json() (string, error) {
 }
 
 func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
-	hostStr, err := acs.Json()
+	hostStr, err := acs.JSON()
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +98,7 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 }
 
 func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, attestationHash string) error {
-	hostStr, err := acs.Json()
+	hostStr, err := acs.JSON()
 	if err != nil {
 		return err
 	}

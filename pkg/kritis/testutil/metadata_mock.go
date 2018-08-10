@@ -65,8 +65,8 @@ func (m *MockMetadataClient) GetAttestations(containerImage string) ([]metadata.
 	return m.PGPAttestations, nil
 }
 
-func NilFetcher() func() (metadata.MetadataFetcher, error) {
-	return func() (metadata.MetadataFetcher, error) {
+func NilFetcher() func() (metadata.Fetcher, error) {
+	return func() (metadata.Fetcher, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
 			PGPAttestations: []metadata.PGPAttestation{},
