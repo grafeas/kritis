@@ -276,36 +276,36 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 		},
 		{
-			description: "java-with-vuln",
+			description: "java-with-vulnz",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vuln.yaml"},
+				"integration/testdata/java/java-with-vulnz.yaml"},
 			pods: []testObject{
 				{
-					name: "java-with-vuln",
+					name: "java-with-vulnz",
 				},
 			},
 			shouldSucceed: false,
 			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln.yaml")
+					"integration/testdata/java/java-with-vulnz.yaml")
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
-			description: "java-with-vuln-deployment",
+			description: "java-with-vulnz-deployment",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vuln-deployment.yaml"},
+				"integration/testdata/java/java-with-vulnz-deployment.yaml"},
 			deployments: []testObject{
 				{
-					name: "java-with-vuln-deployment",
+					name: "java-with-vulnz-deployment",
 				},
 			},
 			shouldSucceed: false,
 			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln-deployment.yaml")
+					"integration/testdata/java/java-with-vulnz-deployment.yaml")
 				integration_util.RunCmdOut(cmd)
 			},
 		},
@@ -331,19 +331,19 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 		},
 		{
-			description: "java-with-vuln-breakglass-deployment",
+			description: "java-with-vulnz-breakglass-deployment",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+				"integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml"},
 			deployments: []testObject{
 				{
-					name: "java-with-vuln-breakglass-deployment",
+					name: "java-with-vulnz-breakglass-deployment",
 				},
 			},
 			shouldSucceed: true,
 			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
+					"integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml")
 				cmd.Dir = "../"
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {

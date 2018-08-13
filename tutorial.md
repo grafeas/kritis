@@ -42,15 +42,15 @@ The [Container Analysis API](https://cloud.google.com/container-analysis/api/ref
 
 ```shell
 gcloud container images add-tag \
-  gcr.io/kritis-tutorial/java-with-vuln:latest \
-  gcr.io/$PROJECT/java-with-vuln:latest
+  gcr.io/kritis-tutorial/java-with-vulnz:latest \
+  gcr.io/$PROJECT/java-with-vulnz:latest
 ```
 
 It will take a moment to scan the image, but once this command outputs a long list of vulnerabilities, you are ready to proceed:
 
 ```shell
 gcloud alpha container images describe --show-package-vulnerability \
-  gcr.io/$PROJECT/java-with-vuln:latest
+  gcr.io/$PROJECT/java-with-vulnz:latest
 ```
 
 For more information about copying images, see [Google Cloud: Pushing and Pulling Images](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
@@ -65,14 +65,14 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vuln
+  name: java-with-vulnz
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
 spec:
   containers:
-  - name: java-with-vuln
-    image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+  - name: java-with-vulnz
+    image: gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
     ports:
     - containerPort: 80
 EOF
@@ -81,7 +81,7 @@ EOF
 The following error will appear:
 
 ```shell
-"kritis-validation-hook.grafeas.io" denied the request: found violations in gcr.io/$PROJECT/java-with-vuln@sha256:<hash>
+"kritis-validation-hook.grafeas.io" denied the request: found violations in gcr.io/$PROJECT/java-with-vulnz@sha256:<hash>
 ```
 
 Learn more by inspecting the *kritis-validation-hook* logs:
@@ -97,9 +97,9 @@ NAME                                      READY     STATUS    RESTARTS   AGE
 kritis-validation-hook-56d9d7d4f5-54mqt   1/1       Running   0          3m
 $ kubectl logs -f kritis-validation-hook-56d9d7d4f5-54mqt
     ...
-    found CVE projects/goog-vulnz/notes/CVE-2013-7445 in gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+    found CVE projects/goog-vulnz/notes/CVE-2013-7445 in gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
         which has fixes available
-    found CVE projects/goog-vulnz/notes/CVE-2015-8985 in gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+    found CVE projects/goog-vulnz/notes/CVE-2015-8985 in gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
         which has fixes available
 ```
 
@@ -113,14 +113,14 @@ cat <<EOF > resolve.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vuln-tagged
+  name: java-with-vulnz-tagged
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
 spec:
   containers:
-  - name: java-with-vuln-tagged
-    image: gcr.io/$PROJECT/java-with-vuln:latest
+  - name: java-with-vulnz-tagged
+    image: gcr.io/$PROJECT/java-with-vulnz:latest
     ports:
     - containerPort: 80
 EOF
@@ -135,7 +135,7 @@ kubectl apply -f resolve.yaml
 Unless the tag is specifically whitelisted, the following error will be displayed:
 
 ```shell
-admission webhook "kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-doc-test/java-with-vuln:latest is not a fully qualified image
+admission webhook "kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-doc-test/java-with-vulnz:latest is not a fully qualified image
 ```
 
 Instead, to deploy images by a tag name, use the `resolve-tags` plugin:
@@ -159,7 +159,7 @@ metadata:
   namespace: default
 spec:
   imageWhitelist:
-    - gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+    - gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
     whitelistCVEs:
@@ -167,7 +167,7 @@ spec:
 EOF
 ```
 
-Then deploy the java-with-vuln pod with the whitelist in place:
+Then deploy the java-with-vulnz pod with the whitelist in place:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
@@ -175,14 +175,14 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vuln-whitelist
+  name: java-with-vulnz-whitelist
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
 spec:
   containers:
-  - name: java-with-vuln-whitelist
-    image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+  - name: java-with-vulnz-whitelist
+    image: gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
     ports:
     - containerPort: 80
 EOF
@@ -198,7 +198,7 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vuln-breakglass
+  name: java-with-vulnz-breakglass
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
@@ -207,8 +207,8 @@ metadata:
   }
 spec:
   containers:
-  - name: java-with-vuln-breakglass
-    image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+  - name: java-with-vulnz-breakglass
+    image: gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
     ports:
     - containerPort: 80
 EOF
@@ -222,7 +222,7 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: java-with-vuln-breakglass-deployment
+  name: java-with-vulnz-breakglass-deployment
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
@@ -236,11 +236,11 @@ spec:
       annotations:
         kritis.grafeas.io/breakglass: "true"
       labels:
-        app: java-with-vuln
+        app: java-with-vulnz
     spec:
       containers:
-      - name: java-with-vuln
-        image: gcr.io/$PROJECT/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+      - name: java-with-vulnz
+        image: gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
         ports:
         - containerPort: 80
 EOF
@@ -259,13 +259,13 @@ kubectl exec $POD_ID -- /kritis/kritis-server --run-cron
 ```
 The output is similar to this.
 ```shell
-I0810 23:46:10.353516      23 cron.go:103] Checking po java-with-vuln
+I0810 23:46:10.353516      23 cron.go:103] Checking po java-with-vulnz
 I0810 23:46:10.354142      23 review.go:68] Validating against ImageSecurityPolicy my-isp
-I0810 23:46:10.354395      23 review.go:70] Check if gcr.io/tejaldesai-personal/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8 as valid Attestations.
+I0810 23:46:10.354395      23 review.go:70] Check if gcr.io/tejaldesai-personal/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a as valid Attestations.
 I0810 23:46:10.881752      23 strategy.go:98] Adding label attested and annotation Previously attested.
-I0810 23:46:10.997035      23 review.go:77] Getting vulnz for gcr.io/tejaldesai-personal/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+I0810 23:46:10.997035      23 review.go:77] Getting vulnz for gcr.io/tejaldesai-personal/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
 I0810 23:46:12.743845      23 strategy.go:81] Adding label invalidImageSecPolicy and annotation found 3 CVEs
-E0810 23:46:12.882533      23 cron.go:105] found violations in gcr.io/tejaldesai-personal/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8
+E0810 23:46:12.882533      23 cron.go:105] found violations in gcr.io/tejaldesai-personal/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
 ...
 ```
 
@@ -276,7 +276,7 @@ To view the pods with `kritis.grafeas.io/invalidImageSecPolicy` label:
 The output is similar to this:
 ```shell
 NAME               READY     STATUS             RESTARTS   AGE       LABELS
-java-with-vuln     0/1       Completed          10         29m       kritis.grafeas.io/attestation=attested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
+java-with-vulnz     0/1       Completed          10         29m       kritis.grafeas.io/attestation=attested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 kritis-predelete   0/1       Completed          0          34m       kritis.grafeas.io/attestation=notAttested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ```
 
@@ -293,7 +293,7 @@ kubectl delete pods,deployments --selector=kritis.grafeas.io/tutorial
 To delete the image you pushed to your project run:
 
 ```
-gcloud container images delete gcr.io/$PROJECT/java-with-vuln:latest
+gcloud container images delete gcr.io/$PROJECT/java-with-vulnz:latest
 ```
 
 You can uninstall kritis by following these [instructions](install.md#Uninstalling-Kritis).

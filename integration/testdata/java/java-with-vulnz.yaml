@@ -1,11 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: kritis-server-global-whitelist-with-vulnz
+  name: java-with-vulnz
 spec:
   containers:
-  - name: kritis-server-global-whitelist
-    image: gcr.io/kritis-project/kritis-server:global-whitelist-int-test
   - name: java-with-vulnz
     image: gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
     ports:
