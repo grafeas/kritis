@@ -33,14 +33,20 @@ Once approved, enable the necessary API's:
 
 Enable the Container Analysis API:
 
-```
+```shell
 gcloud services enable containeranalysis.googleapis.com
 ```
 
 Enable the Kubernetes API:
 
-```
+```shell
 gcloud services enable container.googleapis.com
+```
+
+Enable the Container Registry API:
+
+```shell
+gcloud services enable containerregistry.googleapis.com
 ```
 
 Wait for the above API's to be fully enabled, then enable vulnerability scanning:
