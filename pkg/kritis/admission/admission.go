@@ -87,7 +87,8 @@ func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionRevi
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
-	return reviewPod(&pod, admitResponse)
+	reviewPod(&pod, admitResponse)
+	return nil
 }
 
 func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
