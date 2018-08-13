@@ -461,7 +461,7 @@ func TestKritisISPLogic(t *testing.T) {
 					getKritisLogs(t))
 			}
 			imgAttestations := getAttestations(t, testCase.attestedImages)
-			for _,i := testCase.attestedImages {
+			for _, i := range testCase.attestedImages {
 				if _, ok := imgAttestations[i]; !ok {
 					t.Errorf("expected %s to be attested. Found no attestations", i)
 				}
