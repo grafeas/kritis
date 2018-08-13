@@ -32,6 +32,7 @@ func cleanupKritis(t *testing.T, ns *v1.Namespace) {
 		fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
 	deleteObject(t, "csr",
 		fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
+	deleteObject(t, "secret", aaSecret, ns)
 }
 
 func deleteObject(t *testing.T, object, name string, ns *v1.Namespace) {

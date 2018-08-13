@@ -209,6 +209,7 @@ func TestKritisISPLogic(t *testing.T) {
 		pods                 []testObject
 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
 		shouldSucceed        bool
+		attestedImages       []string
 
 		remoteOnly bool
 		cleanup    func(t *testing.T)
@@ -224,8 +225,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "nginx-no-digest",
 				},
 			},
-			shouldSucceed: false,
-			dir:           "../",
+			shouldSucceed:  false,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest.yaml")
@@ -242,8 +244,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "nginx-no-digest-whitelist",
 				},
 			},
-			shouldSucceed: true,
-			dir:           "../",
+			shouldSucceed:  true,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
@@ -264,7 +267,10 @@ func TestKritisISPLogic(t *testing.T) {
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
+			attestedImages: []string{
+				"gcr.io/kritis-int-test/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72",
+			},
+			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-digest-whitelist.yaml")
@@ -284,8 +290,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "java-with-vuln",
 				},
 			},
-			shouldSucceed: false,
-			dir:           "../",
+			shouldSucceed:  false,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln.yaml")
@@ -301,8 +308,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "java-with-vuln-deployment",
 				},
 			},
-			shouldSucceed: false,
-			dir:           "../",
+			shouldSucceed:  false,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln-deployment.yaml")
@@ -318,8 +326,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "nginx-no-digest-breakglass",
 				},
 			},
-			shouldSucceed: true,
-			dir:           "../",
+			shouldSucceed:  true,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
@@ -340,7 +349,10 @@ func TestKritisISPLogic(t *testing.T) {
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
+			attestedImages: []string{
+				"gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
+			},
+			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
@@ -360,8 +372,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "kritis-server-global-whitelist",
 				},
 			},
-			shouldSucceed: true,
-			dir:           "../",
+			shouldSucceed:  true,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml")
@@ -381,8 +394,9 @@ func TestKritisISPLogic(t *testing.T) {
 					name: "kritis-server-global-whitelist-with-vulnz",
 				},
 			},
-			shouldSucceed: false,
-			dir:           "../",
+			shouldSucceed:  false,
+			attestedImages: []string{},
+			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
@@ -400,7 +414,10 @@ func TestKritisISPLogic(t *testing.T) {
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
+			attestedImages: []string{
+				"gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6",
+			},
+			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/vulnz/acceptable-vulnz.yaml")
@@ -443,7 +460,12 @@ func TestKritisISPLogic(t *testing.T) {
 				t.Fatalf("deployment should have failed but succeeded\n%s",
 					getKritisLogs(t))
 			}
-
+			imgAttestations := getAttestations(t, testCase.attestedImages)
+			for _, i := range testCase.attestedImages {
+				if _, ok := imgAttestations[i]; !ok {
+					t.Errorf("expected %s to be attested. Found no attestations", i)
+				}
+			}
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
 					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
