@@ -21,27 +21,30 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 )
 
-func checkAndDeleteAttestations(t *testing.T, images []string) {
+func getAttestations(t *testing.T, images []string) map[string]bool {
 	t.Helper()
+	m := make(map[string]bool, len(images))
 	if len(images) == 0 {
-		return
+		return m
 	}
 	client, err := containeranalysis.NewContainerAnalysisClient()
 	if err != nil {
 		t.Fatalf("Unexpected error while fetching client %v", err)
 	}
+
 	for _, i := range images {
 		occs, err := client.GetAttestations(i)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}
 		if occs != nil {
-			t.Errorf("expected image %s to be attested. No attestations found.", i)
+			m[i] = true
 		}
 		for _, o := range occs {
-			if err := client.DeleteOccurrence(o.OccName); err != nil {
-				t.Logf("could not delete attestations occurrence %s due to %v", o.OccName, err)
+			if err := client.DeleteOccurrence(o.OccID); err != nil {
+				t.Logf("could not delete attestations occurrence %s due to %v", o.OccID, err)
 			}
 		}
 	}
+	return m
 }

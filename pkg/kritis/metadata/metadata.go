@@ -43,10 +43,11 @@ type Vulnerability struct {
 	CVE             string
 }
 
-// PGPAttestation represents the Signature and the Singer Key Id from the
+// PGPAttestation represents the Signature and the Signer Key Id from the
 // containeranalysis Occurrence_Attestation instance.
 type PGPAttestation struct {
 	Signature string
 	KeyID     string
-	OccName   string
+	// OccID is the occurrence ID for containeranalysis Occurrence_Attestation instance
+	OccID string
 }

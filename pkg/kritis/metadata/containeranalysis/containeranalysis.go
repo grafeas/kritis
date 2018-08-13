@@ -264,6 +264,6 @@ func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metada
 	return metadata.PGPAttestation{
 		Signature: pgp.GetSignature(),
 		KeyID:     pgp.GetPgpKeyId(),
-		OccName:   occ.GetName(),
+		OccID:     occ.GetName(),
 	}
 }

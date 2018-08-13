@@ -158,13 +158,7 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
 		_, err = integration_util.RunCmdOut(helmCmd)
 		if err != nil {
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil)
-			deleteObject(t, "validatingwebhookconfiguration",
-				fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil)
-			deleteObject(t, "csr",
-				fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil)
-			deleteObject(t, "secret", aaSecret, ns)
+			cleanupKritis(t, ns)
 			t.Fatalf("testing error: %v", err)
 		}
 		// make sure kritis-predelete pod completes
@@ -466,7 +460,12 @@ func TestKritisISPLogic(t *testing.T) {
 				t.Fatalf("deployment should have failed but succeeded\n%s",
 					getKritisLogs(t))
 			}
-			checkAndDeleteAttestations(t, testCase.attestedImages)
+			imgAttestations := getAttestations(t, testCase.attestedImages)
+			for _,i := testCase.attestedImages {
+				if _, ok := imgAttestations[i]; !ok {
+					t.Errorf("expected %s to be attested. Found no attestations", i)
+				}
+			}
 			for _, p := range testCase.pods {
 				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
 					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
