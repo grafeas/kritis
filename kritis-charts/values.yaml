@@ -6,7 +6,6 @@ replicaCount: 1
 
 image:
   image: kritis-server
-  # TODO(tstromberg): Have a versioned tag after release.
   tag: v0.1.0
   name: kritis-server
   pullPolicy: Always
