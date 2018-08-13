@@ -53,8 +53,6 @@ var crdNames = map[string]string{
 var crdExamples = []string{
 	"image-security-policy-example.yaml",
 }
-var templateFile = "attestation-authority-example.yaml.template"
-var templateFileSuffix = ".template"
 
 func createAttestationAuthority(t *testing.T, ns string) {
 	t.Helper()
@@ -128,7 +126,7 @@ func createFileWithContents(t *testing.T, d string, c string) string {
 
 func createAA(t *testing.T, ns string, pubkey string) {
 	t.Helper()
-	cmd := exec.Command("kubectl", "apply", "-f", "-")
+	cmd := exec.Command("kubectl", "apply", "-n", ns, "-f", "-")
 	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, aaSecret, pubkey)))
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v", err)
