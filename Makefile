@@ -17,7 +17,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
-VERSION ?= v0.0.1
+VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
 # TODO(aaron-prindle) add this env var for int-test configuration
