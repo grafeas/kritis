@@ -241,6 +241,9 @@ To run the cron in foreground:
 POD_ID=$(kubectl get po -l label=kritis-validation-hook -o custom-columns=:metadata.name --no-headers=true)
 
 kubectl exec $POD_ID -- /kritis/kritis-server --run-cron
+```
+The output is similar to this.
+```shell
 I0810 23:46:10.353516      23 cron.go:103] Checking po java-with-vuln
 I0810 23:46:10.354142      23 review.go:68] Validating against ImageSecurityPolicy my-isp
 I0810 23:46:10.354395      23 review.go:70] Check if gcr.io/tejaldesai-personal/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8 as valid Attestations.
@@ -254,8 +257,11 @@ E0810 23:46:12.882533      23 cron.go:105] found violations in gcr.io/tejaldesai
 To view the pods with `kritis.grafeas.io/invalidImageSecPolicy` label:
 ```shell
  kubectl get po  -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy --show-labels
+```
+The output is similar to this:
+```shell
 NAME               READY     STATUS             RESTARTS   AGE       LABELS
-java-with-vuln     0/1       CrashLoopBackOff   10         29m       kritis.grafeas.io/attestation=attested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
+java-with-vuln     0/1       Completed          10         29m       kritis.grafeas.io/attestation=attested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 kritis-predelete   0/1       Completed          0          34m       kritis.grafeas.io/attestation=notAttested,kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ```
 
