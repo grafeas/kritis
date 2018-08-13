@@ -37,7 +37,8 @@ EOF
 ```
 ### 2. Setting up an AttestationAuthority
 Kritis relies on user defined AttestationAuthorities to attest images admitted. Attested images will be always admitted in future.
-To create a gpg public, private key pair run,
+
+Create a public and private key pair:
 
 Note: Please create a key with Empty Passphase. We are working on adding support for [passphrase](https://github.com/grafeas/kritis/issues/186)
 ```shell
@@ -45,32 +46,25 @@ gpg --quick-generate-key --yes my.attestator@example.com
 
 gpg --armor --export my.attestator@example.com > gpg.pub
 
-gpg --list-keys my.attestator@example.com
-pub   rsa3072 2018-06-14 [SC] [expires: 2020-06-13]
-      C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C
-uid           [ultimate] my.attestator@example.com
-sub   rsa3072 2018-06-14 [E]
-
-gpg --export-secret-keys --armor C8C9D53FAE035A650B6B12D3BFF4AC9F1EED759C > gpg.priv
+gpg --armor --export-secret-keys my.attestator@example.com > gpg.priv
 ```
-Now create a secret using the exported public and private keys
+Create a secret using the exported public and private keys
 ```shell
 kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv
 ```
 Finally create an attestation authority
-1. Grab the base encoded value of public key for the secret you just created.
+1. Grab the base64 encoded value of public key for the secret you just created.
 
-On mac,
+On Mac OS X,
 ```shell
 PUBLIC_KEY=`base64 gpg.pub`
 ```
-On linux
+On Linux
 ```shell
 PUBLIC_KEY=`base64 gpg.pub -w 0`
 ```
-2. Now create an attestation authority.
+2.  Create an attestation authority.
 ```shell
-PROJECT=<your project>
 cat <<EOF | kubectl apply -f - \
 
 apiVersion: kritis.grafeas.io/v1beta1
@@ -84,12 +78,7 @@ spec:
     publicKeyData: $PUBLIC_KEY
 EOF
 ```
-
-The `AttestationAuthority` should be configured:
-```shell
-attestationauthority.kritis.grafeas.io/my-attestator created
-```
-This `AttestationAuthority` will create Attestation Note in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestator` which we created.
+This `AttestationAuthority` will create [Attestation Note](https://github.com/grafeas/grafeas#definition-of-terms) in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestator` which we created.
 
 ### 3. Copy a vulnerable image
 

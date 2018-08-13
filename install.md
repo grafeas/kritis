@@ -7,6 +7,7 @@ The only currently supported backend for vulnerability data is the [Google Cloud
 - [Google Cloud](https://cloud.google.com) account with [billing enabled](https://console.cloud.google.com/billing)
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/) (gcloud)
 - [Kubernetes](https://kubernetes.io/) 1.9.2+
+- [GnuPG](https://gnupg.org/download/)
 
 ## Step #1: Create a Google Cloud Project
 
@@ -39,7 +40,7 @@ gcloud services enable containeranalysis.googleapis.com
 Enable the Kubernetes API:
 
 ```
-gcloud services enable container.googleapis.com 
+gcloud services enable container.googleapis.com
 ```
 
 Wait for the above API's to be fully enabled, then enable vulnerability scanning:
@@ -192,7 +193,7 @@ example:
 
 ```shell
 NAME          REVISION  UPDATED                   STATUS    CHART         NAMESPACE
-loopy-numbat    1       Fri Jul 27 14:25:44 2018  DEPLOYED  kritis-0.1.0  default  
+loopy-numbat    1       Fri Jul 27 14:25:44 2018  DEPLOYED  kritis-0.1.0  default
 ```
 
 Then delete the name of the release:
