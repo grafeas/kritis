@@ -63,10 +63,8 @@ func Test_RootCmd(t *testing.T) {
 }
 
 func Test_resolveFilepaths(t *testing.T) {
-	originalKPLFF := os.Getenv(KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME)
-	originalPWD := os.Getenv(PWD)
-	defer os.Setenv(KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME, originalKPLFF)
-	defer os.Setenv(PWD, originalPWD)
+	originalKPLFF := os.Getenv(localFlagFilenameEnv)
+	defer os.Setenv(localFlagFilenameEnv, originalKPLFF)
 
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -76,14 +74,10 @@ func Test_resolveFilepaths(t *testing.T) {
 
 	base := filepath.Base(file.Name())
 	dir := filepath.Dir(file.Name())
-	if err := os.Setenv(KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME, base); err != nil {
+	if err := os.Setenv(localFlagFilenameEnv, base); err != nil {
 		t.Error(err)
 	}
-	if err := os.Setenv(PWD, dir); err != nil {
-		t.Error(err)
-	}
-
 	expected := append(multiArg{}, file.Name())
-	err = resolveFilepaths()
+	err = resolveFilepaths(dir)
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, files)
 }
