@@ -32,10 +32,9 @@ import (
 )
 
 const (
-	PWD                                 = "PWD"
-	KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME = "KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME"
-	KUBECTL_PLUGINS_LOCAL_FLAG_APPLY    = "KUBECTL_PLUGINS_LOCAL_FLAG_APPLY"
-	KUBECTL_PLUGINS_CALLER              = "KUBECTL_PLUGINS_CALLER"
+	localFlagFilenameEnv = "KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME"
+	localFlagApplyEnv    = "KUBECTL_PLUGINS_LOCAL_FLAG_APPLY"
+	callerEnv            = "KUBECTL_PLUGINS_CALLER"
 )
 
 var (
@@ -62,7 +61,11 @@ var RootCmd = &cobra.Command{
 		   it will override any files passed in.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		resolveApply()
-		return resolveFilepaths()
+		cwd, err := os.Getwd()
+		if err != nil {
+			util.ExitIfErr(cmd, err)
+		}
+		return resolveFilepaths(cwd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		substitutes, err := resolve.Execute(files)
@@ -76,21 +79,20 @@ var RootCmd = &cobra.Command{
 }
 
 func resolveApply() {
-	apply = apply || (os.Getenv(KUBECTL_PLUGINS_LOCAL_FLAG_APPLY) != "")
+	apply = apply || (os.Getenv(localFlagApplyEnv) != "")
 }
 
-func resolveFilepaths() error {
-	if pluginFile := os.Getenv(KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME); pluginFile != "" {
+func resolveFilepaths(relativeDir string) error {
+	if pluginFile := os.Getenv(localFlagFilenameEnv); pluginFile != "" {
 		files = []string{pluginFile}
 	}
 	if len(files) == 0 {
 		return fmt.Errorf("please pass in a path to a file to resolve")
 	}
 	glog.Infof("Resolving: %s", files)
-	cwd := os.Getenv(PWD)
 	for index, file := range files {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
-			fullPath := filepath.Join(cwd, file)
+			fullPath := filepath.Join(relativeDir, file)
 			if _, err := os.Stat(fullPath); err != nil {
 				return err
 			}
@@ -119,7 +121,7 @@ func print(substitutes map[string]string, writer io.Writer) {
 
 func applyChanges(substitutes map[string]string, writer io.Writer) error {
 	// Use full path to kubectl binary if we can get it, otherwise assume it's on $PATH
-	kubectl := os.Getenv("KUBECTL_PLUGINS_CALLER")
+	kubectl := os.Getenv(callerEnv)
 	if kubectl == "" {
 		kubectl = "kubectl"
 	}
