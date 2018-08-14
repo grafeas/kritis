@@ -240,10 +240,10 @@ kubectl logs kritis-predelete
 
 Most resources created by kritis will be deleted from your cluster once this Pod has reached `Completed` status.
 
-To delete the remaining resources (which includes the completed preinstall, postinstall and predelete pods, along with a service account) run:
+To delete the remaining resources run:
 
 ```
-kubectl delete pods,serviceaccount --selector kritis.grafeas.io/install --namespace <your namespace>
+kubectl delete pods,serviceaccount,clusterrolebinding --selector kritis.grafeas.io/install --namespace <your namespace>
 ```
 
 NOTE: This will not delete the container analysis secret created above.
