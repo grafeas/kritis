@@ -5,8 +5,8 @@
 replicaCount: 1
 
 image:
-  image: kritis-server
   tag: v0.1.0
+  image: kritis-server
   name: kritis-server
   pullPolicy: Always
 
@@ -41,6 +41,8 @@ csrName: tls-webhook-secret-cert
 clusterRoleBindingName: kritis-clusterrolebinding
 clusterRoleName: kritis-clusterrole
 cronInterval: 1h
+
+kritisInstallLabel: "kritis.grafeas.io/install"
 
 repository: gcr.io/kritis-project/
 

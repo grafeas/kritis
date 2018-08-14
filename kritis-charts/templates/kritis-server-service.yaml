@@ -8,6 +8,7 @@ metadata:
     chart: {{ template "kritis.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+    {{ .Values.kritisInstallLabel }}: ""
 spec:
   type: {{ .Values.service.type }}
   ports:

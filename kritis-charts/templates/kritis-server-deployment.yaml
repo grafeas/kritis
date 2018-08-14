@@ -9,6 +9,7 @@ metadata:
     chart: {{ template "kritis.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+    {{ .Values.kritisInstallLabel }}: ""
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:

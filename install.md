@@ -238,9 +238,15 @@ And the logs using:
 kubectl logs kritis-predelete
 ```
 
-Kritis will be deleted from your cluster once this Pod has reached `Completed` status.
+Most resources created by kritis will be deleted from your cluster once this Pod has reached `Completed` status.
 
-NOTE: This will not delete the `ServiceAccount` or `ClusterRoleBinding` created during preinstall, or the container analysis secret created above.
+To delete the remaining resources (which includes the completed preinstall, postinstall and predelete pods, along with a service account) run:
+
+```
+kubectl delete pods,serviceaccount --selector kritis.grafeas.io/install --namespace <your namespace>
+```
+
+NOTE: This will not delete the container analysis secret created above.
 
 ## Troubleshooting
 
@@ -261,14 +267,16 @@ kubectl get pods
 
 ### Deleting Kritis Manually
 
-If you're unable to delete kritis via `helm delete <DEPLOYMENT NAME>`, you can manually delete kritis `validatingwebhookconfiguration` with the following commands:
+If you're unable to delete kritis via `helm delete <DEPLOYMENT NAME>`, you can manually delete all kritis resources with the following commands:
 
 ```shell
-kubectl delete validatingwebhookconfiguration kritis-validation-hook \
-  --namespace <YOUR NAMESPACE>
-
-kubectl delete validatingwebhookconfiguration kritis-validation-hook-deployments \
-  --namespace <YOUR NAMESPACE>
+kubectl delete all,validatingwebhookconfiguration,serviceaccount,secret,csr,crd \
+  --selector kritis.grafeas.io/install \
+  --namespace <your namespace>
 ```
 
-`helm delete` should work at this point.
+You should then be able to delete the helm deployment with 
+
+```shell
+helm delete [deployment name] --no-hooks
+```

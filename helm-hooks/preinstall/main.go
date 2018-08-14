@@ -31,6 +31,7 @@ var (
 	createNewCSR           bool
 	serviceName            string
 	serviceNameDeployments string
+	kritisInstallLabel     string
 )
 
 func init() {
@@ -39,10 +40,11 @@ func init() {
 	flag.BoolVar(&createNewCSR, "create-new-csr", true, "Set to false in order to only create a new CSR if one is not present.")
 	flag.StringVar(&serviceName, "kritis-service-name", "", "The name of the kritis service for pods.")
 	flag.StringVar(&serviceNameDeployments, "kritis-service-name-deployments", "", "The name of the kritis service for deployments.")
-	flag.Parse()
+	flag.StringVar(&kritisInstallLabel, "kritis-install-label", "", "The label to indicate a resource has been created by kritis")
 }
 
 func main() {
+	flag.Parse()
 	logrus.Infof("running preinstall\nversion %s\ncommit: %s",
 		version.Version,
 		version.Commit,
@@ -59,6 +61,6 @@ func main() {
 	}
 	// Create the TLS secret
 	createTLSSecret()
+	labelTLSSecret()
 	installCRDs()
-
 }

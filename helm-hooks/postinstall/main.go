@@ -30,6 +30,7 @@ var (
 	certificate           string
 	webhookName           string
 	deploymentWebhookName string
+	kritisInstallLabel    string
 	serviceName           string
 )
 
@@ -38,10 +39,11 @@ func init() {
 	flag.StringVar(&deploymentWebhookName, "deployment-webhook-name", "", "The name of the deployment validation webhook.")
 	flag.StringVar(&serviceName, "service-name", "", "The name of the service for the webhook.")
 	flag.StringVar(&tlsSecretName, "tls-secret-name", "", "The name of the kritis tls secret.")
-	flag.Parse()
+	flag.StringVar(&kritisInstallLabel, "kritis-install-label", "", "The label to indicate a resource has been created by kritis")
 }
 
 func main() {
+	flag.Parse()
 	logrus.Infof("running postinstall\nversion %s\ncommit: %s",
 		version.Version,
 		version.Commit,

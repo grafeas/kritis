@@ -8,6 +8,8 @@ metadata:
     "helm.sh/hook-delete-policy": hook-succeeded
     "helm.sh/hook-delete-policy": hook-failed
     "helm.sh/hook-delete-policy": before-hook-creation
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
