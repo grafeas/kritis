@@ -117,6 +117,7 @@ webhooks:
           # - UPDATE # TODO(aaron-prindle) add back update when whitelist and helm do not collide
         resources:
           - deployments
+          - replicasets
     failurePolicy: Fail
     clientConfig:
       caBundle: %s

@@ -6,7 +6,7 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: replicaset-with-acceptable-vulnz
+      app: java-with-vulnz-replicaset
   template:
     metadata:
       labels:

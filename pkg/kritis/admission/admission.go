@@ -73,31 +73,31 @@ var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionRevie
 }
 
 func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
-	glog.Info("handling deployment...")
 	deployment := appsv1.Deployment{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
 		return err
 	}
+	glog.Infof("handling deployment %s...", deployment.Name)
 	reviewDeployment(&deployment, admitResponse)
 	return nil
 }
 
 func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
-	glog.Info("handling pod...")
 	pod := v1.Pod{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
+	glog.Infof("handling pod %s...", pod.Name)
 	reviewPod(&pod, admitResponse)
 	return nil
 }
 
 func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
-	glog.Info("handling replica set...")
 	replicaSet := appsv1.ReplicaSet{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
 		return err
 	}
+	glog.Infof("handling replica set %s...", replicaSet.Name)
 	reviewReplicaSet(&replicaSet, admitResponse)
 	return nil
 }
