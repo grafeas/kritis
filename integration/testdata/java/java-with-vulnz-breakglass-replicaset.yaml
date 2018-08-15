@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: java-with-vulnz-breakglass-replicaset
+  annotations:
+    kritis.grafeas.io/breakglass: "true"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: java-with-vulnz-breakglass-replicaset
+  template:
+    metadata:
+      labels:
+        app: java-with-vulnz-breakglass-replicaset
+      annotations:
+        kritis.grafeas.io/breakglass: "true"
+    spec:
+      containers:
+      - name: java-with-vulnz-breakglass-replicaset
+        image: gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a

@@ -69,6 +69,7 @@ var (
 var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview) error{
 	"Deployment": handleDeployment,
 	"Pod":        handlePod,
+	"ReplicaSet": handleReplicaSet,
 }
 
 func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
@@ -88,6 +89,16 @@ func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionRevi
 		return err
 	}
 	reviewPod(&pod, admitResponse)
+	return nil
+}
+
+func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
+	glog.Info("handling replica set...")
+	replicaSet := appsv1.ReplicaSet{}
+	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
+		return err
+	}
+	reviewReplicaSet(&replicaSet, admitResponse)
 	return nil
 }
 
@@ -223,6 +234,20 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 		return
 	}
 	reviewImages(pods.Images(*pod), pod.Namespace, pod, ar)
+}
+
+func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
+	// First, check for a breakglass annotation on the replica set
+	if checkBreakglass(&replicaSet.ObjectMeta) {
+		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
+		return
+	}
+	for _, c := range replicaSet.Spec.Template.Spec.InitContainers {
+		reviewImages([]string{c.Image}, replicaSet.Namespace, nil, ar)
+	}
+	for _, c := range replicaSet.Spec.Template.Spec.Containers {
+		reviewImages([]string{c.Image}, replicaSet.Namespace, nil, ar)
+	}
 }
 
 // TODO(aaron-prindle) remove these functions
