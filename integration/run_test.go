@@ -117,7 +117,6 @@ func createGACSecret(t *testing.T, ns *v1.Namespace) {
 		"secret", "generic", "gac-ca-admin",
 		fmt.Sprintf("--from-file=%s", *gacCredentials),
 		"--namespace", ns.Name)
-	crdCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(crdCmd)
 	if err != nil {
 		logrus.Infof("error creating gac secret; if running locally, please make sure you have container analysis credentials for kritis-int-test at %s on your machine", *gacCredentials)
@@ -219,7 +218,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "nginx-no-digest",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-no-digest.yaml"},
+				"testdata/nginx/nginx-no-digest.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest",
@@ -227,18 +226,16 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  false,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest.yaml")
-				cmd.Dir = "../"
+					"testdata/nginx/nginx-no-digest.yaml")
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "nginx-no-digest-whitelist",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-no-digest-whitelist.yaml"},
+				"testdata/nginx/nginx-no-digest-whitelist.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest-whitelist",
@@ -246,11 +243,9 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  true,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
-				cmd.Dir = "../"
+					"testdata/nginx/nginx-no-digest-whitelist.yaml")
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -260,7 +255,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "nginx-digest-whitelist",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-digest-whitelist.yaml"},
+				"testdata/nginx/nginx-digest-whitelist.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-digest-whitelist",
@@ -270,11 +265,10 @@ func TestKritisISPLogic(t *testing.T) {
 			attestedImages: []string{
 				"gcr.io/kritis-int-test/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72",
 			},
-			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-digest-whitelist.yaml")
-				cmd.Dir = "../"
+					"testdata/nginx/nginx-digest-whitelist.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -284,7 +278,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "java-with-vulnz",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vulnz.yaml"},
+				"testdata/java/java-with-vulnz.yaml"},
 			pods: []testObject{
 				{
 					name: "java-with-vulnz",
@@ -292,17 +286,16 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  false,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vulnz.yaml")
+					"testdata/java/java-with-vulnz.yaml")
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "java-with-vulnz-deployment",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vulnz-deployment.yaml"},
+				"testdata/java/java-with-vulnz-deployment.yaml"},
 			deployments: []testObject{
 				{
 					name: "java-with-vulnz-deployment",
@@ -310,17 +303,16 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  false,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vulnz-deployment.yaml")
+					"testdata/java/java-with-vulnz-deployment.yaml")
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "nginx-no-digest-breakglass",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
+				"testdata/nginx/nginx-no-digest-breakglass.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest-breakglass",
@@ -328,11 +320,10 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  true,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
-				cmd.Dir = "../"
+					"testdata/nginx/nginx-no-digest-breakglass.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -342,7 +333,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "java-with-vulnz-breakglass-deployment",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml"},
+				"testdata/java/java-with-vulnz-breakglass-deployment.yaml"},
 			deployments: []testObject{
 				{
 					name: "java-with-vulnz-breakglass-deployment",
@@ -352,11 +343,10 @@ func TestKritisISPLogic(t *testing.T) {
 			attestedImages: []string{
 				"gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
 			},
-			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml")
-				cmd.Dir = "../"
+					"testdata/java/java-with-vulnz-breakglass-deployment.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -366,7 +356,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "kritis-server-global-whitelist",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml"},
+				"testdata/kritis-server/kritis-server-global-whitelist.yaml"},
 			pods: []testObject{
 				{
 					name: "kritis-server-global-whitelist",
@@ -374,11 +364,10 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  true,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml")
-				cmd.Dir = "../"
+					"testdata/kritis-server/kritis-server-global-whitelist.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -388,7 +377,7 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "kritis-server-global-whitelist-with-vulnz",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
+				"testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
 			pods: []testObject{
 				{
 					name: "kritis-server-global-whitelist-with-vulnz",
@@ -396,18 +385,17 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 			shouldSucceed:  false,
 			attestedImages: []string{},
-			dir:            "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
-				cmd.Dir = "../"
+					"testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
+
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "image-with-acceptable-vulnz",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+				"testdata/vulnz/acceptable-vulnz.yaml"},
 			pods: []testObject{
 				{
 					name: "image-with-acceptable-vulnz",
@@ -417,11 +405,10 @@ func TestKritisISPLogic(t *testing.T) {
 			attestedImages: []string{
 				"gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6",
 			},
-			dir: "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/vulnz/acceptable-vulnz.yaml")
-				cmd.Dir = "../"
+					"testdata/vulnz/acceptable-vulnz.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -514,7 +501,7 @@ func TestKritisCron(t *testing.T) {
 		{
 			description: "nginx-no-digest-breakglass",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
+				"testdata/nginx/nginx-no-digest-breakglass.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest-breakglass",
@@ -522,11 +509,9 @@ func TestKritisCron(t *testing.T) {
 			},
 			shouldSucceed: true,
 			shouldLabel:   true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
-				cmd.Dir = "../"
+					"testdata/nginx/nginx-no-digest-breakglass.yaml")
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -536,7 +521,7 @@ func TestKritisCron(t *testing.T) {
 		{
 			description: "image-with-acceptable-vulnz",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+				"testdata/vulnz/acceptable-vulnz.yaml"},
 			pods: []testObject{
 				{
 					name: "image-with-acceptable-vulnz",
@@ -544,11 +529,10 @@ func TestKritisCron(t *testing.T) {
 			},
 			shouldSucceed: true,
 			shouldLabel:   false,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/vulnz/acceptable-vulnz.yaml")
-				cmd.Dir = "../"
+					"testdata/vulnz/acceptable-vulnz.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
