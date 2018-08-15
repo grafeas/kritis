@@ -5,7 +5,6 @@ allowing DevOps teams to enforce deploy-time image security policies using metad
 
 Here is an example  policy which may be set with Kritis,  to prevent the deployment of Kubernetes pod containing a critical vulnerability unless specifically whitelisted:
 
-
 ```yaml
 imageWhitelist:
 - gcr.io/my-project/whitelist-image@sha256:<DIGEST>

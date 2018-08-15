@@ -10,21 +10,26 @@ Installing Kritis, creates a number of resources in your cluster. Mentioned belo
 | tls-webhook-secret | secret | Secret required for ValidatingWebhookConfiguration|
 
 ## kritis-validation-hook
+
 The validating admission Webhook runs a https service and a background cron job.
 The webhook, runs when pods and deployments are created or updated in your cluster.
 To view webhook, run
-```
+
+```shell
 kubectl describe ValidatingWebhookConfiguration kritis-validation-hook
 ```
+
 The cron job runs hourly to continuously validate and reconcile policies. It adds labels and annotations to pods out of policy.
 
 ## ImageSecurityPolicy CRD
+
 ImageSecurityPolicy is Custom Resource Definition which enforce policies.
 The ImageSecurityPolicy are Namespace Scoped meaning, it will only be verified against pods in the same namespace.
 You can deploy multiple ImageSecurityPolicies in different namespaces, ideally one per namespace.
 
 To view the image security policy run,
-```
+
+```shell
 kubectl describe crd imagesecuritypolicies.kritis.grafeas.io
 
 # To list all Image Security Policies.
@@ -35,6 +40,7 @@ qa                    qa-isp    11h
 ```
 
 A sample is shown here,
+
 ```yaml
 apiVersion: kritis.github.com/v1beta1
 kind: ImageSecurityPolicy
@@ -50,6 +56,7 @@ spec:
       providers/goog-vulnz/notes/CVE-2017-1000082
       providers/goog-vulnz/notes/CVE-2017-1000082
 ```
+
 Image Security Policy Spec description:
 
 | Field     | Default (if applicable)   | Description |
@@ -75,20 +82,26 @@ Here are the valid values for Policy Specs.
 |                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in whitelist. |
 
 ## AttestationAuthority CRD
+
 The webhook will attest valid images once they pass the validity check. This is important because re-deployments can occur from scaling events,rescheduling, termination, etc. Attested images are always admitted in custer.
 This allows users to manually deploy a container with an older image which was validated in past.
 
 To view the attesation authority CRD run,
-```
-kubectl describe crd attestationauthorities.kritis.grafeas.io
 
-# List all attestation authorities.
+```shell
+kubectl describe crd attestationauthorities.kritis.grafeas.io
+```
+
+List all attestation authorities:
+
+```shell
 kubectl get AttestationAuthority --all-namespaces
 NAMESPACE             NAME             AGE
 qa                    qa-attestator    11h
 ```
 
-Here is an example of AttestionAuthority.
+example AttestionAuthority:
+
 ```yaml
 apiVersion: kritis.github.com/v1beta1
 kind: AttestationAuthority
@@ -100,6 +113,7 @@ spec:
     privateKeySecretName: foo
     publicKeyData: ...
 ```
+
 Where “image-attestor” is the project for creating AttestationAuthority Notes.
 
 In order to create notes, the service account `gac-ca-admin` must have `containeranalysis.notes.attacher role` on this project.
