@@ -28,10 +28,10 @@ golangci-lint run \
 	-E goconst \
 	-E gofmt \
 	-E goimports \
+	-E golint \
 	-E interfacer \
 	-E misspell \
 	-E unconvert \
 	-E unparam \
 	-D deadcode \
-	-D golint \
 	-D megacheck
