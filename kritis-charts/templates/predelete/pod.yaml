@@ -9,6 +9,8 @@ metadata:
     "helm.sh/hook-delete-policy": "hook-failed"
     "helm.sh/hook-delete-policy": "before-hook-creation"
     "kritis.grafeas.io/breakglass": "true"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
 spec:
   serviceAccountName: {{ .Values.preinstall.serviceAccount }}
   restartPolicy: Never

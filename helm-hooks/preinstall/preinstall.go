@@ -38,8 +38,9 @@ type Cert struct {
 }
 
 type CSR struct {
-	Name        string
-	Certificate string
+	Name               string
+	Certificate        string
+	KritisInstallLabel string
 }
 
 func deleteExistingObjects() {
@@ -99,12 +100,18 @@ func createCertificates() {
 
 func createCertificateSigningRequest() {
 	certificate := retrieveRequestCertificate()
-	csrTmpl := CSR{Name: csrName, Certificate: certificate}
+	csrTmpl := CSR{
+		Name:               csrName,
+		Certificate:        certificate,
+		KritisInstallLabel: kritisInstallLabel,
+	}
 	tmpl := template.New("csr")
 	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
     name: {{ .Name }}
+    labels:
+        {{ .KritisInstallLabel }}: ""
 spec:
     groups:
     - system:authenticated
@@ -191,12 +198,19 @@ func createTLSSecret() {
 	install.RunCommand(tlsSecretCmd)
 }
 
+func labelTLSSecret() {
+	labelCmd := exec.Command("kubectl", "label", "secret", tlsSecretName, kritisInstallLabel+"=", "--namespace", namespace)
+	install.RunCommand(labelCmd)
+}
+
 func installCRDs() {
 	attestationAuthorityCmd := exec.Command("kubectl", "apply", "-f", "-")
-	attestationAuthorityCmd.Stdin = bytes.NewReader([]byte(attestationAuthorityCRD))
+	crd := fmt.Sprintf(attestationAuthorityCRD, kritisInstallLabel)
+	attestationAuthorityCmd.Stdin = bytes.NewReader([]byte(crd))
 	install.RunCommand(attestationAuthorityCmd)
 
 	ispCommand := exec.Command("kubectl", "apply", "-f", "-")
-	ispCommand.Stdin = bytes.NewReader([]byte(imageSecurityPolicyCRD))
+	crd = fmt.Sprintf(imageSecurityPolicyCRD, kritisInstallLabel)
+	ispCommand.Stdin = bytes.NewReader([]byte(crd))
 	install.RunCommand(ispCommand)
 }

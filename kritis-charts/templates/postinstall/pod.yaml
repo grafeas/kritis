@@ -8,6 +8,8 @@ metadata:
     "helm.sh/hook-delete-policy": "hook-succeeded"
     "helm.sh/hook-delete-policy": "hook-failed"
     "helm.sh/hook-delete-policy": "before-hook-creation"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
 spec:
   restartPolicy: Never
   containers:
@@ -23,4 +25,6 @@ spec:
       - {{ .Values.tlsSecretName }}
       - "--deployment-webhook-name"
       - {{ .Values.serviceNameDeployments }}
+      - "--kritis-install-label"
+      - {{ .Values.kritisInstallLabel }}
     command: {{ .Values.postinstall.pod.command }}

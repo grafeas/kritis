@@ -39,11 +39,11 @@ func init() {
 	flag.StringVar(&csrName, "csr-name", "", "The name of the kritis csr.")
 	flag.BoolVar(&deleteCsr, "delete-csr", true, "Delete kritis csr")
 	flag.BoolVar(&deleteCRD, "delete-crd", true, "Delete kritis CRDs")
-	flag.Parse()
 }
 
 // The kritis predelete hook is responsible for deleting the webhook, TLS secret and CSR
 func main() {
+	flag.Parse()
 	deleteWebhooks()
 	deleteTLSSecret()
 	if deleteCsr {

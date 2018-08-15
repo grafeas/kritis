@@ -21,6 +21,8 @@ const (
 kind: CustomResourceDefinition
 metadata:
     name: attestationauthorities.kritis.grafeas.io
+    labels:
+        %s: ""
 spec:
     group: kritis.grafeas.io
     version: v1beta1
@@ -34,6 +36,8 @@ spec:
 kind: CustomResourceDefinition
 metadata:
     name: imagesecuritypolicies.kritis.grafeas.io
+    labels:
+        %s: ""
 spec:
     group: kritis.grafeas.io
     version: v1beta1

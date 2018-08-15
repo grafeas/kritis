@@ -7,6 +7,8 @@ items:
   kind: ClusterRoleBinding
   metadata:
     name: {{ .Values.clusterRoleBindingName }}
+    labels:
+      {{ .Values.kritisInstallLabel }}: ""
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
@@ -25,6 +27,7 @@ items:
     labels:
       # Add these permissions to the "edit" default role, so that "edit" can see our CRD.
       rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    {{ .Values.kritisInstallLabel }}: ""
   rules:
   - apiGroups: ["kritis.grafeas.io"]
     resources: ["*"]

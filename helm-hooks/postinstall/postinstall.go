@@ -70,6 +70,8 @@ func createValidationWebhook() {
 kind: ValidatingWebhookConfiguration
 metadata:
   name: %s
+  labels:
+    %s: ""
 webhooks:
   - name: kritis-validation-hook.grafeas.io
     rules:
@@ -89,7 +91,7 @@ webhooks:
         name: %s
         namespace: %s`
 
-	webhookSpec = fmt.Sprintf(webhookSpec, webhookName, certificate, serviceName, namespace)
+	webhookSpec = fmt.Sprintf(webhookSpec, webhookName, kritisInstallLabel, certificate, serviceName, namespace)
 	fmt.Println(webhookSpec)
 	webhookCmd := exec.Command("kubectl", "apply", "-f", "-")
 	webhookCmd.Stdin = bytes.NewReader([]byte(webhookSpec))
@@ -101,6 +103,8 @@ func createValidationDeploymentWebhook() {
 kind: ValidatingWebhookConfiguration
 metadata:
   name: %s
+  labels:
+    %s: ""
 webhooks:
   - name: kritis-validation-hook-deployments.grafeas.io
     rules:
@@ -119,7 +123,7 @@ webhooks:
       service:
         name: %s
         namespace: %s`
-	webhookSpec = fmt.Sprintf(webhookSpec, deploymentWebhookName, certificate, serviceName, namespace)
+	webhookSpec = fmt.Sprintf(webhookSpec, deploymentWebhookName, kritisInstallLabel, certificate, serviceName, namespace)
 	fmt.Println(webhookSpec)
 	webhookCmd := exec.Command("kubectl", "apply", "-f", "-")
 	webhookCmd.Stdin = bytes.NewReader([]byte(webhookSpec))

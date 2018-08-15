@@ -6,9 +6,11 @@ metadata:
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "3"
-    "helm.sh/hook-delete-policy": hook-succeeded
-    "helm.sh/hook-delete-policy": hook-failed
-    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+    "helm.sh/hook-delete-policy": "hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
 spec:
   restartPolicy: Never
   serviceAccountName: {{ .Values.preinstall.serviceAccount }}
@@ -26,4 +28,6 @@ spec:
       - {{ .Values.serviceName }}
       - "--kritis-service-name-deployments"
       - {{ .Values.serviceNameDeployments }}
+      - "--kritis-install-label"
+      - {{ .Values.kritisInstallLabel }}
     command: {{ .Values.preinstall.pod.command }}
