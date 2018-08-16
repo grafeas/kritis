@@ -74,14 +74,14 @@ Image Security Policy Spec description:
 
 Here are the valid values for Policy Specs.
 
-|<td rowspan=1>Field | Value       | Outcome |
+|Field | Value       | Outcome |
 |----------- |-------------|----------- |
-|<td rowspan=5>packageVulnerabilityPolicy.maximumSeverity | LOW | Only allow containers with low vulnerabilities. |
+|packageVulnerabilityPolicy.maximumSeverity | LOW | Only allow containers with low vulnerabilities. |
 |                          | MEDIUM | Allow Containers with Low and Medium vulnerabilities. |
 |                                           | HIGH  | Allow Containers with Low, Medium & High vulnerabilities. |
 |                                           | ALLOW_ALL | Allow all vulnerabilities.  |
 |                                           | BLOCK_ALL | Block all vulnerabilities except listed in whitelist. |
-|<td rowspan=5>packageVulnerabilityPolicy.maximumFixUnavailableSeverity | LOW | Only allow containers with low unpatchable vulnerabilities. |
+|packageVulnerabilityPolicy.maximumFixUnavailableSeverity | LOW | Only allow containers with low unpatchable vulnerabilities. |
 |                          | MEDIUM | Allow Containers with Low and Medium unpatchable vulnerabilities. |
 |                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchaable vulnerabilities. |
 |                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
