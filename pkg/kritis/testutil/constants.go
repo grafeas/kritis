@@ -18,7 +18,7 @@ package testutil
 
 const (
 	QualifiedImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
-	IntTestImage   = "gcr.io/kritis-int-test/test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f"
+	IntTestImage   = "gcr.io/YOUR_TEST_PROJECT/test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f"
 )
 
 // PublicTestKey is base64 encoded sig for image gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8

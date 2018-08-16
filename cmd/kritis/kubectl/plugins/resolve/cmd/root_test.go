@@ -38,12 +38,12 @@ spec:
 `
 
 func Test_RootCmd(t *testing.T) {
-	initial := fmt.Sprintf(testYaml, "gcr.io/kritis-int-test/resolve-tags-test-image")
+	initial := fmt.Sprintf(testYaml, "gcr.io/YOUR_TEST_PROJECT/resolve-tags-test-image")
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
 		t.Error(err)
 	}
-	expected := fmt.Sprintf("---%s---"+"\n"+testYaml+"\n", file.Name(), "gcr.io/kritis-int-test/resolve-tags-test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f")
+	expected := fmt.Sprintf("---%s---"+"\n"+testYaml+"\n", file.Name(), "gcr.io/YOUR_TEST_PROJECT/resolve-tags-test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f")
 	if _, err := io.Copy(file, bytes.NewReader([]byte(initial))); err != nil {
 		t.Error(err)
 	}

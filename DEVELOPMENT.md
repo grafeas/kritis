@@ -59,7 +59,7 @@ _These tests will not run correctly unless you have [checked out your fork into 
 ### Integration tests
 
 Requirements:
-* Credentials for the GCP project `kritis-int-test` with `Container Analysis Admin` roles saved to `gac.json`
+* Credentials for the GCP project `YOUR_TEST_PROJECT` with `Container Analysis Admin` roles saved to `gac.json`
 * A running cluster
 
 To build your own versions of the kritis-server, preinstall, postinstall and predelete images, run:
@@ -68,7 +68,7 @@ To build your own versions of the kritis-server, preinstall, postinstall and pre
 make build-push-test-image
 ```
 
-which will create these images in the format `gcr.io/kritis-int-test/[image]:COMMIT_VERSION`.
+which will create these images in the format `gcr.io/YOUR_TEST_PROJECT/[image]:COMMIT_VERSION`.
 
 
 You can then run

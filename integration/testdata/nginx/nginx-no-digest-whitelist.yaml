@@ -5,6 +5,6 @@ metadata:
 spec:
   containers:
   - name: nginx-no-digest-whitelist
-    image: gcr.io/kritis-int-test/nginx-digest-whitelist:latest
+    image: gcr.io/YOUR_TEST_PROJECT/nginx-digest-whitelist:latest
     ports:
     - containerPort: 80

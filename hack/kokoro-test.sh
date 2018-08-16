@@ -46,7 +46,7 @@ if [[ "${GO_TEST_EXIT_CODE}" -ne 0 ]]; then
     exit "${GO_TEST_EXIT_CODE}"
 fi
 
-REGISTRY=gcr.io/kritis-int-test make build-push-image
-REGISTRY=gcr.io/kritis-int-test make integration-in-docker
+REGISTRY=gcr.io/YOUR_TEST_PROJECT make build-push-image
+REGISTRY=gcr.io/YOUR_TEST_PROJECT make integration-in-docker
 
 popd

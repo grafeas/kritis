@@ -21,7 +21,7 @@ VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
 # TODO(aaron-prindle) add this env var for int-test configuration
-# GCP_TEST_PROJECT ?= kritis-int-test
+# GCP_TEST_PROJECT ?= YOUR_TEST_PROJECT
 
 %.exe: %
 	mv $< $@
@@ -83,7 +83,7 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
-TEST_REGISTRY?=gcr.io/kritis-int-test
+TEST_REGISTRY?=gcr.io/YOUR_TEST_PROJECT
 REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 KRITIS_PROJECT = $(REPOPATH)/kritis
@@ -147,7 +147,7 @@ build-push-test-image: build-test-image preinstall-test-image postinstall-test-i
 .PHONY: integration-in-docker
 integration-in-docker: build-push-image
 	docker build \
-		-f deploy/kritis-int-test/Dockerfile \
+		-f deploy/YOUR_TEST_PROJECT/Dockerfile \
 		--target integration \
 		-t $(REGISTRY)/kritis-integration:$(IMAGE_TAG) .
 	docker run \
