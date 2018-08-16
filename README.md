@@ -19,7 +19,8 @@ packageVulnerabilityPolicy:
 * Learn the concepts in the [Kritis whitepaper](https://github.com/Grafeas/Grafeas/blob/master/case-studies/binary-authorization.md)
 * Get Kritis running with the [Installation guide](install.md)
 * Try the [Tutorial](tutorial.md) to learn how to block vulnerabilities
-* Learn the configuration details in the [Usage guide](usage.md)
+* Read the [Resource Reference](resources.md) to configure and interact with Kritis resources
+* Resolve image tags to hashes using the [resolve-tags plug-in](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md)
 
 ## Contributing
 
