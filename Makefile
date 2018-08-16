@@ -20,8 +20,9 @@ COMMIT ?= $(shell git rev-parse HEAD)
 VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
-# TODO(aaron-prindle) add this env var for int-test configuration
-# GCP_TEST_PROJECT ?= YOUR_TEST_PROJECT
+# For integration testing, use this project name.
+GCP_TEST_PROJECT ?= YOUR_TEST_PROJECT
+
 
 %.exe: %
 	mv $< $@
@@ -83,7 +84,7 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
-TEST_REGISTRY?=gcr.io/YOUR_TEST_PROJECT
+TEST_REGISTRY?=gcr.io/$(GCP_TEST_PROJECT)
 REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 KRITIS_PROJECT = $(REPOPATH)/kritis
@@ -95,6 +96,7 @@ out/kritis-server: $(GO_FILES)
 build-image: out/kritis-server
 	docker build -t $(REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
 
+# build-test-image locally builds images for use in integration testing.
 .PHONY: build-test-image
 build-test-image: out/kritis-server
 	docker build -t $(TEST_REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
@@ -128,7 +130,12 @@ integration: cross
 
 .PHONY: integration-local
 integration-local:
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -remote=false -gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
+		$(REPOPATH)/integration \
+		-timeout 5m \
+		-remote=false \
+		-gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH) \
+		-gcp-project=$(GCP_TEST_PROJECT)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
