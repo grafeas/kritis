@@ -98,10 +98,15 @@ To view the attesation authority CRD run,
 kubectl describe crd attestationauthorities.kritis.grafeas.io
 ```
 
-List all attestation authorities:
+To list all attestation authorities:
 
 ```shell
 kubectl get AttestationAuthority --all-namespaces
+```
+
+Here is example output:
+
+```shell
 NAMESPACE             NAME             AGE
 qa                    qa-attestator    11h
 ```
