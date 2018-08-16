@@ -49,7 +49,7 @@ func Test_ValidISP(t *testing.T) {
 			mc := &testutil.MockMetadataClient{
 				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity, HasFixAvailable: true}},
 			}
-			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			violations, err := ValidateImageSecurityPolicyGen()(isp, testutil.QualifiedImage, mc)
 			if test.expectErr {
 				if err == nil {
 					t.Errorf("%s: expected error, but got nil. violations: %+v", test.name, violations)
@@ -74,7 +74,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicyGen()(isp, "", &testutil.MockMetadataClient{})
 	expected := []Violation{
 		{
 			Vulnerability: metadata.Vulnerability{},
@@ -126,7 +126,7 @@ func Test_SeverityThresholds(t *testing.T) {
 					},
 				},
 			}
-			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			vs, err := ValidateImageSecurityPolicyGen()(isp, testutil.QualifiedImage, mc)
 			if err != nil {
 				t.Errorf("%s: error validating isp: %v", test.name, err)
 			}
@@ -155,7 +155,7 @@ func Test_WhitelistedImage(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "image", mc)
+	violations, err := ValidateImageSecurityPolicyGen()(isp, "image", mc)
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -179,7 +179,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 			{CVE: "c", Severity: "CRITICAL"},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicyGen()(isp, testutil.QualifiedImage, mc)
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -200,7 +200,7 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicyGen()(isp, testutil.QualifiedImage, mc)
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
