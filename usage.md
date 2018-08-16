@@ -1,4 +1,10 @@
-# Resource Reference
+# Usage
+
+## resolve-tags plugin
+
+See the [resolve-tags plug-in guide](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md)
+
+## Resource Reference
 
 Installing Kritis, creates a number of resources in your cluster. Mentioned below are important ones.
 
@@ -9,7 +15,7 @@ Installing Kritis, creates a number of resources in your cluster. Mentioned belo
 | attestationauthorities.kritis.grafeas.io | crd | The CRD defines the attestation authority policy kind AttestationAuthority.|
 | tls-webhook-secret | secret | Secret required for ValidatingWebhookConfiguration|
 
-## kritis-validation-hook
+### kritis-validation-hook
 
 The validating admission Webhook runs a https service and a background cron job.
 The webhook, runs when pods and deployments are created or updated in your cluster.
@@ -21,7 +27,7 @@ kubectl describe ValidatingWebhookConfiguration kritis-validation-hook
 
 The cron job runs hourly to continuously validate and reconcile policies. It adds labels and annotations to pods out of policy.
 
-## ImageSecurityPolicy CRD
+### ImageSecurityPolicy CRD
 
 ImageSecurityPolicy is Custom Resource Definition which enforce policies.
 The ImageSecurityPolicy are Namespace Scoped meaning, it will only be verified against pods in the same namespace.
@@ -81,7 +87,7 @@ Here are the valid values for Policy Specs.
 |                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
 |                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in whitelist. |
 
-## AttestationAuthority CRD
+### AttestationAuthority CRD
 
 The webhook will attest valid images once they pass the validity check. This is important because re-deployments can occur from scaling events,rescheduling, termination, etc. Attested images are always admitted in custer.
 This allows users to manually deploy a container with an older image which was validated in past.
