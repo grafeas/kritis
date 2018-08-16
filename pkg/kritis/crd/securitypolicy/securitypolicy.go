@@ -19,6 +19,7 @@ package securitypolicy
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -51,9 +52,27 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 	return list.Items, nil
 }
 
+type Validator struct {
+	// imageToVulnz is used as a cache for images to vulnz for a single run
+	imageToVulnz map[string][]metadata.Vulnerability
+}
+
+func NewValidator() *Validator {
+	v := Validator{}
+	v.imageToVulnz = map[string][]metadata.Vulnerability{}
+	return &v
+}
+
+func ValidateImageSecurityPolicyGen() func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
+	v := NewValidator()
+	return func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
+		return v.ValidateImageSecurityPolicy(isp, image, client)
+	}
+}
+
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
+func (v *Validator) ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
 		return nil, nil
@@ -68,9 +87,18 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		return violations, nil
 	}
 	// Now, check vulnz in the image
-	vulnz, err := client.GetVulnerabilities(image)
-	if err != nil {
-		return nil, err
+	var vulnz []metadata.Vulnerability
+	var err error
+	if _, ok := v.imageToVulnz[image]; ok {
+		glog.Infof("found cached vulnz for image %s", image)
+		vulnz = v.imageToVulnz[image]
+	} else {
+		glog.Infof("no cached vulnz for image %s, getting from api", image)
+		vulnz, err = client.GetVulnerabilities(image)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get vulnerabilities for %s: %v", image, err)
+		}
+		v.imageToVulnz[image] = vulnz
 	}
 	maxSev := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if maxSev == "" {
