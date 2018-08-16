@@ -1,8 +1,8 @@
 # Kritis
 
-Kritis (“judge” in Greek), is an open-source solution for software supply chain security for Kubernetes applications. Kritis enforces deploy-time security policies using metadata and attestations stored in [Grafeas](https://github.com/grafeas/grafeas) or the [Google Cloud Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/)
+Kritis (“judge” in Greek), is an open-source solution for software supply chain security for Kubernetes applications. Kritis enforces deploy-time security policies using the [Google Cloud Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/), and in the near future from [Grafeas](https://github.com/grafeas/grafeas) as well.
 
-Here is an example Kritis policy, which will prevent the deployment of Pod containing a critical vulnerability unless it has been whitelisted:
+Here is an example Kritis policy, to prevent the deployment of Pod with a critical vulnerability unless it has been whitelisted:
 
 ```yaml
 imageWhitelist:
@@ -23,7 +23,9 @@ packageVulnerabilityPolicy:
 
 ## Contributing
 
-See [CONTRIBUTING](CONTRIBUTING.md) for details on you can contribute, and [DEVELOPMENT](DEVELOPMENT.md) for details on Kritis's development and testing workflow.
+See [CONTRIBUTING](CONTRIBUTING.md) for details on how you can contribute.
+
+See [DEVELOPMENT](DEVELOPMENT.md) for details on the  development and testing workflow.
 
 ## License
 
