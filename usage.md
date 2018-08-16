@@ -33,19 +33,7 @@ ImageSecurityPolicy is Custom Resource Definition which enforce policies.
 The ImageSecurityPolicy are Namespace Scoped meaning, it will only be verified against pods in the same namespace.
 You can deploy multiple ImageSecurityPolicies in different namespaces, ideally one per namespace.
 
-To view the image security policy run,
-
-```shell
-kubectl describe crd imagesecuritypolicies.kritis.grafeas.io
-
-# To list all Image Security Policies.
-kubectl get ImageSecurityPolicy --all-namespaces
-NAMESPACE             NAME      AGE
-example-namespace     my-isp    22h
-qa                    qa-isp    11h
-```
-
-A sample is shown here,
+Example policy:
 
 ```yaml
 apiVersion: kritis.github.com/v1beta1
@@ -61,6 +49,32 @@ spec:
     whitelistCVEs:
       providers/goog-vulnz/notes/CVE-2017-1000082
       providers/goog-vulnz/notes/CVE-2017-1000082
+```
+
+To view the CRD:
+
+```shell
+kubectl describe crd imagesecuritypolicies.kritis.grafeas.io
+```
+
+To list all Image Security Policies.
+
+```shell
+kubectl get ImageSecurityPolicy --all-namespaces
+```
+
+Example output:
+
+```shell
+NAMESPACE             NAME      AGE
+example-namespace     my-isp    22h
+qa                    qa-isp    11h
+```
+
+To view the active ImageSecurityPolicy:
+
+```shell
+% kubectl describe ImageSecurityPolicy my-isp 
 ```
 
 Image Security Policy Spec description:
@@ -86,6 +100,8 @@ Here are the valid values for Policy Specs.
 |                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchaable vulnerabilities. |
 |                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
 |                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in whitelist. |
+
+
 
 ### AttestationAuthority CRD
 
