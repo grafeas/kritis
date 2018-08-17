@@ -30,7 +30,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
-	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -183,12 +182,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
 		return
 	}
-	for _, c := range deployment.Spec.Template.Spec.Containers {
-		reviewImages([]string{c.Image}, deployment.Namespace, nil, ar)
-	}
-	for _, c := range deployment.Spec.Template.Spec.InitContainers {
-		reviewImages([]string{c.Image}, deployment.Namespace, nil, ar)
-	}
+	reviewImages(DeploymentImages(*deployment), deployment.Namespace, nil, ar)
 }
 
 func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
@@ -233,7 +227,7 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
 		return
 	}
-	reviewImages(pods.Images(*pod), pod.Namespace, pod, ar)
+	reviewImages(PodImages(*pod), pod.Namespace, pod, ar)
 }
 
 func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
@@ -242,12 +236,7 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
 		return
 	}
-	for _, c := range replicaSet.Spec.Template.Spec.InitContainers {
-		reviewImages([]string{c.Image}, replicaSet.Namespace, nil, ar)
-	}
-	for _, c := range replicaSet.Spec.Template.Spec.Containers {
-		reviewImages([]string{c.Image}, replicaSet.Namespace, nil, ar)
-	}
+	reviewImages(ReplicaSetImages(*replicaSet), replicaSet.Namespace, nil, ar)
 }
 
 // TODO(aaron-prindle) remove these functions
