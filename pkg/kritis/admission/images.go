@@ -33,7 +33,7 @@ func PodImages(pod v1.Pod) []string {
 	return images
 }
 
-// DeploymentImages returns a list of images in a pod
+// DeploymentImages returns a list of images in a deployment
 func DeploymentImages(deployment appsv1.Deployment) []string {
 	images := []string{}
 	for _, ic := range deployment.Spec.Template.Spec.InitContainers {
@@ -45,7 +45,7 @@ func DeploymentImages(deployment appsv1.Deployment) []string {
 	return images
 }
 
-// ReplicaSetImages returns a list of images in a pod
+// ReplicaSetImages returns a list of images in a replica set
 func ReplicaSetImages(rs appsv1.ReplicaSet) []string {
 	images := []string{}
 	for _, ic := range rs.Spec.Template.Spec.InitContainers {
