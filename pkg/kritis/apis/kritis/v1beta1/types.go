@@ -71,10 +71,12 @@ type BuildPolicy struct {
 
 // BuildPolicySpec is the spec for a BuildPolicy resource
 type BuildPolicySpec struct {
-	AttestationAuthorityName string `yaml:"attestationAuthorityName"`
-	BuildRequirements        struct {
-		BuiltFrom string `yaml:"builtFrom"`
-	} `yaml:"buildRequirements"`
+	AttestationAuthorityName string            `yaml:"attestationAuthorityName"`
+	BuildRequirements        BuildRequirements `yaml:"buildRequirements"`
+}
+
+type BuildRequirements struct {
+	BuiltFrom string `yaml:"builtFrom"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
