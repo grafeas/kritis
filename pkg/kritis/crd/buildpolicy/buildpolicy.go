@@ -29,7 +29,7 @@ import (
 // ValidateFunc defines the type for Validating Build Policies
 type ValidateFunc func(bp v1beta1.BuildPolicy, buildFrom string) error
 
-// SigningPolicies returns all ISP's in the specified namespaces
+// BuildPolicies returns all ISP's in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
 func BuildPolicies(namespace string) ([]v1beta1.BuildPolicy, error) {
 	config, err := rest.InClusterConfig()

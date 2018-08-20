@@ -50,7 +50,7 @@ func ExtractBuildProvenanceFromEvent(msg *pubsub.Message) ([]BuildProvenance, er
 			}
 			imageRef := fmt.Sprintf("%s@%s", image.Name, image.Digest)
 			glog.Infof("process image %s", imageRef)
-			sourceSuffix := fmt.Sprintf("@%s", event.Source.RepoSource.CommitSha)
+			sourceSuffix := fmt.Sprintf("@%s", event.Source.RepoSource.CommitSHA)
 			if len(sourceSuffix) == 1 {
 				sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.TagName)
 			}
@@ -76,7 +76,7 @@ type BuildSource struct {
 		ProjectID  string
 		BranchName string
 		TagName    string
-		CommitSha  string
+		CommitSHA  string
 	}
 }
 

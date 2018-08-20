@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: kritis-gcb-signer
-        image: gcr.io/kritis-test1/kritis-gcb-signer:64605ac72393a3e8cd78f31f0ff16b2627f50f7f
+        image: gcr.io/kritis-test1/kritis-gcb-signer:2440f7b6eeca3b208b891e7adbb304d7b008f7e5
         imagePullPolicy: Always
         args: ["--gcb_project=binauthz-demo1-builder", "--logtostderr"]
         env:
