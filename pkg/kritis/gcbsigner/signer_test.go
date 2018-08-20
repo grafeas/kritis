@@ -143,13 +143,13 @@ func TestValidateAndSign(t *testing.T) {
 	}
 	tests := []struct {
 		name                 string
-		buildInfo            ImageBuildInfo
+		provenance           BuildProvenance
 		expectedAttestations map[string]string
 		shdErr               bool
 	}{
 		{
 			name: "build matches single attestor",
-			buildInfo: ImageBuildInfo{
+			provenance: BuildProvenance{
 				ImageRef:  "image1",
 				BuiltFrom: "single_attestor",
 			},
@@ -159,7 +159,7 @@ func TestValidateAndSign(t *testing.T) {
 		},
 		{
 			name: "build matches multiple attestors",
-			buildInfo: ImageBuildInfo{
+			provenance: BuildProvenance{
 				ImageRef:  "image1",
 				BuiltFrom: "multi_attestor",
 			},
@@ -170,14 +170,14 @@ func TestValidateAndSign(t *testing.T) {
 		},
 		{
 			name: "build matches no attestor",
-			buildInfo: ImageBuildInfo{
+			provenance: BuildProvenance{
 				ImageRef:  "image1",
 				BuiltFrom: "no_attestor",
 			},
 		},
 		{
 			name: "build matches attestor without key",
-			buildInfo: ImageBuildInfo{
+			provenance: BuildProvenance{
 				ImageRef:  "image1",
 				BuiltFrom: "no_key_attestor",
 			},
@@ -191,7 +191,7 @@ func TestValidateAndSign(t *testing.T) {
 				Validate: buildpolicy.ValidateBuildPolicy,
 				Secret:   sMock,
 			})
-			if err := r.ValidateAndSign(tc.buildInfo, bps); (err != nil) != tc.shdErr {
+			if err := r.ValidateAndSign(tc.provenance, bps); (err != nil) != tc.shdErr {
 				t.Errorf("expected ValidateAndSign to return error %t, actual error %s", tc.shdErr, err)
 			}
 			if !reflect.DeepEqual(tc.expectedAttestations, cMock.Occ) {

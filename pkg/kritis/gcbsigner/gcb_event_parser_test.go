@@ -23,12 +23,12 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
-func TestExtractImageBuildInfoFromEvent(t *testing.T) {
+func TestExtractBuildProvenanceFromEvent(t *testing.T) {
 	tests := []struct {
-		name              string
-		message           string
-		shdErr            bool
-		expectedBuildInfo []ImageBuildInfo
+		name               string
+		message            string
+		shdErr             bool
+		expectedProvenance []BuildProvenance
 	}{
 		{
 			name: "ignores ':latest' entry in pubsub message",
@@ -54,7 +54,7 @@ func TestExtractImageBuildInfoFromEvent(t *testing.T) {
             }
         ]
     }}`,
-			expectedBuildInfo: []ImageBuildInfo{
+			expectedProvenance: []BuildProvenance{
 				{
 					BuildID:   "1",
 					ImageRef:  "image1@sha256:1234",
@@ -107,7 +107,7 @@ func TestExtractImageBuildInfoFromEvent(t *testing.T) {
             }
         ]
     }}`,
-			expectedBuildInfo: []ImageBuildInfo{
+			expectedProvenance: []BuildProvenance{
 				{
 					BuildID:   "1",
 					ImageRef:  "image1@sha256:1234",
@@ -140,7 +140,7 @@ func TestExtractImageBuildInfoFromEvent(t *testing.T) {
             }
         ]
     }}`,
-			expectedBuildInfo: []ImageBuildInfo{
+			expectedProvenance: []BuildProvenance{
 				{
 					BuildID:   "1",
 					ImageRef:  "image1@sha256:1234",
@@ -168,7 +168,7 @@ func TestExtractImageBuildInfoFromEvent(t *testing.T) {
             }
         ]
     }}`,
-			expectedBuildInfo: []ImageBuildInfo{
+			expectedProvenance: []BuildProvenance{
 				{
 					BuildID:   "1",
 					ImageRef:  "image1@sha256:1234",
@@ -185,12 +185,12 @@ func TestExtractImageBuildInfoFromEvent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := pubsub.Message{Data: []byte(tc.message)}
-			buildInfos, err := ExtractImageBuildInfoFromEvent(&msg)
+			provenance, err := ExtractBuildProvenanceFromEvent(&msg)
 			if (err != nil) != tc.shdErr {
-				t.Errorf("expected ExtractImageBuildInfoFromEvent to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("expected ExtractBuildProvenanceFromEvent to return error %t, actual error %s", tc.shdErr, err)
 			}
-			if !reflect.DeepEqual(tc.expectedBuildInfo, buildInfos) {
-				t.Errorf("Expected: %v\n Got: %v", tc.expectedBuildInfo, buildInfos)
+			if !reflect.DeepEqual(tc.expectedProvenance, provenance) {
+				t.Errorf("Expected: %v\n Got: %v", tc.expectedProvenance, provenance)
 			}
 		})
 	}

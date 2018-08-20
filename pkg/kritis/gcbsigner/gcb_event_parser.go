@@ -21,13 +21,20 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 
 	"cloud.google.com/go/pubsub"
 )
 
-func ExtractImageBuildInfoFromEvent(msg *pubsub.Message) ([]ImageBuildInfo, error) {
-	// TODO this should validate the Informatian against the information in
-	// Container Analysis that is created by Cloud Builder
+// ExtractBuildProvenanceFromEvent extracts the build provenance from a Cloud
+// Builder event.
+// Return the list of images built and their build provenance.  If the event
+// does contain relevant buikld info (e.g., the build is not yet complete, or
+// no images were produced) then 'nil' will be returned.
+//
+// TODO this should validate the provenance in the pubsub message against the
+// information in Container Analysis that is created by Cloud Builder.
+func ExtractBuildProvenanceFromEvent(msg *pubsub.Message) ([]BuildProvenance, error) {
 	var event BuildEvent
 	if err := json.Unmarshal(msg.Data, &event); err != nil {
 		return nil, err
@@ -36,7 +43,7 @@ func ExtractImageBuildInfoFromEvent(msg *pubsub.Message) ([]ImageBuildInfo, erro
 	glog.Infof("messages: %q", msg.Data)
 	if event.Status == "SUCCESS" {
 		glog.Infof("complete build %q", event.ID)
-		buildInfo := make([]ImageBuildInfo, 0, len(event.Results.Images))
+		provenance := make([]BuildProvenance, 0, len(event.Results.Images))
 		for _, image := range event.Results.Images {
 			if strings.Contains(image.Name, ":latest") {
 				continue
@@ -51,14 +58,14 @@ func ExtractImageBuildInfoFromEvent(msg *pubsub.Message) ([]ImageBuildInfo, erro
 				sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.BranchName)
 			}
 
-			source := fmt.Sprintf("https://source.developers.google.com/p/%s/r/%s%s", event.Source.RepoSource.ProjectID, event.Source.RepoSource.RepoName, sourceSuffix)
-			buildInfo = append(buildInfo, ImageBuildInfo{
+			source := fmt.Sprintf(constants.CloudSourceRepoPattern, event.Source.RepoSource.ProjectID, event.Source.RepoSource.RepoName, sourceSuffix)
+			provenance = append(provenance, BuildProvenance{
 				BuildID:   event.ID,
 				ImageRef:  imageRef,
 				BuiltFrom: source,
 			})
 		}
-		return buildInfo, nil
+		return provenance, nil
 	}
 	return nil, nil
 }

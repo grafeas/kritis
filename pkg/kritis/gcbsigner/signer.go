@@ -45,7 +45,7 @@ func New(client metadata.Fetcher, c *Config) Signer {
 	}
 }
 
-type ImageBuildInfo struct {
+type BuildProvenance struct {
 	BuildID   string
 	ImageRef  string
 	BuiltFrom string
@@ -59,21 +59,22 @@ var (
 // ValidateAndSign validates builtFrom against the build policies and creates
 // attestations for all authorities for the matching policies.
 // Returns an error if creating an attestation for any authority fails.
-func (r Signer) ValidateAndSign(buildInfo ImageBuildInfo, bps []v1beta1.BuildPolicy) error {
+func (r Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy) error {
 	for _, bp := range bps {
-		glog.Infof("Validating %q against BuildPolicy %q", buildInfo.ImageRef, bp.Name)
-		if result := r.config.Validate(bp, buildInfo.BuiltFrom); result != nil {
-			glog.Errorf("Image %q does not match BuildPolicy %q: %s", buildInfo.ImageRef, bp.ObjectMeta.Name, result)
+		glog.Infof("Validating %q against BuildPolicy %q", prov.ImageRef, bp.Name)
+		if result := r.config.Validate(bp, prov.BuiltFrom); result != nil {
+			glog.Errorf("Image %q does not match BuildPolicy %q: %s", prov.ImageRef, bp.ObjectMeta.Name, result)
 			continue
 		}
-		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", buildInfo.ImageRef, bp.Name)
-		if err := r.addAttestation(buildInfo.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName); err != nil {
+		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", prov.ImageRef, bp.Name)
+		if err := r.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+// TODO this should be factored out into a helper
 func (r Signer) addAttestation(image string, ns string, authority string) error {
 	// Get all AttestationAuthorities in this namespace.
 	auths, err := authFetcher(ns)
@@ -85,27 +86,25 @@ func (r Signer) addAttestation(image string, ns string, authority string) error 
 	}
 	errMsgs := []string{}
 	for _, a := range auths {
-		if a.ObjectMeta.Name == authority {
-			glog.Infof("Ceate attestation by %q for %q", image, authority)
-			// Get or Create Note for this this Authority
-			n, err := r.getOrCreateAttestationNote(&a)
-			if err != nil {
-				glog.Errorf("Error getting note: %s", err)
-				errMsgs = append(errMsgs, err.Error())
-				continue
-			}
-			// Get secret for this Authority
-			s, err := r.config.Secret(ns, a.Spec.PrivateKeySecretName)
-			if err != nil {
-				glog.Errorf("Error getting secret: %s", err)
-				errMsgs = append(errMsgs, err.Error())
-				continue
-			}
-			// Create Attestation Signature
-			if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
-				glog.Errorf("Error creating occurrence: %s", err)
-				errMsgs = append(errMsgs, err.Error())
-			}
+		if a.ObjectMeta.Name != authority {
+			continue
+		}
+		glog.Infof("Ceate attestation by %q for %q", image, authority)
+		// Get or Create Note for this this Authority
+		n, err := r.getOrCreateAttestationNote(&a)
+		if err != nil {
+			errMsgs = append(errMsgs, err.Error())
+			continue
+		}
+		// Get secret for this Authority
+		s, err := r.config.Secret(ns, a.Spec.PrivateKeySecretName)
+		if err != nil {
+			errMsgs = append(errMsgs, err.Error())
+			continue
+		}
+		// Create Attestation Signature
+		if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
+			errMsgs = append(errMsgs, err.Error())
 		}
 	}
 	if len(errMsgs) == 0 {
@@ -114,6 +113,7 @@ func (r Signer) addAttestation(image string, ns string, authority string) error 
 	return fmt.Errorf("one or more errors adding attestations: %s", errMsgs)
 }
 
+// TODO this should be factored out into a helper
 func (r Signer) getOrCreateAttestationNote(a *v1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	n, err := r.client.GetAttestationNote(a)
 	if err == nil {
