@@ -26,29 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Test_Images(t *testing.T) {
-	pod := corev1.Pod{
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Image: "image1",
-				},
-				{
-					Image: "image2",
-				},
-			},
-			InitContainers: []corev1.Container{
-				{
-					Image: "image3",
-				},
-			},
-		},
-	}
-	expected := []string{"image3", "image1", "image2"}
-	actual := Images(pod)
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
-}
-
 func Test_AddPatch(t *testing.T) {
 	tests := []struct {
 		name                string
