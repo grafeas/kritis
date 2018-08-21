@@ -21,7 +21,7 @@ VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
 # For integration testing, use this project name.
-GCP_TEST_PROJECT ?= YOUR_TEST_PROJECT
+GCP_PROJECT ?= YOUR_TEST_PROJECT
 
 
 %.exe: %
@@ -30,10 +30,10 @@ GCP_TEST_PROJECT ?= YOUR_TEST_PROJECT
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-ORG := github.com/grafeas
-PROJECT := kritis
+GITHUB_ORG := github.com/grafeas
+GITHUB_PROJECT := kritis
+REPOPATH ?= $(GITHUB_ORG)/$(GITHUB_PROJECT)
 RESOLVE_TAGS_PROJECT := resolve-tags
-REPOPATH ?= $(ORG)/$(PROJECT)
 
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
@@ -55,7 +55,7 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_LD_RESOLVE_FLAGS :=""
 GO_BUILD_TAGS := ""
 
-.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(GITHUB_PROJECT)-$(platform))
 
 $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT): $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-$(GOOS)-$(GOARCH) $@
@@ -85,9 +85,7 @@ GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
 TEST_REGISTRY?=gcr.io/$(GCP_TEST_PROJECT)
-REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
-KRITIS_PROJECT = $(REPOPATH)/kritis
 
 out/kritis-server: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SERVICE_PACKAGE)
