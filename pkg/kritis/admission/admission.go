@@ -178,6 +178,11 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
+	// check if the Deployments's owner has already been validated
+	if checkOwners(&deployment.ObjectMeta) {
+		return
+	}
+	// check for a breakglass annotation on the deployment
 	if checkBreakglass(&deployment.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
 		return
@@ -222,7 +227,11 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
-	// First, check for a breakglass annotation on the pod
+	// check if the Pod's owner has already been validated
+	if checkOwners(&pod.ObjectMeta) {
+		return
+	}
+	// check for a breakglass annotation on the pod
 	if checkBreakglass(&pod.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
 		return
@@ -231,7 +240,11 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 }
 
 func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
-	// First, check for a breakglass annotation on the replica set
+	// check if the ReplicaSet's owner has already been validated
+	if checkOwners(&replicaSet.ObjectMeta) {
+		return
+	}
+	// check for a breakglass annotation on the replica set
 	if checkBreakglass(&replicaSet.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
 		return
@@ -270,6 +283,22 @@ func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.Admission
 		return nil, ar, err
 	}
 	return &deployment, ar, nil
+}
+
+func checkOwners(meta *metav1.ObjectMeta) bool {
+	owners := meta.GetOwnerReferences()
+	if owners == nil {
+		return false
+	}
+	for _, o := range owners {
+		for _, s := range constants.SupportedTypes {
+			if o.Kind == s {
+				glog.Infof("found owner %s %s for %s which was already validated", o.Kind, o.Name, meta.Name)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func checkBreakglass(meta *metav1.ObjectMeta) bool {
