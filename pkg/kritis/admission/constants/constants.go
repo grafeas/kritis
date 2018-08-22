@@ -34,7 +34,14 @@ const (
 	RSABits = 4096
 )
 
+// A list of all Kubernetes objects kritis can validate
+const (
+	Pod        = "Pod"
+	ReplicaSet = "ReplicaSet"
+	Deployment = "Deployment"
+)
+
 var (
 	// SupportedTypes is a list of Kubernetes types that kritis can validate
-	SupportedTypes = []string{"Pod", "ReplicaSet", "Deployment"}
+	SupportedTypes = []string{Pod, ReplicaSet, Deployment}
 )

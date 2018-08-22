@@ -178,8 +178,9 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
+	images := DeploymentImages(*deployment)
 	// check if the Deployments's owner has already been validated
-	if checkOwners(&deployment.ObjectMeta) {
+	if checkOwners(images, &deployment.ObjectMeta) {
 		return
 	}
 	// check for a breakglass annotation on the deployment
@@ -187,7 +188,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
 		return
 	}
-	reviewImages(DeploymentImages(*deployment), deployment.Namespace, nil, ar)
+	reviewImages(images, deployment.Namespace, nil, ar)
 }
 
 func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
@@ -227,8 +228,9 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+	images := PodImages(*pod)
 	// check if the Pod's owner has already been validated
-	if checkOwners(&pod.ObjectMeta) {
+	if checkOwners(images, &pod.ObjectMeta) {
 		return
 	}
 	// check for a breakglass annotation on the pod
@@ -236,12 +238,13 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
 		return
 	}
-	reviewImages(PodImages(*pod), pod.Namespace, pod, ar)
+	reviewImages(images, pod.Namespace, pod, ar)
 }
 
 func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
+	images := ReplicaSetImages(*replicaSet)
 	// check if the ReplicaSet's owner has already been validated
-	if checkOwners(&replicaSet.ObjectMeta) {
+	if checkOwners(images, &replicaSet.ObjectMeta) {
 		return
 	}
 	// check for a breakglass annotation on the replica set
@@ -249,7 +252,7 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
 		return
 	}
-	reviewImages(ReplicaSetImages(*replicaSet), replicaSet.Namespace, nil, ar)
+	reviewImages(images, replicaSet.Namespace, nil, ar)
 }
 
 // TODO(aaron-prindle) remove these functions
@@ -283,22 +286,6 @@ func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.Admission
 		return nil, ar, err
 	}
 	return &deployment, ar, nil
-}
-
-func checkOwners(meta *metav1.ObjectMeta) bool {
-	owners := meta.GetOwnerReferences()
-	if owners == nil {
-		return false
-	}
-	for _, o := range owners {
-		for _, s := range constants.SupportedTypes {
-			if o.Kind == s {
-				glog.Infof("found owner %s %s for %s which was already validated", o.Kind, o.Name, meta.Name)
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func checkBreakglass(meta *metav1.ObjectMeta) bool {
