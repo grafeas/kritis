@@ -49,12 +49,44 @@ type ImageSecurityPolicySpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ImageSecurityPolicy is a list of ImageSecurityPolicy resources
+// ImageSecurityPolicyList is a list of ImageSecurityPolicy resources
 type ImageSecurityPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
 	Items []ImageSecurityPolicy `json:"items"`
+}
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// BuildPolicy is a specification for a BuildPolicy resource
+type BuildPolicy struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec BuildPolicySpec `json:"spec"`
+}
+
+// BuildPolicySpec is the spec for a BuildPolicy resource
+type BuildPolicySpec struct {
+	AttestationAuthorityName string            `yaml:"attestationAuthorityName"`
+	BuildRequirements        BuildRequirements `yaml:"buildRequirements"`
+}
+
+type BuildRequirements struct {
+	BuiltFrom string `yaml:"builtFrom"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// BuildPolicyList is a list of BuildPolicy resources
+type BuildPolicyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []BuildPolicy `json:"items"`
 }
 
 // +genclient

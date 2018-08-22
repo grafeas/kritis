@@ -14,6 +14,12 @@ packageVulnerabilityPolicy:
     providers/goog-vulnz/notes/CVE-2017-1000082
 ```
 
+In addition to the enforcement this project also contains *signers* that can be
+use to create [Grafeas](https://github.com/grafeas/grafeas) Attestation
+Occurrences to be used in other enforcement systems like [Binary
+Authorization](https://cloud.google.com/binary-authorization/).  For details see
+[Kritis Signer](signer_install.md).
+
 ## Getting Started
 
 * Learn the concepts in the [Kritis whitepaper](https://github.com/Grafeas/Grafeas/blob/master/case-studies/binary-authorization.md)

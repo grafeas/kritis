@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+  name: kritis-crd-role
+  labels:
+    # Add these permissions to the "edit" default role, so that "edit" can see our CRD.
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    kritis.grafeas.io/install: ""
+rules:
+- apiGroups: ["kritis.grafeas.io"]
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+

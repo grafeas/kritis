@@ -26,6 +26,14 @@ type AttestationAuthorityListerExpansion interface{}
 // AttestationAuthorityNamespaceLister.
 type AttestationAuthorityNamespaceListerExpansion interface{}
 
+// BuildPolicyListerExpansion allows custom methods to be added to
+// BuildPolicyLister.
+type BuildPolicyListerExpansion interface{}
+
+// BuildPolicyNamespaceListerExpansion allows custom methods to be added to
+// BuildPolicyNamespaceLister.
+type BuildPolicyNamespaceListerExpansion interface{}
+
 // ImageSecurityPolicyListerExpansion allows custom methods to be added to
 // ImageSecurityPolicyLister.
 type ImageSecurityPolicyListerExpansion interface{}
