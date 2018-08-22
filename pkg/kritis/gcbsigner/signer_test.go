@@ -192,10 +192,10 @@ func TestValidateAndSign(t *testing.T) {
 				Secret:   sMock,
 			})
 			if err := r.ValidateAndSign(tc.provenance, bps); (err != nil) != tc.shdErr {
-				t.Errorf("expected ValidateAndSign to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("ValidateAndSign returned error %s, want %t", err, tc.shdErr)
 			}
-			if !reflect.DeepEqual(tc.expectedAttestations, cMock.Occ) {
-				t.Errorf("Expected: %v\n Got: %v", tc.expectedAttestations, cMock.Occ)
+			if !reflect.DeepEqual(cMock.Occ, tc.expectedAttestations) {
+				t.Errorf("Got attestations: %v, Expected: %v\n ", cMock.Occ, tc.expectedAttestations)
 			}
 		})
 	}

@@ -46,7 +46,7 @@ func main() {
 func run(ctx context.Context, project string, subscription string, ns string) error {
 	client, err := pubsub.NewClient(ctx, project)
 	if err != nil {
-		return fmt.Errorf("Could not create pubsub Client: %v", err)
+		return fmt.Errorf("Could not create pubsub client: %v", err)
 	}
 
 	sub := client.Subscription(subscription)

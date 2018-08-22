@@ -187,10 +187,10 @@ func TestExtractBuildProvenanceFromEvent(t *testing.T) {
 			msg := pubsub.Message{Data: []byte(tc.message)}
 			provenance, err := ExtractBuildProvenanceFromEvent(&msg)
 			if (err != nil) != tc.shdErr {
-				t.Errorf("expected ExtractBuildProvenanceFromEvent to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("ExtractBuildProvenanceFromEvent returned error %t, want %s", err, tc.shdErr)
 			}
-			if !reflect.DeepEqual(tc.expectedProvenance, provenance) {
-				t.Errorf("Expected: %v\n Got: %v", tc.expectedProvenance, provenance)
+			if !reflect.DeepEqual(provenance, tc.expectedProvenance) {
+				t.Errorf(" Got provenance: %v\nExpected: %v", tc.expectedProvenance, provenance)
 			}
 		})
 	}

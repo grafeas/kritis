@@ -41,33 +41,36 @@ func ExtractBuildProvenanceFromEvent(msg *pubsub.Message) ([]BuildProvenance, er
 	}
 	glog.Infof("build %q, status: %q", event.ID, event.Status)
 	glog.Infof("messages: %q", msg.Data)
-	if event.Status == "SUCCESS" {
-		glog.Infof("complete build %q", event.ID)
-		provenance := make([]BuildProvenance, 0, len(event.Results.Images))
-		for _, image := range event.Results.Images {
-			if strings.Contains(image.Name, ":latest") {
-				continue
-			}
-			imageRef := fmt.Sprintf("%s@%s", image.Name, image.Digest)
-			glog.Infof("process image %s", imageRef)
-			sourceSuffix := fmt.Sprintf("@%s", event.Source.RepoSource.CommitSHA)
-			if len(sourceSuffix) == 1 {
-				sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.TagName)
-			}
-			if len(sourceSuffix) == 1 {
-				sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.BranchName)
-			}
-
-			source := fmt.Sprintf(constants.CloudSourceRepoPattern, event.Source.RepoSource.ProjectID, event.Source.RepoSource.RepoName, sourceSuffix)
-			provenance = append(provenance, BuildProvenance{
-				BuildID:   event.ID,
-				ImageRef:  imageRef,
-				BuiltFrom: source,
-			})
-		}
-		return provenance, nil
+	if event.Status != "SUCCESS" {
+		return nil, nil
 	}
-	return nil, nil
+	glog.Infof("complete build %q", event.ID)
+	provenance := make([]BuildProvenance, 0, len(event.Results.Images))
+	for _, image := range event.Results.Images {
+		if strings.Contains(image.Name, ":latest") {
+			// GCB creates two entries per built image, one with
+			// tag, one without (i.e., image name only).  Ignore the
+			// entry with tag.
+			continue
+		}
+		imageRef := fmt.Sprintf("%s@%s", image.Name, image.Digest)
+		glog.Infof("process image %s", imageRef)
+		sourceSuffix := fmt.Sprintf("@%s", event.Source.RepoSource.CommitSHA)
+		if len(sourceSuffix) == 1 {
+			sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.TagName)
+		}
+		if len(sourceSuffix) == 1 {
+			sourceSuffix = fmt.Sprintf(":%s", event.Source.RepoSource.BranchName)
+		}
+
+		source := fmt.Sprintf(constants.CloudSourceRepoPattern, event.Source.RepoSource.ProjectID, event.Source.RepoSource.RepoName, sourceSuffix)
+		provenance = append(provenance, BuildProvenance{
+			BuildID:   event.ID,
+			ImageRef:  imageRef,
+			BuiltFrom: source,
+		})
+	}
+	return provenance, nil
 }
 
 type BuildSource struct {
