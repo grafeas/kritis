@@ -40,9 +40,7 @@ func (m *MockMetadataClient) CreateAttestationOccurence(n *containeranalysispb.N
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
-	m.Occ = map[string]string{
-		image: s.SecretName,
-	}
+	m.Occ[fmt.Sprintf("%s-%s", image, n.Name)] = s.SecretName
 	return nil, nil
 }
 
@@ -51,13 +49,13 @@ func (m *MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAut
 		return nil, fmt.Errorf("could not get note")
 	}
 	return &containeranalysispb.Note{
-		Name: aa.Name,
+		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
 func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	return &containeranalysispb.Note{
-		Name: aa.Name,
+		Name: aa.Spec.NoteReference,
 	}, nil
 }
 

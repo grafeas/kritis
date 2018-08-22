@@ -86,10 +86,14 @@ REGISTRY?=gcr.io/kritis-project
 TEST_REGISTRY?=gcr.io/kritis-int-test
 REPOPATH ?= $(ORG)/$(PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
+GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
 KRITIS_PROJECT = $(REPOPATH)/kritis
 
 out/kritis-server: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SERVICE_PACKAGE)
+
+out/gcb-signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCB_SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -159,3 +163,12 @@ integration-in-docker: build-push-image
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		$(REGISTRY)/kritis-integration:$(IMAGE_TAG)
+
+.PHONY: gcb-signer-image
+gcb-signer-image: out/gcb-signer-image
+	docker build -t $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG) -f deploy/kritis-gcb-signer/Dockerfile .
+
+.PHONY: gcb-signer-push-image
+gcb-signer-push-image: gcb-signer-image
+	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
+
