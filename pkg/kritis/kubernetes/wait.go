@@ -240,6 +240,36 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 	return err
 }
 
+// WaitForReplicaSetToStabilize waits till the ReplicaSet has a matching generation/replica count between spec and status.
+func WaitForReplicaSetToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+	options := meta_v1.ListOptions{FieldSelector: fields.Set{
+		"metadata.name":      name,
+		"metadata.namespace": ns,
+	}.AsSelector().String()}
+	w, err := c.AppsV1().ReplicaSets(ns).Watch(options)
+	if err != nil {
+		return err
+	}
+	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Deleted:
+			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "replicasets"}, "")
+		}
+		switch rs := event.Object.(type) {
+		case *appsv1.ReplicaSet:
+			if rs.Name == name && rs.Namespace == ns &&
+				rs.Generation <= rs.Status.ObservedGeneration &&
+				*(rs.Spec.Replicas) == rs.Status.Replicas {
+				return true, nil
+			}
+			glog.Infof("Waiting for replicaset %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+				name, rs.Generation, rs.Status.ObservedGeneration, *(rs.Spec.Replicas), rs.Status.Replicas)
+		}
+		return false, nil
+	})
+	return err
+}
+
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
 func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {

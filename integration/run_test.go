@@ -207,6 +207,7 @@ func TestKritisISPLogic(t *testing.T) {
 		args                 []string
 		deployments          []testObject
 		pods                 []testObject
+		replicasets          []testObject
 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
 		shouldSucceed        bool
 
@@ -310,6 +311,23 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 		},
 		{
+			description: "java-with-vulnz-replicaset",
+			args: []string{"kubectl", "create", "-f",
+				"testdata/java/java-with-vulnz-replicaset.yaml"},
+			replicasets: []testObject{
+				{
+					name: "java-with-vulnz-replicaset",
+				},
+			},
+			shouldSucceed:  false,
+			attestedImages: []string{},
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"testdata/java/java-with-vulnz-replicaset.yaml")
+				integration_util.RunCmdOut(cmd)
+			},
+		},
+		{
 			description: "nginx-no-digest-breakglass",
 			args: []string{"kubectl", "apply", "-f",
 				"integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
@@ -345,6 +363,29 @@ func TestKritisISPLogic(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
 					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
 				cmd.Dir = "../"
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
+		{
+			description: "java-with-vulnz-breakglass-replicaset",
+			args: []string{"kubectl", "apply", "-f",
+				"testdata/java/java-with-vulnz-breakglass-replicaset.yaml"},
+			replicasets: []testObject{
+				{
+					name: "java-with-vulnz-breakglass-replicaset",
+				},
+			},
+			shouldSucceed: true,
+			attestedImages: []string{
+				"gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
+			},
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"testdata/java/java-with-vulnz-breakglass-replicaset.yaml")
+
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -411,6 +452,29 @@ func TestKritisISPLogic(t *testing.T) {
 				}
 			},
 		},
+		{
+			description: "replicaset-with-acceptable-vulnz",
+			args: []string{"kubectl", "apply", "-f",
+				"testdata/vulnz/acceptable-vulnz-replicaset.yaml"},
+			replicasets: []testObject{
+				{
+					name: "replicaset-with-acceptable-vulnz",
+				},
+			},
+			shouldSucceed: true,
+			attestedImages: []string{
+				"gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6",
+			},
+			cleanup: func(t *testing.T) {
+				cmd := exec.Command("kubectl", "delete", "-f",
+					"testdata/vulnz/acceptable-vulnz-replicaset.yaml")
+
+				output, err := integration_util.RunCmdOut(cmd)
+				if err != nil {
+					t.Fatalf("kubectl delete failed: %s %v", output, err)
+				}
+			},
+		},
 	}
 
 	ns, deleteNs := setupNamespace(t)
@@ -463,6 +527,13 @@ func TestKritisISPLogic(t *testing.T) {
 						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
 					}
 					testCase.deploymentValidation(t, deployment)
+				}
+			}
+
+			for _, r := range testCase.replicasets {
+				if err := kubernetesutil.WaitForReplicaSetToStabilize(client, ns.Name, r.name, 10*time.Minute); err != nil {
+					t.Fatalf("Timed out waiting for replicasets to stabilize\n%s",
+						getKritisLogs(t))
 				}
 			}
 		})
@@ -593,7 +664,7 @@ func TestKritisCron(t *testing.T) {
 			if err != nil {
 				t.Fatalf("kubectl get for kritis-server failed: %s %v", output, err)
 			}
-			logrus.Infof("kubectl get po output: %s", pods)
+			logrus.Infof("kubectl get po output: \n %s", pods)
 
 			cmd = exec.Command("kubectl", "get", "po",
 				"-l", "label=kritis-validation-hook",

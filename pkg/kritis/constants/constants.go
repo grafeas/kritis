@@ -48,6 +48,9 @@ const (
 	// Constants for Metadata Library
 	PageSize          = int32(100)
 	ResourceURLPrefix = "https://"
+
+	// Constants relevant for the GCB event parser
+	CloudSourceRepoPattern = "https://source.developers.google.com/p/%s/r/%s%s"
 )
 
 var (

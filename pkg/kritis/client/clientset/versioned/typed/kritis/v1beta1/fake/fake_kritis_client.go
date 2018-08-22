@@ -32,6 +32,10 @@ func (c *FakeKritisV1beta1) AttestationAuthorities(namespace string) v1beta1.Att
 	return &FakeAttestationAuthorities{c, namespace}
 }
 
+func (c *FakeKritisV1beta1) BuildPolicies(namespace string) v1beta1.BuildPolicyInterface {
+	return &FakeBuildPolicies{c, namespace}
+}
+
 func (c *FakeKritisV1beta1) ImageSecurityPolicies(namespace string) v1beta1.ImageSecurityPolicyInterface {
 	return &FakeImageSecurityPolicies{c, namespace}
 }

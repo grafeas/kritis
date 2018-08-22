@@ -5,7 +5,12 @@
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
-    "internal/version"
+    "iam",
+    "internal/optional",
+    "internal/version",
+    "pubsub",
+    "pubsub/apiv1",
+    "pubsub/internal/distribution"
   ]
   revision = "777200caa7fb8936aed0f12b1fd79af64cc83ec9"
   version = "v0.24.0"
@@ -274,6 +279,15 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/sync"
+  packages = [
+    "errgroup",
+    "semaphore"
+  ]
+  revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = [
     "unix",
@@ -328,6 +342,7 @@
     "internal",
     "iterator",
     "option",
+    "support/bundler",
     "transport",
     "transport/grpc",
     "transport/http"
@@ -361,6 +376,7 @@
     "googleapis/devtools/containeranalysis/v1alpha1",
     "googleapis/iam/v1",
     "googleapis/longrunning",
+    "googleapis/pubsub/v1",
     "googleapis/rpc/status",
     "protobuf/field_mask"
   ]
@@ -618,6 +634,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6e6e35f83230f45896a07aab36d6a3cc606d79244f60fce07b2fce4e9bdf88e5"
+  inputs-digest = "2bd4760dbd2ee066a06b591b2830702080fd22435eead2d2dc9848aa9c2a11dc"
   solver-name = "gps-cdcl"
   solver-version = 1

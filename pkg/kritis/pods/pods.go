@@ -41,18 +41,6 @@ func Pods(namespace string) ([]corev1.Pod, error) {
 	return pods.Items, err
 }
 
-// Images returns a list of images in a pod
-func Images(pod corev1.Pod) []string {
-	images := []string{}
-	for _, ic := range pod.Spec.InitContainers {
-		images = append(images, ic.Image)
-	}
-	for _, c := range pod.Spec.Containers {
-		images = append(images, c.Image)
-	}
-	return images
-}
-
 func getPatch(modifiedPod *corev1.Pod, originalJSON []byte) ([]byte, error) {
 	modifiedJSON, err := json.Marshal(modifiedPod)
 	if err != nil {

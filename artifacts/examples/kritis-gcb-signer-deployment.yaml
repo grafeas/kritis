@@ -1,0 +1,27 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: kritis-gcb-signer
+  namespace: default
+  labels:
+    app: kritis-gcb-signer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kritis-gcb-signer
+  template:
+    metadata:
+      labels:
+        app: kritis-gcb-signer
+    spec:
+      containers:
+      - name: kritis-gcb-signer
+        image: gcr.io/kritis-test1/kritis-gcb-signer:2440f7b6eeca3b208b891e7adbb304d7b008f7e5
+        imagePullPolicy: Always
+        args: ["--gcb_project=binauthz-demo1-builder", "--logtostderr"]
+        env:
+          - name: SIGNER_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace

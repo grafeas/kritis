@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: replicaset-with-acceptable-vulnz
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: replicaset-with-acceptable-vulnz
+  template:
+    metadata:
+      labels:
+        app: replicaset-with-acceptable-vulnz
+    spec:
+      containers:
+      - name: replicaset-with-acceptable-vulnz
+        image: gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6
+        command: ["echo", "hi"]

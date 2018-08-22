@@ -20,4 +20,6 @@ package v1beta1
 
 type AttestationAuthorityExpansion interface{}
 
+type BuildPolicyExpansion interface{}
+
 type ImageSecurityPolicyExpansion interface{}
