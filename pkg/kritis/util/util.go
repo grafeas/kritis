@@ -47,6 +47,7 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
 }
 
+// GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
 func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	n, err := c.GetAttestationNote(a)
 	if err == nil {
