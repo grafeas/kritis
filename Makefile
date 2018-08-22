@@ -20,8 +20,9 @@ COMMIT ?= $(shell git rev-parse HEAD)
 VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
-# For integration testing, use this project name.
-GCP_PROJECT ?= YOUR_TEST_PROJECT
+# Used for integration testing. example:
+# "make -e GCP_PROJECT=kritis-int integration-local"
+GCP_PROJECT ?= PLEASE_SET_GCP_PROJECT_ENV
 
 
 %.exe: %
@@ -40,7 +41,7 @@ RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/$(RESOLVE_TAGS_PATH)
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
-LOCAL_GAC_CREDENTIALS_PATH ?= /tmp/gac.json
+GAC_CREDENTIALS_PATH ?= .integration_test_gac_$(GCP_PROJECT).json
 
 .PHONY: test
 test: cross
@@ -84,7 +85,7 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
-TEST_REGISTRY?=gcr.io/$(GCP_TEST_PROJECT)
+TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 
 out/kritis-server: $(GO_FILES)
@@ -126,14 +127,23 @@ clean:
 integration: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
+
+.PHONY: setup-integration-local
+setup-integration-local:
+	# NOTE: There is a limit to how many keys can be created per cluster. May fail.
+	gcloud --project=$(GCP_PROJECT) iam service-accounts keys create \
+		$(GAC_CREDENTIALS_PATH) \
+		--iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
+
 .PHONY: integration-local
 integration-local:
+	# NOTE: This will fail unless "setup-integration-test" has been run at least once.
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
 		-timeout 5m \
 		-remote=false \
-		-gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH) \
-		-gcp-project=$(GCP_TEST_PROJECT)
+		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
+		-gcp-project=$(GCP_PROJECT)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
