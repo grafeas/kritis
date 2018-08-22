@@ -23,7 +23,8 @@ IMAGE_TAG ?= $(COMMIT)
 # Used for integration testing. example:
 # "make -e GCP_PROJECT=kritis-int integration-local"
 GCP_PROJECT ?= PLEASE_SET_GCP_PROJECT_ENV
-
+GCP_ZONE ?= us-central1-a
+TEST_CLUSTER ?= kritis-integration-test
 
 %.exe: %
 	mv $< $@
@@ -135,10 +136,12 @@ integration: cross
 
 .PHONY: setup-integration-local
 setup-integration-local:
-	# NOTE: There is a limit to how many keys can be created per cluster. May fail.
-	gcloud --project=$(GCP_PROJECT) iam service-accounts keys create \
-		$(GAC_CREDENTIALS_PATH) \
-		--iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
+	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(TEST_CLUSTER)
+
+	test -s $(GAC_CREDENTIALS_PATH) \
+		|| gcloud --project=$(GCP_PROJECT) iam service-accounts keys \
+		create $(GAC_CREDENTIALS_PATH) --iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
+
 
 .PHONY: integration-local
 integration-local:
@@ -148,7 +151,8 @@ integration-local:
 		-timeout 5m \
 		-remote=false \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
-		-gcp-project=$(GCP_PROJECT)
+		-gcp-project=$(GCP_PROJECT) \
+		-gke-cluster-name=$(TEST_CLUSTER)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
@@ -167,7 +171,7 @@ build-push-test-image: build-test-image preinstall-test-image postinstall-test-i
 .PHONY: integration-in-docker
 integration-in-docker: build-push-image
 	docker build \
-		-f deploy/YOUR_TEST_PROJECT/Dockerfile \
+		-f deploy/$(GCP_PROJECT)/Dockerfile \
 		--target integration \
 		-t $(REGISTRY)/kritis-integration:$(IMAGE_TAG) .
 	docker run \

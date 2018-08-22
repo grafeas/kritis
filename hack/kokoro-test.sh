@@ -46,7 +46,10 @@ if [[ "${GO_TEST_EXIT_CODE}" -ne 0 ]]; then
     exit "${GO_TEST_EXIT_CODE}"
 fi
 
-REGISTRY=gcr.io/YOUR_TEST_PROJECT make build-push-image
-REGISTRY=gcr.io/YOUR_TEST_PROJECT make integration-in-docker
+export GCP_PROJECT=kritis-int-test
+export TEST_CLUSTER=test-cluster-2
+export GAC_CREDENTIALS_PATH="${HOME}/tmp/gac.json"
+make build-push-image
+make integration-in-docker
 
 popd

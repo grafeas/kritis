@@ -5,5 +5,5 @@ metadata:
 spec:
   containers:
   - name: image-with-acceptable-vulnz
-    image: gcr.io/YOUR_TEST_PROJECT/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6
+    image: gcr.io/{{ . Project  }}/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6
     command: ["echo", "hi"]

@@ -20,10 +20,13 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/grafeas/kritis/cmd/kritis/version"
@@ -46,13 +49,46 @@ const (
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
-	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
-	gcpProject     = flag.String("gcp-project", "YOUR_TEST_PROJECT", "the gcp project where the integration test cluster lives")
+	gkeClusterName = flag.String("gke-cluster-name", "UNSET_CLUSTER_NAME", "name of the integration test cluster")
+	gcpProject     = flag.String("gcp-project", "UNSET_GCP_PROJECT", "the gcp project where the integration test cluster lives")
 	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
-	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for YOUR_TEST_PROJECT project")
+	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for --gcp-project")
 	client         kubernetes.Interface
 	context        *api.Context
 )
+
+// tmplVars are template keys that are referenced by tmpl()
+type tmplVars struct {
+	Project string
+}
+
+// tmpl processes a text template and returns the path to it.
+func tmpl(t *testing.T, path string) string {
+	t.Helper()
+	in, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatalf("unable to read %s: %v", path, err)
+	}
+
+	tmpl := template.Must(template.New("text").Parse(string(in)))
+	vars := tmplVars{
+		Project: *gcpProject,
+	}
+	tf, err := ioutil.TempFile("", filepath.Base(path))
+	if err != nil {
+		t.Fatalf("tempfile: %v", err)
+	}
+	if err = tmpl.Execute(tf, vars); err != nil {
+		t.Fatalf("unable to process %s: %v", path, err)
+	}
+
+	if err != nil {
+		t.Fatalf("TempFile: %v", err)
+	}
+	tf.Close()
+	t.Logf("Generated YAML: %s", tf.Name())
+	return tf.Name()
+}
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -120,18 +156,17 @@ func createGACSecret(t *testing.T, ns *v1.Namespace) {
 	crdCmd.Dir = "../"
 	_, err := integration_util.RunCmdOut(crdCmd)
 	if err != nil {
-		logrus.Infof("error creating gac secret; if running locally, please make sure you have container analysis credentials for YOUR_TEST_PROJECT at %s on your machine", *gacCredentials)
+		logrus.Infof("error creating gac secret; if running locally, please make sure you have container analysis credentials for %s at %s on your machine", *gcpProject, *gacCredentials)
 		t.Fatalf("error creating gac secret %v", err)
 	}
 }
 
 func initKritis(t *testing.T, ns *v1.Namespace) func() {
+	t.Logf("Initializing Kritis in project %q", *gcpProject)
 	helmCmd := exec.Command("helm", "install", "./kritis-charts",
 		"--namespace", ns.Name,
-		"--set", fmt.Sprintf("repository=%s",
-			"gcr.io/YOUR_TEST_PROJECT/"),
-		"--set", fmt.Sprintf("image.tag=%s",
-			version.Commit),
+		"--set", fmt.Sprintf("repository=gcr.io/%s/", *gcpProject),
+		"--set", fmt.Sprintf("image.tag=%s", version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
 		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
@@ -219,36 +254,32 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "nginx-no-digest",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-no-digest.yaml"},
+				tmpl(t, "../integration/testdata/nginx/nginx-no-digest.yaml")},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest",
 				},
 			},
 			shouldSucceed: false,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/nginx/nginx-no-digest.yaml"))
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "nginx-no-digest-whitelist",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-no-digest-whitelist.yaml"},
+				tmpl(t, "../integration/testdata/nginx/nginx-no-digest-whitelist.yaml")},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest-whitelist",
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest-whitelist.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/nginx/nginx-no-digest-whitelist.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -258,18 +289,16 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "nginx-digest-whitelist",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/nginx/nginx-digest-whitelist.yaml"},
+				tmpl(t, "../integration/testdata/nginx/nginx-digest-whitelist.yaml")},
 			pods: []testObject{
 				{
 					name: "nginx-digest-whitelist",
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-digest-whitelist.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/nginx/nginx-digest-whitelist.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -277,36 +306,34 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 		},
 		{
-			description: "java-with-vuln",
+			description: "java-with-vulnz",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vuln.yaml"},
+				"../integration/testdata/java/java-with-vulnz.yaml"},
 			pods: []testObject{
 				{
-					name: "java-with-vuln",
+					name: "java-with-vulnz",
 				},
 			},
 			shouldSucceed: false,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln.yaml")
+					tmpl(t, "../tmpl/integration/testdata/java/java-with-vulnz.yaml"))
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
-			description: "java-with-vuln-deployment",
+			description: "java-with-vulnz-deployment",
 			args: []string{"kubectl", "create", "-f",
-				"integration/testdata/java/java-with-vuln-deployment.yaml"},
+				tmpl(t, "../integration/testdata/java/java-with-vulnz-deployment.yaml")},
 			deployments: []testObject{
 				{
-					name: "java-with-vuln-deployment",
+					name: "java-with-vulnz-deployment",
 				},
 			},
 			shouldSucceed: false,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln-deployment.yaml")
+					tmpl(t, "../integration/testdata/java/java-with-vulnz-deployment.yaml"))
 				integration_util.RunCmdOut(cmd)
 			},
 		},
@@ -330,18 +357,16 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "nginx-no-digest-breakglass",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
+				"../integration/testdata/nginx/nginx-no-digest-breakglass.yaml"},
 			pods: []testObject{
 				{
 					name: "nginx-no-digest-breakglass",
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/nginx/nginx-no-digest-breakglass.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/nginx/nginx-no-digest-breakglass.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -349,20 +374,18 @@ func TestKritisISPLogic(t *testing.T) {
 			},
 		},
 		{
-			description: "java-with-vuln-breakglass-deployment",
+			description: "java-with-vulnz-breakglass-deployment",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml"},
+				tmpl(t, "../integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml")},
 			deployments: []testObject{
 				{
-					name: "java-with-vuln-breakglass-deployment",
+					name: "java-with-vulnz-breakglass-deployment",
 				},
 			},
 			shouldSucceed: true,
-			dir:           ,
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/java/java-with-vuln-breakglass-deployment.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/java/java-with-vulnz-breakglass-deployment.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -395,18 +418,16 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "kritis-server-global-whitelist",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml"},
+				tmpl(t, "../integration/testdata/kritis-server/kritis-server-global-whitelist.yaml")},
 			pods: []testObject{
 				{
 					name: "kritis-server-global-whitelist",
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/kritis-server/kritis-server-global-whitelist.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/kritis-server/kritis-server-global-whitelist.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
@@ -416,36 +437,32 @@ func TestKritisISPLogic(t *testing.T) {
 		{
 			description: "kritis-server-global-whitelist-with-vulnz",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
+				"../integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
 			pods: []testObject{
 				{
 					name: "kritis-server-global-whitelist-with-vulnz",
 				},
 			},
 			shouldSucceed: false,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "../integration/testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"))
 				integration_util.RunCmdOut(cmd)
 			},
 		},
 		{
 			description: "image-with-acceptable-vulnz",
 			args: []string{"kubectl", "apply", "-f",
-				"integration/testdata/vulnz/acceptable-vulnz.yaml"},
+				tmpl(t, "../integration/testdata/vulnz/acceptable-vulnz.yaml")},
 			pods: []testObject{
 				{
 					name: "image-with-acceptable-vulnz",
 				},
 			},
 			shouldSucceed: true,
-			dir:           "../",
 			cleanup: func(t *testing.T) {
 				cmd := exec.Command("kubectl", "delete", "-f",
-					"integration/testdata/vulnz/acceptable-vulnz.yaml")
-				cmd.Dir = "../"
+					tmpl(t, "integration/testdata/vulnz/acceptable-vulnz.yaml"))
 				output, err := integration_util.RunCmdOut(cmd)
 				if err != nil {
 					t.Fatalf("kubectl delete failed: %s %v", output, err)
