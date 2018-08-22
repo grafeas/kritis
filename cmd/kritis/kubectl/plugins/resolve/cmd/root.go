@@ -62,7 +62,9 @@ var RootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Place here so it is first run before anything else, but after init() so that
 		// it does not silently break tests.
-		flag.CommandLine.Parse([]string{})
+		if err := flag.CommandLine.Parse([]string{}); err != nil {
+			return err
+		}
 		resolveApply()
 		cwd, err := os.Getwd()
 		if err != nil {
