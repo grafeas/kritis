@@ -19,6 +19,7 @@ package admission
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -34,9 +35,11 @@ func checkOwners(dependentImages []string, meta *metav1.ObjectMeta) bool {
 	for _, o := range owners {
 		ownerImages, err := retrieveOwnersImages(meta.Namespace, o)
 		if err != nil {
+			glog.Infof("checked for owner %s %s but got err, proceeding with standard validation process: %v", o.Kind, o.Name, err)
 			return false
 		}
 		if !imagesAreValid(dependentImages, ownerImages) {
+			glog.Infof("checked for owner %s %s but all images aren't valid, proceeding with standard validation process: %v", o.Kind, o.Name, err)
 			return false
 		}
 	}

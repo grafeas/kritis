@@ -181,6 +181,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 	images := DeploymentImages(*deployment)
 	// check if the Deployments's owner has already been validated
 	if checkOwners(images, &deployment.ObjectMeta) {
+		glog.Infof("all owners for Deployment %s have been validated, returning successful status", deployment.Name)
 		return
 	}
 	// check for a breakglass annotation on the deployment
@@ -231,6 +232,7 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 	images := PodImages(*pod)
 	// check if the Pod's owner has already been validated
 	if checkOwners(images, &pod.ObjectMeta) {
+		glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
 		return
 	}
 	// check for a breakglass annotation on the pod
@@ -245,6 +247,7 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview
 	images := ReplicaSetImages(*replicaSet)
 	// check if the ReplicaSet's owner has already been validated
 	if checkOwners(images, &replicaSet.ObjectMeta) {
+		glog.Infof("all owners for ReplicaSet %s have been validated, returning successful status", replicaSet.Name)
 		return
 	}
 	// check for a breakglass annotation on the replica set
