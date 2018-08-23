@@ -38,6 +38,7 @@ spec:
 `
 
 func Test_RootCmd(t *testing.T) {
+	/* WARNING: This test is non-hermetic: it requires access to resolve tags against kritis-int-test */
 	initial := fmt.Sprintf(testYaml, "gcr.io/kritis-int-test/resolve-tags-test-image")
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -48,12 +49,10 @@ func Test_RootCmd(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(file.Name())
-
 	var output bytes.Buffer
 	RootCmd.SetOutput(&output)
 	RootCmd.SetArgs([]string{fmt.Sprintf("--filename=%s", file.Name())})
-
-	if err := RootCmd.Execute(); err != nil {
+	if err = RootCmd.Execute(); err != nil {
 		t.Fatalf("error executing command: %v", err)
 	}
 
