@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/grafeas/kritis/cmd/kritis/kubectl/plugins/resolve/cmd"
@@ -30,7 +29,6 @@ func init() {
 
 func main() {
 	if err := cmd.RootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
