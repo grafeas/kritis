@@ -17,15 +17,10 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"os"
 
 	"github.com/grafeas/kritis/cmd/kritis/kubectl/plugins/resolve/cmd"
 )
-
-func init() {
-	RootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
-}
 
 func main() {
 	if err := cmd.RootCmd.Execute(); err != nil {

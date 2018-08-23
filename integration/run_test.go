@@ -245,6 +245,7 @@ func TestKritisISPLogic(t *testing.T) {
 		replicasets          []testObject
 		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
 		shouldSucceed        bool
+		attestedImages       []string
 
 		remoteOnly bool
 		cleanup    func(t *testing.T)

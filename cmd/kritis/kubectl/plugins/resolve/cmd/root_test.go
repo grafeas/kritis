@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
 var testYaml = `apiVersion: v1
@@ -74,4 +76,7 @@ func Test_resolveFilepaths(t *testing.T) {
 	if err := os.Setenv(localFlagFilenameEnv, base); err != nil {
 		t.Error(err)
 	}
+	expected := append(multiArg{}, file.Name())
+	err = resolveFilepaths(dir)
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, files)
 }
