@@ -43,3 +43,18 @@ func Authorities(namespace string) ([]v1beta1.AttestationAuthority, error) {
 	}
 	return list.Items, nil
 }
+
+// Authority returns the AttestationAuthority in the specified namespace.
+// Returns error if AttestationAuthority not found
+func Authority(namespace string, name string) (*v1beta1.AttestationAuthority, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error building config: %v", err)
+	}
+
+	client, err := clientset.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("error building clientset: %v", err)
+	}
+	return client.KritisV1beta1().AttestationAuthorities(namespace).Get(name, metav1.GetOptions{})
+}

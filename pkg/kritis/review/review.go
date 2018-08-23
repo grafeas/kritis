@@ -28,7 +28,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 	"k8s.io/api/core/v1"
 )
 
@@ -168,7 +167,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	}
 	for _, a := range u {
 		// Get or Create Note for this this Authority
-		n, err := r.getOrCreateAttestationNote(&a)
+		n, err := util.GetOrCreateAttestationNote(r.client, &a)
 		if err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
@@ -203,12 +202,4 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAtte
 		}
 	}
 	return l
-}
-
-func (r Reviewer) getOrCreateAttestationNote(a *v1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	n, err := r.client.GetAttestationNote(a)
-	if err == nil {
-		return n, nil
-	}
-	return r.client.CreateAttestationNote(a)
 }
