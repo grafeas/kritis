@@ -277,8 +277,6 @@ spec:
   replicas: 2
   template:
     metadata:
-      annotations:
-        kritis.grafeas.io/breakglass: "true"
       labels:
         app: java-with-vulnz
     spec:
