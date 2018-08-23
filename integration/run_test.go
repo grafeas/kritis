@@ -65,6 +65,7 @@ type tmplVars struct {
 // tmpl processes a text template and returns the path to it.
 func tmpl(t *testing.T, path string) string {
 	t.Helper()
+	t.Logf("Reading template: %s ...", path)
 	in, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatalf("unable to read %s: %v", path, err)
@@ -86,7 +87,6 @@ func tmpl(t *testing.T, path string) string {
 		t.Fatalf("TempFile: %v", err)
 	}
 	tf.Close()
-	t.Logf("Generated YAML: %s", tf.Name())
 	return tf.Name()
 }
 

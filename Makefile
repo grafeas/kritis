@@ -133,19 +133,27 @@ clean:
 integration: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
-
+# Steps to create a new test cluster on an GCP project that has already had a Kritis setup.
 .PHONY: setup-integration-local
 setup-integration-local:
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(TEST_CLUSTER) >/dev/null \
+		|| gcloud --project=$(GCP_PROJECT) container clusters create $(TEST_CLUSTER) \
+		--num-nodes=2 --zone=$(GCP_ZONE)
 	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(TEST_CLUSTER)
-
 	test -s $(GAC_CREDENTIALS_PATH) \
 		|| gcloud --project=$(GCP_PROJECT) iam service-accounts keys \
 		create $(GAC_CREDENTIALS_PATH) --iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
+	kubectl create serviceaccount --namespace kube-system tiller
+	kubectl create clusterrolebinding tiller-cluster-rule \
+		  --clusterrole=cluster-admin \
+		    --serviceaccount=kube-system:tiller
+	helm init --wait --service-account tiller
 
 
+# integration-local requires that "setup-integration-local" has been run at least once.
 .PHONY: integration-local
 integration-local:
-	# NOTE: This will fail unless "setup-integration-test" has been run at least once.
+	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
 		-timeout 5m \

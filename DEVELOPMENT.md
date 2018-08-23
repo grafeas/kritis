@@ -57,8 +57,7 @@ _These tests will not run correctly unless you have [checked out your fork into 
 
 ### Integration tests
 
-Follow the [installation guide](install.md), and install Kritis on a cluster named `kritis-integration-test`. Then you
-to download credentials and copy reference images, run:
+On a GCP project where Kritis has been installed, this will prepare a new cluster named `kritis-integration-test`:
 
 ```shell
 make -e GCP_PROJECT=<project id> setup-integration-local
