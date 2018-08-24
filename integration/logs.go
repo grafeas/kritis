@@ -18,7 +18,6 @@ package integration
 import (
 	"fmt"
 	"os/exec"
-	"testing"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -26,44 +25,42 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getWebhooksInCluster(t *testing.T) string {
+func webhooksFound() string {
 	log := ""
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
-		t.Logf("error getting kubernetes clientset for webhooks in cluster: %v", err)
-		return log
+		return fmt.Sprintf("GetClientset failed: %v", err)
 	}
-	webhooks, err := client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(meta_v1.ListOptions{})
+	hooks, err := client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(meta_v1.ListOptions{})
 	if err != nil {
-		t.Logf("error getting webhooks in cluster: %v", err)
-		return log
+		return fmt.Sprintf("webhook list failed: %v", err)
 	}
-	for _, webhook := range webhooks.Items {
-		log = log + fmt.Sprintf("found webhook %s in cluster \n", webhook.Name)
+	for _, h := range hooks.Items {
+		log = log + fmt.Sprintf("found webhook %q\n", h.Name)
 	}
 	return log
 }
 
-func getPodLogs(t *testing.T, pod string, ns *v1.Namespace) string {
+func podLogs(pod string, ns *v1.Namespace) string {
 	cmd := exec.Command("kubectl", "logs", pod, "-n", ns.Name)
-	output, err := integration_util.RunCmdOut(cmd)
+	out, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
-		t.Errorf("%s: %s %v", pod, output, err)
+		return fmt.Sprintf("unable to get pod logs for %q in %s: %v", pod, ns.Name, err)
 	}
-	return string(output)
+	return string(out)
 }
 
-func getKritisLogs(t *testing.T) string {
-	cmd := exec.Command("kubectl", "logs", "-l",
-		"app=kritis-validation-hook")
-	output, err := integration_util.RunCmdOut(cmd)
+func kritisLogs() string {
+	cmd := exec.Command("kubectl", "logs", "-l", "app=kritis-validation-hook")
+	out, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
-		t.Fatalf("kritis: %s %v", output, err)
+		return fmt.Sprintf("failed to get kritis-validation-hook logs: %v", err)
 	}
+
 	cmd = exec.Command("kubectl", "get", "imagesecuritypolicy")
-	output2, err := integration_util.RunCmdOut(cmd)
+	out2, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
-		t.Fatalf("kritis: %s %v", output2, err)
+		return fmt.Sprintf("failed to get isp: %v", err)
 	}
-	return string(output[:]) + "\n" + string(output2[:])
+	return string(out) + "\n" + string(out2)
 }

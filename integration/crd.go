@@ -89,6 +89,7 @@ func createAttestationAuthority(t *testing.T, ns string) {
 func createCRDExamples(t *testing.T, ns *v1.Namespace) {
 	t.Helper()
 	createAttestationAuthority(t, ns.Name)
+	t.Logf("Creating CRD examples ...")
 	for _, crd := range crdExamples {
 		crdCmd := exec.Command("kubectl", "create", "-f", crd, "-n", ns.Name)
 		crdCmd.Dir = "../artifacts/integration-examples"
@@ -100,10 +101,16 @@ func createCRDExamples(t *testing.T, ns *v1.Namespace) {
 
 func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
 	t.Helper()
+	t.Logf("Waiting for CRD examples ...")
 	for crd, name := range crdNames {
 		err := wait.PollImmediate(500*time.Millisecond, time.Minute*2, func() (bool, error) {
 			crdCmd := exec.Command("kubectl", "get", crd, name, "-n", ns.Name)
+			t.Logf("Executing %v ...", crdCmd)
 			_, err := integration_util.RunCmdOut(crdCmd)
+			t.Logf("RunCmdOut Result: %v", err)
+			if err != nil {
+				t.Logf("%s:%s in %s is ready!", crd, name, ns.Name)
+			}
 			return (err == nil), err
 		})
 		if err != nil {

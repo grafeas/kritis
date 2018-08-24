@@ -75,7 +75,7 @@ $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%.tar.gz: cross
 	tar -czf $@ -C $(RESOLVE_TAGS_PATH) plugin.yaml -C $(PWD)/out/ resolve-tags-$*
 
 .PHONY: install-plugin
-install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
+install-plugin: $BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
@@ -148,6 +148,22 @@ setup-integration-local:
 		  --clusterrole=cluster-admin \
 		    --serviceaccount=kube-system:tiller
 	helm init --wait --service-account tiller
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6 \
+		gcr.io/$(GCP_PROJECT)/acceptable-vulnz:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a \
+		gcr.io/$(GCP_PROJECT)/java-with-vulnz:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-digest-whitelist:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-digest-whitelist:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-no-digest-breakglass:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-no-digest-breakglass:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-no-digest:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+
 
 
 # integration-local requires that "setup-integration-local" has been run at least once.
@@ -156,8 +172,8 @@ integration-local:
 	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
+		-run TestKritisISPLogic \
 		-timeout 5m \
-		-remote=false \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
 		-gcp-project=$(GCP_PROJECT) \
 		-gke-cluster-name=$(TEST_CLUSTER)
