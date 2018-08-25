@@ -42,7 +42,7 @@ RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/$(RESOLVE_TAGS_PATH)
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
-GAC_CREDENTIALS_PATH ?= .integration_test_gac_$(GCP_PROJECT).json
+GAC_CREDENTIALS_PATH ?= $(CURDIR)/.integration_test_gac_$(GCP_PROJECT).json
 
 .PHONY: test
 test: cross
@@ -172,8 +172,7 @@ integration-local:
 	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
-		-run TestKritisISPLogic \
-		-timeout 5m \
+		-timeout 15m \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
 		-gcp-project=$(GCP_PROJECT) \
 		-gke-cluster-name=$(TEST_CLUSTER)

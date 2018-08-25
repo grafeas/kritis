@@ -20,26 +20,8 @@ import (
 	"os/exec"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
-	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func webhooksFound() string {
-	log := ""
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		return fmt.Sprintf("GetClientset failed: %v", err)
-	}
-	hooks, err := client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(meta_v1.ListOptions{})
-	if err != nil {
-		return fmt.Sprintf("webhook list failed: %v", err)
-	}
-	for _, h := range hooks.Items {
-		log = log + fmt.Sprintf("found webhook %q\n", h.Name)
-	}
-	return log
-}
 
 func podLogs(pod string, ns *v1.Namespace) string {
 	cmd := exec.Command("kubectl", "logs", pod, "-n", ns.Name)

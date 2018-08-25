@@ -51,6 +51,7 @@ var (
 	gkeClusterName = flag.String("gke-cluster-name", "UNSET_CLUSTER_NAME", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "UNSET_GCP_PROJECT", "the gcp project where the integration test cluster lives")
 	gacCredentials = flag.String("gac-credentials", "UNSET_CREDENTIALS_PATH", "path to gac.json credentials for --gcp-project")
+	deleteWebHooks = flag.Bool("delete-webhooks", true, "delete Kritis webhooks before running tests")
 	cleanup        = flag.Bool("cleanup", false, "cleanup allocated resources on exit")
 	client         kubernetes.Interface
 	context        *api.Context
@@ -78,8 +79,32 @@ func processTemplate(path string) (string, error) {
 	return tf.Name(), nil
 }
 
+func webhooks() ([]string, error) {
+	var names []string
+	client, err := kubernetesutil.GetClientset()
+	if err != nil {
+		return names, fmt.Errorf("GetClientset failed: %v", err)
+	}
+	hooks, err := client.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(meta_v1.ListOptions{})
+	if err != nil {
+		return names, fmt.Errorf("webhook list failed: %v", err)
+	}
+
+	for _, h := range hooks.Items {
+		if strings.HasPrefix(h.Name, "kritis-") {
+			names = append(names, h.Name)
+		}
+	}
+	return names, nil
+}
+
 func TestMain(m *testing.M) {
 	flag.Parse()
+	wd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatalf("failed to get wd: %v", err)
+	}
+	logrus.Infof("TestMain running from %s", wd)
 
 	// Our tests rely on kubectl, so populate the credentials for it.
 	cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
@@ -87,7 +112,6 @@ func TestMain(m *testing.M) {
 		logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
 	}
 
-	var err error
 	client, err = kubernetesutil.GetClientset()
 	if err != nil {
 		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
@@ -110,6 +134,24 @@ func TestMain(m *testing.M) {
 		logrus.Warn(err)
 	}
 
+	hooks, err := webhooks()
+	if err != nil {
+		logrus.Errorf("error retrieving webhooks: %v", err)
+	}
+	// Delete stray webhooks. They make tests difficult to debug.
+	if *deleteWebHooks {
+		for _, h := range hooks {
+			if err := exec.Command("kubectl", "delete", "ValidatingWebhookConfiguration", string(h)).Run(); err != nil {
+				logrus.Errorf("error deleting webhook: %v", err)
+			}
+		}
+	} else {
+		if hooks != nil {
+			logrus.Warnf("ignoring pre-existing webhooks: %v", hooks)
+		}
+	}
+
+	logrus.Infof("TestMain complete!")
 	os.Exit(exitCode)
 }
 
@@ -144,6 +186,7 @@ func setupNamespace() (*v1.Namespace, func(), error) {
 
 func install(ns *v1.Namespace) (func(*testing.T), error) {
 	helmCmd := exec.Command("helm", "install", "../kritis-charts",
+		"--wait",
 		"--namespace", ns.Name,
 		"--set", fmt.Sprintf("repository=gcr.io/%s/", *gcpProject),
 		"--set", fmt.Sprintf("image.tag=%s", version.Commit),
@@ -158,8 +201,15 @@ func install(ns *v1.Namespace) (func(*testing.T), error) {
 	)
 	out, err := integration_util.RunCmdOut(helmCmd)
 	if err != nil {
-		return nil, fmt.Errorf("testing error: %v\n%s\n%s\n%s", err,
-			webhooksFound(),
+		hooksMsg := ""
+		hooks, err := webhooks()
+		if err != nil {
+			hooksMsg = fmt.Sprintf("ERROR: %v", err)
+		} else {
+			hooksMsg = strings.Join(hooks, ", ")
+		}
+		return nil, fmt.Errorf("helm install failed: %v\n\nhooks: %s\n\npreinstall: %s\n\npostinstall: %s", err,
+			hooksMsg,
 			podLogs(preinstallPod, ns),
 			podLogs(postinstallPod, ns))
 	}
