@@ -86,7 +86,7 @@ func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionRevi
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
-	glog.Infof("handling pod %s...", pod.Name)
+	glog.Infof("handling pod %s in...", pod.Name)
 	reviewPod(&pod, admitResponse)
 	return nil
 }
@@ -201,6 +201,8 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 }
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+	// NOTE: pod may be nil if we are reviewing images for a replica set.
+	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting image security policies: %v", err)
@@ -208,6 +210,12 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	if len(isps) == 0 {
+		glog.Errorf("No ISP's found in namespace %s", ns)
+	} else {
+		glog.Infof("Found %d ISPs to review image against", len(isps))
+	}
+
 	client, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
@@ -224,6 +232,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	})
 
 	if err := r.Review(images, isps, pod); err != nil {
+		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
