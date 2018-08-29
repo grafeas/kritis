@@ -35,7 +35,7 @@ var (
 )
 
 func TestGetVulnerabilities(t *testing.T) {
-	d, err := NewContainerAnalysisClient()
+	d, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
@@ -49,7 +49,7 @@ func TestGetVulnerabilities(t *testing.T) {
 }
 
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
-	d, err := NewContainerAnalysisClient()
+	d, err := New()
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
 			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),

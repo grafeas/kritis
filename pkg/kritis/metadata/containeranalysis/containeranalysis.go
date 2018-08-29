@@ -41,38 +41,38 @@ const (
 )
 
 // The ContainerAnalysis struct implements Fetcher Interface.
-type ContainerAnalysis struct {
+type Client struct {
 	client *gen.Client
 	ctx    context.Context
 }
 
-func NewContainerAnalysisClient() (*ContainerAnalysis, error) {
+func New() (*Client, error) {
 	ctx := context.Background()
 	client, err := gen.NewClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &ContainerAnalysis{
+	return &Client{
 		client: client,
 		ctx:    ctx,
 	}, nil
 }
 
-// GetVulnerabilites gets Package Vulnerabilities Occurrences for a specified image.
-func (c ContainerAnalysis) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+// GetVulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
+func (c Client) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
 	if err != nil {
 		return nil, err
 	}
 	vulnz := []metadata.Vulnerability{}
 	for _, occ := range occs {
-		vulnz = append(vulnz, GetVulnerabilityFromOccurence(occ))
+		vulnz = append(vulnz, getVulnerabilityFromOccurence(occ))
 	}
 	return vulnz, nil
 }
 
-// GetAttestation gets AttesationAuthority Occurrences for a specified image.
-func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
+// GetAttestations gets AttesationAuthority Occurrences for a specified image.
+func (c Client) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
 	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (c ContainerAnalysis) GetAttestations(containerImage string) ([]metadata.PG
 	return p, nil
 }
 
-func (c ContainerAnalysis) fetchOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
+func (c Client) fetchOccurrence(containerImage string, kind string) ([]*containeranalysispb.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
@@ -110,7 +110,7 @@ func (c ContainerAnalysis) fetchOccurrence(containerImage string, kind string) (
 	return occs, nil
 }
 
-func GetVulnerabilityFromOccurence(occ *containeranalysispb.Occurrence) metadata.Vulnerability {
+func getVulnerabilityFromOccurence(occ *containeranalysispb.Occurrence) metadata.Vulnerability {
 	vulnDetails := occ.GetDetails().(*containeranalysispb.Occurrence_VulnerabilityDetails).VulnerabilityDetails
 	hasFixAvailable := isFixAvaliable(vulnDetails.GetPackageIssue())
 	vulnerability := metadata.Vulnerability{
@@ -163,7 +163,8 @@ func getProjectFromNoteReference(ref string) (string, error) {
 	return str[2], nil
 }
 
-func (c ContainerAnalysis) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+// CreateAttestationNote creates an attestation note from AttestationAuthority
+func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
@@ -190,7 +191,8 @@ func (c ContainerAnalysis) CreateAttestationNote(aa *kritisv1beta1.AttestationAu
 	return c.client.CreateNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+// GetAttestationNote returns a note if it exists for given AttestationAuthority
+func (c Client) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
 	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
@@ -201,7 +203,8 @@ func (c ContainerAnalysis) GetAttestationNote(aa *kritisv1beta1.AttestationAutho
 	return c.client.GetNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.Note,
+// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
+func (c Client) CreateAttestationOccurence(note *containeranalysispb.Note,
 	containerImage string,
 	pgpSigningKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
@@ -240,8 +243,19 @@ func (c ContainerAnalysis) CreateAttestationOccurence(note *containeranalysispb.
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
-// These following methods are used for Testing.
-func (c ContainerAnalysis) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
+func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metadata.PGPAttestation {
+	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
+	return metadata.PGPAttestation{
+		Signature: pgp.GetSignature(),
+		KeyID:     pgp.GetPgpKeyId(),
+		OccID:     occ.GetName(),
+	}
+}
+
+// The following methods are used for Testing
+
+// DeleteAttestationNote deletes a note for given AttestationAuthority
+func (c Client) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
 	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return err
@@ -252,18 +266,10 @@ func (c ContainerAnalysis) DeleteAttestationNote(aa *kritisv1beta1.AttestationAu
 	return c.client.DeleteNote(c.ctx, req)
 }
 
-func (c ContainerAnalysis) DeleteOccurrence(ID string) error {
+// DeleteOccurrence deletes an occurrence with given ID
+func (c Client) DeleteOccurrence(ID string) error {
 	req := &containeranalysispb.DeleteOccurrenceRequest{
 		Name: ID,
 	}
 	return c.client.DeleteOccurrence(c.ctx, req)
-}
-
-func getPgpAttestationFromOccurrence(occ *containeranalysispb.Occurrence) metadata.PGPAttestation {
-	pgp := occ.GetDetails().(*containeranalysispb.Occurrence_Attestation).Attestation.GetPgpSignedAttestation()
-	return metadata.PGPAttestation{
-		Signature: pgp.GetSignature(),
-		KeyID:     pgp.GetPgpKeyId(),
-		OccID:     occ.GetName(),
-	}
 }

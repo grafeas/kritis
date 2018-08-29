@@ -74,7 +74,7 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 				Details:  vulnDetails,
 			}
 
-			actualVuln := GetVulnerabilityFromOccurence(occ)
+			actualVuln := getVulnerabilityFromOccurence(occ)
 			if !reflect.DeepEqual(actualVuln, tc.expectedVul) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
 			}
