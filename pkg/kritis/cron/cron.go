@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/grafeas/kritis/pkg/kritis/admission"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
@@ -101,7 +102,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 		}
 		for _, p := range ps {
 			glog.Infof("Checking po %s", p.Name)
-			if err := r.Review(pods.Images(p), isps, &p); err != nil {
+			if err := r.Review(admission.PodImages(p), isps, &p); err != nil {
 				glog.Error(err)
 			}
 		}

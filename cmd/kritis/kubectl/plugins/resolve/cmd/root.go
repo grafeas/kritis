@@ -27,7 +27,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
-	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +37,7 @@ const (
 )
 
 var (
+	// flag values
 	files multiArg
 	apply bool
 )
@@ -45,37 +45,39 @@ var (
 func init() {
 	RootCmd.PersistentFlags().VarP(&files, "filename", "f", "Filename to resolve. Set it repeatedly for multiple filenames.")
 	RootCmd.PersistentFlags().BoolVarP(&apply, "apply", "a", false, "Apply changes using 'kubectl apply -f'.")
-	RootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
-	if err := flag.CommandLine.Parse([]string{}); err != nil {
-		glog.Fatalf("unable to parse flags: %v", err)
-	}
 }
 
+// RootCmd implements the resolve-tags command.
 var RootCmd = &cobra.Command{
 	Use:   "resolve-tags",
 	Short: "resolve-tags is a tool for replacing tagged images with fully qualified images in Kubernetes yamls",
 	Long: `resolve-tags can be run as either a kubectl plugin or as a binary. It takes in paths to file and
-		   prints new manfifests to STDOUT. 
-		   
+		   prints new manifests to STDOUT.
+
 		   Note: When running as a binary, if the KUBECTL_PLUGINS_LOCAL_FLAG_FILENAME env variable is set,
 		   it will override any files passed in.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Place here so it is first run before anything else, but after init() so that
+		// it does not silently break tests.
+		if err := flag.CommandLine.Parse([]string{}); err != nil {
+			return err
+		}
 		resolveApply()
 		cwd, err := os.Getwd()
 		if err != nil {
-			util.ExitIfErr(cmd, err)
+			return err
 		}
 		return resolveFilepaths(cwd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		substitutes, err := resolve.Execute(files)
 		if err != nil {
-			util.ExitIfErr(cmd, err)
+			return fmt.Errorf("unable to resolve: %v", err)
 		}
-		if err := outputResults(substitutes, cmd.OutOrStdout()); err != nil {
-			util.ExitIfErr(cmd, err)
-		}
+		return outputResults(substitutes, cmd.OutOrStdout())
 	},
+	// Otherwise, the default Run() shows usage if RunE returns an error.
+	SilenceUsage: true,
 }
 
 func resolveApply() {
@@ -87,7 +89,7 @@ func resolveFilepaths(relativeDir string) error {
 		files = []string{pluginFile}
 	}
 	if len(files) == 0 {
-		return fmt.Errorf("please pass in a path to a file to resolve")
+		return fmt.Errorf("Please specify a path to resolve using --filename")
 	}
 	glog.Infof("Resolving: %s", files)
 	for index, file := range files {
@@ -128,12 +130,15 @@ func applyChanges(substitutes map[string]string, writer io.Writer) error {
 
 	for _, contents := range substitutes {
 		cmd := exec.Command(kubectl, "apply", "-f", "-")
-		glog.Infof("Executing %s ...", cmd.Args)
 		cmd.Stdin = strings.NewReader(contents)
+		glog.Infof("Sending to kubectl via stdin:\n%s", contents)
+		glog.Infof("Executing %s ...", cmd.Args)
+
 		output, err := cmd.CombinedOutput()
+		// Copy stderr/stdout stream from kubectl to our own stdout
 		fmt.Fprintln(writer, string(output))
 		if err != nil {
-			return err
+			return fmt.Errorf("kubectl: %v", err)
 		}
 	}
 	return nil

@@ -20,9 +20,11 @@ COMMIT ?= $(shell git rev-parse HEAD)
 VERSION ?= v0.1.0
 IMAGE_TAG ?= $(COMMIT)
 
-# For integration testing, use this project name.
-GCP_PROJECT ?= YOUR_TEST_PROJECT
-
+# Used for integration testing. example:
+# "make -e GCP_PROJECT=kritis-int integration-local"
+GCP_PROJECT ?= PLEASE_SET_GCP_PROJECT_ENV
+GCP_ZONE ?= us-central1-a
+TEST_CLUSTER ?= kritis-integration-test
 
 %.exe: %
 	mv $< $@
@@ -40,7 +42,8 @@ RESOLVE_TAGS_PATH = cmd/kritis/kubectl/plugins/resolve
 RESOLVE_TAGS_PACKAGE = $(REPOPATH)/$(RESOLVE_TAGS_PATH)
 RESOLVE_TAGS_KUBECTL_DIR = ~/.kube/plugins/resolve-tags
 
-LOCAL_GAC_CREDENTIALS_PATH ?= /tmp/gac.json
+# Path to credentials. Must have a basename of gac.json.
+GAC_CREDENTIALS_PATH ?= $(CURDIR)/.secrets/$(GCP_PROJECT)/gac.json
 
 .PHONY: test
 test: cross
@@ -73,7 +76,7 @@ $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)-%.tar.gz: cross
 	tar -czf $@ -C $(RESOLVE_TAGS_PATH) plugin.yaml -C $(PWD)/out/ resolve-tags-$*
 
 .PHONY: install-plugin
-install-plugin: $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
+install-plugin: $BUILD_DIR)/$(RESOLVE_TAGS_PROJECT)
 	mkdir -p $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp $(BUILD_DIR)/$(RESOLVE_TAGS_PROJECT) $(RESOLVE_TAGS_KUBECTL_DIR)
 	cp cmd/kritis/kubectl/plugins/resolve/plugin.yaml $(RESOLVE_TAGS_KUBECTL_DIR)
@@ -84,11 +87,16 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
-TEST_REGISTRY?=gcr.io/$(GCP_TEST_PROJECT)
+TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
+GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
+
 
 out/kritis-server: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SERVICE_PACKAGE)
+
+out/gcb-signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCB_SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -122,18 +130,16 @@ helm-install-from-head:
 
 clean:
 	rm -rf $(BUILD_DIR)
-.PHONY: integration
-integration: cross
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
 
-.PHONY: integration-local
-integration-local:
+# Production integration test, used by deploy/kritis-int-test/Dockerfile 
+.PHONY: integration-prod
+integration-prod: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
-		-timeout 5m \
-		-remote=false \
-		-gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH) \
-		-gcp-project=$(GCP_TEST_PROJECT)
+		-timeout 15m \
+		-gac-credentials=/tmp/gac.json \
+		-gcp-project=kritis-int-test \
+		-gke-cluster-name=test-cluster-2 $(EXTRA_TEST_FLAGS)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
@@ -152,7 +158,7 @@ build-push-test-image: build-test-image preinstall-test-image postinstall-test-i
 .PHONY: integration-in-docker
 integration-in-docker: build-push-image
 	docker build \
-		-f deploy/YOUR_TEST_PROJECT/Dockerfile \
+		-f deploy/$(GCP_PROJECT)/Dockerfile \
 		--target integration \
 		-t $(REGISTRY)/kritis-integration:$(IMAGE_TAG) .
 	docker run \
@@ -164,3 +170,64 @@ integration-in-docker: build-push-image
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		$(REGISTRY)/kritis-integration:$(IMAGE_TAG)
+
+.PHONY: gcb-signer-image
+gcb-signer-image: out/gcb-signer-image
+	docker build -t $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG) -f deploy/kritis-gcb-signer/Dockerfile .
+
+.PHONY: gcb-signer-push-image
+gcb-signer-push-image: gcb-signer-image
+	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
+
+# Steps to create a new test cluster on an GCP project that has already had a Kritis setup.
+.PHONY: create-integration-local
+create-integration-local:
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(TEST_CLUSTER) >/dev/null \
+		|| gcloud --project=$(GCP_PROJECT) container clusters create $(TEST_CLUSTER) \
+		--num-nodes=2 --zone=$(GCP_ZONE)
+	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(TEST_CLUSTER)
+	mkdir -p $(dir $(GAC_CREDENTIALS_PATH))
+	test -s $(GAC_CREDENTIALS_PATH) \
+		|| gcloud --project=$(GCP_PROJECT) iam service-accounts keys \
+		create $(GAC_CREDENTIALS_PATH) --iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
+	kubectl create serviceaccount --namespace kube-system tiller
+	kubectl create clusterrolebinding tiller-cluster-rule \
+		  --clusterrole=cluster-admin \
+		    --serviceaccount=kube-system:tiller
+	helm init --wait --service-account tiller
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6 \
+		gcr.io/$(GCP_PROJECT)/acceptable-vulnz:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a \
+		gcr.io/$(GCP_PROJECT)/java-with-vulnz:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-digest-whitelist:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-digest-whitelist:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-no-digest-breakglass:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-no-digest-breakglass:latest
+	gcloud -q container images add-tag \
+		gcr.io/kritis-tutorial/nginx-no-digest:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+
+# Fully setup local integration testing.
+.PHONY: setup-integration-local
+setup-integration-local: build-push-test-image create-integration-local
+
+# integration-local requires that "setup-integration-local" has been run at least once.
+#
+# Example usage, to run a single test without cleaning up:
+#
+#  make -e GCP_PROJECT=my-project \
+#    EXTRA_TEST_FLAGS="-run TestKritisISPLogic/vulnz/acceptable-vulnz-replicaset.yaml --cleanup=false" \
+#    integration-local
+.PHONY: integration-local
+integration-local:
+	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
+		$(REPOPATH)/integration \
+		-timeout 30m \
+		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
+		-gcp-project=$(GCP_PROJECT) \
+		-gke-cluster-name=$(TEST_CLUSTER) $(EXTRA_TEST_FLAGS)

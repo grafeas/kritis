@@ -44,7 +44,7 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			logrus.Infof("Getting pod %s", err)
+			// Don't log here because it generates a ton of spam.
 			return false, nil
 		}
 		return true, nil
@@ -54,7 +54,7 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 	}
 
 	logrus.Infof("Waiting for %s to be ready", podName)
-	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(time.Millisecond*500, time.Minute*5, func() (bool, error) {
 		pod, err := pods.Get(podName, meta_v1.GetOptions{
 			IncludeUninitialized: true,
 		})
@@ -75,12 +75,12 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 
 func WaitForPodComplete(pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be ready", podName)
-	return wait.PollImmediate(time.Millisecond*500, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(time.Millisecond*500, time.Minute*5, func() (bool, error) {
 		pod, err := pods.Get(podName, meta_v1.GetOptions{
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			logrus.Infof("Getting pod %s", err)
+			logrus.Infof("Unable to get pod %s: %v", podName, err)
 			return false, nil
 		}
 		switch pod.Status.Phase {
@@ -234,6 +234,36 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 			}
 			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
 				name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
+		}
+		return false, nil
+	})
+	return err
+}
+
+// WaitForReplicaSetToStabilize waits till the ReplicaSet has a matching generation/replica count between spec and status.
+func WaitForReplicaSetToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+	options := meta_v1.ListOptions{FieldSelector: fields.Set{
+		"metadata.name":      name,
+		"metadata.namespace": ns,
+	}.AsSelector().String()}
+	w, err := c.AppsV1().ReplicaSets(ns).Watch(options)
+	if err != nil {
+		return err
+	}
+	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Deleted:
+			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "replicasets"}, "")
+		}
+		switch rs := event.Object.(type) {
+		case *appsv1.ReplicaSet:
+			if rs.Name == name && rs.Namespace == ns &&
+				rs.Generation <= rs.Status.ObservedGeneration &&
+				*(rs.Spec.Replicas) == rs.Status.Replicas {
+				return true, nil
+			}
+			glog.Infof("Waiting for replicaset %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+				name, rs.Generation, rs.Status.ObservedGeneration, *(rs.Spec.Replicas), rs.Status.Replicas)
 		}
 		return false, nil
 	})

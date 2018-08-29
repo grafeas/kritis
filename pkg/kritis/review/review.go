@@ -61,7 +61,7 @@ var (
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
 	images = util.RemoveGloballyWhitelistedImages(images)
 	if len(images) == 0 {
-		glog.Info("images are all globally whitelisted, returning successful status", images)
+		glog.Infof("images are all globally whitelisted, returning successful status: %s", images)
 		return nil
 	}
 	for _, isp := range isps {
@@ -87,7 +87,7 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 					glog.Errorf("error adding attestations %s", err)
 				}
 			}
-			glog.Infof("Found no violations in %s", image)
+			glog.Infof("Found no violations for %s within ISP %s", image, isp.Name)
 		}
 	}
 	return nil

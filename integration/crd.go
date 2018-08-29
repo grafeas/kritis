@@ -50,10 +50,6 @@ var crdNames = map[string]string{
 	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
 }
 
-var crdExamples = []string{
-	"image-security-policy-example.yaml",
-}
-
 func createAttestationAuthority(t *testing.T, ns string) {
 	t.Helper()
 	// Generate a key value pair
@@ -86,24 +82,12 @@ func createAttestationAuthority(t *testing.T, ns string) {
 	createAA(t, ns, pubKeyEnc)
 }
 
-func createCRDExamples(t *testing.T, ns *v1.Namespace) {
-	t.Helper()
-	createAttestationAuthority(t, ns.Name)
-	for _, crd := range crdExamples {
-		crdCmd := exec.Command("kubectl", "create", "-f", crd, "-n", ns.Name)
-		crdCmd.Dir = "../artifacts/integration-examples"
-		if _, err := integration_util.RunCmdOut(crdCmd); err != nil {
-			t.Fatalf("testing error: %v", err)
-		}
-	}
-}
-
 func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
 	t.Helper()
 	for crd, name := range crdNames {
-		err := wait.PollImmediate(500*time.Millisecond, time.Minute*2, func() (bool, error) {
+		err := wait.PollImmediate(500*time.Millisecond, time.Minute*3, func() (bool, error) {
 			crdCmd := exec.Command("kubectl", "get", crd, name, "-n", ns.Name)
-			_, err := integration_util.RunCmdOut(crdCmd)
+			err := integration_util.RunCmd(crdCmd)
 			return (err == nil), err
 		})
 		if err != nil {

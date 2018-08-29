@@ -1,0 +1,9 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: BuildPolicy
+metadata:
+  name: kritis-bp
+  namespace: default
+spec:
+  attestationAuthorityName: kritis-authority
+  buildRequirements:
+    builtFrom: https://source.developers.google.com/p/binauthz-demo1-builder/r/demo-app:build.*

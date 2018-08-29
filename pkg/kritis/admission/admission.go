@@ -30,7 +30,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
-	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -69,25 +68,36 @@ var (
 var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview) error{
 	"Deployment": handleDeployment,
 	"Pod":        handlePod,
+	"ReplicaSet": handleReplicaSet,
 }
 
 func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
-	glog.Info("handling deployment...")
 	deployment := appsv1.Deployment{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
 		return err
 	}
+	glog.Infof("handling deployment %s...", deployment.Name)
 	reviewDeployment(&deployment, admitResponse)
 	return nil
 }
 
 func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
-	glog.Info("handling pod...")
 	pod := v1.Pod{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
+	glog.Infof("handling pod %s in...", pod.Name)
 	reviewPod(&pod, admitResponse)
+	return nil
+}
+
+func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
+	replicaSet := appsv1.ReplicaSet{}
+	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
+		return err
+	}
+	glog.Infof("handling replica set %s...", replicaSet.Name)
+	reviewReplicaSet(&replicaSet, admitResponse)
 	return nil
 }
 
@@ -172,12 +182,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
 		return
 	}
-	for _, c := range deployment.Spec.Template.Spec.Containers {
-		reviewImages([]string{c.Image}, deployment.Namespace, nil, ar)
-	}
-	for _, c := range deployment.Spec.Template.Spec.InitContainers {
-		reviewImages([]string{c.Image}, deployment.Namespace, nil, ar)
-	}
+	reviewImages(DeploymentImages(*deployment), deployment.Namespace, nil, ar)
 }
 
 func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
@@ -189,6 +194,8 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 }
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+	// NOTE: pod may be nil if we are reviewing images for a replica set.
+	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting image security policies: %v", err)
@@ -196,6 +203,12 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	if len(isps) == 0 {
+		glog.Errorf("No ISP's found in namespace %s", ns)
+	} else {
+		glog.Infof("Found %d ISPs to review image against", len(isps))
+	}
+
 	client, err := admissionConfig.fetchMetadataClient()
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
@@ -212,6 +225,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	})
 
 	if err := r.Review(images, isps, pod); err != nil {
+		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
@@ -222,7 +236,16 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
 		return
 	}
-	reviewImages(pods.Images(*pod), pod.Namespace, pod, ar)
+	reviewImages(PodImages(*pod), pod.Namespace, pod, ar)
+}
+
+func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
+	// First, check for a breakglass annotation on the replica set
+	if checkBreakglass(&replicaSet.ObjectMeta) {
+		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
+		return
+	}
+	reviewImages(ReplicaSetImages(*replicaSet), replicaSet.Namespace, nil, ar)
 }
 
 // TODO(aaron-prindle) remove these functions

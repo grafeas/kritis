@@ -8,6 +8,6 @@ metadata:
 spec:
   containers:
   - name: nginx-no-digest-breakglass
-    image: gcr.io/YOUR_TEST_PROJECT/nginx-no-digest-breakglass:latest
+    image: gcr.io/{{ .Project }}/nginx-no-digest-breakglass:latest
     ports:
     - containerPort: 80
