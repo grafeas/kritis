@@ -137,6 +137,7 @@ integration-prod: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
 		-timeout 15m \
+		-delete-webhooks=false \
 		-gac-credentials=/tmp/gac.json \
 		-gcp-project=kritis-int-test \
 		-gke-cluster-name=test-cluster-2 $(EXTRA_TEST_FLAGS)
