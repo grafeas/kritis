@@ -262,6 +262,17 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("testNamespace: %v", err)
 	}
+	createCRDExamples(t, ns)
+	waitForCRDExamples(t, ns)
+
+	var testCases = []struct {
+		template string
+		command  string
+
+		deployments    []string
+		pods           []string
+		replicasets    []string
+		attestedImages []string
 
 	t.Logf("setup: installing kritis with image version %s in namespace %s...", version.Commit, ns.Name)
 	instCleanup, err := installKritis(cs, ns)
@@ -303,15 +314,6 @@ func TestKritisISPLogic(t *testing.T) {
 
 		shouldSucceed bool
 	}{
-		{
-			template:      "vulnz/acceptable-vulnz-replicaset.yaml",
-			command:       "apply",
-			replicasets:   []string{"replicaset-with-acceptable-vulnz"},
-			shouldSucceed: true,
-			attestedImages: []string{
-				fmt.Sprintf("gcr.io/%s/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6", *gcpProject),
-			},
-		},
 		{
 			template:      "nginx/nginx-no-digest.yaml",
 			command:       "create",
@@ -382,6 +384,16 @@ func TestKritisISPLogic(t *testing.T) {
 			pods:          []string{"image-with-acceptable-vulnz"},
 			shouldSucceed: true,
 		},
+		{
+			template:      "vulnz/acceptable-vulnz-replicaset.yaml",
+			command:       "apply",
+			replicasets:   []string{"replicaset-with-acceptable-vulnz"},
+			shouldSucceed: true,
+			attestedImages: []string{
+				fmt.Sprintf("gcr.io/%s/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6", *gcpProject),
+			},
+		},
+
 	}
 	for _, tc := range testCases {
 		t.Run(tc.template, func(t *testing.T) {

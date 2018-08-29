@@ -57,22 +57,16 @@ _These tests will not run correctly unless you have [checked out your fork into 
 
 ### Integration tests
 
-On a GCP project where Kritis has been installed, this will prepare a new cluster named `kritis-integration-test`:
+On a GCP project where Kritis has already been installed, this will prepare a new cluster named `kritis-integration-test`:
 
 ```shell
 make -e GCP_PROJECT=<project id> setup-integration-local
 ```
 
-Build and upload new test images to `gcr.io/<project id>/[image]:<commit hash>`:
+As you develop, you can build new test images and run the integration test on demand:
 
 ```shell
-make -e GCP_PROJECT=<project id> build-push-test-image
-```
-
-Run integration test:
-
-```shell
-make -e GCP_PROJECT=<project id> integration-local
+make -e GCP_PROJECT=<project id> build-push-test-image integration-local
 ```
 
 ## Creating a PR

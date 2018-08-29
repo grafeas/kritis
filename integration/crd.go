@@ -84,6 +84,7 @@ func createAttestationAuthority(t *testing.T, ns string) {
 
 func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
 	t.Helper()
+	t.Logf("Waiting for CRD examples ...")
 	for crd, name := range crdNames {
 		err := wait.PollImmediate(500*time.Millisecond, time.Minute*3, func() (bool, error) {
 			crdCmd := exec.Command("kubectl", "get", crd, name, "-n", ns.Name)
