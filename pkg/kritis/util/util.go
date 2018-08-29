@@ -19,10 +19,13 @@ package util
 import (
 	"os"
 
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/container"
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/spf13/cobra"
+	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 func ExitIfErr(cmd *cobra.Command, err error) {
@@ -42,4 +45,13 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 		return "", err
 	}
 	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
+}
+
+// GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
+func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+	n, err := c.GetAttestationNote(a)
+	if err == nil {
+		return n, nil
+	}
+	return c.CreateAttestationNote(a)
 }

@@ -13,8 +13,6 @@ spec:
     metadata:
       labels:
         app: java-with-vulnz-breakglass-replicaset
-      annotations:
-        kritis.grafeas.io/breakglass: "true"
     spec:
       containers:
       - name: java-with-vulnz-breakglass-replicaset

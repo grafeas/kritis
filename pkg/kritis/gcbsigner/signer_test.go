@@ -94,8 +94,8 @@ func TestValidateAndSign(t *testing.T) {
 			},
 		},
 	}
-	authFetcher = func(ns string) ([]v1beta1.AttestationAuthority, error) {
-		return []v1beta1.AttestationAuthority{
+	authFetcher = func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
+		a := []v1beta1.AttestationAuthority{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "auth1",
@@ -139,8 +139,15 @@ func TestValidateAndSign(t *testing.T) {
 					PrivateKeySecretName: "missing_key",
 				},
 			},
-		}, nil
+		}
+		for _, i := range a {
+			if i.Name == name {
+				return &i, nil
+			}
+		}
+		return nil, fmt.Errorf("not present")
 	}
+
 	tests := []struct {
 		name                 string
 		provenance           BuildProvenance
