@@ -31,7 +31,7 @@ import (
 var (
 	IntTestNoteName = "test-aa-note"
 	IntAPI          = "testv1"
-	IntProject      = "kritis-int-test"
+	IntProject      = "test-project"
 )
 
 func TestGetVulnerabilities(t *testing.T) {

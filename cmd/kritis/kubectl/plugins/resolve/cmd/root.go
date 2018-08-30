@@ -45,9 +45,6 @@ var (
 func init() {
 	RootCmd.PersistentFlags().VarP(&files, "filename", "f", "Filename to resolve. Set it repeatedly for multiple filenames.")
 	RootCmd.PersistentFlags().BoolVarP(&apply, "apply", "a", false, "Apply changes using 'kubectl apply -f'.")
-
-	// Populate Go flags into pflags so that glog -v works
-	RootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 }
 
 // RootCmd implements the resolve-tags command.
