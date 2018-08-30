@@ -33,7 +33,7 @@ func getAttestations(t *testing.T, images []string) map[string]bool {
 	}
 
 	for _, i := range images {
-		occs, err := client.GetAttestations(i)
+		occs, err := client.Attestations(i)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}

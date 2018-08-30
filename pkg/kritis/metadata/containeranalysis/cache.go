@@ -20,15 +20,15 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 // Cache struct defines Cache for container analysis client.
 type Cache struct {
 	client metadata.Fetcher
-	vCache map[string][]metadata.Vulnerability
-	aCache map[string][]metadata.PGPAttestation
-	nCache map[*kritisv1beta1.AttestationAuthority]*containeranalysispb.Note
+	vuln   map[string][]metadata.Vulnerability
+	att    map[string][]metadata.PGPAttestation
+	notes  map[*kritisv1beta1.AttestationAuthority]*cpb.Note
 }
 
 // NewCache Create a new Cache for container analysis client.
@@ -39,56 +39,54 @@ func NewCache() (*Cache, error) {
 	}
 	return &Cache{
 		client: c,
-		vCache: map[string][]metadata.Vulnerability{},
-		aCache: map[string][]metadata.PGPAttestation{},
-		nCache: map[*kritisv1beta1.AttestationAuthority]*containeranalysispb.Note{},
+		vuln:   map[string][]metadata.Vulnerability{},
+		att:    map[string][]metadata.PGPAttestation{},
+		notes:  map[*kritisv1beta1.AttestationAuthority]*cpb.Note{},
 	}, nil
 }
 
-// GetVulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
-func (c Cache) GetVulnerabilities(image string) ([]metadata.Vulnerability, error) {
-	if v, ok := c.vCache[image]; ok {
+// Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
+func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
+	if v, ok := c.vuln[image]; ok {
 		return v, nil
 	}
-	v, err := c.client.GetVulnerabilities(image)
+	v, err := c.client.Vulnerabilities(image)
 	if err != nil {
-		c.vCache[image] = v
+		c.vuln[image] = v
 	}
 	return v, err
 }
 
-// GetAttestations gets AttesationAuthority Occurrences for a specified image from cache or from client.
-func (c Cache) GetAttestations(image string) ([]metadata.PGPAttestation, error) {
-	if a, ok := c.aCache[image]; ok {
+// Attestations gets AttesationAuthority Occurrences for a specified image from cache or from client.
+func (c Cache) Attestations(image string) ([]metadata.PGPAttestation, error) {
+	if a, ok := c.att[image]; ok {
 		return a, nil
 	}
-	a, err := c.client.GetAttestations(image)
+	a, err := c.client.Attestations(image)
 	if err != nil {
-		c.aCache[image] = a
+		c.att[image] = a
 	}
 	return a, err
 }
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
-func (c Cache) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+func (c Cache) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
 	return c.client.CreateAttestationNote(aa)
 }
 
-// GetAttestationNote returns a note if it exists for given AttestationAuthority
-func (c Cache) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	if n, ok := c.nCache[aa]; ok {
+// AttestationNote returns a note if it exists for given AttestationAuthority
+func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
+	if n, ok := c.notes[aa]; ok {
 		return n, nil
 	}
-	n, err := c.client.GetAttestationNote(aa)
+	n, err := c.client.AttestationNote(aa)
 	if err != nil {
-		c.nCache[aa] = n
+		c.notes[aa] = n
 	}
 	return n, err
 }
 
 // CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Cache) CreateAttestationOccurence(n *containeranalysispb.Note,
-	image string,
-	pKey *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
-	return c.client.CreateAttestationOccurence(n, image, pKey)
+func (c Cache) CreateAttestationOccurence(n *cpb.Note, image string, p *secrets.PGPSigningSecret) (*cpb.Occurrence, error) {
+	return c.client.CreateAttestationOccurence(n, image, p)
 }

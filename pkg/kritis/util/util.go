@@ -25,7 +25,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/spf13/cobra"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 func ExitIfErr(cmd *cobra.Command, err error) {
@@ -48,8 +48,8 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 }
 
 // GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
-func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	n, err := c.GetAttestationNote(a)
+func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*cpb.Note, error) {
+	n, err := c.AttestationNote(a)
 	if err == nil {
 		return n, nil
 	}

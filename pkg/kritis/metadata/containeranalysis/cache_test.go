@@ -23,45 +23,30 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var vuln = []metadata.Vulnerability{{
-	CVE:             "CVE-1",
-	Severity:        "LOW",
-	HasFixAvailable: false,
-}}
-
-var pgpAtt = []metadata.PGPAttestation{{
-	Signature: "test-sig",
-	KeyID:     "test",
-	OccID:     "occc-1",
-}}
-
-var note = &containeranalysispb.Note{
-	Name: "test-note",
-}
-var mock = &testutil.MockMetadataClient{}
-
 func TestVCache(t *testing.T) {
+	vCache := []metadata.Vulnerability{{CVE: "CVE-1"}}
+	vClient := []metadata.Vulnerability{{CVE: "CVE-misss"}}
 	c := Cache{
-		client: mock,
-		vCache: map[string][]metadata.Vulnerability{"image-hit": vuln},
-		aCache: nil,
-		nCache: nil,
+		client: &testutil.MockMetadataClient{Vulnz: vClient},
+		vuln:   map[string][]metadata.Vulnerability{"image-hit": vCache},
+		att:    nil,
+		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
 		expected []metadata.Vulnerability
 	}{
-		{"hit", "image-hit", vuln},
-		{"miss", "image-miss", nil},
+		{"hit", "image-hit", vCache},
+		{"miss", "image-miss", vClient},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := c.GetVulnerabilities(tc.image)
+			actual, err := c.Vulnerabilities(tc.image)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
@@ -73,23 +58,25 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
+	aCache := []metadata.PGPAttestation{{OccID: "occc-1"}}
+	aClient := []metadata.PGPAttestation{{OccID: "occc-miss"}}
 	c := Cache{
-		client: mock,
-		vCache: nil,
-		aCache: map[string][]metadata.PGPAttestation{"image-hit": pgpAtt},
-		nCache: nil,
+		client: &testutil.MockMetadataClient{PGPAttestations: aClient},
+		vuln:   nil,
+		att:    map[string][]metadata.PGPAttestation{"image-hit": aCache},
+		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
 		expected []metadata.PGPAttestation
 	}{
-		{"hit", "image-hit", pgpAtt},
-		{"miss", "image-miss", nil},
+		{"hit", "image-hit", aCache},
+		{"miss", "image-miss", aClient},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := c.GetAttestations(tc.image)
+			actual, err := c.Attestations(tc.image)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
@@ -105,25 +92,27 @@ func TestNCache(t *testing.T) {
 	aaHit := &v1beta1.AttestationAuthority{ObjectMeta: metav1.ObjectMeta{
 		Name: "test-aa",
 	}}
+	aaMiss := &v1beta1.AttestationAuthority{Spec: v1beta1.AttestationAuthoritySpec{
+		NoteReference: "from-client"},
+	}
+	nCache := &cpb.Note{Name: "from-cache"}
 	c := Cache{
-		client: mock,
-		vCache: nil,
-		aCache: nil,
-		nCache: map[*v1beta1.AttestationAuthority]*containeranalysispb.Note{
-			aaHit: note,
-		},
+		client: &testutil.MockMetadataClient{},
+		vuln:   nil,
+		att:    nil,
+		notes:  map[*v1beta1.AttestationAuthority]*cpb.Note{aaHit: nCache},
 	}
 	tcs := []struct {
 		name     string
 		aa       *v1beta1.AttestationAuthority
-		expected *containeranalysispb.Note
+		expected *cpb.Note
 	}{
-		{"hit", aaHit, note},
-		{"miss", &v1beta1.AttestationAuthority{}, &containeranalysispb.Note{}},
+		{"hit", aaHit, nCache},
+		{"miss", aaMiss, &cpb.Note{Name: "from-client"}},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := c.GetAttestationNote(tc.aa)
+			actual, err := c.AttestationNote(tc.aa)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}

@@ -39,7 +39,7 @@ func TestGetVulnerabilities(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	vuln, err := d.GetVulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
+	vuln, err := d.Vulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}
@@ -66,7 +66,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Unexpected error while creating Note %v", err)
 	}
 	defer d.DeleteAttestationNote(aa)
-	note, err := d.GetAttestationNote(aa)
+	note, err := d.AttestationNote(aa)
 	expectedNoteName := fmt.Sprintf("projects/%s/notes/%s", IntProject, IntTestNoteName)
 	if note.Name != expectedNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, note.Name)
@@ -88,7 +88,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
 	defer d.DeleteOccurrence(occ.GetName())
-	occurrences, err := d.GetAttestations(testutil.IntTestImage)
+	occurrences, err := d.Attestations(testutil.IntTestImage)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}

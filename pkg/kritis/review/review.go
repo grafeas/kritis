@@ -93,7 +93,7 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 }
 
 func (r Reviewer) fetchAndVerifyAttestations(image string, ns string, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
-	attestations, err := r.client.GetAttestations(image)
+	attestations, err := r.client.Attestations(image)
 	if err != nil {
 		glog.Errorf("Error while fetching attestations %s", err)
 		return false, attestations
