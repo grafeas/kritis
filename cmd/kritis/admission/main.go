@@ -116,7 +116,7 @@ func getCronConfig() (*cron.Config, error) {
 		return nil, err
 	}
 	kcs := ki.(*kubernetes.Clientset)
-	client, err := containeranalysis.NewContainerAnalysisClient()
+	client, err := containeranalysis.New()
 	if err != nil {
 		return nil, err
 	}
