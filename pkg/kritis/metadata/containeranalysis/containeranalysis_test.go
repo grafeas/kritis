@@ -22,18 +22,18 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 var tcGetVuln = []struct {
 	name        string
-	severity    containeranalysispb.VulnerabilityType_Severity
-	fixKind     containeranalysispb.VulnerabilityType_Version_VersionKind
+	severity    cpb.VulnerabilityType_Severity
+	fixKind     cpb.VulnerabilityType_Version_VersionKind
 	noteName    string
 	expectedVul metadata.Vulnerability
 }{
-	{"fix available", containeranalysispb.VulnerabilityType_LOW,
-		containeranalysispb.VulnerabilityType_Version_MAXIMUM,
+	{"fix available", cpb.VulnerabilityType_LOW,
+		cpb.VulnerabilityType_Version_MAXIMUM,
 		"CVE-1",
 		metadata.Vulnerability{
 			CVE:             "CVE-1",
@@ -41,8 +41,8 @@ var tcGetVuln = []struct {
 			HasFixAvailable: false,
 		},
 	},
-	{"fix not available", containeranalysispb.VulnerabilityType_MEDIUM,
-		containeranalysispb.VulnerabilityType_Version_NORMAL,
+	{"fix not available", cpb.VulnerabilityType_MEDIUM,
+		cpb.VulnerabilityType_Version_NORMAL,
 		"CVE-2",
 		metadata.Vulnerability{
 			CVE:             "CVE-2",
@@ -55,21 +55,21 @@ var tcGetVuln = []struct {
 func TestGetVulnerabilityFromOccurence(t *testing.T) {
 	for _, tc := range tcGetVuln {
 		t.Run(tc.name, func(t *testing.T) {
-			vulnDetails := &containeranalysispb.Occurrence_VulnerabilityDetails{
-				VulnerabilityDetails: &containeranalysispb.VulnerabilityType_VulnerabilityDetails{
+			vulnDetails := &cpb.Occurrence_VulnerabilityDetails{
+				VulnerabilityDetails: &cpb.VulnerabilityType_VulnerabilityDetails{
 					Severity: tc.severity,
-					PackageIssue: []*containeranalysispb.VulnerabilityType_PackageIssue{
+					PackageIssue: []*cpb.VulnerabilityType_PackageIssue{
 						{
-							AffectedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{},
-							FixedLocation: &containeranalysispb.VulnerabilityType_VulnerabilityLocation{
-								Version: &containeranalysispb.VulnerabilityType_Version{
+							AffectedLocation: &cpb.VulnerabilityType_VulnerabilityLocation{},
+							FixedLocation: &cpb.VulnerabilityType_VulnerabilityLocation{
+								Version: &cpb.VulnerabilityType_Version{
 									Kind: tc.fixKind,
 								},
 							},
 						},
 					},
 				}}
-			occ := &containeranalysispb.Occurrence{
+			occ := &cpb.Occurrence{
 				NoteName: tc.noteName,
 				Details:  vulnDetails,
 			}

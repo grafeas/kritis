@@ -94,7 +94,7 @@ func (v *Validator) ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy,
 		vulnz = v.imageToVulnz[image]
 	} else {
 		glog.Infof("no cached vulnz for image %s, getting from api", image)
-		vulnz, err = client.GetVulnerabilities(image)
+		vulnz, err = client.Vulnerabilities(image)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get vulnerabilities for %s: %v", image, err)
 		}
