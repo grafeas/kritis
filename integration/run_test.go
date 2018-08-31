@@ -46,10 +46,10 @@ const (
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
-	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
-	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
-	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for --gcp-project")
-	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster (currently unused)")
+	gkeClusterName = flag.String("gke-cluster-name", "UNSET_CLUSTER_NAME", "name of the integration test cluster")
+	gcpProject     = flag.String("gcp-project", "UNSET_GCP_PROJECT", "the gcp project where the integration test cluster lives")
+	gacCredentials = flag.String("gac-credentials", "UNSET_CREDENTIALS_PATH", "path to gac.json credentials for --gcp-project")
+	deleteWebHooks = flag.Bool("delete-webhooks", true, "delete Kritis webhooks before running tests")
 	cleanup        = flag.Bool("cleanup", true, "cleanup allocated resources on exit")
 )
 
@@ -175,7 +175,6 @@ func installKritis(cs kubernetes.Interface, ns *v1.Namespace) (func(*testing.T),
 		return nil, fmt.Errorf("helm failure: %v\n\nhooks: %s\n\npreinstall: %s\n\npostinstall: %s\n\npods: %s", err,
 			hooks, podLogs(preinstallPod, ns), podLogs(postinstallPod, ns), podSummary)
 	}
-
 	// parsing out Kritis release name from 'helm init' out
 	helmName := strings.Split(string(out[:]), "\n")[0]
 	release := strings.Split(helmName, "   ")[1]
@@ -253,7 +252,17 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 		t.Fatalf("webhooks: %v", err)
 	}
 	if len(hooks) > 0 {
-		t.Logf("WARNING: stray webhooks may interfere with your test: %v", hooks)
+		// If enabled, delete stray webhooks. They make tests difficult to debug.
+		if *deleteWebHooks {
+			for _, h := range hooks {
+				t.Logf("setup: deleting stray webhook: %s", h)
+				if err := exec.Command("kubectl", "delete", "ValidatingWebhookConfiguration", string(h)).Run(); err != nil {
+					t.Errorf("error deleting webhook: %v", err)
+				}
+			}
+		} else {
+			t.Logf("WARNING: stray webhooks may interfere with your test: %v", hooks)
+		}
 	}
 
 	ns, nsCleanup, err := testNamespace(cs)
