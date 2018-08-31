@@ -503,7 +503,8 @@ func TestKritisCron(t *testing.T) {
 			}
 
 			// as kubectl exec opens a tty, out is not monitored
-			cmd = exec.Command("kubectl", "exec", "--namespace", ns.Name, strings.TrimSpace(string(hookPod)), "--", "/kritis/kritis-server", "--run-cron")
+			cmd = exec.Command("kubectl", "exec", "--namespace", ns.Name,
+				strings.TrimSpace(string(hookPod)), "--", "/kritis/kritis-server", "--run-cron")
 			if err = cmd.Start(); err != nil {
 				t.Errorf("start failed for %s: %v", cmd.Args, err)
 			}
