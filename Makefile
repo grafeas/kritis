@@ -22,7 +22,7 @@ IMAGE_TAG ?= $(COMMIT)
 
 # Used for integration testing. example:
 # "make -e GCP_PROJECT=kritis-int integration-local"
-GCP_PROJECT ?= kritis-int
+GCP_PROJECT ?= kritis-int-test
 GCP_ZONE ?= us-central1-a
 TEST_CLUSTER ?= test-cluster-2
 
