@@ -59,5 +59,5 @@ COPY . .
 
 FROM builder as integration
 
-CMD ["make", "integration"]
+CMD ["make", "integration-prod"]
 

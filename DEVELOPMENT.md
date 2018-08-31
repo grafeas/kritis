@@ -41,7 +41,6 @@ To check out this repository:
 _Adding the `upstream` remote sets you up nicely for regularly [syncing your
 fork](https://help.github.com/articles/syncing-a-fork/)._
 
-
 ## Testing kritis
 
 kritis has both [unit tests](#unit-tests) and [integration tests](#integration-tests).
@@ -58,27 +57,17 @@ _These tests will not run correctly unless you have [checked out your fork into 
 
 ### Integration tests
 
-Requirements:
-* Credentials for the GCP project `kritis-int-test` with `Container Analysis Admin` roles saved to `gac.json`
-* A running cluster
+On a GCP project where Kritis has already been installed, this will prepare a new cluster named `kritis-integration-test`:
 
-To build your own versions of the kritis-server, preinstall, postinstall and predelete images, run:
-
-```
-make build-push-test-image
+```shell
+make -e GCP_PROJECT=<project id> setup-integration-local
 ```
 
-which will create these images in the format `gcr.io/kritis-int-test/[image]:COMMIT_VERSION`.
+As you develop, you can build new test images and run the integration test on demand:
 
-
-You can then run
-
+```shell
+make -e GCP_PROJECT=<project id> build-push-test-image integration-local
 ```
-LOCAL_GAC_CREDENTIALS_PATH=[path to gac.json | default /tmp/gac.json] make integration-local
-```
-
-to run the integration tests on your local cluster.
-
 
 ## Creating a PR
 
