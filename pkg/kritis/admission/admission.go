@@ -311,5 +311,5 @@ func checkBreakglass(meta *metav1.ObjectMeta) bool {
 
 // TODO: update this once we have more metadata clients
 func metadataClient() (metadata.Fetcher, error) {
-	return containeranalysis.New()
+	return containeranalysis.NewCache()
 }

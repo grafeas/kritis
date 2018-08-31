@@ -27,7 +27,7 @@ func getAttestations(t *testing.T, images []string) map[string]bool {
 	if len(images) == 0 {
 		return m
 	}
-	client, err := containeranalysis.New()
+	client, err := containeranalysis.NewCache()
 	if err != nil {
 		t.Fatalf("Unexpected error while fetching client %v", err)
 	}
