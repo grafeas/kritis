@@ -46,9 +46,9 @@ const (
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
-	gkeClusterName = flag.String("gke-cluster-name", "UNSET_CLUSTER_NAME", "name of the integration test cluster")
-	gcpProject     = flag.String("gcp-project", "UNSET_GCP_PROJECT", "the gcp project where the integration test cluster lives")
-	gacCredentials = flag.String("gac-credentials", "UNSET_CREDENTIALS_PATH", "path to gac.json credentials for --gcp-project")
+	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
+	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
+	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for --gcp-project")
 	deleteWebHooks = flag.Bool("delete-webhooks", true, "delete Kritis webhooks before running tests")
 	cleanup        = flag.Bool("cleanup", true, "cleanup allocated resources on exit")
 )
