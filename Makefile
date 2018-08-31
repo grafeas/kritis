@@ -24,7 +24,7 @@ IMAGE_TAG ?= $(COMMIT)
 # "make -e GCP_PROJECT=kritis-int integration-local"
 GCP_PROJECT ?= kritis-int-test
 GCP_ZONE ?= us-central1-a
-TEST_CLUSTER ?= test-cluster-2
+GCP_CLUSTER ?= test-cluster-2
 
 %.exe: %
 	mv $< $@
@@ -183,10 +183,10 @@ gcb-signer-push-image: gcb-signer-image
 # Fully setup local integration testing: only needs to run just once
 .PHONY: setup-integration-local
 setup-integration-local: setup-integration-local
-	gcloud --project=$(GCP_PROJECT) container clusters describe $(TEST_CLUSTER) >/dev/null \
-		|| gcloud --project=$(GCP_PROJECT) container clusters create $(TEST_CLUSTER) \
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
+		|| gcloud --project=$(GCP_PROJECT) container clusters create $(GCP_CLUSTER) \
 		--num-nodes=2 --zone=$(GCP_ZONE)
-	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(TEST_CLUSTER)
+	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(GCP_CLUSTER)
 	mkdir -p $(dir $(GAC_CREDENTIALS_PATH))
 	test -s $(GAC_CREDENTIALS_PATH) \
 		|| gcloud --project=$(GCP_PROJECT) iam service-accounts keys \
@@ -214,13 +214,13 @@ setup-integration-local: setup-integration-local
 
 .PHONY: just-the-integration-test
 just-the-integration-test:
-	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
+	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
 		-timeout 30m \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
 		-gcp-project=$(GCP_PROJECT) \
-		-gke-cluster-name=$(TEST_CLUSTER) $(EXTRA_TEST_FLAGS)
+		-gke-cluster-name=$(GCP_CLUSTER) $(EXTRA_TEST_FLAGS)
 
 # integration-local requires that "setup-integration-local" has been run at least once.
 #
