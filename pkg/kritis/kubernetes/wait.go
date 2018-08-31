@@ -45,7 +45,7 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 		})
 		if err != nil {
 			// Debugf, as this generates a log message every 500ms until a pod comes online
-			logrus.Debugf("Getting pod %s", err)
+			logrus.Debugf("Unable to get pod state for %q: %v", podName, err)
 			return false, nil
 		}
 		return true, nil
@@ -60,7 +60,7 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			return false, fmt.Errorf("not found: %s", podName)
+			return false, fmt.Errorf("pod not found: %s", podName)
 		}
 		switch pod.Status.Phase {
 		case v1.PodRunning:
@@ -81,7 +81,7 @@ func WaitForPodComplete(pods corev1.PodInterface, podName string) error {
 			IncludeUninitialized: true,
 		})
 		if err != nil {
-			logrus.Infof("Unable to get pod %s: %v", podName, err)
+			logrus.Infof("Unable to get pod state for %q: %v", podName, err)
 			return false, nil
 		}
 		switch pod.Status.Phase {
@@ -158,12 +158,12 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		listOpts := meta_v1.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
+			glog.Infof("error getting pods with label selector %q [%v]\n", label.String(), err)
 			return false, nil
 		}
 
 		if lastKnownPodNumber != len(pods.Items) {
-			glog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), label.String())
+			glog.Infof("Found %d pods for label selector %s\n", len(pods.Items), label.String())
 			lastKnownPodNumber = len(pods.Items)
 		}
 
