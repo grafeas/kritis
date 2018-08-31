@@ -175,6 +175,7 @@ func installKritis(cs kubernetes.Interface, ns *v1.Namespace) (func(*testing.T),
 		return nil, fmt.Errorf("helm failure: %v\n\nhooks: %s\n\npreinstall: %s\n\npostinstall: %s\n\npods: %s", err,
 			hooks, podLogs(preinstallPod, ns), podLogs(postinstallPod, ns), podSummary)
 	}
+
 	// parsing out Kritis release name from 'helm init' out
 	helmName := strings.Split(string(out[:]), "\n")[0]
 	release := strings.Split(helmName, "   ")[1]
