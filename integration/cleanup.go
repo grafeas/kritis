@@ -26,16 +26,17 @@ import (
 
 func cleanupInstall(ns *v1.Namespace) error {
 	var resources = []struct {
-		Type string
-		Name string
+		Type      string
+		Name      string
+		Namespace *v1.Namespace
 	}{
-		{"validatingwebhookconfiguration", fmt.Sprintf("kritis-validation-hook-%s", ns.Name)},
-		{"validatingwebhookconfiguration", fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name)},
-		{"csr", fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name)},
-		{"secret", aaSecret},
+		{"validatingwebhookconfiguration", fmt.Sprintf("kritis-validation-hook-%s", ns.Name), nil},
+		{"validatingwebhookconfiguration", fmt.Sprintf("kritis-validation-hook-deployments-%s", ns.Name), nil},
+		{"csr", fmt.Sprintf("tls-webhook-secret-cert-%s", ns.Name), nil},
+		{"secret", aaSecret, ns},
 	}
 	for _, r := range resources {
-		if err := deleteObject(r.Type, r.Name, ns); err != nil {
+		if err := deleteObject(r.Type, r.Name, r.Namespace); err != nil {
 			return err
 		}
 	}

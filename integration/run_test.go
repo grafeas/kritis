@@ -191,13 +191,18 @@ func installKritis(cs kubernetes.Interface, ns *v1.Namespace) (func(*testing.T),
 		out, err = integration_util.RunCmdOut(cmd)
 		if err != nil {
 			t.Errorf("helm delete failed: %v\nout: %s", err, out)
-			cleanupInstall(ns)
+			if err2 := cleanupInstall(ns); err2 != nil {
+				t.Errorf("cleanup failed: %v", err2)
+			}
 			t.Fatalf("Abandoning Kritis deinstall.")
 		}
-		// make sure kritis-predelete pod completes
+
+		// If helm delete succeeds, ensure that the kritis-predelete pod completes
 		if err := kubernetesutil.WaitForPodComplete(cs.CoreV1().Pods(ns.Name), predeletePod); err != nil {
 			t.Errorf("predelete pod didn't complete: %v \n %s", err, podLogs(predeletePod, ns))
-			cleanupInstall(ns)
+			if err2 := cleanupInstall(ns); err2 != nil {
+				t.Errorf("cleanup failed: %v", err2)
+			}
 		}
 	}
 
