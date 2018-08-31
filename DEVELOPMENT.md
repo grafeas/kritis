@@ -66,7 +66,7 @@ make -e GCP_PROJECT=<project id> setup-integration-local
 As you develop, you can build new test images and run the integration test on demand:
 
 ```shell
-make -e GCP_PROJECT=<project id> build-push-test-image integration-local
+make -e GCP_PROJECT=<project id> integration-local
 ```
 
 ## Creating a PR
