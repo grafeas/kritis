@@ -84,6 +84,6 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 
 // RunCmd runs an exec.Command.
 func (*Commander) RunCmd(cmd *exec.Cmd) error {
-	logrus.Debugf("Running command: %s", cmd.Args)
+	logrus.Infof("Executing: %s", cmd.Args)
 	return cmd.Run()
 }
