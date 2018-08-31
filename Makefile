@@ -180,9 +180,8 @@ gcb-signer-image: out/gcb-signer-image
 gcb-signer-push-image: gcb-signer-image
 	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
 
-# Steps to create a new test cluster on an GCP project that has already had a Kritis setup.
-.PHONY: create-integration-local
-create-integration-local:
+.PHONY: populate-integration-local-environment
+populate-integration-local-environment:
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(TEST_CLUSTER) >/dev/null \
 		|| gcloud --project=$(GCP_PROJECT) container clusters create $(TEST_CLUSTER) \
 		--num-nodes=2 --zone=$(GCP_ZONE)
@@ -212,9 +211,20 @@ create-integration-local:
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
 
-# Fully setup local integration testing.
+# Fully setup local integration testing: only needs to run just once
 .PHONY: setup-integration-local
-setup-integration-local: build-push-test-image create-integration-local
+setup-integration-local: build-push-test-image populate-integration-local-environment
+
+.PHONY: just-the-integration-test-please
+just-the-integration-test-please:
+	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
+		$(REPOPATH)/integration \
+		-timeout 30m \
+		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
+		-gcp-project=$(GCP_PROJECT) \
+		-gke-cluster-name=$(TEST_CLUSTER) $(EXTRA_TEST_FLAGS)
+
 
 # integration-local requires that "setup-integration-local" has been run at least once.
 #
@@ -224,11 +234,4 @@ setup-integration-local: build-push-test-image create-integration-local
 #    EXTRA_TEST_FLAGS="-run TestKritisISPLogic/vulnz/acceptable-vulnz-replicaset.yaml --cleanup=false" \
 #    integration-local
 .PHONY: integration-local
-integration-local:
-	echo "Test cluster: $(TEST_CLUSTER) Test project: $(GCP_PROJECT)"
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
-		$(REPOPATH)/integration \
-		-timeout 30m \
-		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
-		-gcp-project=$(GCP_PROJECT) \
-		-gke-cluster-name=$(TEST_CLUSTER) $(EXTRA_TEST_FLAGS)
+integration-local: build-push-test-image just-the-integration-test-please
