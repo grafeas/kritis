@@ -228,7 +228,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		Strategy:  defaultViolationStrategy,
 		IsWebhook: true,
 		Secret:    secrets.Fetch,
-		Validate:  securitypolicy.ValidateImageSecurityPolicyGen(),
+		Validate:  securitypolicy.ValidateImageSecurityPolicy,
 	})
 
 	if err := r.Review(images, isps, pod); err != nil {

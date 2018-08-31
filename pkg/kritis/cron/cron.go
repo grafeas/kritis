@@ -62,7 +62,7 @@ func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
 			Secret:    secrets.Fetch,
 			Strategy:  defaultViolationStrategy,
 			IsWebhook: false,
-			Validate:  securitypolicy.ValidateImageSecurityPolicyGen(),
+			Validate:  securitypolicy.ValidateImageSecurityPolicy,
 		},
 		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}
