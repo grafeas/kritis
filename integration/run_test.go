@@ -20,117 +20,134 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
-	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
-	kritisPreinstall  = "kritis-preinstall"
-	kritisPostinstall = "kritis-postinstall"
-	kritisPredelete   = "kritis-predelete"
+	preinstallPod  = "kritis-preinstall"
+	postinstallPod = "kritis-postinstall"
+	predeletePod   = "kritis-predelete"
+	testDataDir    = "../integration/testdata"
 )
 
 var (
 	gkeZone        = flag.String("gke-zone", "us-central1-a", "gke zone")
 	gkeClusterName = flag.String("gke-cluster-name", "test-cluster-2", "name of the integration test cluster")
 	gcpProject     = flag.String("gcp-project", "kritis-int-test", "the gcp project where the integration test cluster lives")
-	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster")
-	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for kritis-int-test project")
-	client         kubernetes.Interface
-	context        *api.Context
+	gacCredentials = flag.String("gac-credentials", "/tmp/gac.json", "path to gac.json credentials for --gcp-project")
+	remote         = flag.Bool("remote", true, "if true, run tests on a remote GKE cluster (currently unused)")
+	cleanup        = flag.Bool("cleanup", true, "cleanup allocated resources on exit")
 )
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-	if *remote {
-		cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-		if err := integration_util.RunCmd(cmd); err != nil {
-			logrus.Fatalf("Error authenticating to GKE cluster stdout: %v", err)
-		}
-	}
-
-	var err error
-	client, err = kubernetesutil.GetClientset()
+// processTemplate processes a text template and returns the path to it.
+func processTemplate(path, ns string) (string, error) {
+	in, err := ioutil.ReadFile(filepath.Join(testDataDir, path))
 	if err != nil {
-		logrus.Fatalf("Test setup error: getting kubernetes client: %s", err)
+		return "", fmt.Errorf("unable to read %s: %v", path, err)
 	}
 
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-
-	cfg, err := kubeConfig.RawConfig()
+	tmpl := template.Must(template.New("text").Parse(string(in)))
+	vars := struct{ Project string }{*gcpProject}
+	tf, err := ioutil.TempFile("", fmt.Sprintf("%s.%s.", filepath.Base(path), ns))
 	if err != nil {
-		logrus.Fatalf("loading kubeconfig: %s", err)
+		return "", fmt.Errorf("tempfile: %v", err)
 	}
-
-	context = cfg.Contexts[cfg.CurrentContext]
-
-	exitCode := m.Run()
-
-	// Reset default context and namespace
-	if err := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", context.Namespace).Run(); err != nil {
-		logrus.Warn(err)
+	if err = tmpl.Execute(tf, vars); err != nil {
+		return "", fmt.Errorf("unable to process %s: %v", path, err)
 	}
-
-	os.Exit(exitCode)
+	if err = tf.Close(); err != nil {
+		return "", fmt.Errorf("close: %v", err)
+	}
+	return tf.Name(), nil
 }
 
-func setupNamespace(t *testing.T) (*v1.Namespace, func()) {
-	namespaceName := integration_util.RandomID()
-	logrus.Infof("Running integration tests in namespace %s", namespaceName)
-	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
+// cleanupTemplate resources referenced by an expanded text template
+func cleanupTemplate(t *testing.T, path, ns string) error {
+	if !*cleanup {
+		t.Logf("Skipping cleanup of %s because --cleanup=false", path)
+		return nil
+	}
+	t.Logf("Cleaning up after %s ...", path)
+	cmd := exec.Command("kubectl", "delete", "-f", path, "--namespace", ns)
+	output, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		return fmt.Errorf("kubectl delete failed: %s %v", output, err)
+	}
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("remove failed: %v", err)
+	}
+	return nil
+}
+
+// webhooks returns a list of active webhooks
+func webhooks(cs kubernetes.Interface) ([]string, error) {
+	var names []string
+	hooks, err := cs.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().List(meta_v1.ListOptions{})
+	if err != nil {
+		return names, fmt.Errorf("webhook list failed: %v", err)
+	}
+
+	for _, h := range hooks.Items {
+		if strings.HasPrefix(h.Name, "kritis-") {
+			names = append(names, h.Name)
+		}
+	}
+	return names, nil
+}
+
+// testNamespace configures a randomized namespace name, returns cleanup function.
+func testNamespace(cs kubernetes.Interface) (*v1.Namespace, func(*testing.T), error) {
+	name := integration_util.RandomID()[0:8]
+	ns, err := cs.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      namespaceName,
-			Namespace: namespaceName,
+			Name:      name,
+			Namespace: name,
 		},
 	})
 	if err != nil {
-		t.Fatalf("creating namespace: %s", err)
+		return nil, nil, fmt.Errorf("creating namespace: %s", err)
 	}
 
-	kubectlCmd := exec.Command("kubectl", "config", "set-context", context.Cluster, "--namespace", ns.Name)
-	if err := integration_util.RunCmd(kubectlCmd); err != nil {
-		t.Fatalf("kubectl config set-context --namespace: %v", err)
+	cmd := exec.Command("kubectl", "create", "secret", "generic", "gac-ca-admin",
+		fmt.Sprintf("--from-file=%s", *gacCredentials), "--namespace", ns.Name)
+	if _, err = integration_util.RunCmdOut(cmd); err != nil {
+		return nil, nil, fmt.Errorf("error creating secret %v", err)
 	}
 
-	return ns, func() {
-		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
-	}
+	return ns, func(t *testing.T) {
+		t.Helper()
+		if !*cleanup {
+			t.Logf("Skipping deletion of namespace %s because --cleanup=false", ns.Name)
+			return
+		}
+
+		t.Logf("Deleting namespace %s ...", ns.Name)
+		if err := cs.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{}); err != nil {
+			t.Errorf("namespace deletion failed: %v", err)
+		}
+	}, nil
 }
 
-func createGACSecret(t *testing.T, ns *v1.Namespace) {
-	crdCmd := exec.Command("kubectl", "create",
-		"secret", "generic", "gac-ca-admin",
-		fmt.Sprintf("--from-file=%s", *gacCredentials),
-		"--namespace", ns.Name)
-	_, err := integration_util.RunCmdOut(crdCmd)
-	if err != nil {
-		logrus.Infof("error creating gac secret; if running locally, please make sure you have container analysis credentials for kritis-int-test at %s on your machine", *gacCredentials)
-		t.Fatalf("error creating gac secret %v", err)
-	}
-}
-
-func initKritis(t *testing.T, ns *v1.Namespace) func() {
-	helmCmd := exec.Command("helm", "install", "./kritis-charts",
+func installKritis(cs kubernetes.Interface, ns *v1.Namespace) (func(*testing.T), error) {
+	cmd := exec.Command("helm", "install", "../kritis-charts",
+		"--wait",
 		"--namespace", ns.Name,
-		"--set", fmt.Sprintf("repository=%s",
-			"gcr.io/kritis-int-test/"),
-		"--set", fmt.Sprintf("image.tag=%s",
-			version.Commit),
+		"--set", fmt.Sprintf("repository=gcr.io/%s/", *gcpProject),
+		"--set", fmt.Sprintf("image.tag=%s", version.Commit),
 		"--set", fmt.Sprintf("serviceNamespace=%s", ns.Name),
 		"--set", "predelete.deleteCRDs=--delete-crd=false",
 		"--set", fmt.Sprintf("csrName=tls-webhook-secret-cert-%s", ns.Name),
@@ -140,409 +157,270 @@ func initKritis(t *testing.T, ns *v1.Namespace) func() {
 		"--set", fmt.Sprintf("serviceName=kritis-validation-hook-%s", ns.Name),
 		"--set", fmt.Sprintf("serviceNameDeployments=kritis-validation-hook-deployments-%s", ns.Name),
 	)
-	helmCmd.Dir = "../"
+	out, err := integration_util.RunCmdOut(cmd)
 
-	out, err := integration_util.RunCmdOut(helmCmd)
+	// Install errors are difficult to debug, so spend the effort to generate a great error message.
 	if err != nil {
-		t.Fatalf("testing error: %v \n %s \n %s \n %s", err,
-			getWebhooksInCluster(t),
-			getPodLogs(t, kritisPreinstall, ns),
-			getPodLogs(t, kritisPostinstall, ns))
+		hooks, err2 := webhooks(cs)
+		if err2 != nil {
+			hooks = []string{err2.Error()}
+		}
+
+		cmd := exec.Command("kubectl", "get", "po", "--namespace", ns.Name)
+		podSummary, err3 := integration_util.RunCmdOut(cmd)
+		if err3 != nil {
+			podSummary = []byte(fmt.Sprintf("kubectl failed: %v", err))
+		}
+
+		return nil, fmt.Errorf("helm failure: %v\n\nhooks: %s\n\npreinstall: %s\n\npostinstall: %s\n\npods: %s", err,
+			hooks, podLogs(preinstallPod, ns), podLogs(postinstallPod, ns), podSummary)
 	}
-	// parsing out release name from 'helm init' output
-	helmNameString := strings.Split(string(out[:]), "\n")[0]
-	kritisRelease := strings.Split(helmNameString, "   ")[1]
-	deleteFunc := func() {
-		// cleanup
-		helmCmd = exec.Command("helm", "delete", "--purge", kritisRelease)
-		_, err = integration_util.RunCmdOut(helmCmd)
+
+	// parsing out Kritis release name from 'helm init' out
+	helmName := strings.Split(string(out[:]), "\n")[0]
+	release := strings.Split(helmName, "   ")[1]
+
+	cleanup := func(t *testing.T) {
+		t.Helper()
+		if !*cleanup {
+			t.Logf("Skipping Kritis deinstall in namespace %s because --cleanup=false", ns.Name)
+			return
+		}
+		t.Logf("Uninstalling Kritis ...")
+		cmd = exec.Command("helm", "delete", "--purge", release)
+		out, err = integration_util.RunCmdOut(cmd)
 		if err != nil {
-			cleanupKritis(t, ns)
-			t.Fatalf("testing error: %v", err)
+			t.Errorf("helm delete failed: %v\nout: %s", err, out)
+			if err2 := cleanupInstall(ns); err2 != nil {
+				t.Errorf("cleanup failed: %v", err2)
+			}
+			t.Fatalf("Abandoning Kritis deinstall.")
 		}
-		// make sure kritis-predelete pod completes
-		if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPredelete); err != nil {
-			cleanupKritis(t, ns)
-			t.Fatalf("predelete pod didn't complete: %v \n %s", err, getPodLogs(t, kritisPredelete, ns))
-		}
-	}
 
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		t.Errorf("error getting kubernetes clientset: %v", err)
-		return deleteFunc
-	}
-	// Wait for postinstall pod to finish
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(ns.Name), kritisPostinstall); err != nil {
-		t.Errorf("postinstall pod didn't complete: %v", err)
-		return deleteFunc
-	}
-	// Wait for validation hook pod to start running
-
-	podList, err := client.CoreV1().Pods(ns.Name).List(meta_v1.ListOptions{})
-	if err != nil {
-		t.Errorf("error getting pods: %v \n %s \n %s", err, getPodLogs(t, kritisPreinstall, ns), getPodLogs(t, kritisPostinstall, ns))
-		return deleteFunc
-	}
-	for _, pod := range podList.Items {
-		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
-			if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), pod.Name); err != nil {
-				t.Errorf("%s didn't start running: %v", pod.Name, err)
-				return deleteFunc
+		// If helm delete succeeds, ensure that the kritis-predelete pod completes
+		if err := kubernetesutil.WaitForPodComplete(cs.CoreV1().Pods(ns.Name), predeletePod); err != nil {
+			t.Errorf("predelete pod didn't complete: %v \n %s", err, podLogs(predeletePod, ns))
+			if err2 := cleanupInstall(ns); err2 != nil {
+				t.Errorf("cleanup failed: %v", err2)
 			}
 		}
 	}
-	return deleteFunc
+
+	// Wait for postinstall pod to finish
+	if err := kubernetesutil.WaitForPodComplete(cs.CoreV1().Pods(ns.Name), postinstallPod); err != nil {
+		return cleanup, fmt.Errorf("postinstall pod didn't complete: %v", err)
+	}
+
+	pods, err := cs.CoreV1().Pods(ns.Name).List(meta_v1.ListOptions{})
+	if err != nil {
+		return cleanup, fmt.Errorf("error getting pods: %v \n %s \n %s", err, podLogs(preinstallPod, ns), podLogs(postinstallPod, ns))
+	}
+	// Wait for validation hook pod to start running
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Name, "kritis-validation-hook") {
+			if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), pod.Name); err != nil {
+				return cleanup, fmt.Errorf("%s didn't start running: %v", pod.Name, err)
+			}
+		}
+	}
+	if err := kubernetesutil.WaitForDeploymentToStabilize(cs, ns.Name,
+		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
+		return cleanup, fmt.Errorf("Timed out waiting for deployment to stabilize")
+	}
+	return cleanup, nil
+}
+
+// Complete setUp for a test. Returns a tearDown function.
+func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T)) {
+	t.Helper()
+
+	// Otherwise the credentials are stored in an unexpected path within /secret
+	if filepath.Base(*gacCredentials) != "gac.json" {
+		t.Errorf("--gac-credentials must have a base name of gac.json, not %s", filepath.Base(*gacCredentials))
+	}
+
+	cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
+	if err := integration_util.RunCmd(cmd); err != nil {
+		t.Fatalf("get-credentials: %v - ensure that \"make setup-integration-local\" has been run first", err)
+	}
+	cs, err := kubernetesutil.GetClientset()
+	if err != nil {
+		t.Fatalf("client: %v", err)
+	}
+
+	hooks, err := webhooks(cs)
+	if err != nil {
+		t.Fatalf("webhooks: %v", err)
+	}
+	if len(hooks) > 0 {
+		t.Logf("WARNING: stray webhooks may interfere with your test: %v", hooks)
+	}
+
+	ns, nsCleanup, err := testNamespace(cs)
+	if err != nil {
+		t.Fatalf("testNamespace: %v", err)
+	}
+
+	t.Logf("setup: installing kritis with image version %s in namespace %s...", version.Commit, ns.Name)
+	instCleanup, err := installKritis(cs, ns)
+	if err != nil {
+		t.Fatalf("install: %v", err)
+	}
+
+	createAttestationAuthority(t, ns.Name)
+	isp, err := processTemplate("image-security-policy/my-isp.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process isp template: %v", err)
+	}
+	cmd = exec.Command("kubectl", "create", "-f", isp, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+	waitForCRDExamples(t, ns)
+
+	return cs, ns, func(t *testing.T) {
+		cleanupTemplate(t, isp, ns.Name)
+		instCleanup(t)
+		nsCleanup(t)
+		t.Logf("tearDown complete, have a wonderful day!")
+	}
 }
 
 func TestKritisISPLogic(t *testing.T) {
-	type testObject struct {
-		name string
-	}
+	cs, ns, tearDown := setUp(t)
+	defer tearDown(t)
 
-	type testRunCase struct {
-		description          string
-		dir                  string
-		args                 []string
-		deployments          []testObject
-		pods                 []testObject
-		replicasets          []testObject
-		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		shouldSucceed        bool
-		attestedImages       []string
+	var testCases = []struct {
+		template string
+		command  string
 
-		remoteOnly bool
-		cleanup    func(t *testing.T)
-	}
+		deployments    []string
+		pods           []string
+		replicasets    []string
+		attestedImages []string
 
-	var testCases = []testRunCase{
+		shouldSucceed bool
+	}{
 		{
-			description: "nginx-no-digest",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/nginx/nginx-no-digest.yaml"},
-			pods: []testObject{
-				{
-					name: "nginx-no-digest",
-				},
-			},
-			shouldSucceed:  false,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/nginx/nginx-no-digest.yaml")
-				integration_util.RunCmdOut(cmd)
-			},
+			template:      "nginx/nginx-no-digest.yaml",
+			command:       "create",
+			shouldSucceed: false,
 		},
 		{
-			description: "nginx-no-digest-whitelist",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/nginx/nginx-no-digest-whitelist.yaml"},
-			pods: []testObject{
-				{
-					name: "nginx-no-digest-whitelist",
-				},
-			},
-			shouldSucceed:  true,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/nginx/nginx-no-digest-whitelist.yaml")
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
+			template:      "nginx/nginx-no-digest-whitelist.yaml",
+			command:       "create",
+			pods:          []string{"nginx-no-digest-whitelist"},
+			shouldSucceed: true,
 		},
 		{
-			description: "nginx-digest-whitelist",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/nginx/nginx-digest-whitelist.yaml"},
-			pods: []testObject{
-				{
-					name: "nginx-digest-whitelist",
-				},
+			template:      "nginx/nginx-digest-whitelist.yaml",
+			command:       "create",
+			pods:          []string{"nginx-digest-whitelist"},
+			shouldSucceed: true,
+		},
+		{
+			template:      "java/java-with-vulnz.yaml",
+			command:       "create",
+			shouldSucceed: false,
+		},
+		{
+			template:      "java/java-with-vulnz-deployment.yaml",
+			command:       "create",
+			shouldSucceed: false,
+		},
+		{
+			template:      "java/java-with-vulnz-replicaset.yaml",
+			command:       "create",
+			shouldSucceed: false,
+		},
+		{
+			template:      "nginx/nginx-no-digest-breakglass.yaml",
+			command:       "apply",
+			pods:          []string{"nginx-no-digest-breakglass"},
+			shouldSucceed: true,
+		},
+		{
+			template:      "java/java-with-vulnz-breakglass-deployment.yaml",
+			command:       "create",
+			deployments:   []string{"java-with-vulnz-breakglass-deployment"},
+			shouldSucceed: true,
+		},
+		{
+			template:    "java/java-with-vulnz-breakglass-replicaset.yaml",
+			command:     "apply",
+			replicasets: []string{"java-with-vulnz-breakglass-replicaset"},
+			attestedImages: []string{
+				fmt.Sprintf("gcr.io/%s/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8", *gcpProject),
 			},
 			shouldSucceed: true,
-			attestedImages: []string{
-				"gcr.io/kritis-int-test/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72",
-			},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/nginx/nginx-digest-whitelist.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
 		},
 		{
-			description: "java-with-vulnz",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/java/java-with-vulnz.yaml"},
-			pods: []testObject{
-				{
-					name: "java-with-vulnz",
-				},
-			},
-			shouldSucceed:  false,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/java/java-with-vulnz.yaml")
-				integration_util.RunCmdOut(cmd)
-			},
+			template:      "kritis-server/kritis-server-global-whitelist.yaml",
+			command:       "apply",
+			pods:          []string{"kritis-server-global-whitelist"},
+			shouldSucceed: true,
 		},
 		{
-			description: "java-with-vulnz-deployment",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/java/java-with-vulnz-deployment.yaml"},
-			deployments: []testObject{
-				{
-					name: "java-with-vulnz-deployment",
-				},
-			},
-			shouldSucceed:  false,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/java/java-with-vulnz-deployment.yaml")
-				integration_util.RunCmdOut(cmd)
-			},
+			template:      "kritis-server/kritis-server-global-whitelist-with-vulnz.yaml",
+			command:       "apply",
+			shouldSucceed: false,
 		},
 		{
-			description: "java-with-vulnz-replicaset",
-			args: []string{"kubectl", "create", "-f",
-				"testdata/java/java-with-vulnz-replicaset.yaml"},
-			replicasets: []testObject{
-				{
-					name: "java-with-vulnz-replicaset",
-				},
-			},
-			shouldSucceed:  false,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/java/java-with-vulnz-replicaset.yaml")
-				integration_util.RunCmdOut(cmd)
-			},
+			template:      "vulnz/acceptable-vulnz.yaml",
+			command:       "apply",
+			pods:          []string{"image-with-acceptable-vulnz"},
+			shouldSucceed: true,
 		},
 		{
-			description: "nginx-no-digest-breakglass",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/nginx/nginx-no-digest-breakglass.yaml"},
-			pods: []testObject{
-				{
-					name: "nginx-no-digest-breakglass",
-				},
-			},
-			shouldSucceed:  true,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/nginx/nginx-no-digest-breakglass.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
-		},
-		{
-			description: "java-with-vulnz-breakglass-deployment",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/java/java-with-vulnz-breakglass-deployment.yaml"},
-			deployments: []testObject{
-				{
-					name: "java-with-vulnz-breakglass-deployment",
-				},
-			},
+			template:      "vulnz/acceptable-vulnz-replicaset.yaml",
+			command:       "apply",
+			replicasets:   []string{"replicaset-with-acceptable-vulnz"},
 			shouldSucceed: true,
 			attestedImages: []string{
-				"gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
-			},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/java/java-with-vulnz-breakglass-deployment.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
-		},
-		{
-			description: "java-with-vulnz-breakglass-replicaset",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/java/java-with-vulnz-breakglass-replicaset.yaml"},
-			replicasets: []testObject{
-				{
-					name: "java-with-vulnz-breakglass-replicaset",
-				},
-			},
-			shouldSucceed: true,
-			attestedImages: []string{
-				"gcr.io/kritis-int-test/java-with-vuln@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8",
-			},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/java/java-with-vulnz-breakglass-replicaset.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
-		},
-		{
-			description: "kritis-server-global-whitelist",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/kritis-server/kritis-server-global-whitelist.yaml"},
-			pods: []testObject{
-				{
-					name: "kritis-server-global-whitelist",
-				},
-			},
-			shouldSucceed:  true,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/kritis-server/kritis-server-global-whitelist.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
-		},
-		{
-			description: "kritis-server-global-whitelist-with-vulnz",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml"},
-			pods: []testObject{
-				{
-					name: "kritis-server-global-whitelist-with-vulnz",
-				},
-			},
-			shouldSucceed:  false,
-			attestedImages: []string{},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/kritis-server/kritis-server-global-whitelist-with-vulnz.yaml")
-
-				integration_util.RunCmdOut(cmd)
-			},
-		},
-		{
-			description: "image-with-acceptable-vulnz",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/vulnz/acceptable-vulnz.yaml"},
-			pods: []testObject{
-				{
-					name: "image-with-acceptable-vulnz",
-				},
-			},
-			shouldSucceed: true,
-			attestedImages: []string{
-				"gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6",
-			},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/vulnz/acceptable-vulnz.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
-		},
-		{
-			description: "replicaset-with-acceptable-vulnz",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/vulnz/acceptable-vulnz-replicaset.yaml"},
-			replicasets: []testObject{
-				{
-					name: "replicaset-with-acceptable-vulnz",
-				},
-			},
-			shouldSucceed: true,
-			attestedImages: []string{
-				"gcr.io/kritis-int-test/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6",
-			},
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/vulnz/acceptable-vulnz-replicaset.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
+				fmt.Sprintf("gcr.io/%s/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6", *gcpProject),
 			},
 		},
 	}
-
-	ns, deleteNs := setupNamespace(t)
-	defer deleteNs()
-	createGACSecret(t, ns)
-	deleteKritis := initKritis(t, ns)
-	defer deleteKritis()
-	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
-		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for deployment to stabilize")
-	}
-	createCRDExamples(t, ns)
-	waitForCRDExamples(t, ns)
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			defer testCase.cleanup(t)
-
-			cmd := exec.Command(testCase.args[0], testCase.args[1:]...)
-			cmd.Dir = testCase.dir
-			output, err := integration_util.RunCmdOut(cmd)
+	for _, tc := range testCases {
+		t.Run(tc.template, func(t *testing.T) {
+			path, err := processTemplate(tc.template, ns.Name)
+			defer cleanupTemplate(t, path, ns.Name)
 			if err != nil {
-				if !testCase.shouldSucceed {
+				t.Fatalf("failed to process template: %v", err)
+			}
+
+			cmd := exec.Command("kubectl", tc.command, "-f", path, "--namespace", ns.Name)
+			t.Logf("Running: %s", cmd.Args)
+			out, err := integration_util.RunCmdOut(cmd)
+
+			if err != nil {
+				if !tc.shouldSucceed {
 					return
 				}
-				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
-					err, getKritisLogs(t))
+				t.Fatalf("failed: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
+			}
+			if !tc.shouldSucceed {
+				t.Fatalf("deployment should have failed but succeeded\n%s", kritisLogs(ns))
+			}
 
-			}
-			if !testCase.shouldSucceed {
-				t.Fatalf("deployment should have failed but succeeded\n%s",
-					getKritisLogs(t))
-			}
-			imgAttestations := getAttestations(t, testCase.attestedImages)
-			for _, i := range testCase.attestedImages {
-				if _, ok := imgAttestations[i]; !ok {
-					t.Errorf("expected %s to be attested. Found no attestations", i)
-				}
-			}
-			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
-						getKritisLogs(t),
-						output)
+			for _, p := range tc.pods {
+				t.Logf("Waiting for pod %s in namespace %s ...", p, ns.Name)
+				if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), p); err != nil {
+					t.Errorf("timeout waiting for pod %q\n%s\n%s", p, kritisLogs(ns), out)
 				}
 			}
 
-			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for deployment to stabilize\n%s",
-						getKritisLogs(t))
-				}
-				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
-					}
-					testCase.deploymentValidation(t, deployment)
+			for _, d := range tc.deployments {
+				t.Logf("Waiting for deployment %s in namespace %s ...", d, ns.Name)
+				if err := kubernetesutil.WaitForDeploymentToStabilize(cs, ns.Name, d, 5*time.Minute); err != nil {
+					t.Errorf("timeout waiting for deployment %q\n%s", d, kritisLogs(ns))
 				}
 			}
 
-			for _, r := range testCase.replicasets {
-				if err := kubernetesutil.WaitForReplicaSetToStabilize(client, ns.Name, r.name, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for replicasets to stabilize\n%s",
-						getKritisLogs(t))
+			for _, r := range tc.replicasets {
+				t.Logf("Waiting for replicaset %s in namespace %s ...", r, ns.Name)
+				if err := kubernetesutil.WaitForReplicaSetToStabilize(cs, ns.Name, r, 5*time.Minute); err != nil {
+					t.Errorf("Timed out waiting for replicasets to stabilize\n%s", kritisLogs(ns))
 				}
 			}
 		})
@@ -550,172 +428,107 @@ func TestKritisISPLogic(t *testing.T) {
 }
 
 func TestKritisCron(t *testing.T) {
-	type testObject struct {
-		name string
-	}
+	cs, ns, tearDown := setUp(t)
+	defer tearDown(t)
 
-	type testRunCase struct {
-		description          string
-		dir                  string
-		args                 []string
-		deployments          []testObject
-		pods                 []testObject
-		deploymentValidation func(t *testing.T, d *appsv1.Deployment)
-		shouldSucceed        bool
-		shouldLabel          bool
+	var testCases = []struct {
+		template string
+		command  string
 
-		remoteOnly bool
-		cleanup    func(t *testing.T)
-	}
-
-	var testCases = []testRunCase{
+		deployments   []string
+		pods          []string
+		shouldSucceed bool
+		shouldLabel   bool
+	}{
 		{
-			description: "nginx-no-digest-breakglass",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/nginx/nginx-no-digest-breakglass.yaml"},
-			pods: []testObject{
-				{
-					name: "nginx-no-digest-breakglass",
-				},
-			},
+			template:      "nginx/nginx-no-digest-breakglass.yaml",
+			command:       "apply",
+			pods:          []string{"nginx-no-digest-breakglass"},
 			shouldSucceed: true,
 			shouldLabel:   true,
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/nginx/nginx-no-digest-breakglass.yaml")
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
 		},
 		{
-			description: "image-with-acceptable-vulnz",
-			args: []string{"kubectl", "apply", "-f",
-				"testdata/vulnz/acceptable-vulnz.yaml"},
-			pods: []testObject{
-				{
-					name: "image-with-acceptable-vulnz",
-				},
-			},
+			template:      "vulnz/acceptable-vulnz.yaml",
+			command:       "apply",
+			pods:          []string{"image-with-acceptable-vulnz"},
 			shouldSucceed: true,
 			shouldLabel:   false,
-			cleanup: func(t *testing.T) {
-				cmd := exec.Command("kubectl", "delete", "-f",
-					"testdata/vulnz/acceptable-vulnz.yaml")
-
-				output, err := integration_util.RunCmdOut(cmd)
-				if err != nil {
-					t.Fatalf("kubectl delete failed: %s %v", output, err)
-				}
-			},
 		},
 	}
-
-	ns, deleteNs := setupNamespace(t)
-	defer deleteNs()
-	createGACSecret(t, ns)
-	deleteKritis := initKritis(t, ns)
-	defer deleteKritis()
-	if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name,
-		fmt.Sprintf("kritis-validation-hook-%s", ns.Name), 2*time.Minute); err != nil {
-		t.Fatalf("Timed out waiting for deployment to stabilize")
-	}
-	createCRDExamples(t, ns)
-	waitForCRDExamples(t, ns)
-	for _, testCase := range testCases {
-		t.Run(testCase.description, func(t *testing.T) {
-			defer testCase.cleanup(t)
-
-			cmd := exec.Command(testCase.args[0], testCase.args[1:]...)
-			cmd.Dir = testCase.dir
-			output, err := integration_util.RunCmdOut(cmd)
+	for _, tc := range testCases {
+		t.Run(tc.template, func(t *testing.T) {
+			path, err := processTemplate(tc.template, ns.Name)
+			defer cleanupTemplate(t, path, ns.Name)
 			if err != nil {
-				if !testCase.shouldSucceed {
+				t.Fatalf("failed to process template: %v", err)
+			}
+			cmd := exec.Command("kubectl", tc.command, "-f", path, "--namespace", ns.Name)
+			t.Logf("Running: %s", cmd.Args)
+			out, err := integration_util.RunCmdOut(cmd)
+			if err != nil {
+				if !tc.shouldSucceed {
 					return
 				}
-				t.Fatalf("testCase cmd failed: %s %v\n%s", output,
-					err, getKritisLogs(t))
+				t.Fatalf("exec failed: %s %v\n%s", out, err, kritisLogs(ns))
 
 			}
-			if !testCase.shouldSucceed {
-				t.Fatalf("deployment should have failed but succeeded\n%s",
-					getKritisLogs(t))
+			if !tc.shouldSucceed {
+				t.Fatalf("deployment should have failed but succeeded\n%s", kritisLogs(ns))
 			}
 
-			for _, p := range testCase.pods {
-				if err := kubernetesutil.WaitForPodReady(client.CoreV1().Pods(ns.Name), p.name); err != nil {
-					t.Fatalf("Timed out waiting for pod ready\n%s\n%s",
-						getKritisLogs(t),
-						output)
+			for _, p := range tc.pods {
+				t.Logf("Waiting for pod %s in namespace %s ...", p, ns.Name)
+				if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), p); err != nil {
+					t.Errorf("timeout waiting for pod %q\n%s\n%s", p, kritisLogs(ns), out)
 				}
 			}
 
-			for _, d := range testCase.deployments {
-				if err := kubernetesutil.WaitForDeploymentToStabilize(client, ns.Name, d.name, 10*time.Minute); err != nil {
-					t.Fatalf("Timed out waiting for deployment to stabilize\n%s",
-						getKritisLogs(t))
-				}
-				if testCase.deploymentValidation != nil {
-					deployment, err := client.AppsV1().Deployments(ns.Name).Get(d.name, meta_v1.GetOptions{})
-					if err != nil {
-						t.Fatalf("Could not find deployment: %s %s\n%s", ns.Name, d, getKritisLogs(t))
-					}
-					testCase.deploymentValidation(t, deployment)
+			for _, d := range tc.deployments {
+				t.Logf("Waiting for deployment %s in namespace %s ...", d, ns.Name)
+				if err := kubernetesutil.WaitForDeploymentToStabilize(cs, ns.Name, d, 10*time.Minute); err != nil {
+					t.Errorf("timeout waiting for deployment %q\n%s", d, kritisLogs(ns))
 				}
 			}
-			// get
-			cmd = exec.Command("kubectl", "get", "po")
+
+			cmd = exec.Command("kubectl", "get", "po", "--namespace", ns.Name)
 			pods, err := integration_util.RunCmdOut(cmd)
 			if err != nil {
-				t.Fatalf("kubectl get for kritis-server failed: %s %v", output, err)
+				t.Errorf("kubectl get failed: %s %v", pods, err)
 			}
-			logrus.Infof("kubectl get po output: \n %s", pods)
+			t.Logf("kubectl get po out:\n%s", pods)
 
 			cmd = exec.Command("kubectl", "get", "po",
 				"-l", "label=kritis-validation-hook",
 				"-o", "custom-columns=:metadata.name",
-				"--no-headers=true")
-			kritisPod, err := integration_util.RunCmdOut(cmd)
+				"--no-headers=true",
+				"--namespace", ns.Name)
+			hookPod, err := integration_util.RunCmdOut(cmd)
 			if err != nil {
-				t.Fatalf("kubectl get for kritis-server failed: %s %v", output, err)
+				t.Errorf("kubectl get for kritis-validation-hook failed: %s %v", hookPod, err)
 			}
 
-			// as kubectl exec opens a tty, output is not monitored
-			cmd = exec.Command("kubectl", "exec", strings.TrimSpace(string(kritisPod)),
-				"--",
-				"/kritis/kritis-server", "--run-cron")
-			err = cmd.Start()
-			if err != nil {
-				logrus.Infof("Error starting cmd %s: %v",
-					strings.Join(cmd.Args, " "),
-					err)
-				os.Exit(1)
+			// as kubectl exec opens a tty, out is not monitored
+			cmd = exec.Command("kubectl", "exec", "--namespace", ns.Name,
+				strings.TrimSpace(string(hookPod)), "--", "/kritis/kritis-server", "--run-cron")
+			if err = cmd.Start(); err != nil {
+				t.Errorf("start failed for %s: %v", cmd.Args, err)
 			}
 
-			err = cmd.Wait()
-			if err != nil {
-				logrus.Infof("Error waiting for cmd %s: %v",
-					strings.Join(cmd.Args, " "),
-					err)
-				os.Exit(1)
+			if err = cmd.Wait(); err != nil {
+				t.Errorf("wait failed for %s: %v", cmd.Args, err)
 			}
 			// check labels on pods
-			cmd = exec.Command("kubectl", "get", "pods",
-				"-l",
-				"kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy")
-			output, err = integration_util.RunCmdOut(cmd)
+			cmd = exec.Command("kubectl", "get", "pods", "-l", "kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy", "--namespace", ns.Name)
+			out, err = integration_util.RunCmdOut(cmd)
 			if err != nil {
-				t.Fatalf("kubectl get pod with cron labels failed: %s %v", output, err)
+				t.Errorf("kubectl get pod with cron labels failed: %s %v", out, err)
 			}
-			if testCase.shouldLabel {
-				if len(output) < 0 {
-					t.Fatalf("expected cron to label pod: %s", output)
+			if tc.shouldLabel {
+				if len(out) < 0 {
+					t.Errorf("expected cron to label pod: %s", out)
 				}
-			} else {
-				if len(output) != 0 {
-					t.Fatalf("expected cron to not label pod: %s", output)
-				}
+			} else if len(out) != 0 {
+				t.Errorf("expected cron to not label pod: %s", out)
 			}
 		})
 	}

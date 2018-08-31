@@ -77,7 +77,7 @@ func process(ns string, msg *pubsub.Message) error {
 	if err != nil {
 		return fmt.Errorf("Error retrieving build policies: %v", err)
 	}
-	client, err := containeranalysis.New()
+	client, err := containeranalysis.NewCache()
 	if err != nil {
 		return fmt.Errorf("Error getting Container Analysis client: %v", err)
 	}

@@ -27,13 +27,16 @@ func getAttestations(t *testing.T, images []string) map[string]bool {
 	if len(images) == 0 {
 		return m
 	}
-	client, err := containeranalysis.New()
+	client, err := containeranalysis.NewCache()
 	if err != nil {
 		t.Fatalf("Unexpected error while fetching client %v", err)
 	}
-
+	remote, err := containeranalysis.New()
+	if err != nil {
+		t.Fatalf("Unexpected error while fetching remote client %v", err)
+	}
 	for _, i := range images {
-		occs, err := client.GetAttestations(i)
+		occs, err := client.Attestations(i)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}
@@ -41,7 +44,7 @@ func getAttestations(t *testing.T, images []string) map[string]bool {
 			m[i] = true
 		}
 		for _, o := range occs {
-			if err := client.DeleteOccurrence(o.OccID); err != nil {
+			if err := remote.DeleteOccurrence(o.OccID); err != nil {
 				t.Logf("could not delete attestations occurrence %s due to %v", o.OccID, err)
 			}
 		}

@@ -22,7 +22,7 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	containeranalysispb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
 )
 
 type MockMetadataClient struct {
@@ -31,12 +31,12 @@ type MockMetadataClient struct {
 	Occ             map[string]string
 }
 
-func (m *MockMetadataClient) GetVulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurence(n *containeranalysispb.Note, image string,
-	s *secrets.PGPSigningSecret) (*containeranalysispb.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurence(n *cpb.Note, image string,
+	s *secrets.PGPSigningSecret) (*cpb.Occurrence, error) {
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
@@ -44,22 +44,22 @@ func (m *MockMetadataClient) CreateAttestationOccurence(n *containeranalysispb.N
 	return nil, nil
 }
 
-func (m *MockMetadataClient) GetAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
+func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
 	if aa == nil {
 		return nil, fmt.Errorf("could not get note")
 	}
-	return &containeranalysispb.Note{
+	return &cpb.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*containeranalysispb.Note, error) {
-	return &containeranalysispb.Note{
+func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
+	return &cpb.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
-func (m *MockMetadataClient) GetAttestations(containerImage string) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
 	return m.PGPAttestations, nil
 }
 
