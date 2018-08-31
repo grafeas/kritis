@@ -47,7 +47,7 @@ type Commander struct{}
 
 // RunCmdOut runs an exec.Command and returns the stdout and error.
 func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
-	logrus.Debugf("Running command: %s", cmd.Args)
+	logrus.Infof("Executing: %s", cmd.Args)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -84,6 +84,6 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 
 // RunCmd runs an exec.Command.
 func (*Commander) RunCmd(cmd *exec.Cmd) error {
-	logrus.Debugf("Running command: %s", cmd.Args)
+	logrus.Infof("Executing: %s", cmd.Args)
 	return cmd.Run()
 }
