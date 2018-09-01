@@ -240,8 +240,9 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	}
 
 	cmd := exec.Command("gcloud", "container", "clusters", "get-credentials", *gkeClusterName, "--zone", *gkeZone, "--project", *gcpProject)
-	if err := integration_util.RunCmd(cmd); err != nil {
-		t.Fatalf("get-credentials: %v - ensure that \"make setup-integration-local\" has been run first", err)
+	out, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		t.Fatalf("get-credentials: %v - %s\n\nPlease ensure that \"make setup-integration-local\" has been run first", out, err)
 	}
 	cs, err := kubernetesutil.GetClientset()
 	if err != nil {
