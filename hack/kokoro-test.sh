@@ -47,6 +47,7 @@ if [[ "${GO_TEST_EXIT_CODE}" -ne 0 ]]; then
 fi
 
 make \
+    -e REGISTRY=gcr.io/kritis-int-test \
     -e GCP_PROJECT=kritis-int-test \
     -e TEST_CLUSTER=test-cluster-2 \
     -e GAC_CREDENTIALS_PATH="${HOME}/tmp/gac.json" \
