@@ -87,6 +87,7 @@ GO_LDFLAGS += -X github.com/grafeas/kritis/cmd/kritis/version.Version=$(VERSION)
 GO_LDFLAGS += -w -s # Drop debugging symbols.
 
 REGISTRY?=gcr.io/kritis-project
+# TODO(tstromberg): Determine if it is possible to combine these two variables.
 TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
