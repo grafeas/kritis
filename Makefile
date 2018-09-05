@@ -132,7 +132,6 @@ helm-install-from-head:
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Production integration test, used by deploy/kritis-int-test/Dockerfile 
 .PHONY: integration-prod
 integration-prod: cross
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
