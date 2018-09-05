@@ -128,11 +128,11 @@ clean:
 	rm -rf $(BUILD_DIR)
 .PHONY: integration
 integration: cross
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -- --remote=true
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -delete-webhooks=false
 
 .PHONY: integration-local
 integration-local:
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -remote=false -gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
+	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration $(REPOPATH)/integration -timeout 5m -gac-credentials=$(LOCAL_GAC_CREDENTIALS_PATH)
 
 .PHONY: build-push-image
 build-push-image: build-image preinstall-image postinstall-image predelete-image
