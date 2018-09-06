@@ -20,27 +20,27 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"k8s.io/api/core/v1"
 )
 
 type Strategy interface {
-	HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.Violation) error
+	HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error
 	HandleAttestation(image string, pod *v1.Pod, isAttested bool) error
 }
 
 type LoggingStrategy struct {
 }
 
-func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.Violation) error {
+func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error {
 	glog.Info("HandleViolation via LoggingStrategy")
 	if len(violations) == 0 {
 		return nil
 	}
 	glog.Warningf("Found violations in image %s", image)
 	for _, v := range violations {
-		glog.Warning(v.Reason)
+		glog.Warning(v.Reason())
 	}
 	return nil
 }
@@ -59,7 +59,7 @@ func (l *LoggingStrategy) HandleAttestation(image string, pod *v1.Pod, isAtteste
 type AnnotationStrategy struct {
 }
 
-func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violations []securitypolicy.Violation) error {
+func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error {
 	// First, remove "kritis.grafeas.io/invalidImageSecPolicy" label/annotation in case it doesn't apply anymore
 	if err := pods.DeleteLabelsAndAnnotations(*pod, []string{constants.InvalidImageSecPolicy}, []string{constants.InvalidImageSecPolicy}); err != nil {
 		return err
@@ -71,8 +71,8 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	labelValue := constants.InvalidImageSecPolicyLabelValue
 	annotationValue := fmt.Sprintf("found %d CVEs", len(violations))
 	for _, v := range violations {
-		if v.Violation == securitypolicy.UnqualifiedImageViolation {
-			annotationValue += fmt.Sprintf(", %s", v.Reason)
+		if v.Type() == policy.UnqualifiedImageViolation {
+			annotationValue += fmt.Sprintf(", %s", v.Reason())
 			break
 		}
 	}
@@ -105,7 +105,7 @@ type MemoryStrategy struct {
 	Attestations map[string]bool
 }
 
-func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []securitypolicy.Violation) error {
+func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []policy.Violation) error {
 	ms.Violations[image] = true
 	return nil
 }

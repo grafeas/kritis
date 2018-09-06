@@ -22,48 +22,54 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-)
-
-type Reason string
-
-// A list of security policy violations
-// TODO: Add Attestation checking violations
-const (
-	UnqualifiedImageViolation int = iota
-	FixUnavailableViolation
-	SeverityViolation
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 )
 
 // Violation represents a vulnerability that violates an ISP
 type Violation struct {
 	Vulnerability metadata.Vulnerability
-	Violation     int
-	Reason        Reason
+	VType         policy.ViolationType
+	Msg           policy.Reason
+}
+
+// Reason returns the reason
+func (v Violation) Reason() policy.Reason {
+	return v.Msg
+}
+
+// Type returns the violation type
+func (v Violation) Type() policy.ViolationType {
+	return v.VType
+}
+
+// Details returns the detailed violtation
+func (v Violation) Details() interface{} {
+	return v.Vulnerability
 }
 
 // UnqualifiedImageReason returns a detailed reason if the image is unqualified
-func UnqualifiedImageReason(image string) Reason {
-	return Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
+func UnqualifiedImageReason(image string) policy.Reason {
+	return policy.Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
 // FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity
-func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
+func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
 	if ms == constants.BlockAll {
-		return Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't whitelisted, violating max severity %s",
 			v.CVE, image, ms))
 	}
-	return Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
 		v.CVE, image, v.Severity, ms))
 }
 
 // SeverityReason returns a detailed reason if a CVE exceeds max severity
-func SeverityReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) Reason {
+func SeverityReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if ms == constants.BlockAll {
-		return Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
 			v.CVE, image, ms))
 	}
-	return Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",
 		v.CVE, image, v.Severity, ms))
 }

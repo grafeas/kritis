@@ -24,13 +24,14 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
 // ValidateFunc defines the type for Validating Image Security Policies
-type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error)
+type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error)
 
 // ImageSecurityPolicies returns all ISP's in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
@@ -53,17 +54,17 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]Violation, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
 		return nil, nil
 	}
-	var violations []Violation
+	var violations []policy.Violation
 	// Next, check if image in qualified
 	if !resolve.FullyQualifiedImage(image) {
 		violations = append(violations, Violation{
-			Violation: UnqualifiedImageViolation,
-			Reason:    UnqualifiedImageReason(image),
+			VType: policy.UnqualifiedImageViolation,
+			Msg:   UnqualifiedImageReason(image),
 		})
 		return violations, nil
 	}
@@ -99,8 +100,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			}
 			violations = append(violations, Violation{
 				Vulnerability: v,
-				Violation:     FixUnavailableViolation,
-				Reason:        FixUnavailableReason(image, v, isp),
+				VType:         policy.FixUnavailableViolation,
+				Msg:           FixUnavailableReason(image, v, isp),
 			})
 			continue
 		}
@@ -113,8 +114,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		}
 		violations = append(violations, Violation{
 			Vulnerability: v,
-			Violation:     SeverityViolation,
-			Reason:        SeverityReason(image, v, isp),
+			VType:         policy.SeverityViolation,
+			Msg:           SeverityReason(image, v, isp),
 		})
 	}
 	return violations, nil

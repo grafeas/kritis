@@ -24,6 +24,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/util"
@@ -131,16 +132,17 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        sec.PublicKey,
 			}}}, nil
 	}
-	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]securitypolicy.Violation, error) {
+	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
-			return []securitypolicy.Violation{
-				{
-					Vulnerability: metadata.Vulnerability{
-						Severity: "foo",
-					},
-					Violation: 1,
+			v := securitypolicy.Violation{
+				Vulnerability: metadata.Vulnerability{
+					Severity: "foo",
 				},
-			}, nil
+				VType: 1,
+			}
+			vs := []policy.Violation{}
+			vs = append(vs, v)
+			return vs, nil
 		}
 		return nil, nil
 	}
