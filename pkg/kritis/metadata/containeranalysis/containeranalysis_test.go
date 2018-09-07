@@ -22,60 +22,61 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
+	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
-var tcGetVuln = []struct {
-	name        string
-	severity    cpb.VulnerabilityType_Severity
-	fixKind     cpb.VulnerabilityType_Version_VersionKind
-	noteName    string
-	expectedVul metadata.Vulnerability
-}{
-	{"fix available", cpb.VulnerabilityType_LOW,
-		cpb.VulnerabilityType_Version_MAXIMUM,
-		"CVE-1",
-		metadata.Vulnerability{
-			CVE:             "CVE-1",
-			Severity:        "LOW",
-			HasFixAvailable: false,
-		},
-	},
-	{"fix not available", cpb.VulnerabilityType_MEDIUM,
-		cpb.VulnerabilityType_Version_NORMAL,
-		"CVE-2",
-		metadata.Vulnerability{
-			CVE:             "CVE-2",
-			Severity:        "MEDIUM",
-			HasFixAvailable: true,
-		},
-	},
-}
-
 func TestGetVulnerabilityFromOccurence(t *testing.T) {
-	for _, tc := range tcGetVuln {
+	tests := []struct {
+		name        string
+		severity    vulnerability.Severity
+		fixKind     pkg.Version_VersionKind
+		noteName    string
+		expectedVul metadata.Vulnerability
+	}{
+		{"fix available", vulnerability.Severity_LOW,
+			pkg.Version_MAXIMUM,
+			"CVE-1",
+			metadata.Vulnerability{
+				CVE:             "CVE-1",
+				Severity:        "LOW",
+				HasFixAvailable: false,
+			},
+		},
+		{"fix not available", vulnerability.Severity_MEDIUM,
+			pkg.Version_NORMAL,
+			"CVE-2",
+			metadata.Vulnerability{
+				CVE:             "CVE-2",
+				Severity:        "MEDIUM",
+				HasFixAvailable: true,
+			},
+		},
+	}
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			vulnDetails := &cpb.Occurrence_VulnerabilityDetails{
-				VulnerabilityDetails: &cpb.VulnerabilityType_VulnerabilityDetails{
+			vulnDetails := &grafeas.Occurrence_Vulnerability{
+				Vulnerability: &vulnerability.Details{
 					Severity: tc.severity,
-					PackageIssue: []*cpb.VulnerabilityType_PackageIssue{
+					PackageIssue: []*vulnerability.PackageIssue{
 						{
-							AffectedLocation: &cpb.VulnerabilityType_VulnerabilityLocation{},
-							FixedLocation: &cpb.VulnerabilityType_VulnerabilityLocation{
-								Version: &cpb.VulnerabilityType_Version{
+							AffectedLocation: &vulnerability.VulnerabilityLocation{},
+							FixedLocation: &vulnerability.VulnerabilityLocation{
+								Version: &pkg.Version{
 									Kind: tc.fixKind,
 								},
 							},
 						},
 					},
 				}}
-			occ := &cpb.Occurrence{
+			occ := &grafeas.Occurrence{
 				NoteName: tc.noteName,
 				Details:  vulnDetails,
 			}
 
 			actualVuln := getVulnerabilityFromOccurence(occ)
-			if !reflect.DeepEqual(actualVuln, tc.expectedVul) {
+			if !reflect.DeepEqual(*actualVuln, tc.expectedVul) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
 			}
 		})

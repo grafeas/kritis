@@ -19,20 +19,20 @@ package metadata
 import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
 type Fetcher interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// Create Attesatation Occurrence for an image.
-	CreateAttestationOccurence(note *cpb.Note,
+	CreateAttestationOccurence(note *grafeas.Note,
 		containerImage string,
-		pgpSigningKey *secrets.PGPSigningSecret) (*cpb.Occurrence, error)
+		pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error)
 	//AttestationNote getches a Attestation note for an Attestation Authority.
-	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error)
+	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error)
 	// Create Attestation Note for an Attestation Authority.
-	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error)
+	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error)
 	//Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string) ([]PGPAttestation, error)
 }

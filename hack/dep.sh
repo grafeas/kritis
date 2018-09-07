@@ -58,7 +58,6 @@ if [ ${#files[@]} -gt 0 ]; then
 	fi
 	cd $KRITIS_DIR
 	dep ensure
-	./hack/dep-fixer.sh
 	diffs="$(git status --porcelain -- vendor Gopkg.toml Gopkg.lock 2>/dev/null)"
 	if [ "$diffs" ]; then
 		{

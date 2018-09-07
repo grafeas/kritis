@@ -5,6 +5,7 @@
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
+    "containeranalysis/apiv1beta1",
     "iam",
     "internal/optional",
     "internal/version",
@@ -12,8 +13,8 @@
     "pubsub/apiv1",
     "pubsub/internal/distribution"
   ]
-  revision = "777200caa7fb8936aed0f12b1fd79af64cc83ec9"
-  version = "v0.24.0"
+  revision = "c728a003b238b26cef9ab6753a5dc424b331c3ad"
+  version = "v0.27.0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -373,14 +374,24 @@
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
-    "googleapis/devtools/containeranalysis/v1alpha1",
+    "googleapis/devtools/containeranalysis/v1beta1",
+    "googleapis/devtools/containeranalysis/v1beta1/attestation",
+    "googleapis/devtools/containeranalysis/v1beta1/build",
+    "googleapis/devtools/containeranalysis/v1beta1/common",
+    "googleapis/devtools/containeranalysis/v1beta1/deployment",
+    "googleapis/devtools/containeranalysis/v1beta1/discovery",
+    "googleapis/devtools/containeranalysis/v1beta1/grafeas",
+    "googleapis/devtools/containeranalysis/v1beta1/image",
+    "googleapis/devtools/containeranalysis/v1beta1/package",
+    "googleapis/devtools/containeranalysis/v1beta1/provenance",
+    "googleapis/devtools/containeranalysis/v1beta1/source",
+    "googleapis/devtools/containeranalysis/v1beta1/vulnerability",
     "googleapis/iam/v1",
-    "googleapis/longrunning",
     "googleapis/pubsub/v1",
     "googleapis/rpc/status",
     "protobuf/field_mask"
   ]
-  revision = "8b2cc369ab52e0003a878865c9372afdd6ca5c5a"
+  revision = "11092d34479b07829b72e10713b159248caf5dad"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -634,6 +645,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2bd4760dbd2ee066a06b591b2830702080fd22435eead2d2dc9848aa9c2a11dc"
+  inputs-digest = "978b9e109c945801e4b2e11bc9b85b69dd7d183b12e0ae230d4da5e4dc67fab5"
   solver-name = "gps-cdcl"
   solver-version = 1
