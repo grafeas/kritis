@@ -23,7 +23,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -95,20 +95,20 @@ func TestNCache(t *testing.T) {
 	aaMiss := &v1beta1.AttestationAuthority{Spec: v1beta1.AttestationAuthoritySpec{
 		NoteReference: "from-client"},
 	}
-	nCache := &cpb.Note{Name: "from-cache"}
+	nCache := &grafeas.Note{Name: "from-cache"}
 	c := Cache{
 		client: &testutil.MockMetadataClient{},
 		vuln:   nil,
 		att:    nil,
-		notes:  map[*v1beta1.AttestationAuthority]*cpb.Note{aaHit: nCache},
+		notes:  map[*v1beta1.AttestationAuthority]*grafeas.Note{aaHit: nCache},
 	}
 	tcs := []struct {
 		name     string
 		aa       *v1beta1.AttestationAuthority
-		expected *cpb.Note
+		expected *grafeas.Note
 	}{
 		{"hit", aaHit, nCache},
-		{"miss", aaMiss, &cpb.Note{Name: "from-client"}},
+		{"miss", aaMiss, &grafeas.Note{Name: "from-client"}},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
 type MockMetadataClient struct {
@@ -35,8 +35,8 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurence(n *cpb.Note, image string,
-	s *secrets.PGPSigningSecret) (*cpb.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image string,
+	s *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
@@ -44,17 +44,17 @@ func (m *MockMetadataClient) CreateAttestationOccurence(n *cpb.Note, image strin
 	return nil, nil
 }
 
-func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
+func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	if aa == nil {
 		return nil, fmt.Errorf("could not get note")
 	}
-	return &cpb.Note{
+	return &grafeas.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
-	return &cpb.Note{
+func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	return &grafeas.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }

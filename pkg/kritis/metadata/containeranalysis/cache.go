@@ -20,7 +20,7 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	cpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
 // Cache struct defines Cache for container analysis client.
@@ -28,7 +28,7 @@ type Cache struct {
 	client metadata.Fetcher
 	vuln   map[string][]metadata.Vulnerability
 	att    map[string][]metadata.PGPAttestation
-	notes  map[*kritisv1beta1.AttestationAuthority]*cpb.Note
+	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
 }
 
 // NewCache Create a new Cache for container analysis client.
@@ -41,7 +41,7 @@ func NewCache() (*Cache, error) {
 		client: c,
 		vuln:   map[string][]metadata.Vulnerability{},
 		att:    map[string][]metadata.PGPAttestation{},
-		notes:  map[*kritisv1beta1.AttestationAuthority]*cpb.Note{},
+		notes:  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note{},
 	}, nil
 }
 
@@ -70,12 +70,12 @@ func (c Cache) Attestations(image string) ([]metadata.PGPAttestation, error) {
 }
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
-func (c Cache) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
+func (c Cache) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	return c.client.CreateAttestationNote(aa)
 }
 
 // AttestationNote returns a note if it exists for given AttestationAuthority
-func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Note, error) {
+func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	if n, ok := c.notes[aa]; ok {
 		return n, nil
 	}
@@ -87,6 +87,6 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*cpb.Not
 }
 
 // CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Cache) CreateAttestationOccurence(n *cpb.Note, image string, p *secrets.PGPSigningSecret) (*cpb.Occurrence, error) {
+func (c Cache) CreateAttestationOccurence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	return c.client.CreateAttestationOccurence(n, image, p)
 }

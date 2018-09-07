@@ -39,7 +39,7 @@ func TestGetVulnerabilities(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	vuln, err := d.Vulnerabilities("gcr.io/gcp-runtimes/go1-builder@sha256:81540dfae4d3675c06113edf90c6658a1f290c2c8ebccd19902ddab3f959aa71")
+	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}

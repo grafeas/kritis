@@ -24,7 +24,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	ca "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1alpha1"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -145,11 +145,11 @@ func severityWithinThreshold(maxSeverity string, severity string) (bool, error) 
 	if maxSeverity == constants.AllowAll {
 		return true, nil
 	}
-	if _, ok := ca.VulnerabilityType_Severity_value[maxSeverity]; !ok {
+	if _, ok := vulnerability.Severity_value[maxSeverity]; !ok {
 		return false, fmt.Errorf("invalid max severity level: %s", maxSeverity)
 	}
-	if _, ok := ca.VulnerabilityType_Severity_value[severity]; !ok {
+	if _, ok := vulnerability.Severity_value[severity]; !ok {
 		return false, fmt.Errorf("invalid severity level: %s", severity)
 	}
-	return ca.VulnerabilityType_Severity_value[severity] <= ca.VulnerabilityType_Severity_value[maxSeverity], nil
+	return vulnerability.Severity_value[severity] <= vulnerability.Severity_value[maxSeverity], nil
 }
