@@ -63,8 +63,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 	// Next, check if image in qualified
 	if !resolve.FullyQualifiedImage(image) {
 		violations = append(violations, Violation{
-			VType: policy.UnqualifiedImageViolation,
-			Msg:   UnqualifiedImageReason(image),
+			vType:  policy.UnqualifiedImageViolation,
+			reason: UnqualifiedImageReason(image),
 		})
 		return violations, nil
 	}
@@ -99,9 +99,9 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 				continue
 			}
 			violations = append(violations, Violation{
-				Vulnerability: v,
-				VType:         policy.FixUnavailableViolation,
-				Msg:           FixUnavailableReason(image, v, isp),
+				vulnerability: v,
+				vType:         policy.FixUnavailableViolation,
+				reason:        FixUnavailableReason(image, v, isp),
 			})
 			continue
 		}
@@ -113,9 +113,9 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			continue
 		}
 		violations = append(violations, Violation{
-			Vulnerability: v,
-			VType:         policy.SeverityViolation,
-			Msg:           SeverityReason(image, v, isp),
+			vulnerability: v,
+			vType:         policy.SeverityViolation,
+			reason:        SeverityReason(image, v, isp),
 		})
 	}
 	return violations, nil

@@ -76,12 +76,12 @@ func Test_UnqualifiedImage(t *testing.T) {
 		},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
-	testutil.CheckError(t, false, err)
-	if len(violations) != 1 {
-		t.Errorf("expected only 1 violation. Got %d", len(violations))
-	}
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations[0].Type(), policy.UnqualifiedImageViolation)
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations[0].Reason(), UnqualifiedImageReason(""))
+	expected := []policy.Violation{}
+	expected = append(expected, Violation{
+		vType:  policy.UnqualifiedImageViolation,
+		reason: UnqualifiedImageReason(""),
+	})
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, violations)
 }
 
 func Test_SeverityThresholds(t *testing.T) {

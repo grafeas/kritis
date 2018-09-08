@@ -132,14 +132,9 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        sec.PublicKey,
 			}}}, nil
 	}
-	testValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
-			v := securitypolicy.Violation{
-				Vulnerability: metadata.Vulnerability{
-					Severity: "foo",
-				},
-				VType: 1,
-			}
+			v := securitypolicy.NewViolation(metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}
 			vs = append(vs, v)
 			return vs, nil
@@ -237,7 +232,7 @@ func TestReview(t *testing.T) {
 				PGPAttestations: tc.attestations,
 			}
 			r := New(cMock, &Config{
-				Validate:  testValidate,
+				Validate:  mockValidate,
 				Secret:    sMock,
 				IsWebhook: tc.isWebhook,
 				Strategy:  &th,

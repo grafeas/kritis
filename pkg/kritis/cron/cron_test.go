@@ -73,10 +73,7 @@ type imageViolations struct {
 
 func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 	if ok := iv.imageMap[image]; ok {
-		v := securitypolicy.Violation{
-			Vulnerability: metadata.Vulnerability{
-				Severity: "foo",
-			}}
+		v := securitypolicy.NewViolation(metadata.Vulnerability{Severity: "foo"}, 0, "")
 		vs := []policy.Violation{}
 		vs = append(vs, v)
 		return vs, nil
