@@ -18,6 +18,7 @@ package container
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
@@ -98,9 +99,20 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 }
 
 func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, attestationHash string) error {
-	hostStr, err := acs.JSON()
+	hostSig, err := attestation.DecryptAttestation(publicKey, attestationHash)
 	if err != nil {
 		return err
 	}
-	return attestation.VerifyMessageAttestation(publicKey, attestationHash, hostStr)
+	// Unmarshall the json host string
+	var host AtomicContainerSig
+	if err := json.Unmarshal(hostSig, &host); err != nil {
+		panic(err)
+	}
+	//TODO: Add equals logic
+	if *host.Critical.Identity != *acs.Critical.Identity || *host.Critical.Image != *acs.Critical.Image {
+		h1, _ := host.JSON()
+		h2, _ := acs.JSON()
+		return fmt.Errorf("sig not verified. Expected %s, Got %s", h1, h2)
+	}
+	return nil
 }
