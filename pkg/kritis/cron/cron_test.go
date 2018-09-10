@@ -24,6 +24,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -70,15 +71,12 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]securitypolicy.Violation, error) {
+func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 	if ok := iv.imageMap[image]; ok {
-		return []securitypolicy.Violation{
-			{
-				Vulnerability: metadata.Vulnerability{
-					Severity: "foo",
-				},
-			},
-		}, nil
+		v := securitypolicy.NewViolation(metadata.Vulnerability{Severity: "foo"}, 0, "")
+		vs := []policy.Violation{}
+		vs = append(vs, v)
+		return vs, nil
 	}
 	return nil, nil
 }

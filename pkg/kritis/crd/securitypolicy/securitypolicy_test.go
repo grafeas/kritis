@@ -23,6 +23,7 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
@@ -75,14 +76,12 @@ func Test_UnqualifiedImage(t *testing.T) {
 		},
 	}
 	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
-	expected := []Violation{
-		{
-			Vulnerability: metadata.Vulnerability{},
-			Violation:     UnqualifiedImageViolation,
-			Reason:        UnqualifiedImageReason(""),
-		},
-	}
-	testutil.CheckErrorAndDeepEqual(t, false, err, violations, expected)
+	expected := []policy.Violation{}
+	expected = append(expected, Violation{
+		vType:  policy.UnqualifiedImageViolation,
+		reason: UnqualifiedImageReason(""),
+	})
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, violations)
 }
 
 func Test_SeverityThresholds(t *testing.T) {
@@ -132,7 +131,8 @@ func Test_SeverityThresholds(t *testing.T) {
 			}
 			got := []string{}
 			for _, v := range vs {
-				got = append(got, v.Vulnerability.CVE)
+				vuln := v.Details().(metadata.Vulnerability)
+				got = append(got, vuln.CVE)
 			}
 			sort.Strings(got)
 			sort.Strings(test.want)

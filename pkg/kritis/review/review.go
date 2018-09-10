@@ -25,6 +25,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -133,11 +134,11 @@ Please see instructions `, image)
 	return false
 }
 
-func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []securitypolicy.Violation) error {
+func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
 	errMsg := fmt.Sprintf("found violations in %s", image)
 	// Check if one of the violations is that the image is not fully qualified
 	for _, v := range violations {
-		if v.Violation == securitypolicy.UnqualifiedImageViolation {
+		if v.Type() == policy.UnqualifiedImageViolation {
 			errMsg = fmt.Sprintf(`%s is not a fully qualified image.
 			  You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.
 			  Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`, image)
