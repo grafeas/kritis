@@ -163,7 +163,7 @@ func getResourceURL(containerImage string) string {
 }
 
 func getResource(image string) *grafeas.Resource {
-	return &grafeas.Resource{Uri: image}
+	return &grafeas.Resource{Uri: getResourceURL(image)}
 }
 
 func getProjectFromNoteReference(ref string) (string, error) {
