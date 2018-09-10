@@ -136,3 +136,9 @@ func TestGetProjectFromNoteRef(t *testing.T) {
 		})
 	}
 }
+
+func TestGetResource(t *testing.T) {
+	r := getResource("gcr.io/test/image:sha")
+	e := &grafeas.Resource{Uri: "https://gcr.io/test/image:sha"}
+	testutil.CheckErrorAndDeepEqual(t, false, nil, e, r)
+}
