@@ -231,6 +231,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
 			PgpKeyId: pgpSigningKey.SecretName,
 		},
+		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
 	}
 
 	attestationDetails := &grafeas.Occurrence_Attestation{

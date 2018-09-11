@@ -47,49 +47,26 @@ var pgpConfig = packet.Config{
 
 // VerifyMessageAttestation verifies if the image is attested using the PEM
 // encoded public key.
-func VerifyMessageAttestation(pubKey string, attestation string, message string) error {
-
-	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
+func VerifyMessageAttestation(pubKey string, sig string, message string) error {
+	text, err := GetPlainMessage(pubKey, sig)
 	if err != nil {
 		return err
 	}
-	buf := bytes.NewBuffer([]byte(attestation))
-	armorBlock, err := armor.Decode(buf)
-	if err != nil {
-		return errors.Wrap(err, "could not decode armor signature")
-	}
-	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
-	if err != nil {
-		return errors.Wrap(err, "could not read armor signature")
-	}
-
-	// MessageDetails.UnverifiedBody signature is not verified until we read it.
-	// This will call PublicKey.VerifySignature for the keys in the keyring.
-	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
-	if err != nil {
-		return errors.Wrap(err, "could not verify armor signature")
-	}
-	// Make sure after reading the UnverifiedBody above, there is no signature error.
-	if md.SignatureError != nil || md.Signature == nil {
-		return fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
-	}
-
 	// Finally, make sure the signature is over the right message.
-	if string(plaintext) != message {
-		return fmt.Errorf("signature could not be verified. got: %s, want: %s", plaintext, message)
+	if string(text) != message {
+		return fmt.Errorf("signature could not be verified. got: %s, want: %s", text, message)
 	}
 	return nil
 }
 
-// DecryptAttestation verifies if the image is attested using the PEM
-// encoded public key.
-func DecryptAttestation(pubKey string, attestation string) ([]byte, error) {
-
+// GetPlainMessage verifies if the image is attested using the PEM
+// encoded public key and returns the plain test in bytes
+func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer([]byte(attestation))
+	buf := bytes.NewBuffer([]byte(sig))
 	armorBlock, err := armor.Decode(buf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode armor signature")

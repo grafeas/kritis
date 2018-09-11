@@ -16,7 +16,6 @@ limitations under the License.
 package container
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -54,15 +53,15 @@ func Test_ContainerSigCreation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			image := strings.Join([]string{test.imageName, test.imageDigest}, test.concatString)
-			actual, err := NewAtomicContainerSig(image, nil)
+			i := strings.Join([]string{test.imageName, test.imageDigest}, test.concatString)
+			actual, err := NewAtomicContainerSig(i, nil)
 			expected := AtomicContainerSig{
-				Critical: &Critical{
-					Identity: &Identity{
+				Critical: &critical{
+					Identity: &identity{
 						DockerRef: test.imageName,
 					},
-					Image: &Image{
-						DockerDigest: test.imageDigest,
+					Image: &image{
+						Digest: test.imageDigest,
 					},
 					Type: "atomic container signature",
 				},
@@ -143,75 +142,59 @@ func TestValidateAttestationSignature(t *testing.T) {
 }
 
 func TestGPGArmorSignVerifyIntegration(t *testing.T) {
-	goodImage = "gcr.io/pso-sec-train-default/mynginx@sha256:958123f8ad595b4ec16757566c1f83aa5e64fe02625e4a7f8cc61254abac28d5"
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
-	fmt.Println(container.JSON())
-	secret := &secrets.PGPSigningSecret{
-		PrivateKey: privateKey,
-		PublicKey:  pubKey,
-		SecretName: "demo-testing",
-	}
-	sig, err := container.CreateAttestationSignature(secret)
-	fmt.Println(sig)
-
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyAttestationSignature(pubKey, sig); err != nil {
+	if err := container.VerifyAttestationSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
+	}
+}
+
+func TestCriticalEquals(t *testing.T) {
+	tcs := []struct {
+		name    string
+		i1      string
+		i2      string
+		isEqual bool
+	}{{"equal", testutil.QualifiedImage, testutil.QualifiedImage, true},
+		{"not equal", testutil.QualifiedImage, testutil.IntTestImage, false},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			o1, err := newCritical(tc.i1)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			o2, err := newCritical(tc.i2)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			if o2.Equals(o1) != tc.isEqual {
+				t.Errorf("expected objects to be equal : %t Got %t", tc.isEqual, !tc.isEqual)
+			}
+		})
 	}
 }
 
 // Base64 encoded signarute.
 // Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt> | base64
-var expectedSig = "LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpvd0did012TXdNVzRyanR6aW1DeTZHTEcwd2Uwa3hpaWszMU9WaXNsRjJXV1pDWW41aWhaVlN0bHBxVG1sV1NXClZJTFlLZm5KMmFsRnVrV3BhYWxGcVhuSnFVcFdTdW5KUlhxWitmclpJQjNGdWdWRitWbXB5U1V3Ym5GcVVWbHEKa1ZLdGpsSm1ibUo2S3BJUnVZbDVtV21weFNXNktabnBRQXBvVUhGR29wR3BtVldTY1pweGFuSnlXb3FSZWJLbApoWm1Kc2FGUllwcXh1YVdaZ1psNXFubEtrcEdGZ1lGNW9xR3BtVm1xWWFxQmlWR3lxWVdaVVdwcWluRmFtbUdTClViSUZ5TEtTeWdLUTB4Skw4bk16a3hXUzgvTktFalB6VW9zVWlqUFQ4eEpMU290U2xXcHJPeG1Qc0RBd2NqSG8KaVNteVhHcGUrdlhyMXplcjVuMXNQUW9MRGxZbVVGQUl5SlFBWGVjQThZNWVmbEU2QXhlbkFFekppK2ZjL3dNeQpDOFVQOFM5WnZzQjVXdmczNVNYNlMrWFNXdlAxanEvYUovek9Za2VkaHVHUm9BdWVwL25rY3Zaa0JQWHN0RlppCmMzcnNwZDl3NktDN2tHOXY3NTc0WSsxWHN2bVAvTGtjWFNYOXNxRnc3ZG5mRXlkVSt5NHhmdi9sUzkycFMzOFcKdjJPNmZWQTEzWFhCNnFlZE1YS3JGMmpvdXUrZWwzMm5ZTEhsdS9BS3FmUyt2d2NtQ1BleHJqK1JkM1A5Vm9HNApLY21yVkp1ZWxpek9uelhWYVpXT1VzQnBqdVJYejN4Vys0bE5YckZ0WWNTVGpoVlI4cE1NNDNXRStlZVUzWCtYCjZSRzR1ZTNNZlptYmxpZmJUM1JYaUY2YyttSnk1Zy96TkFrZHRoMGZRb0k5RnBWL3NWazgvVVRHQmVZSmYrMlkKSTdOa3BwMzRPdW5CaXFpM2RYYWR5NXdNMWVyYWx1ZThPY0ZhVmhJUlZMS3QyS3B2YzJIRys1MC9lVk5aQ2dKZQo3VkxvVzVZcG0vMVg3ZTZKTUNPRFZRL1dxTXlJWWxsbTV6L3pZNmlVWDVVVzc2eWdxdGRUNWxuZGJCS3QzQ041Cm4ySGRoTjJucXo0K3VoRzdVbStWVkdUMXlRS3puOHV1K0hCZnZhdDNMVkh2MDlFVFF1MUMxNXFtWnZheXVWMWkKMWxMeE9jVDBiLzNYTjIyZjdrNFg4MWI3cmdZQQo9ZU9GVwotLS0tLUVORCBQR1AgTUVTU0FHRS0tLS0tCg=="
-var privateKey = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+var expectedSig = `-----BEGIN PGP MESSAGE-----
 
-lQOYBFuQP8IBCAC8YGxLmNjQr3zS1bUxXmYhSiG27BXasTtTdv1L7e9qgyPfXTbl
-bDtmRvZHVAWC62LaESBGpXhiNDAOBxqhKTL4fuY4iI0iARnSR9ut1rezVtqVcSNp
-A02n+S2LO3i+aA01H1iCPKPvYaznhdFUDnqsNGoW0Lx/cO95foSSZhAQdZqXjkgy
-7EIsXclrGpHOLPpAow8eNen671z/0Aa/JOqyKTuML5lxtSk1hZPXdFDo7ICMKpiY
-hwQgFSsmMgVPSuS0Q8l54m4IS3JWkw4t2la37kmufZrWQTTqVdWJKNUFrKhzJI0Z
-kZJ9iK9bfd3pqTpVty0vNG5S3R9lYhoJ4Uw3ABEBAAEAB/wKzaLYUQs6KJ5Jfx0V
-mDrWNOirE24LbTegSUYsiRg+bQftIuznimX7rx0nqQ9p2zL/m5TUyF+XjjOlUk36
-KSE1tB1i553kcdi3wQw9s380h0og4OytdJWLCRTOE9qQXOpI/iO20GB8dYcTfg6r
-ueraHmVpKo5s5p6tQo660KSiNOs40eeRLRPvuj3LuM1e4CMwAJIzH0hrgR83y+G+
-GzznJ3uj6TPSDyQcaD7JladrpCdgp1CZejuADkZaaC6Qio/xcefbFjlnf3aFa/Mz
-ePBXEQgDB0n/Jby7F99ojWkavkGvONB/epW8Yg5b1itb+n1yaGxWYRJCqOhhwrf1
-S3LpBADZv2pUKXZDijkEvGHJHaldBfmWKIYsml6rK2jSI/i2FmffJXZXh+a8P+wD
-9ji+5fDY0xVkzg52qKWOI2dPBLX6GvGrAFh8LbWpJpmvriMmvsR1jcYb5U39JnYu
-UK2S10W/wzLfxyXptcGlkToq2ZnkcZH/95NVa/SqxulAbNruOQQA3XggqFMdTggP
-wQp/Fie1xkqVKUoLczepMy4zz+cnO5AvGpP1/3OzyDn+jy0dH7L655djYMJXysgy
-y5Zazje0udR8kQpFoPSUN89Bsi4bh5C40zRHUC+70RjwVzGdTdFndXFZVDYLz4nX
-8prsrDUW1Tvqr37Yzbluf2dCniaEDe8EALsOXPlpob3myW6v7F6eisVWVELObrds
-AV1jiEnw3kij40xBAPQRiqO2Xcv57wzYdVZFHUant9Tx363cHpNI5HZg5/iGDY91
-1fh+pyp/IN5bg7jicaiqfSrZhGVF1T2gVrMGOdiDTBqy/GCZGd6urNydVTcWmc4U
-1ELtVNegsqd8QSO0LSJEZW1vIEF0dGVzdG9yIiA8ImJyYWRnZWVzYW1hbkBsb25p
-bWJ1cy5jb20iPokBTgQTAQgAOBYhBISe2sQ9HxgEdsaG2pfIcvTkSQo2BQJbkD/C
-AhsvBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheAAAoJEJfIcvTkSQo2qFQH/ibRySV7
-uMZyM6VRbhiwl5ziwkbVhhh2RpAelNez0WSw/c6oU+M6MNxU8O/VEEfq6jnc1iFN
-zP4PEXjjyENrRCILdEN+hzBRx5KD7GqcjwnnX5JtJT9m5ROA3+j7cAA0cN2kgYGl
-TyS+1ePeyvq0j6okTLCIb9hUXdg/nnZsR/a1LiglS/wDbIEfhMqIM46J2xrtonos
-Zg5vvLzJYf44EF7LZ7uC5pwspOznrq+3Dq9CmC4wO5LtnlKmMZikoS0H4XFVbvc1
-mT21Lmtxhep86qZBvhnHNf5+FMXp/t1IXRErItno0EbJ3a9seaFep2Hk9FfpksKe
-8U/4OT7eaOlZvyU=
-=sJcY
------END PGP PRIVATE KEY BLOCK-----`
-var pubKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
-
-mQENBFuQP8IBCAC8YGxLmNjQr3zS1bUxXmYhSiG27BXasTtTdv1L7e9qgyPfXTbl
-bDtmRvZHVAWC62LaESBGpXhiNDAOBxqhKTL4fuY4iI0iARnSR9ut1rezVtqVcSNp
-A02n+S2LO3i+aA01H1iCPKPvYaznhdFUDnqsNGoW0Lx/cO95foSSZhAQdZqXjkgy
-7EIsXclrGpHOLPpAow8eNen671z/0Aa/JOqyKTuML5lxtSk1hZPXdFDo7ICMKpiY
-hwQgFSsmMgVPSuS0Q8l54m4IS3JWkw4t2la37kmufZrWQTTqVdWJKNUFrKhzJI0Z
-kZJ9iK9bfd3pqTpVty0vNG5S3R9lYhoJ4Uw3ABEBAAG0LSJEZW1vIEF0dGVzdG9y
-IiA8ImJyYWRnZWVzYW1hbkBsb25pbWJ1cy5jb20iPokBTgQTAQgAOBYhBISe2sQ9
-HxgEdsaG2pfIcvTkSQo2BQJbkD/CAhsvBQsJCAcCBhUKCQgLAgQWAgMBAh4BAheA
-AAoJEJfIcvTkSQo2qFQH/ibRySV7uMZyM6VRbhiwl5ziwkbVhhh2RpAelNez0WSw
-/c6oU+M6MNxU8O/VEEfq6jnc1iFNzP4PEXjjyENrRCILdEN+hzBRx5KD7Gqcjwnn
-X5JtJT9m5ROA3+j7cAA0cN2kgYGlTyS+1ePeyvq0j6okTLCIb9hUXdg/nnZsR/a1
-LiglS/wDbIEfhMqIM46J2xrtonosZg5vvLzJYf44EF7LZ7uC5pwspOznrq+3Dq9C
-mC4wO5LtnlKmMZikoS0H4XFVbvc1mT21Lmtxhep86qZBvhnHNf5+FMXp/t1IXREr
-Itno0EbJ3a9seaFep2Hk9FfpksKe8U/4OT7eaOlZvyU=
-=r759
------END PGP PUBLIC KEY BLOCK-----`
+owGbwMvMwMW4rjtzimCy6GLG0we0kxiik31OVislF2WWZCYn5ihZVStlpqTmlWSW
+VILYKfnJ2alFukWpaalFqXnJqUpWSunJRXqZ+frZIB3FugVF+VmpySUwbnFqUVlq
+kVKtjlJmbmJ6KpIRuYl5mWmpxSW6KZnpQApoUHFGopGpmVWScZpxanJyWoqRebKl
+hZmJsaFRYpqxuaWZgZl5qnlKkpGFgYF5oqGpmVmqYaqBiVGyqYWZUWpqinFammGS
+UbIFyLKSygKQ0xJL8nMzkxWS8/NKEjPzUosUijPT8xJLSotSlWprOxmPsDAwcjHo
+iSmyXGpe+vXr1zer5n1sPQoLDlYmUFAIyJQAXecA8Y5eflE6AxenAEzJi+fc/wMy
+C8UP8S9ZvsB5Wvg35SX6S+XSWvP1jq/aJ/zOYkedhuGRoAuep/nkcvZkBPXstFZi
+c3rspd9w6KC7kG9v7574Y+1XsvmP/LkcXSX9sqFw7dnfEydU+y4xfv/lS92pS38W
+v2O6fVA13XXB6qedMXKrF2jouu+el32nYLHlu/AKqfS+vwcmCPexrj+Rd3P9VoG4
+KcmrVJuelizOnzXVaZWOUsBpjuRXz3xW+4lNXrFtYcSTjhVR8pMM43WE+eeU3X+X
+6RG4ue3MfZmblifbT3RXiF6c+mJy5g/zNAkdth0fQoI9FpV/sVk8/UTGBeYJf+2Y
+I7Nkpp34OunBiqi3dXady5wM1eralue8OcFaVhIRVLKt2Kpvc2HG+50/eVNZCgJe
+7VLoW5Ypm/1X7e6JMCODVQ/WqMyIYllm5z/zY6iUX5UW76ygqtdT5lndbBKt3CN5
+n2HdhN2nqz4+uhG7Um+VVGT1yQKzn8uu+HBfvat3LVHv09ETQu1C15qmZvayuV1i
+1lLxOcT0b/3XN22f7k4X81b7rgYA
+=eOFW
+-----END PGP MESSAGE-----`
