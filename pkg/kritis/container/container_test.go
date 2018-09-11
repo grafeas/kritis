@@ -152,21 +152,58 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 }
 
 func TestCriticalEquals(t *testing.T) {
+	prevHType := hType
 	tcs := []struct {
 		name    string
 		i1      string
+		h1      string
 		i2      string
+		h2      string
 		isEqual bool
-	}{{"equal", testutil.QualifiedImage, testutil.QualifiedImage, true},
-		{"not equal", testutil.QualifiedImage, testutil.IntTestImage, false},
+	}{
+		{"equal", testutil.QualifiedImage, "host type", testutil.QualifiedImage, "host type", true},
+		{"equal with different Types", testutil.QualifiedImage, "host type1", testutil.QualifiedImage, "host type2", true},
+		{"not equal", testutil.QualifiedImage, "host type", testutil.IntTestImage, "host type", false},
 	}
+	defer func() { hType = prevHType }()
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
+			hType = tc.h1
 			o1, err := newCritical(tc.i1)
 			if err != nil {
 				t.Fatalf("unexpected error %s", err)
 			}
+			hType = tc.h2
 			o2, err := newCritical(tc.i2)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			if o2.Equals(o1) != tc.isEqual {
+				t.Errorf("expected objects to be equal : %t Got %t", tc.isEqual, !tc.isEqual)
+			}
+		})
+	}
+}
+
+func TestContainerEquals(t *testing.T) {
+	tcs := []struct {
+		name    string
+		i1      string
+		m1      map[string]string
+		i2      string
+		m2      map[string]string
+		isEqual bool
+	}{{"equal", testutil.QualifiedImage, map[string]string{}, testutil.QualifiedImage, map[string]string{}, true},
+		{"equal with different options", testutil.QualifiedImage, map[string]string{}, testutil.QualifiedImage, map[string]string{"a": "b"}, true},
+		{"not equal", testutil.QualifiedImage, map[string]string{}, testutil.IntTestImage, map[string]string{}, false},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			o1, err := NewAtomicContainerSig(tc.i1, tc.m1)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			o2, err := NewAtomicContainerSig(tc.i2, tc.m2)
 			if err != nil {
 				t.Fatalf("unexpected error %s", err)
 			}

@@ -26,6 +26,11 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 )
 
+// for testing
+var (
+	hType = constants.AtomicContainerSigType
+)
+
 // AtomicContainerSig represents Red Hat’s Atomic Host attestation signature format
 // defined here https://github.com/aweiteka/image/blob/e5a20d98fe698732df2b142846d007b45873627f/docs/signature.md
 type AtomicContainerSig struct {
@@ -45,6 +50,11 @@ func NewAtomicContainerSig(image string, optional map[string]string) (*AtomicCon
 	}, nil
 }
 
+// Equals returns if the Identity and Image fields for the host are same.
+func (c1 *AtomicContainerSig) Equals(c2 *AtomicContainerSig) bool {
+	return c1.Critical.Equals(c2.Critical)
+}
+
 type critical struct {
 	Identity *identity `json:"identity"`
 	Image    *image    `json:"image"`
@@ -59,7 +69,7 @@ func newCritical(image string) (*critical, error) {
 	return &critical{
 		Identity: newIdentity(digest.Repository.Name()),
 		Image:    newImage(digest.DigestStr()),
-		Type:     constants.AtomicContainerSigType,
+		Type:     hType,
 	}, nil
 }
 
@@ -115,7 +125,7 @@ func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig 
 		return err
 	}
 
-	if !host.Critical.Equals(acs.Critical) {
+	if !host.Equals(acs) {
 		h1, _ := host.JSON()
 		h2, _ := acs.JSON()
 		return fmt.Errorf("sig not verified. Expected %s, Got %s", h1, h2)
