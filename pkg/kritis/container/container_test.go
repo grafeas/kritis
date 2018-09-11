@@ -214,7 +214,6 @@ func TestContainerEquals(t *testing.T) {
 	}
 }
 
-// Base64 encoded signarute.
 // Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt> | base64
 var expectedSig = `-----BEGIN PGP MESSAGE-----
 
