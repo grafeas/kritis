@@ -53,15 +53,15 @@ func Test_ContainerSigCreation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			image := strings.Join([]string{test.imageName, test.imageDigest}, test.concatString)
-			actual, err := NewAtomicContainerSig(image, nil)
+			i := strings.Join([]string{test.imageName, test.imageDigest}, test.concatString)
+			actual, err := NewAtomicContainerSig(i, nil)
 			expected := AtomicContainerSig{
-				Critical: &Critical{
-					Identity: &Identity{
+				Critical: &critical{
+					Identity: &identity{
 						DockerRef: test.imageName,
 					},
-					Image: &Image{
-						DockerDigest: test.imageDigest,
+					Image: &image{
+						Digest: test.imageDigest,
 					},
 					Type: "atomic container signature",
 				},
@@ -151,6 +151,86 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	}
 }
 
-// Base64 encoded signarute.
+func TestCriticalEquals(t *testing.T) {
+	prevHType := hType
+	tcs := []struct {
+		name    string
+		i1      string
+		h1      string
+		i2      string
+		h2      string
+		isEqual bool
+	}{
+		{"equal", testutil.QualifiedImage, "host type", testutil.QualifiedImage, "host type", true},
+		{"equal with different Types", testutil.QualifiedImage, "host type1", testutil.QualifiedImage, "host type2", true},
+		{"not equal", testutil.QualifiedImage, "host type", testutil.IntTestImage, "host type", false},
+	}
+	defer func() { hType = prevHType }()
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			hType = tc.h1
+			o1, err := newCritical(tc.i1)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			hType = tc.h2
+			o2, err := newCritical(tc.i2)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			if o2.Equals(o1) != tc.isEqual {
+				t.Errorf("expected objects to be equal : %t Got %t", tc.isEqual, !tc.isEqual)
+			}
+		})
+	}
+}
+
+func TestContainerEquals(t *testing.T) {
+	tcs := []struct {
+		name    string
+		i1      string
+		m1      map[string]string
+		i2      string
+		m2      map[string]string
+		isEqual bool
+	}{{"equal", testutil.QualifiedImage, map[string]string{}, testutil.QualifiedImage, map[string]string{}, true},
+		{"equal with different options", testutil.QualifiedImage, map[string]string{}, testutil.QualifiedImage, map[string]string{"a": "b"}, true},
+		{"not equal", testutil.QualifiedImage, map[string]string{}, testutil.IntTestImage, map[string]string{}, false},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			o1, err := NewAtomicContainerSig(tc.i1, tc.m1)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			o2, err := NewAtomicContainerSig(tc.i2, tc.m2)
+			if err != nil {
+				t.Fatalf("unexpected error %s", err)
+			}
+			if o2.Equals(o1) != tc.isEqual {
+				t.Errorf("expected objects to be equal : %t Got %t", tc.isEqual, !tc.isEqual)
+			}
+		})
+	}
+}
+
 // Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt> | base64
-var expectedSig = "LS0tLS1CRUdJTiBQR1AgTUVTU0FHRS0tLS0tCgpvd0did012TXdNVzRyanR6aW1DeTZHTEcwd2Uwa3hpaWszMU9WaXNsRjJXV1pDWW41aWhaVlN0bHBxVG1sV1NXClZJTFlLZm5KMmFsRnVrV3BhYWxGcVhuSnFVcFdTdW5KUlhxWitmclpJQjNGdWdWRitWbXB5U1V3Ym5GcVVWbHEKa1ZLdGpsSm1ibUo2S3BJUnVZbDVtV21weFNXNktabnBRQXBvVUhGR29wR3BtVldTY1pweGFuSnlXb3FSZWJLbApoWm1Kc2FGUllwcXh1YVdaZ1psNXFubEtrcEdGZ1lGNW9xR3BtVm1xWWFxQmlWR3lxWVdaVVdwcWluRmFtbUdTClViSUZ5TEtTeWdLUTB4Skw4bk16a3hXUzgvTktFalB6VW9zVWlqUFQ4eEpMU290U2xXcHJPeG1Qc0RBd2NqSG8KaVNteVhHcGUrdlhyMXplcjVuMXNQUW9MRGxZbVVGQUl5SlFBWGVjQThZNWVmbEU2QXhlbkFFekppK2ZjL3dNeQpDOFVQOFM5WnZzQjVXdmczNVNYNlMrWFNXdlAxanEvYUovek9Za2VkaHVHUm9BdWVwL25rY3Zaa0JQWHN0RlppCmMzcnNwZDl3NktDN2tHOXY3NTc0WSsxWHN2bVAvTGtjWFNYOXNxRnc3ZG5mRXlkVSt5NHhmdi9sUzkycFMzOFcKdjJPNmZWQTEzWFhCNnFlZE1YS3JGMmpvdXUrZWwzMm5ZTEhsdS9BS3FmUyt2d2NtQ1BleHJqK1JkM1A5Vm9HNApLY21yVkp1ZWxpek9uelhWYVpXT1VzQnBqdVJYejN4Vys0bE5YckZ0WWNTVGpoVlI4cE1NNDNXRStlZVUzWCtYCjZSRzR1ZTNNZlptYmxpZmJUM1JYaUY2YyttSnk1Zy96TkFrZHRoMGZRb0k5RnBWL3NWazgvVVRHQmVZSmYrMlkKSTdOa3BwMzRPdW5CaXFpM2RYYWR5NXdNMWVyYWx1ZThPY0ZhVmhJUlZMS3QyS3B2YzJIRys1MC9lVk5aQ2dKZQo3VkxvVzVZcG0vMVg3ZTZKTUNPRFZRL1dxTXlJWWxsbTV6L3pZNmlVWDVVVzc2eWdxdGRUNWxuZGJCS3QzQ041Cm4ySGRoTjJucXo0K3VoRzdVbStWVkdUMXlRS3puOHV1K0hCZnZhdDNMVkh2MDlFVFF1MUMxNXFtWnZheXVWMWkKMWxMeE9jVDBiLzNYTjIyZjdrNFg4MWI3cmdZQQo9ZU9GVwotLS0tLUVORCBQR1AgTUVTU0FHRS0tLS0tCg=="
+var expectedSig = `-----BEGIN PGP MESSAGE-----
+
+owGbwMvMwMW4rjtzimCy6GLG0we0kxiik31OVislF2WWZCYn5ihZVStlpqTmlWSW
+VILYKfnJ2alFukWpaalFqXnJqUpWSunJRXqZ+frZIB3FugVF+VmpySUwbnFqUVlq
+kVKtjlJmbmJ6KpIRuYl5mWmpxSW6KZnpQApoUHFGopGpmVWScZpxanJyWoqRebKl
+hZmJsaFRYpqxuaWZgZl5qnlKkpGFgYF5oqGpmVmqYaqBiVGyqYWZUWpqinFammGS
+UbIFyLKSygKQ0xJL8nMzkxWS8/NKEjPzUosUijPT8xJLSotSlWprOxmPsDAwcjHo
+iSmyXGpe+vXr1zer5n1sPQoLDlYmUFAIyJQAXecA8Y5eflE6AxenAEzJi+fc/wMy
+C8UP8S9ZvsB5Wvg35SX6S+XSWvP1jq/aJ/zOYkedhuGRoAuep/nkcvZkBPXstFZi
+c3rspd9w6KC7kG9v7574Y+1XsvmP/LkcXSX9sqFw7dnfEydU+y4xfv/lS92pS38W
+v2O6fVA13XXB6qedMXKrF2jouu+el32nYLHlu/AKqfS+vwcmCPexrj+Rd3P9VoG4
+KcmrVJuelizOnzXVaZWOUsBpjuRXz3xW+4lNXrFtYcSTjhVR8pMM43WE+eeU3X+X
+6RG4ue3MfZmblifbT3RXiF6c+mJy5g/zNAkdth0fQoI9FpV/sVk8/UTGBeYJf+2Y
+I7Nkpp34OunBiqi3dXady5wM1eralue8OcFaVhIRVLKt2Kpvc2HG+50/eVNZCgJe
+7VLoW5Ypm/1X7e6JMCODVQ/WqMyIYllm5z/zY6iUX5UW76ygqtdT5lndbBKt3CN5
+n2HdhN2nqz4+uhG7Um+VVGT1yQKzn8uu+HBfvat3LVHv09ETQu1C15qmZvayuV1i
+1lLxOcT0b/3XN22f7k4X81b7rgYA
+=eOFW
+-----END PGP MESSAGE-----`

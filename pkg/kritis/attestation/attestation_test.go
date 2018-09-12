@@ -17,7 +17,6 @@ limitations under the License.
 package attestation
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -52,7 +51,7 @@ func TestAttestations(t *testing.T) {
 }
 
 func TestGPGArmorSignIntegration(t *testing.T) {
-	if err := VerifyMessageAttestation(testutil.Base64PublicTestKey(t), base64.StdEncoding.EncodeToString([]byte(expectedSig)), "test"); err != nil {
+	if err := VerifyMessageAttestation(testutil.Base64PublicTestKey(t), expectedSig, "test"); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

@@ -21,7 +21,6 @@ package attestation
 import (
 	"bytes"
 	"crypto"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -48,48 +47,52 @@ var pgpConfig = packet.Config{
 
 // VerifyMessageAttestation verifies if the image is attested using the PEM
 // encoded public key.
-func VerifyMessageAttestation(pubKey string, attestationHash string, message string) error {
-
-	attestation, err := base64.StdEncoding.DecodeString(attestationHash)
+func VerifyMessageAttestation(pubKey string, sig string, message string) error {
+	text, err := GetPlainMessage(pubKey, sig)
 	if err != nil {
 		return err
 	}
+	// Finally, make sure the signature is over the right message.
+	if string(text) != message {
+		return fmt.Errorf("signature could not be verified. got: %s, want: %s", text, message)
+	}
+	return nil
+}
 
+// GetPlainMessage verifies if the image is attested using the PEM
+// encoded public key and returns the plain test in bytes
+func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	buf := bytes.NewBuffer(attestation)
+	buf := bytes.NewBuffer([]byte(sig))
 	armorBlock, err := armor.Decode(buf)
 	if err != nil {
-		return errors.Wrap(err, "could not decode armor signature")
+		return nil, errors.Wrap(err, "could not decode armor signature")
 	}
 	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
 	if err != nil {
-		return errors.Wrap(err, "could not read armor signature")
+		return nil, errors.Wrap(err, "could not read armor signature")
 	}
 
 	// MessageDetails.UnverifiedBody signature is not verified until we read it.
 	// This will call PublicKey.VerifySignature for the keys in the keyring.
 	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
 	if err != nil {
-		return errors.Wrap(err, "could not verify armor signature")
+		return nil, errors.Wrap(err, "could not verify armor signature")
 	}
 	// Make sure after reading the UnverifiedBody above, there is no signature error.
 	if md.SignatureError != nil || md.Signature == nil {
-		return fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
+		return nil, fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
 	}
 
-	// Finally, make sure the signature is over the right message.
-	if string(plaintext) != message {
-		return fmt.Errorf("signature could not be verified. got: %s, want: %s", plaintext, message)
-	}
-	return nil
+	return plaintext, nil
 }
 
 // CreateMessageAttestation attests the message using the given public and private key.
 // pubKey: PEM Encoded Public Key
-// privKey: PEM Decoded Private Key
+// privKey: PEM Encoded Private Key
 // message: Message to attest
 func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
 	// Create a PgpKey from Encoded Public Key
@@ -121,7 +124,7 @@ func CreateMessageAttestation(pubKey string, privKey string, message string) (st
 	}
 	w.Close()
 	armorWriter.Close()
-	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
+	return string(b.Bytes()), nil
 }
 
 func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) (*openpgp.Entity, error) {
