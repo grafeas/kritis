@@ -51,8 +51,8 @@ func NewAtomicContainerSig(image string, optional map[string]string) (*AtomicCon
 }
 
 // Equals returns if the Identity and Image fields for the host are same.
-func (c1 *AtomicContainerSig) Equals(c2 *AtomicContainerSig) bool {
-	return c1.Critical.Equals(c2.Critical)
+func (acs *AtomicContainerSig) Equals(acsOther *AtomicContainerSig) bool {
+	return acs.Critical.Equals(acsOther.Critical)
 }
 
 type critical struct {
