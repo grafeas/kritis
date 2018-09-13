@@ -43,8 +43,6 @@ type testConfig struct {
 	message    string
 }
 
-// TODO (tejaldesai): Move these tests to review/review_test.go and mock
-// review.Reviewer here.
 func Test_BreakglassAnnotation(t *testing.T) {
 	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
 		return &v1.Pod{
@@ -64,136 +62,40 @@ func Test_BreakglassAnnotation(t *testing.T) {
 		message:    constants.SuccessMessage,
 	})
 }
-func Test_UnqualifiedImage(t *testing.T) {
-	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
-		return &v1.Pod{
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
-					{
-						Image: "image:tag",
-					},
-				},
-			},
-		}, v1beta1.AdmissionReview{}, nil
+
+func Test_AdmissionResponse(t *testing.T) {
+	tcs := []struct {
+		name        string
+		reviewErr   bool
+		status      constants.Status
+		expectedMsg string
+	}{
+		{"valid response when no review error", false, constants.SuccessStatus, constants.SuccessMessage},
+		{"valid response when review error", true, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
 	}
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{{}}, nil
+		return []kritisv1beta1.ImageSecurityPolicy{{Spec: kritisv1beta1.ImageSecurityPolicySpec{}}}, nil
 	}
-
-	mockConfig := config{
-		retrievePod:                mockPod,
-		fetchMetadataClient:        testutil.NilFetcher(),
-		fetchImageSecurityPolicies: mockISP,
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			mReviewer := func(client metadata.Fetcher) reviewer {
+				return testutil.NewReviewer(tc.reviewErr, tc.expectedMsg)
+			}
+			mockConfig := config{
+				retrievePod:                mockValidPod(),
+				fetchMetadataClient:        testutil.NilFetcher(),
+				fetchImageSecurityPolicies: mockISP,
+				reviewer:                   mReviewer,
+			}
+			RunTest(t, testConfig{
+				mockConfig: mockConfig,
+				httpStatus: http.StatusOK,
+				allowed:    !tc.reviewErr,
+				status:     tc.status,
+				message:    tc.expectedMsg,
+			})
+		})
 	}
-	RunTest(t, testConfig{
-		mockConfig: mockConfig,
-		httpStatus: http.StatusOK,
-		allowed:    false,
-		status:     constants.FailureStatus,
-		message:    `image:tag is not a fully qualified image.\n\t\t\t  You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.\n\t\t\t  Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`,
-	})
-}
-
-func Test_ValidISP(t *testing.T) {
-	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{
-			{
-				Spec: kritisv1beta1.ImageSecurityPolicySpec{
-					ImageWhitelist: []string{testutil.QualifiedImage},
-					PackageVulnerabilityRequirements: kritisv1beta1.PackageVulnerabilityRequirements{
-						MaximumSeverity: "LOW",
-					},
-				},
-			},
-		}, nil
-	}
-	mockConfig := config{
-		retrievePod:                mockValidPod(),
-		fetchMetadataClient:        testutil.NilFetcher(),
-		fetchImageSecurityPolicies: mockISP,
-	}
-	RunTest(t, testConfig{
-		mockConfig: mockConfig,
-		httpStatus: http.StatusOK,
-		allowed:    true,
-		status:     constants.SuccessStatus,
-		message:    constants.SuccessMessage,
-	})
-}
-
-func Test_InvalidISP(t *testing.T) {
-	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{{
-			Spec: kritisv1beta1.ImageSecurityPolicySpec{
-				PackageVulnerabilityRequirements: kritisv1beta1.PackageVulnerabilityRequirements{
-					MaximumSeverity: "LOW",
-				},
-			},
-		}}, nil
-	}
-	mockMetadata := func() (metadata.Fetcher, error) {
-		return &testutil.MockMetadataClient{
-			Vulnz: []metadata.Vulnerability{
-				{
-					Severity:        "MEDIUM",
-					HasFixAvailable: true,
-				},
-			},
-			PGPAttestations: []metadata.PGPAttestation{
-				{
-					Signature: "sig",
-					KeyID:     "secret",
-				},
-			},
-		}, nil
-	}
-	mockConfig := config{
-		retrievePod:                mockValidPod(),
-		fetchMetadataClient:        mockMetadata,
-		fetchImageSecurityPolicies: mockISP,
-	}
-	RunTest(t, testConfig{
-		mockConfig: mockConfig,
-		httpStatus: http.StatusOK,
-		allowed:    false,
-		status:     constants.FailureStatus,
-		message:    fmt.Sprintf("found violations in %s", testutil.QualifiedImage),
-	})
-}
-
-func Test_GlobalWhitelist(t *testing.T) {
-	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{{
-			Spec: kritisv1beta1.ImageSecurityPolicySpec{
-				PackageVulnerabilityRequirements: kritisv1beta1.PackageVulnerabilityRequirements{
-					MaximumSeverity: "LOW",
-				},
-			},
-		}}, nil
-	}
-	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
-		return &v1.Pod{
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
-					{
-						Image: "gcr.io/kritis-project/kritis-server:tag",
-					},
-				},
-			},
-		}, v1beta1.AdmissionReview{}, nil
-	}
-	mockConfig := config{
-		retrievePod:                mockPod,
-		fetchMetadataClient:        testutil.NilFetcher(),
-		fetchImageSecurityPolicies: mockISP,
-	}
-	RunTest(t, testConfig{
-		mockConfig: mockConfig,
-		httpStatus: http.StatusOK,
-		allowed:    true,
-		status:     constants.SuccessStatus,
-		message:    constants.SuccessMessage,
-	})
 }
 
 func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {

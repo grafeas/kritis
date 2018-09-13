@@ -103,6 +103,7 @@ func TestHasValidAttestations(t *testing.T) {
 func TestReview(t *testing.T) {
 	sec := testutil.CreateSecret(t, "sec")
 	vulnImage := testutil.QualifiedImage
+	unQualifiedImage := "image:tag"
 	sigVuln, err := util.CreateAttestationSignature(vulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -134,7 +135,12 @@ func TestReview(t *testing.T) {
 	}
 	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
-			v := securitypolicy.NewViolation(metadata.Vulnerability{Severity: "foo"}, 1, "")
+			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
+			vs := []policy.Violation{}
+			vs = append(vs, v)
+			return vs, nil
+		} else if image == unQualifiedImage {
+			v := securitypolicy.NewViolation(nil, policy.UnqualifiedImageViolation, securitypolicy.UnqualifiedImageReason(image))
 			vs := []policy.Violation{}
 			vs = append(vs, v)
 			return vs, nil
@@ -218,6 +224,36 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: "sec"}},
 			handledViolations: 0,
 			isAttested:        true,
+			shdAttestImage:    false,
+			shdErr:            false,
+		},
+		{
+			name:              "unqualified image for cron should fail and should not attest any image",
+			image:             "image:tag",
+			isWebhook:         false,
+			attestations:      []metadata.PGPAttestation{},
+			handledViolations: 1,
+			isAttested:        false,
+			shdAttestImage:    false,
+			shdErr:            true,
+		},
+		{
+			name:              "unqualified image for webhook should fail should not attest any image",
+			image:             "image:tag",
+			isWebhook:         true,
+			attestations:      []metadata.PGPAttestation{},
+			handledViolations: 1,
+			isAttested:        false,
+			shdAttestImage:    false,
+			shdErr:            true,
+		},
+		{
+			name:              "review image in global whitelist",
+			image:             "gcr.io/kritis-project/preinstall",
+			isWebhook:         true,
+			attestations:      []metadata.PGPAttestation{},
+			handledViolations: 0,
+			isAttested:        false,
 			shdAttestImage:    false,
 			shdErr:            false,
 		},
