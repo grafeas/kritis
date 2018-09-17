@@ -32,12 +32,15 @@ type Violation struct {
 	reason        policy.Reason
 }
 
-func NewViolation(v metadata.Vulnerability, t policy.ViolationType, r policy.Reason) Violation {
-	return Violation{
-		vulnerability: v,
-		vType:         t,
-		reason:        r,
+func NewViolation(vulnz *metadata.Vulnerability, t policy.ViolationType, r policy.Reason) Violation {
+	v := Violation{
+		vType:  t,
+		reason: r,
 	}
+	if vulnz != nil {
+		v.vulnerability = *vulnz
+	}
+	return v
 }
 
 // Reason returns the reason
