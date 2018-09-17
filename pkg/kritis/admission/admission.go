@@ -318,7 +318,7 @@ func getReviewer(client metadata.Fetcher) reviewer {
 	})
 }
 
-// reviwer interface defines an Kritis Reviewer Struct.
+// reviewer interface defines an Kritis Reviewer Struct.
 // TODO: This will be removed in future refactoring.
 type reviewer interface {
 	Review(images []string, isps []kritisv1beta1.ImageSecurityPolicy, pod *v1.Pod) error
