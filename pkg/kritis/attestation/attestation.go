@@ -59,6 +59,15 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 	return nil
 }
 
+func GetKeyFingerprint(pubKey string) (string, error) {
+	// Create a PgpKey with only the public key
+	pgpKey, err := NewPgpKey("", pubKey)
+	if err != nil {
+		return "", errors.Wrap(err, "creating PGP key")
+	}
+	return fmt.Sprintf("%X", pgpKey.publicKey.Fingerprint), nil
+}
+
 // GetPlainMessage verifies if the image is attested using the PEM
 // encoded public key and returns the plain test in bytes
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
