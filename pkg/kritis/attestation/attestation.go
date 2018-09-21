@@ -65,7 +65,7 @@ func GetKeyFingerprint(pubKey string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}
-	return fmt.Sprintf("%X", pgpKey.publicKey.Fingerprint), nil
+	return pgpKey.Fingerprint(), nil
 }
 
 // GetPlainMessage verifies if the image is attested using the PEM

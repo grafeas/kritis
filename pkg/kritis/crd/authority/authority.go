@@ -25,6 +25,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+type Lister func(namespace string) ([]v1beta1.AttestationAuthority, error)
+type Fetcher func(namespace string, name string) (v1beta1.AttestationAuthority, error)
+
 // Authorities returns all AttestationAuthority in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
 func Authorities(namespace string) ([]v1beta1.AttestationAuthority, error) {
