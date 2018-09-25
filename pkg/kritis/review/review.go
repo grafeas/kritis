@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -29,7 +30,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"k8s.io/api/core/v1"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 type Reviewer struct {
@@ -40,6 +42,7 @@ type Reviewer struct {
 type Config struct {
 	Validate  securitypolicy.ValidateFunc
 	Secret    secrets.Fetcher
+	Auths     authority.Lister
 	Strategy  violation.Strategy
 	IsWebhook bool
 }
@@ -51,11 +54,6 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
-// For testing
-var (
-	authFetcher = authority.Authorities
-)
-
 // Review reviews a set of images against a set of policies
 // Returns error if violations are found and handles them as per violation strategy
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
@@ -64,11 +62,19 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 		glog.Infof("images are all globally whitelisted, returning successful status: %s", images)
 		return nil
 	}
+	if len(isps) == 0 {
+		return nil
+	}
+
 	for _, isp := range isps {
 		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
+		auths, err := r.config.Auths(isp.Namespace)
+		if err != nil {
+			return fmt.Errorf("Error getting attestors: %v", err)
+		}
 		for _, image := range images {
 			glog.Infof("Check if %s as valid Attestations.", image)
-			isAttested, attestations := r.fetchAndVerifyAttestations(image, isp.Namespace, pod)
+			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
 			// Skip vulnerability check for Webhook if attestations found.
 			if isAttested && r.config.IsWebhook {
 				continue
@@ -93,13 +99,13 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 	return nil
 }
 
-func (r Reviewer) fetchAndVerifyAttestations(image string, ns string, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
+func (r Reviewer) fetchAndVerifyAttestations(image string, auths []v1beta1.AttestationAuthority, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
 	attestations, err := r.client.Attestations(image)
 	if err != nil {
 		glog.Errorf("Error while fetching attestations %s", err)
 		return false, attestations
 	}
-	isAttested := r.hasValidImageAttestations(image, attestations, ns)
+	isAttested := r.hasValidImageAttestations(image, attestations, auths)
 	if err := r.config.Strategy.HandleAttestation(image, pod, isAttested); err != nil {
 		glog.Errorf("error handling attestations %v", err)
 	}
@@ -107,7 +113,7 @@ func (r Reviewer) fetchAndVerifyAttestations(image string, ns string, pod *v1.Po
 }
 
 // hasValidImageAttestations return true if any one image attestation is verified.
-func (r Reviewer) hasValidImageAttestations(image string, attestations []metadata.PGPAttestation, ns string) bool {
+func (r Reviewer) hasValidImageAttestations(image string, attestations []metadata.PGPAttestation, auths []v1beta1.AttestationAuthority) bool {
 	if len(attestations) == 0 {
 		glog.Infof(`No attestations found for image %s.
 This normally happens when you deploy a pod before kritis or no attestation authority is deployed.
@@ -118,14 +124,17 @@ Please see instructions `, image)
 		glog.Error(err)
 		return false
 	}
-	for _, a := range attestations {
-		// Get Secret from key id.
-		secret, err := r.config.Secret(ns, a.KeyID)
+	keys := map[string]string{}
+	for _, auth := range auths {
+		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
 		if err != nil {
-			glog.Errorf("Could not find secret %s in namespace %s for attestation verification", a.KeyID, ns)
+			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
 		}
-		if err = host.VerifyAttestationSignature(secret.PublicKey, a.Signature); err != nil {
+		keys[s.Fingerprint()] = auth.Spec.PublicKeyData
+	}
+	for _, a := range attestations {
+		if err = host.VerifyAttestationSignature(keys[a.KeyID], a.Signature); err != nil {
 			glog.Errorf("Could not find verify attestation for attestation authority %s", a.KeyID)
 		} else {
 			return true
@@ -152,16 +161,25 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []polic
 
 func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, ns string) error {
 	// Get all AttestationAuthorities in this namespace.
-	auths, err := authFetcher(ns)
+	auths, err := r.config.Auths(ns)
 	if err != nil {
 		return err
 	}
 	if len(auths) == 0 {
-		return fmt.Errorf("no attestation quthorities configured for namespace %s", ns)
+		return fmt.Errorf("no attestation authorities configured for namespace %s", ns)
+	}
+	keys := map[string]string{}
+	for _, auth := range auths {
+		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		if err != nil {
+			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
+			continue
+		}
+		keys[auth.Name] = s.Fingerprint()
 	}
 	// Get all AttestationAuthorities which have not attested the image.
 	errMsgs := []string{}
-	u := getUnAttested(auths, atts)
+	u := getUnAttested(auths, keys, atts)
 	if len(u) == 0 {
 		glog.Info("Attestation exists for all authorities")
 		return nil
@@ -189,7 +207,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	return fmt.Errorf("one or more errors adding attestations: %s", errMsgs)
 }
 
-func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAttestation) []v1beta1.AttestationAuthority {
+func getUnAttested(auths []v1beta1.AttestationAuthority, keys map[string]string, atts []metadata.PGPAttestation) []v1beta1.AttestationAuthority {
 	l := []v1beta1.AttestationAuthority{}
 	m := map[string]bool{}
 	for _, a := range atts {
@@ -197,7 +215,7 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, atts []metadata.PGPAtte
 	}
 
 	for _, a := range auths {
-		_, ok := m[a.Spec.PrivateKeySecretName]
+		_, ok := m[keys[a.Name]]
 		if !ok {
 			l = append(l, a)
 		}

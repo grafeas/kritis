@@ -27,6 +27,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
@@ -314,6 +315,7 @@ func getReviewer(client metadata.Fetcher) reviewer {
 		Strategy:  defaultViolationStrategy,
 		IsWebhook: true,
 		Secret:    secrets.Fetch,
+		Auths:     authority.Authorities,
 		Validate:  securitypolicy.ValidateImageSecurityPolicy,
 	})
 }
