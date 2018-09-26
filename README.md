@@ -1,6 +1,6 @@
 # Kritis
 
-<img src="https://github.com/grafeas/kritis/raw/master/logo/logo-128.png" width="128">
+![Kritis logo](logo/logo-128.png)
 
 Kritis (“judge” in Greek), is an open-source solution for securing your software supply chain for Kubernetes applications. Kritis enforces deploy-time security policies using the [Google Cloud Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/), and in a subsequent release, [Grafeas](https://github.com/grafeas/grafeas).
 
