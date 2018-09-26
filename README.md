@@ -2,8 +2,10 @@
 
 [![GoDoc Widget]][GoDoc]
 [![BuildStatus Widget]][BuildStatus Result]
-[![CodeCovWidget]][CodeCovResult]
 [![GoReport Widget]][GoReport Status]
+
+[GoDoc]: https://godoc.org/github.com/grafeas/kritis
+[GoDoc Widget]: https://godoc.org/github.com/grafeas/kritis?status.svg
 
 [BuildStatus Result]: https://travis-ci.org/grafeas/kritis
 [BuildStatus Widget]: https://travis-ci.org/grafeas/kritis.svg?branch=master
@@ -11,8 +13,6 @@
 [GoReport Status]: https://goreportcard.com/report/github.com/grafeas/kritis
 [GoReport Widget]: https://goreportcard.com/badge/github.com/grafeas/kritis
 
-[CodeCovResult]: https://codecov.io/gh/grafeas/kritis
-[CodeCovWidget]: https://codecov.io/gh/grafeas/kritis/branch/master/graph/badge.svg
 
 ![Kritis logo](logo/logo-128.png)
 
