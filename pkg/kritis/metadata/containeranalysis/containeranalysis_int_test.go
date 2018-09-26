@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,6 +87,15 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
+	}
+	expectedPgpKeyId, err := attestation.GetKeyFingerprint(pub)
+	if err != nil {
+		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
+	}
+
+	pgpKeyId := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
+	if pgpKeyId != expectedPgpKeyId {
+		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyId, pgpKeyId)
 	}
 	defer d.DeleteOccurrence(occ.GetName())
 	occurrences, err := d.Attestations(testutil.IntTestImage)

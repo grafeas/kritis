@@ -29,7 +29,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -132,6 +132,9 @@ func TestCheckPods(t *testing.T) {
 			SecretName: name,
 		}, nil
 	}
+	aMock := func(namespace string) ([]v1beta1.AttestationAuthority, error) {
+		return []v1beta1.AttestationAuthority{}, nil
+	}
 	cMock := &testutil.MockMetadataClient{}
 	type args struct {
 		cfg      Config
@@ -200,6 +203,7 @@ func TestCheckPods(t *testing.T) {
 		tt.args.cfg.ReviewConfig = &review.Config{
 			Validate:  tt.args.validate,
 			Secret:    sMock,
+			Auths:     aMock,
 			IsWebhook: false,
 			Strategy:  &th,
 		}

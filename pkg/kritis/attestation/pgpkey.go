@@ -64,6 +64,10 @@ func (key *PgpKey) PrivateKey() *packet.PrivateKey {
 	return key.privateKey
 }
 
+func (key *PgpKey) Fingerprint() string {
+	return fmt.Sprintf("%X", key.publicKey.Fingerprint)
+}
+
 func parsePublicKey(publicKey string) (*packet.PublicKey, error) {
 	pkt, err := parseKey(publicKey, openpgp.PublicKeyType)
 	if err != nil {
