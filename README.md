@@ -1,5 +1,21 @@
 # Kritis
 
+[![GoDoc Widget]][GoDoc]
+[![BuildStatus Widget]][BuildStatus Result]
+[![GoReport Widget]][GoReport Status]
+
+[GoDoc]: https://godoc.org/github.com/grafeas/kritis
+[GoDoc Widget]: https://godoc.org/github.com/grafeas/kritis?status.svg
+
+[BuildStatus Result]: https://travis-ci.org/grafeas/kritis
+[BuildStatus Widget]: https://travis-ci.org/grafeas/kritis.svg?branch=master
+
+[GoReport Status]: https://goreportcard.com/report/github.com/grafeas/kritis
+[GoReport Widget]: https://goreportcard.com/badge/github.com/grafeas/kritis
+
+
+![Kritis logo](logo/logo-128.png)
+
 Kritis (“judge” in Greek), is an open-source solution for securing your software supply chain for Kubernetes applications. Kritis enforces deploy-time security policies using the [Google Cloud Container Analysis API](https://cloud.google.com/container-analysis/api/reference/rest/), and in a subsequent release, [Grafeas](https://github.com/grafeas/grafeas).
 
 Here is an example Kritis policy, to prevent the deployment of Pod with a critical vulnerability unless it has been whitelisted:
