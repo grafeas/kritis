@@ -113,7 +113,23 @@ func Test_isRegistryGCR(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := isRegistryGCR(test.registry)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+			testutil.DeepEqual(t, test.expected, actual)
+		})
+	}
+}
+
+func Test_getProjectFromContainerImage(t *testing.T) {
+	tests := []struct {
+		image   string
+		project string
+	}{
+		{"gcr.io/project/1", "project"},
+		{"gcr.io/project", "project"},
+		{"gcr.io", ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.image, func(t *testing.T) {
+			testutil.DeepEqual(t, tc.project, getProjectFromContainerImage(tc.image))
 		})
 	}
 }
@@ -140,5 +156,5 @@ func TestGetProjectFromNoteRef(t *testing.T) {
 func TestGetResource(t *testing.T) {
 	r := getResource("gcr.io/test/image:sha")
 	e := &grafeas.Resource{Uri: "https://gcr.io/test/image:sha"}
-	testutil.CheckErrorAndDeepEqual(t, false, nil, e, r)
+	testutil.DeepEqual(t, e, r)
 }

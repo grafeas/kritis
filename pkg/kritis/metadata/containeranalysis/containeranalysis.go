@@ -93,11 +93,10 @@ func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
-	project := strings.Split(containerImage, "/")[1]
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", getResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", project),
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 	}
 	it := c.client.ListOccurrences(c.ctx, req)
 	occs := []*grafeas.Occurrence{}
@@ -119,7 +118,7 @@ func getVulnerabilityFromOccurence(occ *grafeas.Occurrence) *metadata.Vulnerabil
 	if vulnDetails == nil {
 		return nil
 	}
-	hasFixAvailable := isFixAvaliable(vulnDetails.GetPackageIssue())
+	hasFixAvailable := isFixAvailable(vulnDetails.GetPackageIssue())
 	vulnerability := metadata.Vulnerability{
 		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
 		HasFixAvailable: hasFixAvailable,
@@ -128,7 +127,7 @@ func getVulnerabilityFromOccurence(occ *grafeas.Occurrence) *metadata.Vulnerabil
 	return &vulnerability
 }
 
-func isFixAvaliable(pis []*vulnerability.PackageIssue) bool {
+func isFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	for _, pi := range pis {
 		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
@@ -255,7 +254,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	// Create the AttestationAuthrity Occurrence in the Project AttestationAuthority Note.
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", strings.Split(containerImage, "/")[1]),
+		Parent:     fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 	}
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)
@@ -268,6 +267,14 @@ func getPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttest
 		KeyID:     pgp.GetPgpKeyId(),
 		OccID:     occ.GetName(),
 	}
+}
+
+func getProjectFromContainerImage(image string) string {
+	tok := strings.Split(image, "/")
+	if len(tok) < 2 {
+		return ""
+	}
+	return tok[1]
 }
 
 // The following methods are used for Testing

@@ -51,3 +51,7 @@ ignored = ["cloud.google.com/go/devtools/*"]
   [[prune.project]]
     name = "k8s.io/code-generator"
     unused-packages = false
+
+[[constraint]]
+  name = "gopkg.in/d4l3k/messagediff.v1"
+  revision = "b9e99b2f9263a86c71c1ca4507f34502448c58a4"

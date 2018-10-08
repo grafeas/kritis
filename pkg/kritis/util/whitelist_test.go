@@ -47,7 +47,7 @@ func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := RemoveGloballyWhitelistedImages(test.images)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+			testutil.DeepEqual(t, test.expected, actual)
 		})
 	}
 }
