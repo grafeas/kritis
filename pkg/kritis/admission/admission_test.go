@@ -82,8 +82,10 @@ func Test_AdmissionResponse(t *testing.T) {
 				return testutil.NewReviewer(tc.reviewErr, tc.expectedMsg)
 			}
 			mockConfig := config{
-				retrievePod:                mockValidPod(),
-				fetchMetadataClient:        testutil.NilFetcher(),
+				retrievePod: mockValidPod(),
+				fetchMetadataClient: func(config *Config) (metadata.Fetcher, error) {
+					return testutil.NilFetcher()()
+				},
 				fetchImageSecurityPolicies: mockISP,
 				reviewer:                   mReviewer,
 			}
@@ -165,7 +167,7 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	reviewPod(pod, admitResponse)
+	reviewPod(pod, admitResponse, &Config{Metadata: constants.ContainerAnalysisMetadata})
 	// Send response
 	w.Header().Set("Content-Type", "application/json")
 	payload, err := json.Marshal(admitResponse)

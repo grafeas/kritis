@@ -88,14 +88,14 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
-	expectedPgpKeyId, err := attestation.GetKeyFingerprint(pub)
+	expectedPgpKeyID, err := attestation.GetKeyFingerprint(pub)
 	if err != nil {
 		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
 	}
 
-	pgpKeyId := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
-	if pgpKeyId != expectedPgpKeyId {
-		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyId, pgpKeyId)
+	pgpKeyID := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
+	if pgpKeyID != expectedPgpKeyID {
+		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
 	defer d.DeleteOccurrence(occ.GetName())
 	occurrences, err := d.Attestations(testutil.IntTestImage)

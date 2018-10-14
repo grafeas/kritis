@@ -22,6 +22,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
@@ -30,7 +33,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -45,7 +47,7 @@ import (
 type config struct {
 	retrievePod                func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error)
 	retrieveDeployment         func(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error)
-	fetchMetadataClient        func() (metadata.Fetcher, error)
+	fetchMetadataClient        func(config *Config) (metadata.Fetcher, error)
 	fetchImageSecurityPolicies func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
 	reviewer                   func(metadata.Fetcher) reviewer
 }
@@ -55,7 +57,7 @@ var (
 	admissionConfig = config{
 		retrievePod:                unmarshalPod,
 		retrieveDeployment:         unmarshalDeployment,
-		fetchMetadataClient:        metadataClient,
+		fetchMetadataClient:        MetadataClient,
 		fetchImageSecurityPolicies: securitypolicy.ImageSecurityPolicies,
 		reviewer:                   getReviewer,
 	}
@@ -68,39 +70,55 @@ var (
 	codecs        = serializer.NewCodecFactory(runtimeScheme)
 )
 
-var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview) error{
+// Config is the metadata client configuration
+type Config struct {
+	Metadata string // Metadata is the name of the metadata client fetcher
+}
+
+// MetadataClient returns metadata.Fetcher based on the admission control config
+func MetadataClient(config *Config) (metadata.Fetcher, error) {
+	if config.Metadata == constants.GrafeasMetadata {
+		return grafeas.New()
+	}
+	if config.Metadata == constants.ContainerAnalysisMetadata {
+		return containeranalysis.NewCache()
+	}
+	return nil, fmt.Errorf("unsupported backend %v", config.Metadata)
+}
+
+var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview, *Config) error{
 	"Deployment": handleDeployment,
 	"Pod":        handlePod,
 	"ReplicaSet": handleReplicaSet,
 }
 
-func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
+func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview, config *Config) error {
 	deployment := appsv1.Deployment{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
 		return err
 	}
 	glog.Infof("handling deployment %s...", deployment.Name)
-	reviewDeployment(&deployment, admitResponse)
+	reviewDeployment(&deployment, admitResponse, config)
 	return nil
 }
 
-func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
+func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview, config *Config) error {
 	pod := v1.Pod{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
 	glog.Infof("handling pod %s in...", pod.Name)
-	reviewPod(&pod, admitResponse)
+	reviewPod(&pod, admitResponse, config)
 	return nil
 }
 
-func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview) error {
+func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionReview, config *Config) error {
 	replicaSet := appsv1.ReplicaSet{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
 		return err
 	}
 	glog.Infof("handling replica set %s...", replicaSet.Name)
-	reviewReplicaSet(&replicaSet, admitResponse)
+	reviewReplicaSet(&replicaSet, admitResponse, config)
 	return nil
 }
 
@@ -135,7 +153,7 @@ func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.Admissi
 	return ar, nil
 }
 
-func ReviewHandler(w http.ResponseWriter, r *http.Request) {
+func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	glog.Infof("Starting admission review handler\nversion: %s\ncommit: %s",
 		version.Version,
 		version.Commit,
@@ -160,7 +178,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	for k8sType, handler := range handlers {
 		if ar.Request.Kind.Kind == k8sType {
-			if err := handler(&ar, admitResponse); err != nil {
+			if err := handler(&ar, admitResponse, config); err != nil {
 				glog.Errorf("handler failed: %v", err)
 				http.Error(w, "Whoops! The handler failed!", http.StatusInternalServerError)
 				return
@@ -180,7 +198,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview) {
+func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview, config *Config) {
 	images := DeploymentImages(*deployment)
 	// check if the Deployments's owner has already been validated
 	if checkOwners(images, &deployment.ObjectMeta) {
@@ -192,7 +210,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
 		return
 	}
-	reviewImages(images, deployment.Namespace, nil, ar)
+	reviewImages(images, deployment.Namespace, nil, ar, config)
 }
 
 func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
@@ -203,7 +221,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 	}
 }
 
-func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
 	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
@@ -219,7 +237,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		glog.Infof("Found %d ISPs to review image against", len(isps))
 	}
 
-	client, err := admissionConfig.fetchMetadataClient()
+	client, err := admissionConfig.fetchMetadataClient(config)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)
@@ -233,7 +251,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	}
 }
 
-func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
+func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	images := PodImages(*pod)
 	// check if the Pod's owner has already been validated
 	if checkOwners(images, &pod.ObjectMeta) {
@@ -245,10 +263,10 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
 		return
 	}
-	reviewImages(images, pod.Namespace, pod, ar)
+	reviewImages(images, pod.Namespace, pod, ar, config)
 }
 
-func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview) {
+func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview, config *Config) {
 	images := ReplicaSetImages(*replicaSet)
 	// check if the ReplicaSet's owner has already been validated
 	if checkOwners(images, &replicaSet.ObjectMeta) {
@@ -260,7 +278,7 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
 		return
 	}
-	reviewImages(images, replicaSet.Namespace, nil, ar)
+	reviewImages(images, replicaSet.Namespace, nil, ar, config)
 }
 
 // TODO(aaron-prindle) remove these functions
@@ -303,11 +321,6 @@ func checkBreakglass(meta *metav1.ObjectMeta) bool {
 	}
 	_, ok := annotations[kritisconstants.Breakglass]
 	return ok
-}
-
-// TODO: update this once we have more metadata clients
-func metadataClient() (metadata.Fetcher, error) {
-	return containeranalysis.NewCache()
 }
 
 func getReviewer(client metadata.Fetcher) reviewer {

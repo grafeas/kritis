@@ -17,21 +17,57 @@ limitations under the License.
 package util
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	"github.com/spf13/cobra"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
+	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
-func ExitIfErr(cmd *cobra.Command, err error) {
-	if err != nil {
-		cmd.Println(err)
-		os.Exit(1)
+func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerability {
+	vulnDetails := occ.GetVulnerability()
+	if vulnDetails == nil {
+		return nil
+	}
+	hasFixAvailable := IsFixAvailable(vulnDetails.GetPackageIssue())
+	vulnerability := metadata.Vulnerability{
+		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
+		HasFixAvailable: hasFixAvailable,
+		CVE:             occ.GetNoteName(),
+	}
+	return &vulnerability
+}
+
+func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
+	for _, pi := range pis {
+		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
+			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
+			return false
+		}
+	}
+	return true
+}
+
+func GetResourceURL(containerImage string) string {
+	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)
+}
+
+func GetResource(image string) *grafeas.Resource {
+	return &grafeas.Resource{Uri: GetResourceURL(image)}
+}
+
+func GetPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttestation {
+	pgp := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation()
+	return metadata.PGPAttestation{
+		Signature: pgp.GetSignature(),
+		KeyID:     pgp.GetPgpKeyId(),
+		OccID:     occ.GetName(),
 	}
 }
 
