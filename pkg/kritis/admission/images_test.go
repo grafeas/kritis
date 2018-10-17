@@ -71,7 +71,7 @@ func Test_DeploymentImages(t *testing.T) {
 	}
 	expected := []string{"image1", "image2", "image3"}
 	actual := DeploymentImages(deployment)
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
+	testutil.DeepEqual(t, expected, actual)
 }
 
 func Test_ReplicaSetImages(t *testing.T) {
@@ -98,5 +98,5 @@ func Test_ReplicaSetImages(t *testing.T) {
 	}
 	expected := []string{"image1", "image2", "image3"}
 	actual := ReplicaSetImages(rs)
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
+	testutil.DeepEqual(t, expected, actual)
 }

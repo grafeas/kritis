@@ -87,7 +87,7 @@ func Test_AddPatch(t *testing.T) {
 				t.Error(err)
 			}
 			expected := fmt.Sprintf(`{"metadata":{"annotations":%s,"labels":%s}}`, annotations, labels)
-			testutil.CheckErrorAndDeepEqual(t, false, err, expected, string(patch))
+			testutil.DeepEqual(t, expected, string(patch))
 		})
 	}
 }
@@ -156,7 +156,7 @@ func Test_DeletePatch(t *testing.T) {
 			if test.noChange {
 				expected = "{}"
 			}
-			testutil.CheckErrorAndDeepEqual(t, false, err, expected, string(patch))
+			testutil.DeepEqual(t, expected, string(patch))
 		})
 	}
 }

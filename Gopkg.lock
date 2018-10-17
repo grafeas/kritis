@@ -427,6 +427,11 @@
   version = "v1.13.0"
 
 [[projects]]
+  name = "gopkg.in/d4l3k/messagediff.v1"
+  packages = ["."]
+  revision = "b9e99b2f9263a86c71c1ca4507f34502448c58a4"
+
+[[projects]]
   name = "gopkg.in/inf.v0"
   packages = ["."]
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
@@ -645,6 +650,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ba2bcb7ae0cfd03e008dc797b1306d6524db931d5f3e6d0d96dcea1462b0c11c"
+  inputs-digest = "e1781657363fcc06c0d6d98a7920521b85e9c28d66ce024452cbba89a3995e94"
   solver-name = "gps-cdcl"
   solver-version = 1

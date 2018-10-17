@@ -88,7 +88,7 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 			}
 			actual := recursiveGetTaggedImages(m)
 			sort.Strings(actual)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+			testutil.DeepEqual(t, test.expected, actual)
 		})
 	}
 }
@@ -221,7 +221,7 @@ func Test_recursiveReplaceImage(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			actual := recursiveReplaceImage(test.yaml, test.replacements)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expected, actual)
+			testutil.DeepEqual(t, test.expected, actual)
 		})
 	}
 }

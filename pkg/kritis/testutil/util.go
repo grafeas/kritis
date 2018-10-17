@@ -26,6 +26,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
+	"gopkg.in/d4l3k/messagediff.v1"
 )
 
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
@@ -33,9 +34,13 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 		t.Error(err)
 		return
 	}
+	DeepEqual(t, expected, actual)
+}
+
+func DeepEqual(t *testing.T, expected, actual interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
-		// TODO: Print diff instead of full structure http://go/go-test-comments#print-diffs
-		t.Errorf("%T differ.\nExpected\n%+v\nActual\n%+v", expected, expected, actual)
+		diff, _ := messagediff.PrettyDiff(expected, actual)
+		t.Errorf("%T differ. %s", expected, diff)
 		return
 	}
 }
