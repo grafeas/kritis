@@ -42,7 +42,7 @@ creating attestations are distinct:
 ### Container Analysis Setup
 
 The builder project must have [Container
-Analysis](https://cloud.ogle.com/container-analysis/api/reference/rest/) enabled
+Analysis](https://cloud.google.com/container-analysis/api/reference/rest/) enabled
 to allow storing the attestations.  Container analysis will also store build
 details created by Cloud Build.
 
