@@ -19,6 +19,12 @@ For convenience, save the project ID as an environment variable:
 PROJECT=<project ID assigned to you>
 ```
 
+Configure `gcloud` to use the correct project.
+
+```shell
+gcloud config set project $PROJECT
+```
+
 If you do not know your project ID, you may use:
 
 ```shell
