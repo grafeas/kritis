@@ -33,9 +33,7 @@ gcloud projects list
 
 ## Step #2: Enable the requisite API's for your Google Cloud Project
 
-NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
-
-Once approved, enable the necessary API's:
+Enable the necessary API's:
 
 Enable the Container Analysis API:
 
