@@ -45,3 +45,9 @@ var (
 	// SupportedTypes is a list of Kubernetes types that kritis can validate
 	SupportedTypes = []string{Pod, ReplicaSet, Deployment}
 )
+
+// Types of supported metadata fetchers
+const (
+	GrafeasMetadata           = "grafeas"
+	ContainerAnalysisMetadata = "containerAnalysis"
+)

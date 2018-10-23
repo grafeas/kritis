@@ -17,71 +17,10 @@ limitations under the License.
 package containeranalysis
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
-	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
-	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
-
-func TestGetVulnerabilityFromOccurence(t *testing.T) {
-	tests := []struct {
-		name        string
-		severity    vulnerability.Severity
-		fixKind     pkg.Version_VersionKind
-		noteName    string
-		expectedVul metadata.Vulnerability
-	}{
-		{"fix available", vulnerability.Severity_LOW,
-			pkg.Version_MAXIMUM,
-			"CVE-1",
-			metadata.Vulnerability{
-				CVE:             "CVE-1",
-				Severity:        "LOW",
-				HasFixAvailable: false,
-			},
-		},
-		{"fix not available", vulnerability.Severity_MEDIUM,
-			pkg.Version_NORMAL,
-			"CVE-2",
-			metadata.Vulnerability{
-				CVE:             "CVE-2",
-				Severity:        "MEDIUM",
-				HasFixAvailable: true,
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			vulnDetails := &grafeas.Occurrence_Vulnerability{
-				Vulnerability: &vulnerability.Details{
-					Severity: tc.severity,
-					PackageIssue: []*vulnerability.PackageIssue{
-						{
-							AffectedLocation: &vulnerability.VulnerabilityLocation{},
-							FixedLocation: &vulnerability.VulnerabilityLocation{
-								Version: &pkg.Version{
-									Kind: tc.fixKind,
-								},
-							},
-						},
-					},
-				}}
-			occ := &grafeas.Occurrence{
-				NoteName: tc.noteName,
-				Details:  vulnDetails,
-			}
-
-			actualVuln := getVulnerabilityFromOccurence(occ)
-			if !reflect.DeepEqual(*actualVuln, tc.expectedVul) {
-				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
-			}
-		})
-	}
-}
 
 func Test_isRegistryGCR(t *testing.T) {
 	tests := []struct {
@@ -151,10 +90,4 @@ func TestGetProjectFromNoteRef(t *testing.T) {
 			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.output, actual)
 		})
 	}
-}
-
-func TestGetResource(t *testing.T) {
-	r := getResource("gcr.io/test/image:sha")
-	e := &grafeas.Resource{Uri: "https://gcr.io/test/image:sha"}
-	testutil.DeepEqual(t, e, r)
 }
