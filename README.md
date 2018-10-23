@@ -38,7 +38,7 @@ Authorization](https://cloud.google.com/binary-authorization/).  For details see
 
 ## Getting Started
 
-* Learn the concepts in the [Kritis whitepaper](https://github.com/Grafeas/Grafeas/blob/master/case-studies/binary-authorization.md)
+* Learn the concepts in the [Kritis whitepaper](docs/binary-authorization.md)
 * Get Kritis running with the [Installation guide](install.md)
 * Try the [Tutorial](tutorial.md) to learn how to block vulnerabilities
 * Read the [Resource Reference](resources.md) to configure and interact with Kritis resources
