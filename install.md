@@ -126,7 +126,7 @@ kubectl create secret generic gac-ca-admin --from-file=gac.json
 
 ## Step #6: Install and Configure Helm
 
-Install [helm](https://docs.helm.sh/using_helm/), and execute the following to create an account for helm in your cluster:
+Install [helm](https://docs.helm.sh/using_helm/#installing-helm), and execute the following to create an account for helm in your cluster:
 
 ```shell
 kubectl create serviceaccount --namespace kube-system tiller
