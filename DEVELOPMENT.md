@@ -53,7 +53,7 @@ The unit tests live with the code they test and can be run with:
 make test
 ```
 
-_These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
+:warning: These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork).
 
 ### Integration tests
 
