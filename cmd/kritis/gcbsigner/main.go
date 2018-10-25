@@ -20,17 +20,15 @@ import (
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/crd/buildpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/gcbsigner"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"golang.org/x/net/context"
-
-	"cloud.google.com/go/pubsub"
 )
 
-// TODO This needs an integration test.
 func main() {
 	gcbProject := flag.String("gcb_project", "", "Id of the project running GCB")
 	gcbSubscription := flag.String("gcb_subscription", "build-signer", "Name of the GCB subscription")
@@ -53,8 +51,8 @@ func run(ctx context.Context, project string, subscription string, ns string) er
 	for err == nil {
 		glog.Infof("Listening")
 		err = sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-			if err := process(ns, msg); err != nil {
-				glog.Errorf("Error signing: %v", err)
+			if perr := process(ns, msg); perr != nil {
+				glog.Errorf("Error signing: %v", perr)
 				msg.Nack()
 			} else {
 				msg.Ack()

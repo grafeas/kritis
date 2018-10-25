@@ -23,11 +23,13 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+// ReviewerMock is mock reviewer.Reviewer client.
 type ReviewerMock struct {
 	hasErr  bool
 	message string
 }
 
+// NewReviewer returns a mock reviewer.Reviewer client.
 func NewReviewer(r bool, s string) *ReviewerMock {
 	return &ReviewerMock{
 		hasErr:  r,
@@ -35,6 +37,7 @@ func NewReviewer(r bool, s string) *ReviewerMock {
 	}
 }
 
+// Review reviews a set of images against a set of policies
 func (r *ReviewerMock) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
 	if !r.hasErr {
 		return nil

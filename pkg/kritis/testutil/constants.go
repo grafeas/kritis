@@ -17,9 +17,12 @@ limitations under the License.
 package testutil
 
 const (
-	QualifiedImage    = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
-	IntTestImage      = "gcr.io/kritis-int-test/test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f"
-	PgpKeyFingerprint = "D283A5F5F5F5ECAA9EF185C5AE8B6994116315A3"
+	// QualifiedImage is the name of a dummy qualified image used for testing.
+	QualifiedImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	// IntTestImage is the name of a dummy image used for testing.
+	IntTestImage = "gcr.io/kritis-int-test/test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f"
+	// PGPKeyFingerprint is the name of a dummy PGP fingerprint.
+	PGPKeyFingerprint = "D283A5F5F5F5ECAA9EF185C5AE8B6994116315A3"
 )
 
 // PublicTestKey is base64 encoded sig for image gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8

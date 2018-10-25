@@ -25,8 +25,8 @@ import (
 func TestGetKeyFingerprint(t *testing.T) {
 	fingerprint, err := GetKeyFingerprint(testutil.Base64PublicTestKey(t))
 	testutil.CheckError(t, false, err)
-	if fingerprint != testutil.PgpKeyFingerprint {
-		t.Errorf("Expected fingerprint: %q, got %q", testutil.PgpKeyFingerprint, fingerprint)
+	if fingerprint != testutil.PGPKeyFingerprint {
+		t.Errorf("Expected fingerprint: %q, got %q", testutil.PGPKeyFingerprint, fingerprint)
 	}
 }
 

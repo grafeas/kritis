@@ -13,25 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e -o pipefail
+set -eux -o pipefail
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly go_bin="${GOPATH:=$HOME/go}/bin"
+readonly release="v2.0.11"
+readonly cmd="gometalinter-${release}"
+readonly cmd_path="${go_bin}/${cmd}"
+readonly pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if ! [ -x "$(command -v golangci-lint)" ]; then
-	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.9.3
+if ! [[ -x "${cmd_path}" ]]; then
+  ${pwd}/install_golint.sh -b "${go_bin}" "${release}"
+  mv "${go_bin}/gometalinter" "${cmd_path}"
 fi
 
-# TODO(tstromberg): enable golint, deadcode, megacheck once code base is ready.
-golangci-lint run \
-	--no-config \
-	-E goconst \
-	-E gofmt \
-	-E goimports \
-	-E golint \
-	-E interfacer \
-	-E misspell \
-	-E unconvert \
-	-E unparam \
-	-D deadcode \
-	-D megacheck
+# unparam should be enabled once source code issues are addressed.
+"${cmd_path}" \
+  -s vendor \
+  -s versioned \
+  --exclude vendor/ \
+  --no-config \
+  --deadline 300s \
+  --aggregate \
+  --sort=path \
+  --enable gofmt \
+  --enable goimports \
+  --enable misspell \
+  --enable unconvert \
+  --disable deadcode \
+  --disable gosec \
+  --disable gotype \
+  --disable gocyclo \
+  --disable megacheck \
+  --disable unparam \
+  ./...

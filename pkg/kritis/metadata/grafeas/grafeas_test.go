@@ -44,8 +44,8 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	t.Logf("File %v", err)
 	grafeas.RegisterGrafeasV1Beta1Server(server, grafeasMock)
 	go func() {
-		if err := server.Serve(lis); err != nil {
-			t.Fatalf("Failed to server %v", err)
+		if serr := server.Serve(lis); serr != nil {
+			t.Fatalf("Failed to server %v", serr)
 		}
 	}()
 	defer func() {
@@ -64,7 +64,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 			Name: "note1",
 		},
 	}
-	if _, err := client.CreateAttestationNote(aa); err != nil {
+	if _, err = client.CreateAttestationNote(aa); err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)
 	}
 	note, err := client.AttestationNote(aa)
@@ -86,18 +86,18 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		PublicKey:  pub,
 		SecretName: "test",
 	}
-	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := client.CreateAttestationOccurrence(note, testutil.IntTestImage, secret)
 	if err != nil {
-		t.Fatalf("Unexpected error while creating Occurence %v", err)
+		t.Fatalf("Unexpected error while creating Occurrence %v", err)
 	}
-	expectedPgpKeyID, err := attestation.GetKeyFingerprint(pub)
+	expectedPGPKeyID, err := attestation.GetKeyFingerprint(pub)
 	if err != nil {
 		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
 	}
 
 	pgpKeyID := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
-	if pgpKeyID != expectedPgpKeyID {
-		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
+	if pgpKeyID != expectedPGPKeyID {
+		t.Errorf("Expected PGP key id: %q, got %q", expectedPGPKeyID, pgpKeyID)
 	}
 	occurrences, err := client.Attestations(testutil.IntTestImage)
 	if err != nil {

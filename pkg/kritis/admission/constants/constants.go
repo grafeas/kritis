@@ -14,23 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package defines all constants needed for AdmissionController.
+// Package constants defines all constants needed for AdmissionController.
 package constants
 
-// Define constants for metav1.Status.Status
+// A Status a string type used for metav1.Status.Status responses.
 // See https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#response-status-kind
 type Status string
 
 const (
+	// SuccessStatus is the status type returned when admitting a pod.
 	SuccessStatus Status = "Success"
+	// FailureStatus is the status type returned when denying a pod.
 	FailureStatus Status = "Failure"
 )
 
 const (
+	// SuccessMessage is the status message returned when admitting a pod.
 	SuccessMessage = "Successfully admitted."
 )
 
 const (
+	// RSABits is the number of bits in new RSA keys created for attestation purposes.
 	RSABits = 4096
 )
 

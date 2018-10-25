@@ -86,7 +86,7 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas
 	return n, err
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Cache) CreateAttestationOccurence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
-	return c.client.CreateAttestationOccurence(n, image, p)
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
+func (c Cache) CreateAttestationOccurrence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	return c.client.CreateAttestationOccurrence(n, image, p)
 }

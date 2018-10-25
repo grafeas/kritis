@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// RetrieveNamespace returns the Kubernetes namespace written to disk.
 func RetrieveNamespace() string {
 	namespaceFile := "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 	contents, err := ioutil.ReadFile(namespaceFile)
@@ -34,7 +35,7 @@ func RetrieveNamespace() string {
 	return string(contents)
 }
 
-// RunCommand executes the command
+// RunCommand executes a command
 func RunCommand(cmd *exec.Cmd) []byte {
 	stderr := bytes.NewBuffer([]byte{})
 	cmd.Stderr = stderr
@@ -43,6 +44,7 @@ func RunCommand(cmd *exec.Cmd) []byte {
 	logrus.Info(string(output))
 	if err != nil {
 		logrus.Error(stderr.String())
+		// TODO: address - libraries should never panic.
 		logrus.Fatal(err)
 	}
 	return output

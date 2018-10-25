@@ -68,6 +68,9 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	defer d.DeleteAttestationNote(aa)
 	note, err := d.AttestationNote(aa)
+	if err != nil {
+		t.Fatalf("AttestationNote: %v", err)
+	}
 	expectedNoteName := fmt.Sprintf("projects/%s/notes/%s", IntProject, IntTestNoteName)
 	if note.Name != expectedNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, note.Name)
@@ -76,7 +79,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if actualHint != IntTestNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
-	// Test Create Attestation Occurence
+	// Test Create Attestation Occurrence
 	pub, priv := testutil.CreateKeyPair(t, "test")
 	secret := &secrets.PGPSigningSecret{
 		PrivateKey: priv,
@@ -84,18 +87,18 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := d.CreateAttestationOccurrence(note, testutil.IntTestImage, secret)
 	if err != nil {
-		t.Fatalf("Unexpected error while creating Occurence %v", err)
+		t.Fatalf("Unexpected error while creating Occurrence %v", err)
 	}
-	expectedPgpKeyID, err := attestation.GetKeyFingerprint(pub)
+	expectedPGPKeyID, err := attestation.GetKeyFingerprint(pub)
 	if err != nil {
 		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
 	}
 
 	pgpKeyID := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
-	if pgpKeyID != expectedPgpKeyID {
-		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
+	if pgpKeyID != expectedPGPKeyID {
+		t.Errorf("Expected PGP key id: %q, got %q", expectedPGPKeyID, pgpKeyID)
 	}
 	defer d.DeleteOccurrence(occ.GetName())
 	occurrences, err := d.Attestations(testutil.IntTestImage)

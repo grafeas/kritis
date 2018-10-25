@@ -29,14 +29,16 @@ import (
 	"gopkg.in/d4l3k/messagediff.v1"
 )
 
+// CheckErrorAndDeepEqual asserts error expectations and if a return is as expected.
 func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
-	if err := checkErr(shouldErr, err); err != nil {
-		t.Error(err)
+	if cerr := checkErr(shouldErr, err); cerr != nil {
+		t.Error(cerr)
 		return
 	}
 	DeepEqual(t, expected, actual)
 }
 
+// DeepEqual asserts equality between two objects and outputs a diff.
 func DeepEqual(t *testing.T, expected, actual interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
 		diff, _ := messagediff.PrettyDiff(expected, actual)
@@ -45,9 +47,10 @@ func DeepEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
+// CheckError asserts error expectations.
 func CheckError(t *testing.T, shouldErr bool, err error) {
-	if err := checkErr(shouldErr, err); err != nil {
-		t.Error(err)
+	if cerr := checkErr(shouldErr, err); cerr != nil {
+		t.Error(cerr)
 	}
 }
 
@@ -61,6 +64,7 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
+// CreateKeyPair is a test helper to create a new private/public key pair.
 func CreateKeyPair(t *testing.T, name string) (string, string) {
 	// Create a new pair of key
 	var key *openpgp.Entity
@@ -82,10 +86,13 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) string {
 	} else {
 		CheckError(t, false, key.Serialize(wr))
 	}
-	wr.Close()
+	if err := wr.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
 	return gotWriter.String()
 }
 
+// CreateSecret is a helper that generates a PGPSigningSecret for a given name.
 func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
 	pub, priv := CreateKeyPair(t, name)
 	return &secrets.PGPSigningSecret{
@@ -95,6 +102,7 @@ func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
 	}
 }
 
+// Base64PublicTestKey returns a public test key.
 func Base64PublicTestKey(t *testing.T) string {
 	b, err := base64.StdEncoding.DecodeString(PublicTestKey)
 	if err != nil {

@@ -16,5 +16,8 @@ limitations under the License.
 
 package version
 
-var Commit = "undefined"
+// Version is the Kritis version string, to be substituted during a release.
 var Version = "undefined"
+
+// Commit is the git commit hash, to be substituted during a release.
+var Commit = "undefined"

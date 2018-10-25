@@ -111,12 +111,13 @@ func outputResults(substitutes map[string]string, writer io.Writer) error {
 	if apply {
 		return applyChanges(substitutes, writer)
 	}
-	print(substitutes, writer)
+	printSubs(substitutes, writer)
 	return nil
 }
 
+// nolint: errcheck
 // prints the final replaced kubernetes manifest to given writer
-func print(substitutes map[string]string, writer io.Writer) {
+func printSubs(substitutes map[string]string, writer io.Writer) {
 	for file, contents := range substitutes {
 		fmt.Fprintln(writer, fmt.Sprintf("---%s---", file))
 		fmt.Fprintf(writer, contents)
@@ -139,7 +140,7 @@ func applyChanges(substitutes map[string]string, writer io.Writer) error {
 
 		output, err := cmd.CombinedOutput()
 		// Copy stderr/stdout stream from kubectl to our own stdout
-		fmt.Fprintln(writer, string(output))
+		fmt.Fprintln(writer, string(output)) // nolint: errcheck
 		if err != nil {
 			return fmt.Errorf("kubectl: %v", err)
 		}

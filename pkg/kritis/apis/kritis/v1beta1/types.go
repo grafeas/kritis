@@ -41,7 +41,7 @@ type PackageVulnerabilityRequirements struct {
 	WhitelistCVEs                 []string `json:"whitelistCVEs"`
 }
 
-// ImageSecurityPolicy is the spec for a ImageSecurityPolicy resource
+// ImageSecurityPolicySpec is the spec for a ImageSecurityPolicy resource
 type ImageSecurityPolicySpec struct {
 	ImageWhitelist                   []string                         `json:"imageWhitelist"`
 	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
@@ -75,6 +75,7 @@ type BuildPolicySpec struct {
 	BuildRequirements        BuildRequirements `yaml:"buildRequirements"`
 }
 
+// BuildRequirements are used to define build requirements for a BuildPolicy
 type BuildRequirements struct {
 	BuiltFrom string `yaml:"builtFrom"`
 }
@@ -93,6 +94,7 @@ type BuildPolicyList struct {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// The AttestationAuthority object represents the service which attests images.
 type AttestationAuthority struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

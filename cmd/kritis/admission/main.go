@@ -24,11 +24,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/pkg/errors"
@@ -46,7 +45,8 @@ var (
 )
 
 const (
-	Addr = ":443"
+	// defaultAddr is the default host:port the server will listen at.
+	defaultAddr = ":443"
 )
 
 func main() {
@@ -89,10 +89,11 @@ func main() {
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
-	httpsServer := NewServer(Addr)
+	httpsServer := NewServer(defaultAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
+// NewServer returns a fully configured HTTP server, ready for listening.
 func NewServer(addr string) *http.Server {
 	return &http.Server{
 		Addr: addr,
@@ -103,7 +104,7 @@ func NewServer(addr string) *http.Server {
 	}
 }
 
-// StartCron starts the cron.StartCronJob in background.
+// StartCronJob starts the cron.StartCronJob in background.
 func StartCronJob(config *admission.Config) error {
 	d, err := time.ParseDuration(cronInterval)
 	if err != nil {

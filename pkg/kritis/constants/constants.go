@@ -23,33 +23,46 @@ const (
 	BlockAll = "BLOCK_ALL"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
-	InvalidImageSecPolicy           = "kritis.grafeas.io/invalidImageSecPolicy"
+	InvalidImageSecPolicy = "kritis.grafeas.io/invalidImageSecPolicy"
+	// InvalidImageSecPolicyLabelValue is the label used when an image has violated the Kritis security policy.
 	InvalidImageSecPolicyLabelValue = "invalidImageSecPolicy"
 
 	// ImageAttestation is the key for labels for indication attestaions.
-	ImageAttestation             = "kritis.grafeas.io/attestation"
-	NoAttestationsLabelValue     = "notAttested"
+	ImageAttestation = "kritis.grafeas.io/attestation"
+	// NoAttestationsLabelValue is the annotation used when a pod has not been attested.
+	NoAttestationsLabelValue = "notAttested"
+	// PreviouslyAttestedLabelValue is the AttestationsAnnotation used when a pod has previously been attested.
 	PreviouslyAttestedLabelValue = "attested"
 
 	// Breakglass is the key for the breakglass annotation
 	Breakglass = "kritis.grafeas.io/breakglass"
 
-	// A list of label values
-	PreviouslyAttestedAnnotation = "Previously attested."
-	NoAttestationsAnnotation     = "No valid attestations present. This pod will not be able to restart in future"
+	// A list of annotation values
 
-	// Atomic Container Signature type
+	// PreviouslyAttestedAnnotation is the annotation used when a pod has previously been attested.
+	PreviouslyAttestedAnnotation = "Previously attested."
+
+	// NoAttestationsAnnotation is the annotation used when a pod has not been attested.
+	NoAttestationsAnnotation = "No valid attestations present. This pod will not be able to restart in future"
+
+	// AtomicContainerSigType is the Atomic Container Signature type
 	AtomicContainerSigType = "atomic container signature"
 
-	// Public Key Private Key constants for Attestation Secrets.
+	// PrivateKey is the key name used for looking up the private key used for Attestation Secrets.
 	PrivateKey = "private"
-	PublicKey  = "public"
+	// PublicKey is the key name used for looking up the public key used for Attestation Secrets.
+	PublicKey = "public"
 
 	// Constants for Metadata Library
-	PageSize          = int32(100)
+
+	// PageSize is how many values to request per call to an external API service
+	PageSize = int32(100)
+	// ResourceURLPrefix is the root prefix which all container image URL's are based on.
 	ResourceURLPrefix = "https://"
 
 	// Constants relevant for the GCB event parser
+
+	// CloudSourceRepoPattern is used to generate a build provenance source URL for a GCB image.
 	CloudSourceRepoPattern = "https://source.developers.google.com/p/%s/r/%s%s"
 )
 

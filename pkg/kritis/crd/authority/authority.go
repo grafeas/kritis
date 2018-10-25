@@ -25,7 +25,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Lister describes a function signature which may be used to list AttestationAuthorities
 type Lister func(namespace string) ([]v1beta1.AttestationAuthority, error)
+
+// Fetcher describes a function signature which may be used to fetch a specify AttestationAuthority
 type Fetcher func(namespace string, name string) (v1beta1.AttestationAuthority, error)
 
 // Authorities returns all AttestationAuthorities in the specified namespaces

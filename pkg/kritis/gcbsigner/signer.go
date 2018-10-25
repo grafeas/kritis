@@ -26,16 +26,19 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
+// Signer creates signed image attestations. Do not construct directly, use New() instead.
 type Signer struct {
 	config *Config
 	client metadata.Fetcher
 }
 
+// Config stores configuration options for the Signer
 type Config struct {
 	Secret   secrets.Fetcher
 	Validate buildpolicy.ValidateFunc
 }
 
+// New returns a Signer that can be used to create image attestations.
 func New(client metadata.Fetcher, c *Config) Signer {
 	return Signer{
 		client: client,
@@ -43,6 +46,7 @@ func New(client metadata.Fetcher, c *Config) Signer {
 	}
 }
 
+// BuildProvenance is information about how an image was built.
 type BuildProvenance struct {
 	BuildID   string
 	ImageRef  string
@@ -88,6 +92,6 @@ func (s Signer) addAttestation(image string, ns string, authority string) error 
 		return err
 	}
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurence(n, image, sec)
+	_, err = s.client.CreateAttestationOccurrence(n, image, sec)
 	return err
 }

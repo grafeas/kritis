@@ -45,7 +45,7 @@ func Test_RootCmd(t *testing.T) {
 		t.Error(err)
 	}
 	expected := fmt.Sprintf("---%s---"+"\n"+testYaml+"\n", file.Name(), "gcr.io/kritis-int-test/resolve-tags-test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f")
-	if _, err := io.Copy(file, bytes.NewReader([]byte(initial))); err != nil {
+	if _, err = io.Copy(file, bytes.NewReader([]byte(initial))); err != nil {
 		t.Error(err)
 	}
 	defer os.Remove(file.Name())
@@ -73,7 +73,7 @@ func Test_resolveFilepaths(t *testing.T) {
 
 	base := filepath.Base(file.Name())
 	dir := filepath.Dir(file.Name())
-	if err := os.Setenv(localFlagFilenameEnv, base); err != nil {
+	if err = os.Setenv(localFlagFilenameEnv, base); err != nil {
 		t.Error(err)
 	}
 	expected := append(multiArg{}, file.Name())

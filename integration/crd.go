@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package integration
 
 import (
@@ -62,7 +63,7 @@ func createAttestationAuthority(t *testing.T, ns string) {
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-	defer os.RemoveAll(d)
+	defer os.RemoveAll(d) // nolint: errcheck
 
 	// create file with contents in dir
 	pubFile := createFileWithContents(t, d, pubKey)

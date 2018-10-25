@@ -22,9 +22,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
@@ -33,6 +30,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -141,32 +140,16 @@ func deserializeRequest(r *http.Request) (ar v1beta1.AdmissionReview, err error)
 	return ar, nil
 }
 
+// ReviewHandler is the HTTP handler responsible for admitting new pods.
 func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	glog.Infof("Starting admission review handler\nversion: %s\ncommit: %s",
 		version.Version,
 		version.Commit,
 	)
-	ar, err := deserializeRequest(r)
+	ar, err := deserializeRequest(w, r)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		resp := &v1beta1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  string(constants.FailureStatus),
-				Message: err.Error(),
-			},
-		}
-		if ar.Request != nil {
-			resp.UID = ar.Request.UID
-		}
-		payload, err := json.Marshal(resp)
-		if err != nil {
-			glog.Errorf("unable to marshal %s: %v", payload, err)
-		}
-		if _, err := w.Write(payload); err != nil {
-			glog.Errorf("unable to write payload: %v", err)
-		}
+		glog.Errorf("Error reading body: %v", err)
+		http.Error(w, "can't read body", http.StatusBadRequest)
 		return
 	}
 
@@ -183,7 +166,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 
 	for k8sType, handler := range handlers {
 		if ar.Request.Kind.Kind == k8sType {
-			if err := handler(&ar, admitResponse, config); err != nil {
+			if err = handler(&ar, admitResponse, config); err != nil {
 				glog.Errorf("handler failed: %v", err)
 				http.Error(w, "Whoops! The handler failed!", http.StatusInternalServerError)
 				return
@@ -260,7 +243,7 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	images := PodImages(*pod)
 	// check if the Pod's owner has already been validated
 	if checkOwners(images, &pod.ObjectMeta) {
-		glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
+		glog.Infof("all owners for Pod %s have been validated, returning successful status", pod.Name)
 		return
 	}
 	// check for a breakglass annotation on the pod

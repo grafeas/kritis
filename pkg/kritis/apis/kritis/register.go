@@ -17,5 +17,6 @@ limitations under the License.
 package kritis
 
 const (
+	// GroupName is the Kubernetes group name used when registering Kritis objects.
 	GroupName = "kritis.grafeas.io"
 )

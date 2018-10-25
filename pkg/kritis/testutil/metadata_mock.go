@@ -25,17 +25,20 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
+// MockMetadataClient is a mock Grafeas client.
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
 	Occ             map[string]string
 }
 
+// Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image string,
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
+func (m *MockMetadataClient) CreateAttestationOccurrence(n *grafeas.Note, image string,
 	s *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
@@ -44,6 +47,7 @@ func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image s
 	return nil, nil
 }
 
+// AttestationNote returns a note if it exists for given AttestationAuthority
 func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	if aa == nil {
 		return nil, fmt.Errorf("could not get note")
@@ -53,16 +57,19 @@ func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthor
 	}, nil
 }
 
+// CreateAttestationNote creates an attestation note from AttestationAuthority
 func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	return &grafeas.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
+// Attestations gets AttesationAuthority Occurrences for a specified image.
 func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
 	return m.PGPAttestations, nil
 }
 
+// NilFetcher returns a mock metadata.Fetcher wired to a MockMetadataClient
 func NilFetcher() func() (metadata.Fetcher, error) {
 	return func() (metadata.Fetcher, error) {
 		return &MockMetadataClient{

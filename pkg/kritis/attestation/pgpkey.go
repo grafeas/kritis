@@ -26,14 +26,15 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 )
 
-// PgpKey struct converts the base64 encoded PEM keys into openpgp private and
+// PGPKey struct converts the base64 encoded PEM keys into openpgp private and
 // public keys. Kubernetes Secrets are stored as base64 encoded PEM keys.
-type PgpKey struct {
+type PGPKey struct {
 	privateKey *packet.PrivateKey
 	publicKey  *packet.PublicKey
 }
 
-func NewPgpKey(privateKeyStr string, publicKeyStr string) (*PgpKey, error) {
+// NewPGPKey returns a PGPKey structure given base64 encoded public and private keys.
+func NewPGPKey(privateKeyStr string, publicKeyStr string) (*PGPKey, error) {
 	var publicKey *packet.PublicKey
 	var privateKey *packet.PrivateKey
 	var err error
@@ -50,21 +51,24 @@ func NewPgpKey(privateKeyStr string, publicKeyStr string) (*PgpKey, error) {
 			return nil, errors.Wrap(err, "parsing public key")
 		}
 	}
-	return &PgpKey{
+	return &PGPKey{
 		privateKey: privateKey,
 		publicKey:  publicKey,
 	}, nil
 }
 
-func (key *PgpKey) PublicKey() *packet.PublicKey {
+// PublicKey returns the PGP public key.
+func (key *PGPKey) PublicKey() *packet.PublicKey {
 	return key.publicKey
 }
 
-func (key *PgpKey) PrivateKey() *packet.PrivateKey {
+// PrivateKey returns the PGP private key.
+func (key *PGPKey) PrivateKey() *packet.PrivateKey {
 	return key.privateKey
 }
 
-func (key *PgpKey) Fingerprint() string {
+// Fingerprint returns the PGP fingerprint.
+func (key *PGPKey) Fingerprint() string {
 	return fmt.Sprintf("%X", key.publicKey.Fingerprint)
 }
 
