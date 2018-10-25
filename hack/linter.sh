@@ -38,8 +38,9 @@ fi
   --enable goimports \
   --enable misspell \
   --enable unconvert \
-  --disable unparam \
-  --disable megacheck \
+  --disable deadcode \
   --disable gosec \
   --disable gocyclo \
+  --disable megacheck \
+  --disable unparam \
   ./...
