@@ -26,6 +26,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/install"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/sirupsen/logrus"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func waitForPreinstallPod() {
