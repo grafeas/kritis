@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Package violation is used to to handle Kritis violations
 package violation
 
 import (
@@ -25,14 +27,17 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+// Strategy defines the expected interface that violation strategies must follow.
 type Strategy interface {
 	HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error
 	HandleAttestation(image string, pod *v1.Pod, isAttested bool) error
 }
 
+// LoggingStrategy tracks violations by logging them.
 type LoggingStrategy struct {
 }
 
+// HandleViolation logs whether or not a pod has a violation.
 func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error {
 	glog.Info("HandleViolation via LoggingStrategy")
 	if len(violations) == 0 {
@@ -45,6 +50,7 @@ func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations 
 	return nil
 }
 
+// HandleAttestation logs whether or not a pod has an attestation.HandleAttestation
 func (l *LoggingStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
 	glog.Info("Handling attestation via LoggingStrategy")
 	if isAttested {
@@ -59,6 +65,7 @@ func (l *LoggingStrategy) HandleAttestation(image string, pod *v1.Pod, isAtteste
 type AnnotationStrategy struct {
 }
 
+// HandleViolation updates tags and labels associated to a pod based on the provided list of violations.
 func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error {
 	// First, remove "kritis.grafeas.io/invalidImageSecPolicy" label/annotation in case it doesn't apply anymore
 	if err := pods.DeleteLabelsAndAnnotations(*pod, []string{constants.InvalidImageSecPolicy}, []string{constants.InvalidImageSecPolicy}); err != nil {
@@ -82,6 +89,7 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 
+// HandleAttestation updates tags and labels associated to a pod based on its attestation state.
 func (a *AnnotationStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
 	// First, remove "kritis.grafeas.io/attestation" label/annotation in case it doesn't apply anymore
 	if err := pods.DeleteLabelsAndAnnotations(*pod, []string{constants.ImageAttestation}, []string{constants.ImageAttestation}); err != nil {
@@ -99,17 +107,19 @@ func (a *AnnotationStrategy) HandleAttestation(image string, pod *v1.Pod, isAtte
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 
-// For unit testing.
+// MemoryStrategy tracks violations in-memory.
 type MemoryStrategy struct {
 	Violations   map[string]bool
 	Attestations map[string]bool
 }
 
+// HandleViolation marks an image as containing a violation.
 func (ms *MemoryStrategy) HandleViolation(image string, p *v1.Pod, v []policy.Violation) error {
 	ms.Violations[image] = true
 	return nil
 }
 
+// HandleAttestation marks an image as being attested.
 func (ms *MemoryStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
 	ms.Attestations[image] = isAttested
 	return nil

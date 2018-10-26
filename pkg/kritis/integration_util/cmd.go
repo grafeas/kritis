@@ -34,10 +34,12 @@ type Command interface {
 	RunCmd(cmd *exec.Cmd) error
 }
 
+// RunCmdOut runs an exec.Command and returns the stdout and error.
 func RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return DefaultExecCommand.RunCmdOut(cmd)
 }
 
+// RunCmd runs an exec.Command.
 func RunCmd(cmd *exec.Cmd) error {
 	return DefaultExecCommand.RunCmd(cmd)
 }
@@ -58,7 +60,7 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := cmd.Start(); err != nil {
+	if err = cmd.Start(); err != nil {
 		return nil, errors.Wrapf(err, "starting command %v", cmd)
 	}
 
@@ -82,7 +84,7 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return stdout, nil
 }
 
-// RunCmd runs an exec.Command.
+// RunCmd runs an exec.Command
 func (*Commander) RunCmd(cmd *exec.Cmd) error {
 	logrus.Infof("Executing: %s", cmd.Args)
 	return cmd.Run()

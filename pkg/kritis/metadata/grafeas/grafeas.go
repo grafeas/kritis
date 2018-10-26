@@ -33,9 +33,12 @@ import (
 )
 
 const (
-	PkgVulnerability     = "PACKAGE_VULNERABILITY"
+	// PkgVulnerability is the occurrence kind the grafeas API uses for package vulnerabilities.
+	PkgVulnerability = "PACKAGE_VULNERABILITY"
+	// AttestationAuthority is the occurrence kind the grafeas API uses for attestion authorities.
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
-	DefaultProject       = "kritis" // DefaultProject is the default project name, only single project is supported
+	// DefaultProject is the default project name, only single project is supported
+	DefaultProject = "kritis"
 )
 
 var (
@@ -49,6 +52,7 @@ type Client struct {
 	ctx    context.Context
 }
 
+// New returns a fully configured Grafeas client.
 func New() (*Client, error) {
 	ctx := context.Background()
 	conn, err := grpc.Dial(socketPath,
@@ -88,7 +92,7 @@ func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, 
 	}
 	p := make([]metadata.PGPAttestation, len(occs))
 	for i, occ := range occs {
-		p[i] = util.GetPgpAttestationFromOccurrence(occ)
+		p[i] = util.GetPGPAttestationFromOccurrence(occ)
 	}
 	return p, nil
 }
@@ -117,7 +121,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 	return c.client.CreateNote(c.ctx, req)
 }
 
-//AttestationNote returns a note if it exists for given AttestationAuthority
+// AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	req := &grafeas.GetNoteRequest{
 		Name: fmt.Sprintf("projects/%s/notes/%s", DefaultProject, aa.Name),
@@ -125,8 +129,8 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 	return c.client.GetNote(c.ctx, req)
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Client) CreateAttestationOccurence(note *grafeas.Note,
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
+func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	containerImage string,
 	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	fingerprint, err := util.GetAttestationKeyFingerprint(pgpSigningKey)
@@ -139,7 +143,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	if err != nil {
 		return nil, err
 	}
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
+	att := &attestation.PgpSignedAttestation{
 		Signature: sig,
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
 			PgpKeyId: fingerprint,
@@ -151,7 +155,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Attestation: &attestation.Details{
 			Attestation: &attestation.Attestation{
 				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
+					PgpSignedAttestation: att,
 				}},
 		},
 	}

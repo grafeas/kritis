@@ -23,13 +23,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
-
-	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
-	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -43,6 +42,7 @@ var (
 // For testing.
 type podLister func(string) ([]corev1.Pod, error)
 
+// Config holds configuration for how the cron service should connect to external resources.
 type Config struct {
 	PodLister            podLister
 	Client               metadata.Fetcher
@@ -54,6 +54,7 @@ var (
 	defaultViolationStrategy = &violation.AnnotationStrategy{}
 )
 
+// NewCronConfig returns a fully configured Config object.
 func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
 
 	cfg := Config{

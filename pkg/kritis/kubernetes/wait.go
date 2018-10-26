@@ -28,15 +28,14 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/cache"
 )
 
+// WaitForPodReady waits for a pod to be in a ready state.
 func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be scheduled", podName)
 	err := wait.PollImmediate(time.Millisecond*500, time.Second*10, func() (bool, error) {
@@ -74,6 +73,7 @@ func WaitForPodReady(pods corev1.PodInterface, podName string) error {
 	})
 }
 
+// WaitForPodComplete waits for a pod to have successfully finished execution.
 func WaitForPodComplete(pods corev1.PodInterface, podName string) error {
 	logrus.Infof("Waiting for %s to be ready", podName)
 	return wait.PollImmediate(time.Millisecond*500, time.Minute*5, func() (bool, error) {
@@ -98,47 +98,8 @@ func WaitForPodComplete(pods corev1.PodInterface, podName string) error {
 	})
 }
 
-type PodStore struct {
-	cache.Store
-	stopCh    chan struct{}
-	Reflector *cache.Reflector
-}
-
-func (s *PodStore) List() []*v1.Pod {
-	objects := s.Store.List()
-	pods := make([]*v1.Pod, 0)
-	for _, o := range objects {
-		pods = append(pods, o.(*v1.Pod))
-	}
-	return pods
-}
-
-func (s *PodStore) Stop() {
-	close(s.stopCh)
-}
-
-func NewPodStore(c kubernetes.Interface, namespace string, label fmt.Stringer, field fmt.Stringer) *PodStore {
-	lw := &cache.ListWatch{
-		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-			options.LabelSelector = label.String()
-			options.FieldSelector = field.String()
-			obj, err := c.CoreV1().Pods(namespace).List(options)
-			return runtime.Object(obj), err
-		},
-		WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-			options.LabelSelector = label.String()
-			options.FieldSelector = field.String()
-			return c.CoreV1().Pods(namespace).Watch(options)
-		},
-	}
-	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
-	stopCh := make(chan struct{})
-	reflector := cache.NewReflector(lw, &v1.Pod{}, store, 0)
-	go reflector.Run(stopCh)
-	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
-}
-
-func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunning bool) error {
+// startPod starts a pod, and blocks until it is running.
+func startPod(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunning bool) error {
 	pod.ObjectMeta.Labels["name"] = pod.Name
 	if waitForRunning {
 		label := labels.SelectorFromSet(labels.Set(map[string]string{"name": pod.Name}))
@@ -282,7 +243,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 		case apierrs.IsNotFound(err):
 			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
-		case !IsRetryableAPIError(err):
+		case !isRetryableAPIError(err):
 			glog.Infof("Non-retryable failure while getting service.")
 			return false, err
 		default:
@@ -297,7 +258,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 	return nil
 }
 
-//WaitForServiceEndpointsNum waits until the amount of endpoints that implement service to expectNum.
+// WaitForServiceEndpointsNum waits until the amount of endpoints that implement service to expectNum.
 func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		glog.Infof("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)
@@ -323,6 +284,7 @@ func countEndpointsNum(e *v1.Endpoints) int {
 	return num
 }
 
-func IsRetryableAPIError(err error) bool {
+// isRetryableAPIError returns whether or not an error is considered retryable.
+func isRetryableAPIError(err error) bool {
 	return apierrs.IsTimeout(err) || apierrs.IsServerTimeout(err) || apierrs.IsTooManyRequests(err) || apierrs.IsInternalError(err)
 }

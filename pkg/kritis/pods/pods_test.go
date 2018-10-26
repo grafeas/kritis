@@ -113,7 +113,7 @@ func Test_DeletePatch(t *testing.T) {
 			expectedAnnotations: nil,
 		},
 		{
-			name:              "delete non-existant label and annotation",
+			name:              "delete non-existent label and annotation",
 			labels:            map[string]string{"label": "label"},
 			annotations:       map[string]string{"annotation": "annotation"},
 			deleteLabels:      []string{"something"},

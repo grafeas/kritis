@@ -30,6 +30,7 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
+// GetVulnerabilityFromOccurrence returns a metadata.Vulnerability from a grafeas Occurrence.
 func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerability {
 	vulnDetails := occ.GetVulnerability()
 	if vulnDetails == nil {
@@ -44,6 +45,7 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerabi
 	return &vulnerability
 }
 
+// IsFixAvailable returns whether or not a vulnerability has a fix available.
 func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	for _, pi := range pis {
 		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
@@ -54,15 +56,18 @@ func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	return true
 }
 
+// GetResourceURL returns the URL to a container image.
 func GetResourceURL(containerImage string) string {
 	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)
 }
 
+// GetResource returns a grafeas Resource for a container image.
 func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func GetPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttestation {
+// GetPGPAttestationFromOccurrence returns a metadata.PgpAttestation from a grafeas Occurrence.
+func GetPGPAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttestation {
 	pgp := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation()
 	return metadata.PGPAttestation{
 		Signature: pgp.GetSignature(),
@@ -71,6 +76,7 @@ func GetPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttest
 	}
 }
 
+// CreateAttestationSignature returns an attestation signature for an image.
 func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
 	hostSig, err := container.NewAtomicContainerSig(image, map[string]string{})
 	if err != nil {
@@ -83,6 +89,7 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
 }
 
+// GetAttestationKeyFingerprint returns a PGP fingerprint for the attestation signing key.
 func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
 	return attestation.GetKeyFingerprint(pgpSigningKey.PublicKey)
 }

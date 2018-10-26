@@ -36,16 +36,19 @@ import (
 
 // Container Analysis Library Specific Constants.
 const (
-	PkgVulnerability     = "PACKAGE_VULNERABILITY"
+	// PkgVulnerability is the occurrence kind the containeranalysis API uses for package vulnerabilities.
+	PkgVulnerability = "PACKAGE_VULNERABILITY"
+	// PkgVulnerability is the occurrence kind the containeranalysis API uses for attestation authority.
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
-// Client struct implements Fetcher Interface.
+// Client struct implements Fetcher Interface. Do not use directly: call New.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context
 }
 
+// New returns a new fully configured client.
 func New() (*Client, error) {
 	ctx := context.Background()
 	client, err := ca.NewGrafeasV1Beta1Client(ctx)
@@ -81,7 +84,7 @@ func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, 
 	}
 	p := make([]metadata.PGPAttestation, len(occs))
 	for i, occ := range occs {
-		p[i] = util.GetPgpAttestationFromOccurrence(occ)
+		p[i] = util.GetPGPAttestationFromOccurrence(occ)
 	}
 	return p, nil
 }
@@ -179,24 +182,24 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 	return c.client.GetNote(c.ctx, req)
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Client) CreateAttestationOccurence(note *grafeas.Note,
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
+func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	PGPSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
-	fingerprint, err := util.GetAttestationKeyFingerprint(pgpSigningKey)
+	fingerprint, err := util.GetAttestationKeyFingerprint(PGPSigningKey)
 	if err != nil {
-		return nil, fmt.Errorf("Can't get fingerprint from PGP siging key %s: %v", pgpSigningKey.SecretName, err)
+		return nil, fmt.Errorf("Can't get fingerprint from PGP siging key %s: %v", PGPSigningKey.SecretName, err)
 	}
 
 	// Create Attestation Signature
-	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)
+	sig, err := util.CreateAttestationSignature(containerImage, PGPSigningKey)
 	if err != nil {
 		return nil, err
 	}
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
+	att := &attestation.PgpSignedAttestation{
 		Signature: sig,
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
 			PgpKeyId: fingerprint,
@@ -208,7 +211,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Attestation: &attestation.Details{
 			Attestation: &attestation.Attestation{
 				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
+					PgpSignedAttestation: att,
 				}},
 		},
 	}

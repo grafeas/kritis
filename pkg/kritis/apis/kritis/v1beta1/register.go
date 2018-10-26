@@ -17,11 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/grafeas/kritis/pkg/kritis/apis/kritis"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -38,8 +37,10 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
+	// SchemeBuilder collects functions that add things to a scheme
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	// AddToScheme applies all the stored functions to the scheme returned by SchemeBuilder.
+	AddToScheme = SchemeBuilder.AddToScheme
 )
 
 // Adds the list of known types to Scheme.

@@ -98,6 +98,7 @@ func newImage(digest string) *image {
 	}
 }
 
+// JSON returns a JSON representation of the AtomicContainerSig object
 func (acs *AtomicContainerSig) JSON() (string, error) {
 	bytes, err := json.Marshal(acs)
 	if err != nil {
@@ -106,6 +107,7 @@ func (acs *AtomicContainerSig) JSON() (string, error) {
 	return string(bytes), nil
 }
 
+// CreateAttestationSignature creates an attestation signature.
 func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
 	hostStr, err := acs.JSON()
 	if err != nil {
@@ -114,6 +116,7 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
 }
 
+// VerifyAttestationSignature verifies an attestation signature.
 func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig string) error {
 	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
 	if err != nil {

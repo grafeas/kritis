@@ -22,11 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-
-	// Initialize all known client auth plugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
+// GetClientset returns a configured Kubernetes client.
 func GetClientset() (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})

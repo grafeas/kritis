@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package attestation defines methods to attest a message using Pgp Private and
+// Package attestation defines methods to attest a message using PGP Private and
 // Public Key pair.
 package attestation
 
@@ -27,7 +27,6 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/pkg/errors"
-
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
@@ -59,9 +58,10 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 	return nil
 }
 
+// GetKeyFingerprint returns the fingerprint for a public PGP key.
 func GetKeyFingerprint(pubKey string) (string, error) {
-	// Create a PgpKey with only the public key
-	pgpKey, err := NewPgpKey("", pubKey)
+	// Create a PGPKey with only the public key
+	pgpKey, err := NewPGPKey("", pubKey)
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}
@@ -104,8 +104,8 @@ func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 // privKey: PEM Encoded Private Key
 // message: Message to attest
 func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
-	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey(privKey, pubKey)
+	// Create a PGPKey from Encoded Public Key
+	pgpKey, err := NewPGPKey(privKey, pubKey)
 	if err != nil {
 		return "", errors.Wrap(err, "creating PGP key")
 	}
@@ -131,8 +131,12 @@ func CreateMessageAttestation(pubKey string, privKey string, message string) (st
 	if err != nil {
 		return "", errors.Wrap(err, "writing signed data")
 	}
-	w.Close()
-	armorWriter.Close()
+	if err = w.Close(); err != nil {
+		return "", errors.Wrap(err, "closing file")
+	}
+	if err = armorWriter.Close(); err != nil {
+		return "", errors.Wrap(err, "closing armorWriter")
+	}
 	return string(b.Bytes()), nil
 }
 

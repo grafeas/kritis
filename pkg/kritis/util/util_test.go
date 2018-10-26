@@ -26,7 +26,7 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
-func TestGetVulnerabilityFromOccurence(t *testing.T) {
+func TestGetVulnerabilityFromOccurrence(t *testing.T) {
 	tests := []struct {
 		name        string
 		severity    vulnerability.Severity

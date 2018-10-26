@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package gcbsigner
 
 import (
@@ -20,10 +21,9 @@ import (
 	"fmt"
 	"strings"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-
-	"cloud.google.com/go/pubsub"
 )
 
 // ExtractBuildProvenanceFromEvent extracts the build provenance from a Cloud
@@ -35,7 +35,7 @@ import (
 // TODO this should validate the provenance in the pubsub message against the
 // information in Container Analysis that is created by Cloud Builder.
 func ExtractBuildProvenanceFromEvent(msg *pubsub.Message) ([]BuildProvenance, error) {
-	var event BuildEvent
+	var event buildEvent
 	if err := json.Unmarshal(msg.Data, &event); err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func ExtractBuildProvenanceFromEvent(msg *pubsub.Message) ([]BuildProvenance, er
 	return provenance, nil
 }
 
-type BuildSource struct {
+type buildSource struct {
 	RepoSource struct {
 		RepoName   string
 		ProjectID  string
@@ -83,16 +83,16 @@ type BuildSource struct {
 	}
 }
 
-type BuildResults struct {
+type buildResults struct {
 	Images []struct {
 		Name   string
 		Digest string
 	}
 }
 
-type BuildEvent struct {
+type buildEvent struct {
 	ID      string
 	Status  string
-	Source  BuildSource
-	Results BuildResults
+	Source  buildSource
+	Results buildResults
 }

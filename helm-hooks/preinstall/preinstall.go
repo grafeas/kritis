@@ -31,13 +31,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Cert struct {
+type cert struct {
 	Namespace              string
 	ServiceName            string
 	ServiceNameDeployments string
 }
 
-type CSR struct {
+type csr struct {
 	Name               string
 	Certificate        string
 	KritisInstallLabel string
@@ -62,7 +62,7 @@ func deleteExistingObjects() {
 }
 
 func createCertificates() {
-	certTmpl := Cert{Namespace: namespace, ServiceName: serviceName, ServiceNameDeployments: serviceNameDeployments}
+	certTmpl := cert{Namespace: namespace, ServiceName: serviceName, ServiceNameDeployments: serviceNameDeployments}
 	tmpl := template.New("cert")
 	tmpl, err := tmpl.Parse(`{
 "hosts": [
@@ -100,7 +100,7 @@ func createCertificates() {
 
 func createCertificateSigningRequest() {
 	certificate := retrieveRequestCertificate()
-	csrTmpl := CSR{
+	csrTmpl := csr{
 		Name:               csrName,
 		Certificate:        certificate,
 		KritisInstallLabel: kritisInstallLabel,

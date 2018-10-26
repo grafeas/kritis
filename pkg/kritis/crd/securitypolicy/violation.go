@@ -32,6 +32,7 @@ type Violation struct {
 	reason        policy.Reason
 }
 
+// NewViolation returns a fully configured violation object
 func NewViolation(vulnz *metadata.Vulnerability, t policy.ViolationType, r policy.Reason) Violation {
 	v := Violation{
 		vType:  t,
@@ -63,7 +64,7 @@ func UnqualifiedImageReason(image string) policy.Reason {
 	return policy.Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
-// FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity
+// FixUnavailableReason returns a detailed reason if an unfixable CVE exceeds max severity
 func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
 	if ms == constants.BlockAll {

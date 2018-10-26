@@ -21,6 +21,7 @@ import (
 	"fmt"
 )
 
+// RandomID returns a random string useful for pseudo-unique resource naming.
 func RandomID() string {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)

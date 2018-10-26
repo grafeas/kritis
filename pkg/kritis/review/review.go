@@ -30,15 +30,16 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
 	v1 "k8s.io/api/core/v1"
 )
 
+// The Reviewer reviews images against a set of security policies.
 type Reviewer struct {
 	config *Config
 	client metadata.Fetcher
 }
 
+// Config holds reviewer configuration. Do not invoke directly: use New.
 type Config struct {
 	Validate  securitypolicy.ValidateFunc
 	Secret    secrets.Fetcher
@@ -47,6 +48,7 @@ type Config struct {
 	IsWebhook bool
 }
 
+// New returns a fully configured Reviewer object.
 func New(client metadata.Fetcher, c *Config) Reviewer {
 	return Reviewer{
 		client: client,
@@ -126,9 +128,9 @@ Please see instructions `, image)
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
-		if err != nil {
-			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
+		s, aerr := attestation.NewPGPKey("", auth.Spec.PublicKeyData)
+		if aerr != nil {
+			glog.Errorf("Error parsing key for %q: %v", auth.Name, aerr)
 			continue
 		}
 		keys[s.Fingerprint()] = auth.Spec.PublicKeyData
@@ -170,7 +172,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		s, err := attestation.NewPGPKey("", auth.Spec.PublicKeyData)
 		if err != nil {
 			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
@@ -196,7 +198,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Create Attestation Signature
-		if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
+		if _, err := r.client.CreateAttestationOccurrence(n, image, s); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
 

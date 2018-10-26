@@ -22,30 +22,32 @@ import (
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
+// Fetcher defines a Grafeas-style client interface for fetching vulnerabilities
 type Fetcher interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
-	// Create Attesatation Occurrence for an image.
-	CreateAttestationOccurence(note *grafeasv1beta1.Note,
+	// CreateAttestationOccurence creates an attesatation occurrence for an image.
+	CreateAttestationOccurrence(note *grafeasv1beta1.Note,
 		containerImage string,
 		pgpSigningKey *secrets.PGPSigningSecret) (*grafeasv1beta1.Occurrence, error)
-	//AttestationNote getches a Attestation note for an Attestation Authority.
+	// AttestationNote fetches a Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
-	// Create Attestation Note for an Attestation Authority.
+	// CreateAttestationNote creates an Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
-	//Attestations get Attestation Occurrences for given image.
+	// Attestations gets PGP attestations for given image.
 	Attestations(containerImage string) ([]PGPAttestation, error)
 }
 
+// Vulnerability represents simple vulnerability metadata relating to a CVE
 type Vulnerability struct {
 	Severity        string
 	HasFixAvailable bool
 	CVE             string
 }
 
-// PGPAttestation represents the Signature and the Signer Key Id from the
-// containeranalysis Occurrence_Attestation instance.
+// PGPAttestation represents the attestation for a given image
 type PGPAttestation struct {
+	// Signature is
 	Signature string
 	KeyID     string
 	// OccID is the occurrence ID for containeranalysis Occurrence_Attestation instance
