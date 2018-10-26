@@ -30,6 +30,7 @@ fi
 "${cmd_path}" \
   -s vendor \
   -s versioned \
+  --exclude vendor/ \
   --no-config \
   --deadline 300s \
   --aggregate \
