@@ -28,18 +28,19 @@ fi
 
 # unparam should be enabled once source code issues are addressed.
 "${cmd_path}" \
-  --no-config \
-  --deadline 180s \
-  --aggregate \
-  --sort=linter \
   -s vendor \
   -s versioned \
+  --no-config \
+  --deadline 300s \
+  --aggregate \
+  --sort=path \
   --enable gofmt \
   --enable goimports \
   --enable misspell \
   --enable unconvert \
   --disable deadcode \
   --disable gosec \
+  --disable gotype \
   --disable gocyclo \
   --disable megacheck \
   --disable unparam \
