@@ -49,7 +49,7 @@ func DeepEqual(t *testing.T, expected, actual interface{}) {
 
 // CheckError asserts error expectations.
 func CheckError(t *testing.T, shouldErr bool, err error) {
-	if cerr := checkErr(shouldErr, err); err != nil {
+	if cerr := checkErr(shouldErr, err); cerr != nil {
 		t.Error(cerr)
 	}
 }
