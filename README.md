@@ -44,6 +44,12 @@ Authorization](https://cloud.google.com/binary-authorization/).  For details see
 * Read the [Resource Reference](resources.md) to configure and interact with Kritis resources
 * Resolve image tags to hashes using the [resolve-tags plug-in](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md)
 
+## Support
+
+If you have questions, reach out to us on
+[kritis-users](https://groups.google.com/forum/#!forum/kritis-users). For
+questions about contributing, please see the [section](#contributing) below.
+
 ## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details on how you can contribute.
