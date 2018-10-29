@@ -209,7 +209,7 @@ The installation is complete once:
 
 ## Tutorial
 
-Once installed, follow our [tutorial](tutorial.md) to learn how to test and manage Kritis.
+Once installed, follow our [tutorial](docs/tutorial.md) to learn how to test and manage Kritis.
 
 ## Uninstalling Kritis
 

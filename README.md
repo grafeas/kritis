@@ -34,14 +34,14 @@ In addition to the enforcement this project also contains *signers* that can be
 use to create [Grafeas](https://github.com/grafeas/grafeas) Attestation
 Occurrences to be used in other enforcement systems like [Binary
 Authorization](https://cloud.google.com/binary-authorization/).  For details see
-[Kritis Signer](signer_install.md).
+[Kritis Signer](docs/signer_install.md).
 
 ## Getting Started
 
 * Learn the concepts in the [Kritis whitepaper](docs/binary-authorization.md)
-* Get Kritis running with the [Installation guide](install.md)
-* Try the [Tutorial](tutorial.md) to learn how to block vulnerabilities
-* Read the [Resource Reference](resources.md) to configure and interact with Kritis resources
+* Get Kritis running with the [Installation guide](docs/install.md)
+* Try the [Tutorial](docs/tutorial.md) to learn how to block vulnerabilities
+* Read the [Resource Reference](docs/resources.md) to configure and interact with Kritis resources
 * Resolve image tags to hashes using the [resolve-tags plug-in](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md)
 
 ## Support
