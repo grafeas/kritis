@@ -230,6 +230,8 @@ Then delete the name of the release:
 helm delete <name>
 ```
 
+`name` in this case is `loopy-numbat`.
+
 This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation. You may view the status using:
 
 ```shell
@@ -244,11 +246,15 @@ kubectl logs kritis-predelete
 
 Most resources created by kritis will be deleted from your cluster once this Pod has reached `Completed` status.
 
-To delete the remaining resources run:
+To delete the remaining resources, run:
 
 ```
-kubectl delete pods,serviceaccount,clusterrolebinding --selector kritis.grafeas.io/install --namespace <your namespace>
+kubectl delete pods,serviceaccount,clusterrolebinding \
+  --selector kritis.grafeas.io/install \
+  --namespace <your namespace>
 ```
+
+If you did not specifically select a namespace during installation, the default value is `default`.
 
 NOTE: This will not delete the container analysis secret created above.
 
