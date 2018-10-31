@@ -122,33 +122,21 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 	return nil
 }
 
-func deserializeRequest(w http.ResponseWriter, r *http.Request) (v1beta1.AdmissionReview, error) {
-	ar := v1beta1.AdmissionReview{}
-
+func deserializeRequest(r *http.Request) (ar v1beta1.AdmissionReview, err error) {
 	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
 	if err != nil {
-		return ar, err
+		return ar, fmt.Errorf("cannot to read body")
 	}
 
 	deserializer := codecs.UniversalDeserializer()
-	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-
-		payload, err := json.Marshal(&v1beta1.AdmissionResponse{
-			UID:     ar.Request.UID,
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  string(constants.FailureStatus),
-				Message: err.Error(),
-			},
-		})
-		if err != nil {
-			glog.Errorf("unable to marshal %s: %v", payload, err)
-		}
-		if _, err := w.Write(payload); err != nil {
-			glog.Errorf("unable to write payload: %v", err)
-		}
+	_, _, err = deserializer.Decode(body, nil, &ar)
+	if err != nil {
+		return ar, fmt.Errorf("failed to marshal %v", err)
+	}
+	if ar.Request == nil {
+		return ar, fmt.Errorf("admission request is empty")
 	}
 	return ar, nil
 }
@@ -158,10 +146,27 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 		version.Version,
 		version.Commit,
 	)
-	ar, err := deserializeRequest(w, r)
+	ar, err := deserializeRequest(r)
 	if err != nil {
-		glog.Errorf("Error reading body: %v", err)
-		http.Error(w, "can't read body", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		resp := &v1beta1.AdmissionResponse{
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  string(constants.FailureStatus),
+				Message: err.Error(),
+			},
+		}
+		if ar.Request != nil {
+			resp.UID = ar.Request.UID
+		}
+		payload, err := json.Marshal(resp)
+		if err != nil {
+			glog.Errorf("unable to marshal %s: %v", payload, err)
+		}
+		if _, err := w.Write(payload); err != nil {
+			glog.Errorf("unable to write payload: %v", err)
+		}
 		return
 	}
 

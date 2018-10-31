@@ -17,6 +17,7 @@ limitations under the License.
 package admission
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -61,6 +62,37 @@ func Test_BreakglassAnnotation(t *testing.T) {
 		status:     constants.SuccessStatus,
 		message:    constants.SuccessMessage,
 	})
+}
+
+func TestReviewHandler(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ReviewHandler(w, r, &Config{})
+	}))
+	defer s.Close()
+
+	ar := v1beta1.AdmissionReview{
+		Request: &v1beta1.AdmissionRequest{},
+	}
+	blob, err := json.Marshal(ar)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	// Query admission control with valid request
+	resp, err := http.Post(s.URL, "", bytes.NewReader(blob))
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected OK status code, actual %s", resp.Status)
+	}
+	// Query admission control with invalid request
+	resp, err = http.Post(s.URL, "", nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected bad request status code, actual %s", resp.Status)
+	}
 }
 
 func Test_AdmissionResponse(t *testing.T) {
