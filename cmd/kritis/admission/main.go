@@ -26,6 +26,7 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
