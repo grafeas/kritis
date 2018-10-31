@@ -40,6 +40,10 @@ func (c *FakeKritisV1beta1) ImageSecurityPolicies(namespace string) v1beta1.Imag
 	return &FakeImageSecurityPolicies{c, namespace}
 }
 
+func (c *FakeKritisV1beta1) KritisConfigs(namespace string) v1beta1.KritisConfigInterface {
+	return &FakeKritisConfigs{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKritisV1beta1) RESTClient() rest.Interface {

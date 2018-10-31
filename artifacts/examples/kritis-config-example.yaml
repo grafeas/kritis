@@ -1,0 +1,5 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: KritisConfig
+metadata:
+  name: kritis-config
+  namespace: default
