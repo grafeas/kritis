@@ -48,6 +48,8 @@ gpg --armor --export my.attestator@example.com > gpg.pub
 
 gpg --armor --export-secret-keys my.attestator@example.com > gpg.priv
 ```
+(if you use Ubuntu on GCP and got hung in above, then please see https://delightlylinux.wordpress.com/2015/07/01/is-gpg-hanging-when-generating-a-key/ to make sure you got enough entropy.)
+
 Create a secret using the exported public and private keys
 ```shell
 kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv

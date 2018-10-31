@@ -33,9 +33,7 @@ gcloud projects list
 
 ## Step #2: Enable the requisite API's for your Google Cloud Project
 
-NOTE: Your account must be whitelisted to enable the Container Analysis API. To do so, join the  [Container Analysis Users Group](https://groups.google.com/forum/#!forum/containeranalysis-users). It may take 1-5 business days to approve the request.
-
-Once approved, enable the necessary API's:
+Enable the necessary API's:
 
 Enable the Container Analysis API:
 
@@ -126,7 +124,7 @@ kubectl create secret generic gac-ca-admin --from-file=gac.json
 
 ## Step #6: Install and Configure Helm
 
-Install [helm](https://docs.helm.sh/using_helm/), and execute the following to create an account for helm in your cluster:
+Install [helm](https://docs.helm.sh/using_helm/#installing-helm), and execute the following to create an account for helm in your cluster:
 
 ```shell
 kubectl create serviceaccount --namespace kube-system tiller
@@ -209,7 +207,7 @@ The installation is complete once:
 
 ## Tutorial
 
-Once installed, follow our [tutorial](tutorial.md) to learn how to test and manage Kritis.
+Once installed, follow our [tutorial](docs/tutorial.md) to learn how to test and manage Kritis.
 
 ## Uninstalling Kritis
 
@@ -232,6 +230,8 @@ Then delete the name of the release:
 helm delete <name>
 ```
 
+`name` in this case is `loopy-numbat`.
+
 This command will also kick off the `kritis-predelete` pod, which deletes the CertificateSigningRequest, TLS Secret, and Webhooks created during installation. You may view the status using:
 
 ```shell
@@ -246,11 +246,15 @@ kubectl logs kritis-predelete
 
 Most resources created by kritis will be deleted from your cluster once this Pod has reached `Completed` status.
 
-To delete the remaining resources run:
+To delete the remaining resources, run:
 
 ```
-kubectl delete pods,serviceaccount,clusterrolebinding --selector kritis.grafeas.io/install --namespace <your namespace>
+kubectl delete pods,serviceaccount,clusterrolebinding \
+  --selector kritis.grafeas.io/install \
+  --namespace <your namespace>
 ```
+
+If you did not specifically select a namespace during installation, the default value is `default`.
 
 NOTE: This will not delete the container analysis secret created above.
 

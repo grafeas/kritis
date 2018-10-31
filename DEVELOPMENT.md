@@ -34,7 +34,7 @@ To check out this repository:
   cd ${GOPATH}/src/github.com/grafeas
   git clone git@github.com:${YOUR_GITHUB_USERNAME}/kritis.git
   cd kritis
-  git remote add upstream git@github.com:GoogleContainerTools/kritis.git
+  git remote add upstream git@github.com:grafeas/kritis.git
   git remote set-url --push upstream no_push
   ```
 
@@ -53,7 +53,7 @@ The unit tests live with the code they test and can be run with:
 make test
 ```
 
-_These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
+:warning: These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork).
 
 ### Integration tests
 
