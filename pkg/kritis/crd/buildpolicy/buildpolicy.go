@@ -29,8 +29,8 @@ import (
 // ValidateFunc defines the type for Validating Build Policies
 type ValidateFunc func(bp v1beta1.BuildPolicy, buildFrom string) error
 
-// BuildPolicies returns all ISP's in the specified namespaces
-// Pass in an empty string to get all ISPs in all namespaces
+// BuildPolicies returns all BuildPolicies in the specified namespaces
+// Pass in an empty string to get all BuildPolicies in all namespaces
 func BuildPolicies(namespace string) ([]v1beta1.BuildPolicy, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -48,8 +48,8 @@ func BuildPolicies(namespace string) ([]v1beta1.BuildPolicy, error) {
 	return list.Items, nil
 }
 
-// ValidateBuildPolicy checks if an image satisfies BP requirements.
-// It returns an error if an image does not pass,
+// ValidateBuildPolicy checks if an image satisfies BuildPolicy requirements
+// It returns an error if an image does not pass
 func ValidateBuildPolicy(bp v1beta1.BuildPolicy, builtFrom string) error {
 	ok, err := regexp.MatchString(bp.Spec.BuildRequirements.BuiltFrom, builtFrom)
 	if err != nil {
