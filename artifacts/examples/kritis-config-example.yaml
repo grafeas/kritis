@@ -3,3 +3,7 @@ kind: KritisConfig
 metadata:
   name: kritis-config
   namespace: default
+spec:
+  metadataBackend: containerAnalysis
+  cronInterval: 1h
+  serverAddr: 443
