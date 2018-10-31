@@ -30,6 +30,7 @@ type KritisV1beta1Interface interface {
 	AttestationAuthoritiesGetter
 	BuildPoliciesGetter
 	ImageSecurityPoliciesGetter
+	KritisConfigsGetter
 }
 
 // KritisV1beta1Client is used to interact with features provided by the kritis group.
@@ -47,6 +48,10 @@ func (c *KritisV1beta1Client) BuildPolicies(namespace string) BuildPolicyInterfa
 
 func (c *KritisV1beta1Client) ImageSecurityPolicies(namespace string) ImageSecurityPolicyInterface {
 	return newImageSecurityPolicies(c, namespace)
+}
+
+func (c *KritisV1beta1Client) KritisConfigs(namespace string) KritisConfigInterface {
+	return newKritisConfigs(c, namespace)
 }
 
 // NewForConfig creates a new KritisV1beta1Client for the given config.
