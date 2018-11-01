@@ -146,7 +146,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 		version.Version,
 		version.Commit,
 	)
-	ar, err := deserializeRequest(w, r)
+	ar, err := deserializeRequest(r)
 	if err != nil {
 		glog.Errorf("Error reading body: %v", err)
 		http.Error(w, "can't read body", http.StatusBadRequest)

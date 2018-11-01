@@ -71,7 +71,7 @@ func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGP
 
 // NilFetcher returns a mock metadata.Fetcher wired to a MockMetadataClient
 func NilFetcher() func() (metadata.Fetcher, error) {
-	return func() (metadata.Fetcher, error) {
+	return func() (metadata.Fetcher, error) { // nolint:unparam
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
 			PGPAttestations: []metadata.PGPAttestation{},
