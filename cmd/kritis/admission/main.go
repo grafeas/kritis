@@ -24,8 +24,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
@@ -73,9 +71,22 @@ func main() {
 	}
 
 	kritisConfig := kritisConfigs[0]
+	// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
+	if len(kritisConfig.Spec.MetadataBackend) == 0 {
+		glog.Errorf("No KritisConfigs MetadataBackend is defined in the spec")
+		return
+	}
+	if len(kritisConfig.Spec.CronInterval) == 0 {
+		glog.Errorf("No KritisConfigs CronInterval is defined in the spec")
+		return
+	}
+	if len(kritisConfig.Spec.ServerAddr) == 0 {
+		glog.Errorf("No KritisConfigs ServerAddr is defined in the spec")
+		return
+	}
 
 	config := &admission.Config{
-		Metadata: kritisConfig.MetadataBackend,
+		Metadata: kritisConfig.Spec.MetadataBackend,
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -89,7 +100,7 @@ func main() {
 		return
 	}
 	// Kick off back ground cron job.
-	if err := StartCronJob(config, kritisConfig.CronInterval); err != nil {
+	if err := StartCronJob(config, kritisConfig.Spec.CronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
 
@@ -98,7 +109,7 @@ func main() {
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
-	httpsServer := NewServer(kritisConfig.ServerAddr)
+	httpsServer := NewServer(kritisConfig.Spec.ServerAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
