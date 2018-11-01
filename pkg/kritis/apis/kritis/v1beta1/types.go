@@ -128,9 +128,12 @@ type KritisConfig struct {
 
 // KritisConfigSpec is the spec for a KritisConfig resource
 type KritisConfigSpec struct {
+	// The backend to use for storing security metadata
 	MetadataBackend string `json:"metadataBackend"`
-	CronInterval    string `json:"cronInterval"`
-	ServerAddr      string `json:"serverAddr"`
+	// Cron job time interval, as Duration e.g. "1h", "2s"
+	CronInterval string `json:"cronInterval"`
+	// Server address, with the preceding colon
+	ServerAddr string `json:"serverAddr"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

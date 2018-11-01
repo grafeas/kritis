@@ -26,10 +26,10 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 
-	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/pkg/errors"
@@ -38,24 +38,16 @@ import (
 )
 
 var (
-	tlsCertFile  string
-	tlsKeyFile   string
-	cronInterval string
-	backend      string // backend is the storage backend to use for fetching metadata
-	showVersion  bool
-	runCron      bool
-)
-
-const (
-	Addr = ":443"
+	tlsCertFile string
+	tlsKeyFile  string
+	showVersion bool
+	runCron     bool
 )
 
 func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
-	flag.StringVar(&backend, "backend", constants.ContainerAnalysisMetadata, "The backend to use for storing security metadata.")
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
-	flag.StringVar(&cronInterval, "cron-interval", "1h", "Cron Job time interval as Duration e.g. 1h, 2s")
 	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
 	flag.Parse()
 	if err := flag.Set("logtostderr", "true"); err != nil {
@@ -66,8 +58,24 @@ func main() {
 		fmt.Println(version.Commit)
 		return
 	}
+
+	kritisConfigs, err := kritisconfig.KritisConfigs("")
+	if err != nil {
+		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
+		glog.Errorf(errMsg)
+		return
+	}
+	if len(kritisConfigs) == 0 {
+		glog.Errorf("No KritisConfigs found in any namespace")
+		return
+	} else if len(kritisConfigs) > 1 {
+		glog.Errorf("More than 1 KritisConfig found, will use the 0th object")
+	}
+
+	kritisConfig := kritisConfigs[0]
+
 	config := &admission.Config{
-		Metadata: backend,
+		Metadata: kritisConfig.MetadataBackend,
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -81,7 +89,7 @@ func main() {
 		return
 	}
 	// Kick off back ground cron job.
-	if err := StartCronJob(config); err != nil {
+	if err := StartCronJob(config, kritisConfig.CronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
 
@@ -90,7 +98,7 @@ func main() {
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
-	httpsServer := NewServer(Addr)
+	httpsServer := NewServer(kritisConfig.ServerAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
@@ -105,7 +113,7 @@ func NewServer(addr string) *http.Server {
 }
 
 // StartCron starts the cron.StartCronJob in background.
-func StartCronJob(config *admission.Config) error {
+func StartCronJob(config *admission.Config, cronInterval string) error {
 	d, err := time.ParseDuration(cronInterval)
 	if err != nil {
 		return err

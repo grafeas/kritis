@@ -6,4 +6,4 @@ metadata:
 spec:
   metadataBackend: containerAnalysis
   cronInterval: 1h
-  serverAddr: 443
+  serverAddr: :443
