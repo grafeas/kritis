@@ -72,15 +72,15 @@ func main() {
 
 	kritisConfig := kritisConfigs[0]
 	// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
-	if len(kritisConfig.Spec.MetadataBackend) == 0 {
+	if kritisConfig.Spec.MetadataBackend == "" {
 		glog.Errorf("No KritisConfigs MetadataBackend is defined in the spec")
 		return
 	}
-	if len(kritisConfig.Spec.CronInterval) == 0 {
+	if kritisConfig.Spec.CronInterval == "" {
 		glog.Errorf("No KritisConfigs CronInterval is defined in the spec")
 		return
 	}
-	if len(kritisConfig.Spec.ServerAddr) == 0 {
+	if kritisConfig.Spec.ServerAddr == "" {
 		glog.Errorf("No KritisConfigs ServerAddr is defined in the spec")
 		return
 	}
