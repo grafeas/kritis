@@ -33,7 +33,7 @@ import (
 // ValidateFunc defines the type for Validating Image Security Policies
 type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error)
 
-// ImageSecurityPolicies returns all ISP's in the specified namespaces
+// ImageSecurityPolicies returns all ISPs in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
 func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 	config, err := rest.InClusterConfig()
