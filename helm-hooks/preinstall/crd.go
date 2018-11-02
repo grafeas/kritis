@@ -50,12 +50,14 @@ spec:
 kind: CustomResourceDefinition
 metadata:
   name: kritisconfigs.kritis.grafeas.io
+  labels:
+      %s: ""
 spec:
   group: kritis.grafeas.io
   version: v1beta1
-  scope: Cluster
   names:
+    kind: KritisConfig
     plural: kritisconfigs
     singular: kritisconfig
-    kind: KritisConfig`
+    scope: Cluster`
 )
