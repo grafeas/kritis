@@ -29,4 +29,4 @@ RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-re
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/${stage}  /${stage}
 
 # Copy artifacts to the image.
-COPY --from=0 /go/src/github.com/grafeas/kritis/artifacts /${stage}/artifacts
+COPY --from=0 /go/src/github.com/grafeas/kritis/artifacts /artifacts
