@@ -45,4 +45,14 @@ spec:
         kind: ImageSecurityPolicy
         plural: imagesecuritypolicies
         scope: Namespaced`
+
+	kritisConfigCRD = `apiVersion: kritis.grafeas.io/v1beta1
+kind: KritisConfig
+metadata:
+  name: kritis-config
+  namespace: default
+spec:
+  metadataBackend: containerAnalysis
+  cronInterval: 1h
+  serverAddr: :443`
 )
