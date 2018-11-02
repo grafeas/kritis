@@ -283,7 +283,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("failed to process isp template: %v", err)
 	}
-	ispCmd = exec.Command("kubectl", "create", "-f", isp, "-n", ns.Name)
+	ispCmd := exec.Command("kubectl", "create", "-f", isp, "-n", ns.Name)
 	if out, err := integration_util.RunCmdOut(ispCmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
@@ -292,7 +292,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("failed to process kritisConfig template: %v", err)
 	}
-	kritisConfigCmd = exec.Command("kubectl", "create", "-f", kritisConfig, "-n", ns.Name)
+	kritisConfigCmd := exec.Command("kubectl", "create", "-f", kritisConfig, "-n", ns.Name)
 	if out, err := integration_util.RunCmdOut(kritisConfigCmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
