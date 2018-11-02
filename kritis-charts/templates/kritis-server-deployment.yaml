@@ -30,7 +30,6 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args: ["--tls-cert-file=/var/tls/tls.crt",
                "--tls-key-file=/var/tls/tls.key",
-               "--cron-interval={{ .Values.cronInterval}}",
                "--logtostderr"]
         ports:
           - name: https
