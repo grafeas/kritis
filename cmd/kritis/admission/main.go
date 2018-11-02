@@ -70,23 +70,23 @@ func main() {
 		glog.Errorf("More than 1 KritisConfig found, will use the 0th object")
 	}
 
-	kritisConfig := kritisConfigs[0]
+	kritisConf := kritisConfigs[0]
 	// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
-	if kritisConfig.Spec.MetadataBackend == "" {
+	if kritisConf.Spec.MetadataBackend == "" {
 		glog.Errorf("No KritisConfigs MetadataBackend is defined in the spec")
 		return
 	}
-	if kritisConfig.Spec.CronInterval == "" {
+	if kritisConf.Spec.CronInterval == "" {
 		glog.Errorf("No KritisConfigs CronInterval is defined in the spec")
 		return
 	}
-	if kritisConfig.Spec.ServerAddr == "" {
+	if kritisConf.Spec.ServerAddr == "" {
 		glog.Errorf("No KritisConfigs ServerAddr is defined in the spec")
 		return
 	}
 
 	config := &admission.Config{
-		Metadata: kritisConfig.Spec.MetadataBackend,
+		Metadata: kritisConf.Spec.MetadataBackend,
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -100,7 +100,7 @@ func main() {
 		return
 	}
 	// Kick off back ground cron job.
-	if err := StartCronJob(config, kritisConfig.Spec.CronInterval); err != nil {
+	if err := StartCronJob(config, kritisConf.Spec.CronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
 
@@ -109,7 +109,7 @@ func main() {
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
-	httpsServer := NewServer(kritisConfig.Spec.ServerAddr)
+	httpsServer := NewServer(kritisConf.Spec.ServerAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
