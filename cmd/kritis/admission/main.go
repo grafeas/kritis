@@ -57,7 +57,7 @@ func main() {
 		return
 	}
 
-	kritisConfigs, err := kritisconfig.KritisConfigs("")
+	kritisConfigs, err := kritisconfig.KritisConfigs("default")
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
 		glog.Errorf(errMsg)
