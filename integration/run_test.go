@@ -292,7 +292,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("failed to process kritisConfig template: %v", err)
 	}
-	cmd = exec.Command("kubectl", "create", "-f", kritisConfig, "-n", ns.Name)
+	cmd = exec.Command("kubectl", "apply", kritisConfig)
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}

@@ -48,7 +48,6 @@ var aaSecret = "test-attestor"
 // CRDs is a map of CRD type to names of the expected CRDs to create.
 var crdNames = map[string]string{
 	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
-	"kritisconfigs.kritis.grafeas.io":         "my-kritis-config",
 }
 
 func createAttestationAuthority(t *testing.T, ns string) {
