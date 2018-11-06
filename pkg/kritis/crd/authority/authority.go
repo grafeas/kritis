@@ -28,8 +28,8 @@ import (
 type Lister func(namespace string) ([]v1beta1.AttestationAuthority, error)
 type Fetcher func(namespace string, name string) (v1beta1.AttestationAuthority, error)
 
-// Authorities returns all AttestationAuthority in the specified namespaces
-// Pass in an empty string to get all ISPs in all namespaces
+// Authorities returns all AttestationAuthorities in the specified namespaces
+// Pass in an empty string to get all AttestationAuthorities in all namespaces
 func Authorities(namespace string) ([]v1beta1.AttestationAuthority, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -47,8 +47,8 @@ func Authorities(namespace string) ([]v1beta1.AttestationAuthority, error) {
 	return list.Items, nil
 }
 
-// Authority returns the AttestationAuthority in the specified namespace.
-// Returns error if AttestationAuthority not found
+// Authority returns the AttestationAuthority in the specified namespace and with the given name
+// Returns error if AttestationAuthority is not found
 func Authority(namespace string, name string) (*v1beta1.AttestationAuthority, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
