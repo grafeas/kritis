@@ -168,7 +168,7 @@ func waitForCSR() string {
 		if certStr != "" {
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 	if certStr == "" {
 		logrus.Fatalf("csr wasn't generated in time")
