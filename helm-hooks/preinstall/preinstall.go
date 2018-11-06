@@ -171,7 +171,7 @@ func createTLSSecret() {
 	}
 	certStr = strings.TrimPrefix(certStr, "'")
 	certStr = strings.TrimSuffix(certStr, "'")
-	cert = []byte(certStr)
+	cert := []byte(certStr)
 
 	decodedLen := base64.StdEncoding.DecodedLen(len(cert))
 	decoded := make([]byte, decodedLen)
