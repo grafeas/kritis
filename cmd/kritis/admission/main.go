@@ -79,10 +79,10 @@ func main() {
 
 	if len(kritisConfigs) == 0 {
 		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
+	} else if len(kritisConfigs) > 1 {
+		glog.Errorf("More than 1 KritisConfig found, expected to have only 1 in the cluster")
+		return
 	} else {
-		if len(kritisConfigs) > 1 {
-			glog.Errorf("More than 1 KritisConfig found, will use the 0th object")
-		}
 		kritisConf := kritisConfigs[0]
 		// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
 		if kritisConf.Spec.MetadataBackend != "" {
