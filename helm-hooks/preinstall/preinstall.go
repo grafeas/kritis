@@ -159,16 +159,26 @@ func retrieveRequestCertificate() string {
 	return string(encoded)
 }
 
-func createTLSSecret() {
+func waitForCSR() string {
 	certStr := ""
-	for {
+	for i := 0; i < 20; i++ {
 		retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'", "--namespace", namespace)
 		cert := install.RunCommand(retrieveCertCmd)
 		certStr = string(cert)
 		if certStr != "" {
+			foundCSR = true
 			break
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
+	if certStr == "" {
+		logrus.Fatalf("csr wasn't generated in time")
+	}
+	return certStr
+}
+
+func createTLSSecret() {
+	certStr := waitForCSR()
 	certStr = strings.TrimPrefix(certStr, "'")
 	certStr = strings.TrimSuffix(certStr, "'")
 	cert := []byte(certStr)
