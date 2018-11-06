@@ -288,7 +288,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
 
-	cmd = exec.Command("kubectl", "apply", "-f", "kritis-server/kritis-config.yaml")
+	cmd = exec.Command("kubectl", "apply", "-f", "testdata/kritis-server/kritis-config.yaml")
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
