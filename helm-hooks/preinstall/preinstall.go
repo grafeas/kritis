@@ -163,10 +163,10 @@ func createTLSSecret() {
 	certStr := ""
 	for {
 		retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'", "--namespace", namespace)
-	        cert := install.RunCommand(retrieveCertCmd)
-                certStr = string(cert)
+		cert := install.RunCommand(retrieveCertCmd)
+		certStr = string(cert)
 		if certStr != "" {
-			break;
+			break
 		}
 	}
 	certStr = strings.TrimPrefix(certStr, "'")
