@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
@@ -33,6 +35,13 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+)
+
+const (
+	// Default values for the configuration.
+	DefaultMetadataBackend = constants.ContainerAnalysisMetadata
+	DefaultCronInterval    = "1h"
+	DefaultServerAddr      = ":443"
 )
 
 var (
@@ -57,36 +66,38 @@ func main() {
 		return
 	}
 
-	kritisConfigs, err := kritisconfig.KritisConfigs("default")
+	kritisConfigs, err := kritisconfig.KritisConfigs("")
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
 		glog.Errorf(errMsg)
 		return
 	}
-	if len(kritisConfigs) == 0 {
-		glog.Errorf("No KritisConfigs found in any namespace")
-		return
-	} else if len(kritisConfigs) > 1 {
-		glog.Errorf("More than 1 KritisConfig found, will use the 0th object")
-	}
 
-	kritisConf := kritisConfigs[0]
-	// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
-	if kritisConf.Spec.MetadataBackend == "" {
-		glog.Errorf("No KritisConfigs MetadataBackend is defined in the spec")
-		return
-	}
-	if kritisConf.Spec.CronInterval == "" {
-		glog.Errorf("No KritisConfigs CronInterval is defined in the spec")
-		return
-	}
-	if kritisConf.Spec.ServerAddr == "" {
-		glog.Errorf("No KritisConfigs ServerAddr is defined in the spec")
-		return
+	metadataBackend := DefaultMetadataBackend
+	cronInterval := DefaultCronInterval
+	serverAddr := DefaultServerAddr
+
+	if len(kritisConfigs) == 0 {
+		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
+	} else {
+		if len(kritisConfigs) > 1 {
+			glog.Errorf("More than 1 KritisConfig found, will use the 0th object")
+		}
+		kritisConf := kritisConfigs[0]
+		// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
+		if kritisConf.Spec.MetadataBackend != "" {
+			metadataBackend = kritisConf.Spec.MetadataBackend
+		}
+		if kritisConf.Spec.CronInterval != "" {
+			cronInterval = kritisConf.Spec.CronInterval
+		}
+		if kritisConf.Spec.ServerAddr == "" {
+			serverAddr = kritisConf.Spec.ServerAddr
+		}
 	}
 
 	config := &admission.Config{
-		Metadata: kritisConf.Spec.MetadataBackend,
+		Metadata: metadataBackend,
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
@@ -100,7 +111,7 @@ func main() {
 		return
 	}
 	// Kick off back ground cron job.
-	if err := StartCronJob(config, kritisConf.Spec.CronInterval); err != nil {
+	if err := StartCronJob(config, cronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
 
@@ -109,7 +120,7 @@ func main() {
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
-	httpsServer := NewServer(kritisConf.Spec.ServerAddr)
+	httpsServer := NewServer(serverAddr)
 	glog.Fatal(httpsServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile))
 }
 
