@@ -62,10 +62,6 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	// Temporary fix to first delete attestation notes that were not
-	// properly cleaned up by previously failed integration tests
-	// TODO(aysylu): remove the line below
-	d.DeleteAttestationNote(aa)
 	_, err = d.CreateAttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)
