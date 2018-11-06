@@ -166,7 +166,6 @@ func waitForCSR() string {
 		cert := install.RunCommand(retrieveCertCmd)
 		certStr = string(cert)
 		if certStr != "" {
-			foundCSR = true
 			break
 		}
 		time.Sleep(500 * time.Millisecond)
