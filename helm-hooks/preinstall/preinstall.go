@@ -165,11 +165,16 @@ func waitForCSR() string {
 		retrieveCertCmd := exec.Command("kubectl", "get", "csr", csrName, "-o", "jsonpath='{.status.certificate}'", "--namespace", namespace)
 		cert := install.RunCommand(retrieveCertCmd)
 		certStr = string(cert)
+		// TODO(aysylu): remove the line below after debugging kokoro failuire
+		logrus.Info(certStr)
 		if certStr != "" {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
+	// TODO(aysylu): remove the 2 lines below after debugging kokoro failuire
+	logrus.Info("about to return certStr")
+	logrus.Info(certStr)
 	if certStr == "" {
 		logrus.Fatalf("csr wasn't generated in time")
 	}
