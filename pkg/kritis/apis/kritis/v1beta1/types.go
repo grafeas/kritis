@@ -24,12 +24,17 @@ import (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ImageSecurityPolicy is a specification for a ImageSecurityPolicy resource
 type ImageSecurityPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ImageSecurityPolicySpec `json:"spec"`
+}
+
+// ImageSecurityPolicySpec is the spec for a ImageSecurityPolicy resource
+type ImageSecurityPolicySpec struct {
+	ImageWhitelist                   []string                         `json:"imageWhitelist"`
+	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
 // PackageVulnerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy
@@ -39,12 +44,6 @@ type PackageVulnerabilityRequirements struct {
 	// CVE's without fixes.
 	MaximumFixUnavailableSeverity string   `json:"maximumFixNotAvailableSeverity"`
 	WhitelistCVEs                 []string `json:"whitelistCVEs"`
-}
-
-// ImageSecurityPolicy is the spec for a ImageSecurityPolicy resource
-type ImageSecurityPolicySpec struct {
-	ImageWhitelist                   []string                         `json:"imageWhitelist"`
-	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -61,7 +60,6 @@ type ImageSecurityPolicyList struct {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// BuildPolicy is a specification for a BuildPolicy resource
 type BuildPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -124,6 +122,18 @@ type AttestationAuthorityList struct {
 type KritisConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec KritisConfigSpec `json:"spec"`
+}
+
+// KritisConfigSpec is the spec for a KritisConfig resource
+type KritisConfigSpec struct {
+	// The backend to use for storing security metadata
+	MetadataBackend string `json:"metadataBackend"`
+	// Cron job time interval, as Duration e.g. "1h", "2s"
+	CronInterval string `json:"cronInterval"`
+	// Server address, with the preceding colon
+	ServerAddr string `json:"serverAddr"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

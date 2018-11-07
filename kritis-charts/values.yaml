@@ -40,7 +40,6 @@ tlsSecretName: tls-webhook-secret
 csrName: tls-webhook-secret-cert
 clusterRoleBindingName: kritis-clusterrolebinding
 clusterRoleName: kritis-clusterrole
-cronInterval: 1h
 
 kritisInstallLabel: "kritis.grafeas.io/install"
 

@@ -45,4 +45,19 @@ spec:
         kind: ImageSecurityPolicy
         plural: imagesecuritypolicies
         scope: Namespaced`
+
+	kritisConfigCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: kritisconfigs.kritis.grafeas.io
+  labels:
+      %s: ""
+spec:
+  group: kritis.grafeas.io
+  version: v1beta1
+  names:
+    kind: KritisConfig
+    plural: kritisconfigs
+    singular: kritisconfig
+    scope: Cluster`
 )

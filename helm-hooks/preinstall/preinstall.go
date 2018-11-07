@@ -227,4 +227,9 @@ func installCRDs() {
 	crd = fmt.Sprintf(imageSecurityPolicyCRD, kritisInstallLabel)
 	ispCommand.Stdin = bytes.NewReader([]byte(crd))
 	install.RunCommand(ispCommand)
+
+	kritisConfigCommand := exec.Command("kubectl", "apply", "-f", "-")
+	crd = fmt.Sprintf(kritisConfigCRD, kritisInstallLabel)
+	kritisConfigCommand.Stdin = bytes.NewReader([]byte(crd))
+	install.RunCommand(kritisConfigCommand)
 }
