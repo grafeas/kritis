@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	// Default values for the configuration.
+	// Default values for the configuration
 	DefaultMetadataBackend = constants.ContainerAnalysisMetadata
 	DefaultCronInterval    = "1h"
 	DefaultServerAddr      = ":443"
@@ -73,6 +73,7 @@ func main() {
 		return
 	}
 
+	// Set the defaults that will be used if no KritisConfig is defined
 	metadataBackend := DefaultMetadataBackend
 	cronInterval := DefaultCronInterval
 	serverAddr := DefaultServerAddr
