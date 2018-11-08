@@ -24,14 +24,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
+	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -78,6 +78,10 @@ func main() {
 	cronInterval := DefaultCronInterval
 	serverAddr := DefaultServerAddr
 
+	config := &admission.Config{
+		Metadata: metadataBackend,
+	}
+
 	if len(kritisConfigs) == 0 {
 		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
 	} else if len(kritisConfigs) > 1 {
@@ -87,7 +91,7 @@ func main() {
 		kritisConf := kritisConfigs[0]
 		// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
 		if kritisConf.Spec.MetadataBackend != "" {
-			metadataBackend = kritisConf.Spec.MetadataBackend
+			config.Metadata = kritisConf.Spec.MetadataBackend
 		}
 		if kritisConf.Spec.CronInterval != "" {
 			cronInterval = kritisConf.Spec.CronInterval
@@ -95,10 +99,12 @@ func main() {
 		if kritisConf.Spec.ServerAddr == "" {
 			serverAddr = kritisConf.Spec.ServerAddr
 		}
-	}
-
-	config := &admission.Config{
-		Metadata: metadataBackend,
+		if config.Metadata == constants.GrafeasMetadata {
+			config.Grafeas = kritisConf.Spec.Grafeas
+			if err := grafeas.ValidateConfig(config.Grafeas); err != nil {
+				glog.Fatal(err)
+			}
+		}
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {

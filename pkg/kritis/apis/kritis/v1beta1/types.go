@@ -134,6 +134,16 @@ type KritisConfigSpec struct {
 	CronInterval string `json:"cronInterval"`
 	// Server address, with the preceding colon
 	ServerAddr string `json:"serverAddr"`
+	// Grafeas configuration used for communicating with Grafeas backend
+	Grafeas GrafeasConfigSpec `json:"grafeas"`
+}
+
+// GrafeasConfigSpec holds the configuration required for connecting to grafeas instance
+type GrafeasConfigSpec struct {
+	Addr           string `json:"addr"`
+	CAPath         string `json:"caPath"`
+	ClientKeyPath  string `json:"clientKeyPath"`
+	ClientCertPath string `json:"clientCertPath"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
