@@ -103,7 +103,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}
 	if occurrences == nil {
-		t.Fatal("Shd have created atleast 1 occurrence")
+		t.Fatal("Should have created at least 1 occurrence")
 	}
 
 }

@@ -17,10 +17,16 @@ package grafeas
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"google.golang.org/grpc/credentials"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -32,8 +38,92 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var (
+	// Certificates valid for 10 years
+	// Generated using cfssl
+	clientCert = filepath.Join("testdata", "client.pem")
+	clientKey  = filepath.Join("testdata", "client-key.pem")
+	serverCert = filepath.Join("testdata", "server.pem")
+	serverKey  = filepath.Join("testdata", "server-key.pem")
+	ca         = filepath.Join("testdata", "ca.pem")
+)
+
+func TestNewClientTLS(t *testing.T) {
+	keyPair, err := tls.LoadX509KeyPair(serverCert, serverKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	caData, err := ioutil.ReadFile(ca)
+	if err != nil {
+		t.Fatal(err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caData)
+	config := kritisv1beta1.GrafeasConfigSpec{Addr: "127.0.0.1:9995", ClientKeyPath: clientKey, ClientCertPath: clientCert, CAPath: ca}
+	lis, err := net.Listen("tcp", config.Addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	creds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{keyPair},
+		ClientCAs:    caCertPool,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	})
+
+	gs := grpc.NewServer(grpc.Creds(creds))
+	grafeasMock := newGrafeasServerMock()
+	grafeas.RegisterGrafeasV1Beta1Server(gs, grafeasMock)
+	go func() {
+		if err := gs.Serve(lis); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	defer func() {
+		gs.GracefulStop()
+	}()
+	client, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.client.CreateOccurrence(context.Background(), &grafeas.CreateOccurrenceRequest{
+		Occurrence: &grafeas.Occurrence{},
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	for _, tt := range []struct {
+		config      kritisv1beta1.GrafeasConfigSpec
+		expectedErr bool
+	}{
+		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "/socketaddr"}, expectedErr: false},
+		// Missing certificates
+		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "addr:port"}, expectedErr: true},
+		// Missing address
+		{config: kritisv1beta1.GrafeasConfigSpec{}, expectedErr: true},
+		// Missing files
+		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: "ca", ClientKeyPath: "clientcert", ClientCertPath: "path"}, expectedErr: true},
+		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: ca, ClientKeyPath: clientKey, ClientCertPath: clientCert}, expectedErr: false},
+	} {
+		err := ValidateConfig(tt.config)
+		if err != nil && !tt.expectedErr {
+			t.Fatalf("Expected no error but got %v", err)
+		} else if err == nil && tt.expectedErr {
+			t.Fatalf("Expected error but got none")
+		}
+	}
+}
+
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
-	socketPath = ".grafeas.sock"
+	socketPath, err := filepath.Abs(".grafeas.sock")
+	if err != nil {
+		t.Fatal(err)
+	}
 	server := grpc.NewServer()
 	grafeasMock := newGrafeasServerMock()
 	lis, err := net.Listen("unix", socketPath)
@@ -52,7 +142,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		server.GracefulStop()
 		os.Remove(socketPath)
 	}()
-	client, err := New()
+	client, err := New(kritisv1beta1.GrafeasConfigSpec{Addr: socketPath})
 	if err != nil {
 		t.Fatalf("Could not initialize the client %v", err)
 	}
@@ -104,7 +194,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}
 	if occurrences == nil {
-		t.Fatal("Shd have created atleast 1 occurrence")
+		t.Fatal("Should have created at least 1 occurrence")
 	}
 }
 

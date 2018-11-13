@@ -17,9 +17,16 @@ limitations under the License.
 package grafeas
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
+	"strings"
 	"time"
+
+	"google.golang.org/grpc/credentials"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -38,26 +45,86 @@ const (
 	DefaultProject       = "kritis" // DefaultProject is the default project name, only single project is supported
 )
 
-var (
-	// socketPath is the default grafeas socket path
-	socketPath = "/var/run/grafeas.sock"
-)
-
 // Client implements the Fetcher interface using grafeas API.
 type Client struct {
 	client grafeas.GrafeasV1Beta1Client
 	ctx    context.Context
 }
 
-func New() (*Client, error) {
-	ctx := context.Background()
-	conn, err := grpc.Dial(socketPath,
-		grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}))
-	if err != nil {
+// ValidateConfig checks whether the specified configuration is valid
+func ValidateConfig(config kritisv1beta1.GrafeasConfigSpec) error {
+	if config.Addr == "" {
+		return fmt.Errorf("missing Grafeas address")
+	}
+	if strings.HasPrefix(config.Addr, "/") { // Unix socket address
+		return nil
+	}
+	if config.CAPath == "" {
+		return fmt.Errorf("certificate authority must be specified")
+	}
+	if config.ClientCertPath == "" {
+		return fmt.Errorf("client cert path must be specified")
+	}
+	if config.ClientKeyPath == "" {
+		return fmt.Errorf("client key path must be specified")
+	}
+	for _, path := range []string{config.CAPath, config.ClientCertPath, config.ClientKeyPath} {
+		if _, err := os.Stat(path); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("certificate path %s does not exist", path)
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func New(config kritisv1beta1.GrafeasConfigSpec) (*Client, error) {
+	if err := ValidateConfig(config); err != nil {
 		return nil, err
+	}
+	ctx := context.Background()
+	var conn *grpc.ClientConn
+	if strings.HasPrefix(config.Addr, "/") {
+		var err error
+		conn, err = grpc.Dial(config.Addr,
+			grpc.WithInsecure(),
+			grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+				return net.DialTimeout("unix", addr, timeout)
+			}))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		certificate, err := tls.LoadX509KeyPair(config.ClientCertPath, config.ClientKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not load client key pair: %s", err)
+		}
+		certPool := x509.NewCertPool()
+		ca, err := ioutil.ReadFile(config.CAPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not read ca certificate: %s", err)
+		}
+
+		if ok := certPool.AppendCertsFromPEM(ca); !ok {
+			return nil, fmt.Errorf("failed to append ca certs")
+		}
+		server, _, err := net.SplitHostPort(config.Addr)
+		if err != nil {
+			return nil, err
+		}
+		creds := credentials.NewTLS(&tls.Config{
+			ServerName:   server,
+			Certificates: []tls.Certificate{certificate},
+			RootCAs:      certPool,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("could not load tls cert: %s", err)
+		}
+		conn, err = grpc.Dial(config.Addr, grpc.WithTransportCredentials(creds))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &Client{
 		client: grafeas.NewGrafeasV1Beta1Client(conn),

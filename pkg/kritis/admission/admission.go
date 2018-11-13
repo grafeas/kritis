@@ -73,12 +73,13 @@ var (
 // Config is the metadata client configuration
 type Config struct {
 	Metadata string // Metadata is the name of the metadata client fetcher
+	Grafeas  kritisv1beta1.GrafeasConfigSpec
 }
 
 // MetadataClient returns metadata.Fetcher based on the admission control config
 func MetadataClient(config *Config) (metadata.Fetcher, error) {
 	if config.Metadata == constants.GrafeasMetadata {
-		return grafeas.New()
+		return grafeas.New(config.Grafeas)
 	}
 	if config.Metadata == constants.ContainerAnalysisMetadata {
 		return containeranalysis.NewCache()
