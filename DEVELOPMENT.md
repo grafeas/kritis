@@ -13,7 +13,7 @@ First you will need to setup your GitHub account and create a fork:
 
 Once you have those, you can iterate on kritis:
 
-1. [Run your instance of kritis](install.md#Installing-Kritis-to-your-cluster)
+1. [Run your instance of kritis](docs/install.md#Installing-Kritis-to-your-cluster)
 1. [Run kritis tests](#testing-kritis)
 
 When you're ready, you can [create a PR](#creating-a-pr)!
