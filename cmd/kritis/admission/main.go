@@ -96,7 +96,7 @@ func main() {
 		if kritisConf.Spec.CronInterval != "" {
 			cronInterval = kritisConf.Spec.CronInterval
 		}
-		if kritisConf.Spec.ServerAddr == "" {
+		if kritisConf.Spec.ServerAddr != "" {
 			serverAddr = kritisConf.Spec.ServerAddr
 		}
 		if config.Metadata == constants.GrafeasMetadata {
@@ -123,7 +123,7 @@ func main() {
 	}
 
 	// Start the Kritis Server.
-	glog.Info("Running the server")
+	glog.Infof("Running the server, address: %s", serverAddr)
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))
