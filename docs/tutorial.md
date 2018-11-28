@@ -40,7 +40,6 @@ Kritis relies on user defined AttestationAuthorities to attest images admitted. 
 
 Create a public and private key pair:
 
-Note: Please create a key with Empty Passphase. We are working on adding support for [passphrase](https://github.com/grafeas/kritis/issues/186)
 ```shell
 gpg --quick-generate-key --yes my.attestator@example.com
 
@@ -52,7 +51,7 @@ gpg --armor --export-secret-keys my.attestator@example.com > gpg.priv
 
 Create a secret using the exported public and private keys
 ```shell
-kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv
+kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=<value1>
 ```
 Finally create an attestation authority
 1. Grab the base64 encoded value of public key for the secret you just created.
