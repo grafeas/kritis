@@ -17,6 +17,7 @@ limitations under the License.
 package review
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -126,12 +127,12 @@ Please see instructions `, image)
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		key, fingerprint, err := fingerprint(auth.Spec.PublicKeyData)
 		if err != nil {
 			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
 		}
-		keys[s.Fingerprint()] = auth.Spec.PublicKeyData
+		keys[fingerprint] = key
 	}
 	for _, a := range attestations {
 		if err = host.VerifyAttestationSignature(keys[a.KeyID], a.Signature); err != nil {
@@ -170,12 +171,12 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		_, fingerprint, err := fingerprint(auth.Spec.PublicKeyData)
 		if err != nil {
 			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
 		}
-		keys[auth.Name] = s.Fingerprint()
+		keys[auth.Name] = fingerprint
 	}
 	// Get all AttestationAuthorities which have not attested the image.
 	errMsgs := []string{}
@@ -221,4 +222,17 @@ func getUnAttested(auths []v1beta1.AttestationAuthority, keys map[string]string,
 		}
 	}
 	return l
+}
+
+// fingerprint returns the fingerprint and key from the base64 encoded public key data
+func fingerprint(publicKeyData string) (key, fingerprint string, err error) {
+	publicData, err := base64.StdEncoding.DecodeString(publicKeyData)
+	if err != nil {
+		return key, fingerprint, err
+	}
+	s, err := attestation.NewPgpKey("", string(publicData))
+	if err != nil {
+		return key, fingerprint, err
+	}
+	return string(publicData), s.Fingerprint(), nil
 }

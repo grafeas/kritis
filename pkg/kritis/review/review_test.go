@@ -17,6 +17,7 @@ limitations under the License.
 package review
 
 import (
+	"encoding/base64"
 	"fmt"
 	"reflect"
 	"testing"
@@ -86,11 +87,12 @@ func TestHasValidAttestations(t *testing.T) {
 		}
 		return s, nil
 	}
+
 	auths := []v1beta1.AttestationAuthority{
 		{
 			Spec: v1beta1.AttestationAuthoritySpec{
 				PrivateKeySecretName: "test-success",
-				PublicKeyData:        successSec.PublicKey,
+				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(successSec.PublicKey)),
 			},
 		},
 	}
@@ -148,7 +150,7 @@ func TestReview(t *testing.T) {
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference:        "provider/test",
 				PrivateKeySecretName: "test",
-				PublicKeyData:        sec.PublicKey,
+				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(sec.PublicKey)),
 			}}}, nil
 	}
 	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
