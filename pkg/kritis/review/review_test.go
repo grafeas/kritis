@@ -95,7 +95,6 @@ func TestHasValidAttestations(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(successSec.PublicKey)),
 			},
 		},
-	},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -144,16 +143,19 @@ func TestReview(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
 			},
+			Spec: v1beta1.ImageSecurityPolicySpec{
+				AttestationAuthorityNames: []string{"test"},
+			},
 		},
 	}
-	authMock := func(ns string, name string) (v1beta1.AttestationAuthority, error) {
-		return v1beta1.AttestationAuthority{
+	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
+		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference:        "provider/test",
 				PrivateKeySecretName: "test",
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(sec.PublicKey)),
-			}}}, nil
+			}}, nil
 	}
 	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
@@ -390,12 +392,12 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 				PublicKeyData:        "testdata",
 			}},
 	}
-	authMock := func(ns string, name string) (v1beta1.AttestationAuthority, error) {
+	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
 		a, ok := authsMap[name]
 		if !ok {
-			return v1beta1.AttestationAuthority{}, fmt.Errorf("could not find key %s", name)
+			return &v1beta1.AttestationAuthority{}, fmt.Errorf("could not find key %s", name)
 		}
-		return a, nil
+		return &a, nil
 	}
 
 	r := New(nil, &Config{

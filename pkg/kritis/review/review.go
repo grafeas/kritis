@@ -245,7 +245,7 @@ func (r Reviewer) getAttestationAuthoritiesForISP(isp v1beta1.ImageSecurityPolic
 		if err != nil {
 			return nil, fmt.Errorf("Error getting attestors: %v", err)
 		}
-		auths[i] = a
+		auths[i] = *a
 	}
 	return auths, nil
 }
