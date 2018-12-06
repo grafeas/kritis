@@ -334,7 +334,7 @@ func getReviewer(client metadata.Fetcher) reviewer {
 		Strategy:  defaultViolationStrategy,
 		IsWebhook: true,
 		Secret:    secrets.Fetch,
-		Auths:     authority.Authorities,
+		Auths:     authority.Authority,
 		Validate:  securitypolicy.ValidateImageSecurityPolicy,
 	})
 }

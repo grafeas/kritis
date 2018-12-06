@@ -26,7 +26,7 @@ import (
 )
 
 type Lister func(namespace string) ([]v1beta1.AttestationAuthority, error)
-type Fetcher func(namespace string, name string) (v1beta1.AttestationAuthority, error)
+type Fetcher func(namespace string, name string) (*v1beta1.AttestationAuthority, error)
 
 // Authorities returns all AttestationAuthorities in the specified namespaces
 // Pass in an empty string to get all AttestationAuthorities in all namespaces
