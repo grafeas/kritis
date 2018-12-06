@@ -437,10 +437,10 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 			}
 			auths, err := r.getAttestationAuthoritiesForISP(isp)
 			if (err != nil) != tc.shdErr {
-				t.Fatalf("expected review to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
 			}
 			if len(auths) != tc.expectedLen {
-				t.Fatalf("expected review to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
 			}
 		})
 	}
