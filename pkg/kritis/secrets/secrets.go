@@ -45,8 +45,7 @@ var (
 // kubectl create secret generic my-secret --from-file=public=pub.gpg \
 // --from-file=private=priv.key --from-literal=passphrase=<value>
 type PGPSigningSecret struct {
-	PublicKey  string
-	PrivateKey string
+	PgpKey     *PgpKey
 	SecretName string
 }
 
@@ -63,19 +62,22 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PublicKey)
 	}
-	phrase, ok := secret.Data[Passphrase]
-	if !ok {
-		// No passphrase was provided, possibly because it's empty
-		phrase = ''
-	}
-	// TODO(aysylu): decrypt the private key with phrase
 	priv, ok := secret.Data[PrivateKey]
 	if !ok {
-		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PublicKey)
+		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PrivateKey)
+	}
+	pb, ok := secret.Data[Passphrase]
+	phrase := ""
+	if ok {
+		// Passphrase was provided
+		phrase = string(pb)
+	}
+	pgpKey, err := NewPgpKey(string(priv), phrase, string(pub))
+	if err != nil {
+		return nil, err
 	}
 	return &PGPSigningSecret{
-		PublicKey:  string(pub),
-		PrivateKey: string(priv),
+		PgpKey:     pgpKey,
 		SecretName: secret.Name,
 	}, nil
 }

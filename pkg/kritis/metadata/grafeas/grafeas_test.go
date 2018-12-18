@@ -30,7 +30,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
@@ -171,16 +170,19 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	// Test Create Attestation Occurrence
 	pub, priv := testutil.CreateKeyPair(t, "test")
+	pgpKey, err := secrets.NewPgpKey(priv, "", pub)
+	if err != nil {
+		t.Fatalf("Unexpected error while creating PGP key %v", err)
+	}
 	secret := &secrets.PGPSigningSecret{
-		PrivateKey: priv,
-		PublicKey:  pub,
+		PgpKey:     pgpKey,
 		SecretName: "test",
 	}
 	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
-	expectedPgpKeyID, err := attestation.GetKeyFingerprint(pub)
+	expectedPgpKeyID := pgpKey.Fingerprint()
 	if err != nil {
 		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
 	}

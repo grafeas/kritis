@@ -186,10 +186,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
-	fingerprint, err := util.GetAttestationKeyFingerprint(pgpSigningKey)
-	if err != nil {
-		return nil, fmt.Errorf("Can't get fingerprint from PGP siging key %s: %v", pgpSigningKey.SecretName, err)
-	}
+	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
 	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)

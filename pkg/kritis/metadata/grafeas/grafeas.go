@@ -196,10 +196,7 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
 	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
-	fingerprint, err := util.GetAttestationKeyFingerprint(pgpSigningKey)
-	if err != nil {
-		return nil, fmt.Errorf("Can't get fingerprint from PGP siging key %s: %v", pgpSigningKey.SecretName, err)
-	}
+	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
 	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)

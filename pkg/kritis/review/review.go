@@ -21,7 +21,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -126,7 +125,7 @@ Please see instructions `, image)
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		s, err := secrets.NewPgpKey("", "", auth.Spec.PublicKeyData)
 		if err != nil {
 			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
@@ -170,7 +169,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
-		s, err := attestation.NewPgpKey("", auth.Spec.PublicKeyData)
+		s, err := secrets.NewPgpKey("", "", auth.Spec.PublicKeyData)
 		if err != nil {
 			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
 			continue
