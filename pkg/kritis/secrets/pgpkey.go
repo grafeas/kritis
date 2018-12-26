@@ -27,7 +27,7 @@ import (
 )
 
 // PgpKey struct converts the base64 encoded PEM keys into openpgp private and
-// public keys. Kubernetes Secrets are stored as base64 encoded PEM keys.
+// public keys
 type PgpKey struct {
 	privateKey *packet.PrivateKey
 	publicKey  *packet.PublicKey
