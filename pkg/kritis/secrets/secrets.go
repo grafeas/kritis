@@ -17,6 +17,7 @@ limitations under the License.
 package secrets
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -70,7 +71,12 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 	phrase := ""
 	if ok {
 		// Passphrase was provided
-		phrase = string(pb)
+		// Verify the passphrase is base64 encoded
+		dec, err := base64.StdEncoding.DecodeString(string(pb))
+		if err != nil {
+			return nil, fmt.Errorf("passphrase was not base64 encoded")
+		}
+		phrase = string(dec)
 	}
 	pgpKey, err := NewPgpKey(string(priv), phrase, string(pub))
 	if err != nil {
