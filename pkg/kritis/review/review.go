@@ -230,7 +230,7 @@ func fingerprint(publicKeyData string) (key, fingerprint string, err error) {
 	if err != nil {
 		return key, fingerprint, err
 	}
-	s, err := secrets.NewPgpKey("", string(publicData))
+	s, err := secrets.NewPgpKey("", "", string(publicData))
 	if err != nil {
 		return key, fingerprint, err
 	}
