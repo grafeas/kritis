@@ -107,7 +107,7 @@ signer process can access the resources.
 
 ### CRDs and Roles
 
-Policies and other data for the signer are stored a CRDs and secrets in the
+Policies and other data for the signer are stored as CRDs and secrets in the
 Kubernetes cluster.  These examples are simplified, please ensure to carefully
 review the policies to ensure they are properly ACLed.
 
