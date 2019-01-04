@@ -143,7 +143,7 @@ The signer will connect to the pubsub, listen to build events and create
 attestations for all attestation authorities that are connected to a matching
 policy.
 
-```shel
-kubectl create -f artifacts/examples/kritis-signer-deployment
+```shell
+kubectl create -f artifacts/examples/kritis-gcb-signer-deployment.yaml
 ```
 
