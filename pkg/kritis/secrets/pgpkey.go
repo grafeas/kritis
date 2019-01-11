@@ -94,7 +94,7 @@ func parsePrivateKey(privateKey string, passphrase string) (*packet.PrivateKey, 
 		pb := []byte(passphrase)
 		err := key.Decrypt(pb)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to decrypt private key with passphrase")
+			return nil, fmt.Errorf("Decrypt failed: %v", err)
 		}
 	}
 	return key, nil

@@ -29,7 +29,7 @@ import (
 )
 
 var pub, priv = createKeys("good")
-var pgpKey, _ = NewPgpKey(priv, "", pub)
+var pgpKey, err = NewPgpKey(priv, "", pub)
 
 var tests = []struct {
 	name       string
@@ -44,6 +44,9 @@ var tests = []struct {
 }
 
 func TestSecrets(t *testing.T) {
+	if err != nil {
+		t.Fatalf("pgp key creation failed %v", err)
+	}
 	getSecretFunc = getTestSecret
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -94,7 +97,7 @@ func createKeys(name string) (string, string) {
 	var key *openpgp.Entity
 	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
 	if err != nil {
-		glog.Errorf("Unexpected error: %v", err)
+		glog.Fatalf("entity creation error: %v", err)
 	}
 	// Get Pem encoded Public Key
 	pub := getKey(key, openpgp.PublicKeyType)
@@ -107,12 +110,12 @@ func getKey(key *openpgp.Entity, keyType string) string {
 	gotWriter := bytes.NewBuffer(nil)
 	wr, err := armor.Encode(gotWriter, keyType, nil)
 	if err != nil {
-		glog.Errorf("Unexpected error: %v", err)
+		glog.Fatalf("armor encode error: %v", err)
 	}
 	if keyType == openpgp.PrivateKeyType {
 		err := key.SerializePrivate(wr, nil)
 		if err != nil {
-			glog.Errorf("Unexpected error: %v", err)
+			glog.Errorf("serialization error: %v", err)
 		}
 	} else {
 		err := key.Serialize(wr)
