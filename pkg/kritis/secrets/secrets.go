@@ -73,11 +73,11 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 		// Passphrase was provided
 		// Verify the passphrase is base64 encoded
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(pb)))
-		dec_len, err := base64.StdEncoding.Decode(decoded, pb)
+		decLen, err := base64.StdEncoding.Decode(decoded, pb)
 		if err != nil {
 			return nil, fmt.Errorf("base64 decode failed %v", err)
 		}
-		phrase = string(decoded[:dec_len])
+		phrase = string(decoded[:decLen])
 	}
 	pgpKey, err := NewPgpKey(string(priv), phrase, string(pub))
 	if err != nil {
