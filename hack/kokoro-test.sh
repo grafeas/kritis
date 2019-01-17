@@ -22,8 +22,6 @@ set -euf -x
 
 source "${KOKORO_GFILE_DIR}/common.sh"
 
-export BAZEL_VERSION=0.19.2
-
 # Get everything into GOPATH
 sudo mkdir -p "${GOPATH}/src/github.com/grafeas/kritis/"
 CWD=`pwd`
