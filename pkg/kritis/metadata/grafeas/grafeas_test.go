@@ -130,7 +130,6 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Failed to listen on socket %v", err)
 	}
 	_, err = os.Stat(socketPath)
-	t.Logf("File %v", err)
 	grafeas.RegisterGrafeasV1Beta1Server(server, grafeasMock)
 	go func() {
 		if err := server.Serve(lis); err != nil {
