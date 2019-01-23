@@ -86,13 +86,16 @@ func getKey(key *openpgp.Entity, keyType string, t *testing.T) string {
 	return gotWriter.String()
 }
 
-func CreateSecret(t *testing.T, name string) *secrets.PGPSigningSecret {
+func CreateSecret(t *testing.T, name string) (*secrets.PGPSigningSecret, string) {
 	pub, priv := CreateKeyPair(t, name)
-	return &secrets.PGPSigningSecret{
-		PrivateKey: priv,
-		PublicKey:  pub,
-		SecretName: name,
+	pgpKey, err := secrets.NewPgpKey(priv, "", pub)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
 	}
+	return &secrets.PGPSigningSecret{
+		PgpKey:     pgpKey,
+		SecretName: name,
+	}, pub
 }
 
 func Base64PublicTestKey(t *testing.T) string {

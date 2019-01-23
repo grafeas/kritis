@@ -22,7 +22,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -231,7 +230,7 @@ func fingerprint(publicKeyData string) (key, fingerprint string, err error) {
 	if err != nil {
 		return key, fingerprint, err
 	}
-	s, err := attestation.NewPgpKey("", string(publicData))
+	s, err := secrets.NewPgpKey("", "", string(publicData))
 	if err != nil {
 		return key, fingerprint, err
 	}

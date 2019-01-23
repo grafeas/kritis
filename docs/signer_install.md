@@ -134,7 +134,7 @@ Please ensure the secret is properly protected by ACLs.
 
 ```shell
 kubectl create secret generic kritis-authority-key \
-  --from-file=public=${PUB_KEY_FILE} --from-file=private=${PRIV_KEY_FILE}
+  --from-file=public=${PUB_KEY_FILE} --from-file=private=${PRIV_KEY_FILE} --from-literal=passphrase=<PASSPHRASE>
 ```
 
 ## Signer Execution
