@@ -126,9 +126,12 @@ var isps = []v1beta1.ImageSecurityPolicy{
 
 func TestCheckPods(t *testing.T) {
 	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
+		pgpKey, err := secrets.NewPgpKey("private", "", "private")
+		if err != nil {
+			t.Fatalf("Unexpected error %s", err)
+		}
 		return &secrets.PGPSigningSecret{
-			PublicKey:  "public",
-			PrivateKey: "private",
+			PgpKey:     pgpKey,
 			SecretName: name,
 		}, nil
 	}

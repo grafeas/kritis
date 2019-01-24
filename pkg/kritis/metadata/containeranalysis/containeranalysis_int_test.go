@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,9 +77,12 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	// Test Create Attestation Occurence
 	pub, priv := testutil.CreateKeyPair(t, "test")
+	pgpKey, err := secrets.NewPgpKey(priv, "", pub)
+	if err != nil {
+		t.Fatalf("Unexpected error while creating PGP key %v", err)
+	}
 	secret := &secrets.PGPSigningSecret{
-		PrivateKey: priv,
-		PublicKey:  pub,
+		PgpKey:     pgpKey,
 		SecretName: "test",
 	}
 
@@ -88,11 +90,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
-	expectedPgpKeyID, err := attestation.GetKeyFingerprint(pub)
-	if err != nil {
-		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
-	}
-
+	expectedPgpKeyID := pgpKey.Fingerprint()
 	pgpKeyID := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)

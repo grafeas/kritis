@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package attestation
+package secrets
 
 import (
 	"fmt"
@@ -33,13 +33,13 @@ type PgpKey struct {
 	publicKey  *packet.PublicKey
 }
 
-func NewPgpKey(privateKeyStr string, publicKeyStr string) (*PgpKey, error) {
+func NewPgpKey(privateKeyStr string, passphrase string, publicKeyStr string) (*PgpKey, error) {
 	var publicKey *packet.PublicKey
 	var privateKey *packet.PrivateKey
 	var err error
 
 	if privateKeyStr != "" {
-		privateKey, err = parsePrivateKey(privateKeyStr)
+		privateKey, err = parsePrivateKey(privateKeyStr, passphrase)
 		if err != nil {
 			return nil, errors.Wrap(err, "parsing private key")
 		}
@@ -80,7 +80,7 @@ func parsePublicKey(publicKey string) (*packet.PublicKey, error) {
 	return key, nil
 }
 
-func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
+func parsePrivateKey(privateKey string, passphrase string) (*packet.PrivateKey, error) {
 	pkt, err := parseKey(privateKey, openpgp.PrivateKeyType)
 	if err != nil {
 		return nil, err
@@ -88,6 +88,14 @@ func parsePrivateKey(privateKey string) (*packet.PrivateKey, error) {
 	key, ok := pkt.(*packet.PrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("Not a private Key")
+	}
+	if passphrase != "" {
+		// Decrypt the private key with the passphrase
+		pb := []byte(passphrase)
+		err := key.Decrypt(pb)
+		if err != nil {
+			return nil, fmt.Errorf("Decrypt failed: %v", err)
+		}
 	}
 	return key, nil
 }
