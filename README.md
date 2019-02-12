@@ -29,8 +29,8 @@ imageWhitelist:
 packageVulnerabilityPolicy:
   maximumSeverity: HIGH
   whitelistCVEs:
-    providers/goog-vulnz/notes/CVE-2017-1000082
-    providers/goog-vulnz/notes/CVE-2017-1000082
+    - providers/goog-vulnz/notes/CVE-2017-1000082
+    - providers/goog-vulnz/notes/CVE-2017-1000081
 ```
 
 In addition to the enforcement this project also contains *signers* that can be
