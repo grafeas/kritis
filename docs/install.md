@@ -164,7 +164,7 @@ curl -LO https://storage.googleapis.com/resolve-tags/latest/resolve-tags-linux-a
   sudo cp $RESOLVE_TAGS_DIR/resolve-tags /usr/local/bin/
 ```
 
-For more information, please see the resolve-tags [documentation](cmd/kritis/kubectl/plugins/resolve/README.md).
+For more information, please see the resolve-tags [documentation](https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve/README.md).
 
 Install kritis to your cluster:
 
