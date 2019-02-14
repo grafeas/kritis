@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/openpgp"
@@ -59,17 +60,8 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 	return nil
 }
 
-func GetKeyFingerprint(pubKey string) (string, error) {
-	// Create a PgpKey with only the public key
-	pgpKey, err := NewPgpKey("", pubKey)
-	if err != nil {
-		return "", errors.Wrap(err, "creating PGP key")
-	}
-	return pgpKey.Fingerprint(), nil
-}
-
 // GetPlainMessage verifies if the image is attested using the PEM
-// encoded public key and returns the plain test in bytes
+// encoded public key and returns the plain text in bytes
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
@@ -99,24 +91,18 @@ func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	return plaintext, nil
 }
 
-// CreateMessageAttestation attests the message using the given public and private key.
-// pubKey: PEM Encoded Public Key
-// privKey: PEM Encoded Private Key
+// CreateMessageAttestation attests the message using the given PGP key.
+// pgpKey: PGP key
 // message: Message to attest
-func CreateMessageAttestation(pubKey string, privKey string, message string) (string, error) {
-	// Create a PgpKey from Encoded Public Key
-	pgpKey, err := NewPgpKey(privKey, pubKey)
-	if err != nil {
-		return "", errors.Wrap(err, "creating PGP key")
-	}
-	// First Create a signer Entitiy from public and private keys.
+func CreateMessageAttestation(pgpKey *secrets.PgpKey, message string) (string, error) {
+	// First Create a signer Entity from public and private keys.
 	signer, err := createEntityFromKeys(pgpKey.PublicKey(), pgpKey.PrivateKey())
 	if err != nil {
 		return "", errors.Wrap(err, "creating entity keys")
 	}
 
 	b := new(bytes.Buffer)
-	// Armor Decode it.
+	// Armor Encode it.
 	armorWriter, errEncode := armor.Encode(b, openpgp.SignatureType, make(map[string]string))
 	if errEncode != nil {
 		return "", errors.Wrap(err, "encoding data")

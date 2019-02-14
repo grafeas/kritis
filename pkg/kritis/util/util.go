@@ -80,11 +80,11 @@ func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningS
 	if err != nil {
 		return "", err
 	}
-	return attestation.CreateMessageAttestation(pgpSigningKey.PublicKey, pgpSigningKey.PrivateKey, hostStr)
+	return attestation.CreateMessageAttestation(pgpSigningKey.PgpKey, hostStr)
 }
 
-func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
-	return attestation.GetKeyFingerprint(pgpSigningKey.PublicKey)
+func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) string {
+	return pgpSigningKey.PgpKey.Fingerprint()
 }
 
 // GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.

@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
@@ -35,11 +34,8 @@ import (
 )
 
 func TestHasValidAttestations(t *testing.T) {
-	successSec := testutil.CreateSecret(t, "test-success")
-	successFpr, err := attestation.GetKeyFingerprint(successSec.PublicKey)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
+	successSec, pub := testutil.CreateSecret(t, "test-success")
+	successFpr := successSec.PgpKey.Fingerprint()
 	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -92,7 +88,7 @@ func TestHasValidAttestations(t *testing.T) {
 		{
 			Spec: v1beta1.AttestationAuthoritySpec{
 				PrivateKeySecretName: "test-success",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(successSec.PublicKey)),
+				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			},
 		},
 	}
@@ -116,12 +112,8 @@ func TestHasValidAttestations(t *testing.T) {
 }
 
 func TestReview(t *testing.T) {
-	sec := testutil.CreateSecret(t, "sec")
-	secFpr, err := attestation.GetKeyFingerprint(sec.PublicKey)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-
+	sec, pub := testutil.CreateSecret(t, "sec")
+	secFpr := sec.PgpKey.Fingerprint()
 	vulnImage := testutil.QualifiedImage
 	unQualifiedImage := "image:tag"
 	sigVuln, err := util.CreateAttestationSignature(vulnImage, sec)
@@ -154,7 +146,7 @@ func TestReview(t *testing.T) {
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference:        "provider/test",
 				PrivateKeySecretName: "test",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(sec.PublicKey)),
+				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
 	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {

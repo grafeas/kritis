@@ -16,13 +16,20 @@ limitations under the License.
 package secrets
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/golang/glog"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var pub, priv = createKeys("good")
+var pgpKey, err = NewPgpKey(priv, "", pub)
 
 var tests = []struct {
 	name       string
@@ -30,13 +37,16 @@ var tests = []struct {
 	shdErr     bool
 	expected   *PGPSigningSecret
 }{
-	{"good", "good-sec", false, &PGPSigningSecret{SecretName: "good-sec", PrivateKey: "private key", PublicKey: "public key"}},
+	{"good", "good-sec", false, &PGPSigningSecret{SecretName: "good-sec", PgpKey: pgpKey}},
 	{"bad1", "bad1-sec", true, nil},
 	{"bad2", "bad2-sec", true, nil},
 	{"notfound", "not-present", true, nil},
 }
 
 func TestSecrets(t *testing.T) {
+	if err != nil {
+		t.Fatalf("pgp key creation failed %v", err)
+	}
 	getSecretFunc = getTestSecret
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -55,20 +65,20 @@ var testSecrets = []v1.Secret{
 	{
 		ObjectMeta: metav1.ObjectMeta{Name: "good-sec"},
 		Data: map[string][]byte{
-			"private": []byte("private key"),
-			"public":  []byte("public key"),
+			"private": []byte(priv),
+			"public":  []byte(pub),
 		},
 	},
 	{
 		ObjectMeta: metav1.ObjectMeta{Name: "bad1-sec"},
 		Data: map[string][]byte{
-			"public": []byte("public key"),
+			"public": []byte(pub),
 		},
 	},
 	{
 		ObjectMeta: metav1.ObjectMeta{Name: "bad2-sec"},
 		Data: map[string][]byte{
-			"private": []byte("private key"),
+			"private": []byte(priv),
 		},
 	},
 }
@@ -80,4 +90,39 @@ func getTestSecret(namespace string, name string) (*v1.Secret, error) {
 		}
 	}
 	return nil, fmt.Errorf("Secret %s not found", name)
+}
+
+func createKeys(name string) (string, string) {
+	// Create a new pair of key
+	var key *openpgp.Entity
+	key, err := openpgp.NewEntity(name, "test", fmt.Sprintf("%s@grafeas.com", name), nil)
+	if err != nil {
+		glog.Fatalf("entity creation error: %v", err)
+	}
+	// Get Pem encoded Public Key
+	pub := getKey(key, openpgp.PublicKeyType)
+	// Get Pem encoded Private Key
+	priv := getKey(key, openpgp.PrivateKeyType)
+	return pub, priv
+}
+
+func getKey(key *openpgp.Entity, keyType string) string {
+	gotWriter := bytes.NewBuffer(nil)
+	wr, err := armor.Encode(gotWriter, keyType, nil)
+	if err != nil {
+		glog.Fatalf("armor encode error: %v", err)
+	}
+	if keyType == openpgp.PrivateKeyType {
+		err := key.SerializePrivate(wr, nil)
+		if err != nil {
+			glog.Errorf("serialization error: %v", err)
+		}
+	} else {
+		err := key.Serialize(wr)
+		if err != nil {
+			glog.Errorf("Unexpected error: %v", err)
+		}
+	}
+	wr.Close()
+	return gotWriter.String()
 }

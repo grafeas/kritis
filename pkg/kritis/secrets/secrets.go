@@ -17,12 +17,21 @@ limitations under the License.
 package secrets
 
 import (
+	"encoding/base64"
 	"fmt"
 
-	"github.com/grafeas/kritis/pkg/kritis/constants"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	// Public Key constant for Attestation Secrets.
+	PrivateKey = "private"
+	// Private Key constant for Attestation Secrets.
+	PublicKey = "public"
+	// Passphrase constant for Attestation Secrets.
+	Passphrase = "passphrase"
 )
 
 var (
@@ -30,12 +39,14 @@ var (
 	getSecretFunc = getSecret
 )
 
-// PGPSigningSecret represents gpg private, public key pair secret in your kubernetes cluster.
-// The secret expects private and public key to be stored in "private" and "public" keys. e.g.
-// kubectl create secret generic my-secret --from-file=public=pub.gpg --from-file=private=priv.key
+// PGPSigningSecret represents gpg private/public key pair secret in your
+// kubernetes cluster, where private key was decrypted with the passphrase.
+// The secret expects private and public key to be stored in "private" and
+// "public" keys, and private key to be decrypted with the "passphrase" key e.g.
+// kubectl create secret generic my-secret --from-file=public=pub.gpg \
+// --from-file=private=priv.key --from-literal=passphrase=<value>
 type PGPSigningSecret struct {
-	PublicKey  string
-	PrivateKey string
+	PgpKey     *PgpKey
 	SecretName string
 }
 
@@ -48,17 +59,32 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 	if err != nil {
 		return nil, err
 	}
-	pub, ok := secret.Data[constants.PublicKey]
+	pub, ok := secret.Data[PublicKey]
 	if !ok {
-		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, constants.PublicKey)
+		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PublicKey)
 	}
-	priv, ok := secret.Data[constants.PrivateKey]
+	priv, ok := secret.Data[PrivateKey]
 	if !ok {
-		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, constants.PublicKey)
+		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PrivateKey)
+	}
+	pb, ok := secret.Data[Passphrase]
+	phrase := ""
+	if ok {
+		// Passphrase was provided
+		// Verify the passphrase is base64 encoded
+		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(pb)))
+		decLen, err := base64.StdEncoding.Decode(decoded, pb)
+		if err != nil {
+			return nil, fmt.Errorf("base64 decode failed %v", err)
+		}
+		phrase = string(decoded[:decLen])
+	}
+	pgpKey, err := NewPgpKey(string(priv), phrase, string(pub))
+	if err != nil {
+		return nil, err
 	}
 	return &PGPSigningSecret{
-		PublicKey:  string(pub),
-		PrivateKey: string(priv),
+		PgpKey:     pgpKey,
 		SecretName: secret.Name,
 	}, nil
 }

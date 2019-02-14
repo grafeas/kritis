@@ -107,7 +107,7 @@ signer process can access the resources.
 
 ### CRDs and Roles
 
-Policies and other data for the signer are stored a CRDs and secrets in the
+Policies and other data for the signer are stored as CRDs and secrets in the
 Kubernetes cluster.  These examples are simplified, please ensure to carefully
 review the policies to ensure they are properly ACLed.
 
@@ -134,7 +134,7 @@ Please ensure the secret is properly protected by ACLs.
 
 ```shell
 kubectl create secret generic kritis-authority-key \
-  --from-file=public=${PUB_KEY_FILE} --from-file=private=${PRIV_KEY_FILE}
+  --from-file=public=${PUB_KEY_FILE} --from-file=private=${PRIV_KEY_FILE} --from-literal=passphrase=<PASSPHRASE>
 ```
 
 ## Signer Execution
@@ -143,7 +143,7 @@ The signer will connect to the pubsub, listen to build events and create
 attestations for all attestation authorities that are connected to a matching
 policy.
 
-```shel
-kubectl create -f artifacts/examples/kritis-signer-deployment
+```shell
+kubectl create -f artifacts/examples/kritis-gcb-signer-deployment.yaml
 ```
 

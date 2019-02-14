@@ -41,10 +41,6 @@ const (
 	// Atomic Container Signature type
 	AtomicContainerSigType = "atomic container signature"
 
-	// Public Key Private Key constants for Attestation Secrets.
-	PrivateKey = "private"
-	PublicKey  = "public"
-
 	// Constants for Metadata Library
 	PageSize          = int32(100)
 	ResourceURLPrefix = "https://"

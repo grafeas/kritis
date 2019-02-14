@@ -19,16 +19,9 @@ package attestation
 import (
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
-
-func TestGetKeyFingerprint(t *testing.T) {
-	fingerprint, err := GetKeyFingerprint(testutil.Base64PublicTestKey(t))
-	testutil.CheckError(t, false, err)
-	if fingerprint != testutil.PgpKeyFingerprint {
-		t.Errorf("Expected fingerprint: %q, got %q", testutil.PgpKeyFingerprint, fingerprint)
-	}
-}
 
 var tcAttestations = []struct {
 	name      string
@@ -44,8 +37,12 @@ var tcAttestations = []struct {
 func TestAttestations(t *testing.T) {
 	for _, tc := range tcAttestations {
 		publicKey, privateKey := testutil.CreateKeyPair(t, "test")
+		pgpKey, err := secrets.NewPgpKey(privateKey, "", publicKey)
+		if err != nil {
+			t.Fatalf("Unexpected error %s", err)
+		}
 		t.Run(tc.name, func(t *testing.T) {
-			sig, err := CreateMessageAttestation(publicKey, privateKey, tc.message)
+			sig, err := CreateMessageAttestation(pgpKey, tc.message)
 			if err != nil {
 				t.Fatalf("Unexpected error %s", err)
 			}

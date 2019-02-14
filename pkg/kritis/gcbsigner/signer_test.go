@@ -29,9 +29,9 @@ import (
 )
 
 func TestValidateAndSign(t *testing.T) {
-	sec1 := testutil.CreateSecret(t, "auth1_key")
-	sec2 := testutil.CreateSecret(t, "auth2_key")
-	sec3 := testutil.CreateSecret(t, "auth3_key")
+	sec1, pub1 := testutil.CreateSecret(t, "auth1_key")
+	sec2, pub2 := testutil.CreateSecret(t, "auth2_key")
+	sec3, pub3 := testutil.CreateSecret(t, "auth3_key")
 	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
 		switch name {
 		case "auth1_key":
@@ -104,7 +104,7 @@ func TestValidateAndSign(t *testing.T) {
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference:        "auth1_note",
 					PrivateKeySecretName: "auth1_key",
-					PublicKeyData:        sec1.PublicKey,
+					PublicKeyData:        pub1,
 				},
 			},
 			{
@@ -115,7 +115,7 @@ func TestValidateAndSign(t *testing.T) {
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference:        "auth2_note",
 					PrivateKeySecretName: "auth2_key",
-					PublicKeyData:        sec2.PublicKey,
+					PublicKeyData:        pub2,
 				},
 			},
 			{
@@ -126,7 +126,7 @@ func TestValidateAndSign(t *testing.T) {
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference:        "auth3_note",
 					PrivateKeySecretName: "auth3_key",
-					PublicKeyData:        sec3.PublicKey,
+					PublicKeyData:        pub3,
 				},
 			},
 			{
