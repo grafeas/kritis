@@ -21,9 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
@@ -31,8 +29,12 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisconstants "github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/buildpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
+	"github.com/grafeas/kritis/pkg/kritis/gcbsigner"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
@@ -49,7 +51,9 @@ type config struct {
 	retrieveDeployment         func(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error)
 	fetchMetadataClient        func(config *Config) (metadata.Fetcher, error)
 	fetchImageSecurityPolicies func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error)
+	fetchBuildPolicies         func(namespace string) ([]kritisv1beta1.BuildPolicy, error)
 	reviewer                   func(metadata.Fetcher) reviewer
+	buildPolicyReviewer        func(client metadata.Fetcher) gcbsigner.Signer
 }
 
 var (
@@ -59,7 +63,9 @@ var (
 		retrieveDeployment:         unmarshalDeployment,
 		fetchMetadataClient:        MetadataClient,
 		fetchImageSecurityPolicies: securitypolicy.ImageSecurityPolicies,
+		fetchBuildPolicies:         buildpolicy.BuildPolicies,
 		reviewer:                   getReviewer,
+		buildPolicyReviewer:        getBuildPolicyReviewer,
 	}
 
 	defaultViolationStrategy = &violation.LoggingStrategy{}
@@ -229,13 +235,56 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
-	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
+	deny := false
+	errs := []string{}
+	glog.Infof("Reviewing Build Policy for images for %s in namespace %s: %s", pod, ns, images)
+	if err := reviewBuildPolicy(images, ns, config); err != nil {
+		deny = true
+		errs = append(errs, err.Error())
+	}
+	glog.Infof("Reviewing ISPs images for %s in namespace %s: %s", pod, ns, images)
+
+	if err := reviewISP(images, ns, pod, config); err != nil {
+		glog.Infof(err.Error())
+		deny = true
+		errs = append(errs, err.Error())
+	}
+	if deny {
+		createDeniedResponse(ar, strings.Join(errs, ","))
+	}
+}
+
+func reviewBuildPolicy(images []string, ns string, config *Config) error {
+	bps, err := admissionConfig.fetchBuildPolicies(ns)
+	if err != nil {
+		return fmt.Errorf("error getting image security policies: %v", err)
+	}
+	if len(bps) == 0 {
+		glog.Errorf("No Build Policies found in namespace %s", ns)
+	} else {
+		glog.Infof("Found %d Build Policies to review image against", len(bps))
+	}
+	client, err := admissionConfig.fetchMetadataClient(config)
+	if err != nil {
+		return fmt.Errorf("error getting metadata client: %v", err)
+	}
+	r := getBuildPolicyReviewer(client)
+	for _, i := range images {
+		// TODO make this better. Maybe we need to fetch the BPs from Metadata
+		prov := gcbsigner.BuildProvenance{
+			ImageRef: i,
+		}
+		if err := r.ValidateAndSign(prov, bps); err != nil {
+			return fmt.Errorf("Error creating signature: %v", err)
+		}
+	}
+	return nil
+}
+
+func reviewISP(images []string, ns string, pod *v1.Pod, config *Config) error {
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
-		errMsg := fmt.Sprintf("error getting image security policies: %v", err)
-		glog.Errorf(errMsg)
-		createDeniedResponse(ar, errMsg)
-		return
+		return fmt.Errorf("error getting image security policies: %v", err)
 	}
 	if len(isps) == 0 {
 		glog.Errorf("No ISP's found in namespace %s", ns)
@@ -245,16 +294,10 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 	client, err := admissionConfig.fetchMetadataClient(config)
 	if err != nil {
-		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
-		glog.Errorf(errMsg)
-		createDeniedResponse(ar, errMsg)
-		return
+		return fmt.Errorf("error getting metadata client: %v", err)
 	}
 	r := admissionConfig.reviewer(client)
-	if err := r.Review(images, isps, pod); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
-		createDeniedResponse(ar, err.Error())
-	}
+	return r.Review(images, isps, pod)
 }
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
@@ -336,6 +379,13 @@ func getReviewer(client metadata.Fetcher) reviewer {
 		Secret:    secrets.Fetch,
 		Auths:     authority.Authority,
 		Validate:  securitypolicy.ValidateImageSecurityPolicy,
+	})
+}
+
+func getBuildPolicyReviewer(client metadata.Fetcher) gcbsigner.Signer {
+	return gcbsigner.New(client, &gcbsigner.Config{
+		Validate: buildpolicy.ValidateBuildPolicy,
+		Secret:   secrets.Fetch,
 	})
 }
 
