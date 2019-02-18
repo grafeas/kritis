@@ -28,6 +28,7 @@ const (
 	UnqualifiedImageViolation ViolationType = iota
 	FixUnavailableViolation
 	SeverityViolation
+	BuildProjectIDViolation // TODO(dragon3)
 )
 
 // Violation represents a Policy Violation.

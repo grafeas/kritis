@@ -95,3 +95,17 @@ func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthor
 	}
 	return c.CreateAttestationNote(a)
 }
+
+// TODO(dragon3)
+func GetBuildFromOccurrence(occ *grafeas.Occurrence) *metadata.Build {
+	build := occ.GetBuild()
+	if build == nil {
+		return nil
+	}
+	return &metadata.Build{
+		Provenance: &metadata.BuildProvenance{
+			ProjectID: build.Provenance.ProjectId,
+			Creator:   build.Provenance.Creator,
+		},
+	}
+}

@@ -283,6 +283,11 @@ func (in *ImageSecurityPolicySpec) DeepCopyInto(out *ImageSecurityPolicySpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.BuildProjectIDs != nil {
+		in, out := &in.BuildProjectIDs, &out.BuildProjectIDs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

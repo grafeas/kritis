@@ -231,6 +231,22 @@ func getProjectFromContainerImage(image string) string {
 	return tok[1]
 }
 
+// Builds gets Build Occurrences for a specified image.
+// TODO(dragon3)
+func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
+	occs, err := c.fetchOccurrence(containerImage, "BUILD")
+	if err != nil {
+		return nil, err
+	}
+	var builds []metadata.Build
+	for _, occ := range occs {
+		if v := util.GetBuildFromOccurrence(occ); v != nil {
+			builds = append(builds, *v)
+		}
+	}
+	return builds, nil
+}
+
 // The following methods are used for Testing
 
 // DeleteAttestationNote deletes a note for given AttestationAuthority

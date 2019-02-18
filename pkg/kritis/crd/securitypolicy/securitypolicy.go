@@ -118,6 +118,37 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			reason:        SeverityReason(image, v, isp),
 		})
 	}
+
+	// TODO(dragon3): check build occurences
+	if len(isp.Spec.BuildProjectIDs) > 0 {
+		builds, err := client.Builds(image)
+		if err != nil {
+			return nil, err
+		}
+		hasBuildProjectID := false
+		for _, projectID := range isp.Spec.BuildProjectIDs {
+			for _, build := range builds {
+				if build.Provenance.ProjectID == projectID {
+					hasBuildProjectID = true
+					break
+				}
+			}
+			if hasBuildProjectID {
+				break
+			}
+		}
+		if !hasBuildProjectID {
+			violations = append(
+				violations,
+				NewViolation(
+					nil,
+					policy.BuildProjectIDViolation,
+					policy.Reason(fmt.Sprintf("%s doesn't have build occurence with required projectIDs", image)),
+				),
+			)
+		}
+	}
+
 	return violations, nil
 }
 

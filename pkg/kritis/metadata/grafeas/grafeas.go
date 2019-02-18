@@ -232,6 +232,22 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
+// Builds gets Build Occurrences for a specified image.
+// TODO(dragon3)
+func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
+	occs, err := c.fetchOccurrence(containerImage, "BUILD")
+	if err != nil {
+		return nil, err
+	}
+	var builds []metadata.Build
+	for _, occ := range occs {
+		if v := util.GetBuildFromOccurrence(occ); v != nil {
+			builds = append(builds, *v)
+		}
+	}
+	return builds, nil
+}
+
 func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
