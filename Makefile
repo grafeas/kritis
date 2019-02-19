@@ -113,13 +113,13 @@ HELM_HOOKS = preinstall postinstall predelete
 $(HELM_HOOKS): $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o out/$@ $(REPOPATH)/helm-hooks/$@
 
-.PHONY: %-image
-%-image: $(HELM_HOOKS)
-	docker build -t $(REGISTRY)/$*:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=$*
-
 .PHONY: %-test-image
 %-test-image: $(HELM_HOOKS)
 	docker build -t $(TEST_REGISTRY)/$*:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=$*
+
+.PHONY: %-image
+%-image: $(HELM_HOOKS)
+	docker build -t $(REGISTRY)/$*:$(IMAGE_TAG) -f helm-hooks/Dockerfile . --build-arg stage=$*
 
 .PHONY: helm-release-image
 helm-release-image:
