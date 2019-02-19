@@ -219,6 +219,7 @@ just-the-integration-test:
 		-timeout 30m \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
 		-gcp-project=$(GCP_PROJECT) \
+		-gke-zone=$(GCP_ZONE) \
 		-gke-cluster-name=$(GCP_CLUSTER) $(EXTRA_TEST_FLAGS)
 
 # integration-local requires that "setup-integration-local" has been run at least once.
