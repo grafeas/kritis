@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.predelete.job.name }}
+  namespace: {{ .Values.serviceNamespace }}
+  annotations:
+    "helm.sh/hook": "pre-delete"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+    "kritis.grafeas.io/breakglass": "true"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
+spec:
+  template:
+    metadata:
+      name: {{ .Values.predelete.job.name }}
+      labels:
+        app: {{ .Values.predelete.job.name }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: {{ .Values.predelete.job.name }}
+          image: "{{ .Values.repository }}{{ .Values.predelete.job.image }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--webhook-name"
+            - {{ .Values.serviceName }}
+            - "--deployment-webhook-name"
+            - {{ .Values.serviceNameDeployments }}
+            - "--tls-secret-name"
+            - {{ .Values.tlsSecretName }}
+            - "--csr-name"
+            - {{ .Values.csrName }}
+            - {{ .Values.predelete.deleteCSR }}
+            - {{ .Values.predelete.deleteCRDs }}
+          command: {{ .Values.predelete.job.command }}

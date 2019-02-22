@@ -44,12 +44,11 @@ func init() {
 
 func main() {
 	flag.Parse()
-	logrus.Infof("running postinstall\nversion %s\ncommit: %s",
+	logrus.Infof(
+		"running postinstall\nversion %s\ncommit: %s",
 		version.Version,
 		version.Commit,
 	)
-	waitForPreinstallPod()
-	waitForTLSSecret()
 	getCaBundle()
 	createValidationWebhook()
 	createValidationDeploymentWebhook()

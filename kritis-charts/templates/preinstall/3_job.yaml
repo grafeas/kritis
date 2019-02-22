@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.preinstall.job.name }}
+  namespace: {{ .Values.serviceNamespace }}
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
+spec:
+  template:
+    metadata:
+      name: {{ .Values.preinstall.job.name }}
+      labels:
+        app: {{ .Values.preinstall.job.name }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.preinstall.serviceAccount }}
+      containers:
+        - name: {{ .Values.preinstall.job.name }}
+          image: "{{ .Values.repository }}{{ .Values.preinstall.job.image }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--csr-name"
+            - {{ .Values.csrName }}
+            - "--tls-secret-name"
+            - {{ .Values.tlsSecretName }}
+            - {{ .Values.preinstall.createNewCSR }}
+            - "--kritis-service-name"
+            - {{ .Values.serviceName }}
+            - "--kritis-service-name-deployments"
+            - {{ .Values.serviceNameDeployments }}
+            - "--kritis-install-label"
+            - {{ .Values.kritisInstallLabel }}
+          command: {{ .Values.preinstall.job.command }}
