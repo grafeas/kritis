@@ -57,22 +57,21 @@ preinstall:
   serviceAccount: "kritis-preinstall-serviceaccount"
   clusterRoleBinding: "kritis-preinstall-clusterrolebinding"
   createNewCSR: "--create-new-csr=true"
-  pod:
+  job:
     name: "kritis-preinstall"
     image: preinstall
     command: ["/preinstall"]
 
 postinstall:
-  pod:
+  job:
     name: "kritis-postinstall"
     image: postinstall
     command: ["/postinstall"]
 
-
 predelete:
   deleteCSR: "--delete-csr=true"
   deleteCRDs: "--delete-crd=true"
-  pod:
+  job:
     name: "kritis-predelete"
     image: predelete
     command: ["/predelete"]
