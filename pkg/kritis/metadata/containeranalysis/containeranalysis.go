@@ -231,6 +231,24 @@ func getProjectFromContainerImage(image string) string {
 	return tok[1]
 }
 
+// Builds gets Build Occurrences for a specified image.
+func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
+	glog.Infof("getttig build occurrences for %s", containerImage)
+	occs, err := c.fetchOccurrence(containerImage, "BUILD")
+	if err != nil {
+		glog.Warning(err)
+		return nil, err
+	}
+	var builds []metadata.Build
+	for _, occ := range occs {
+		if v := util.GetBuildFromOccurrence(occ); v != nil {
+			builds = append(builds, *v)
+		}
+	}
+	glog.Infof("got build occurrences (%d) for %s", len(builds), containerImage)
+	return builds, nil
+}
+
 // The following methods are used for Testing
 
 // DeleteAttestationNote deletes a note for given AttestationAuthority

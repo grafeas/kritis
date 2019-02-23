@@ -35,6 +35,9 @@ type Fetcher interface {
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	//Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string) ([]PGPAttestation, error)
+
+	// Builds get Build Occurrences for given image.
+	Builds(containerImage string) ([]Build, error)
 }
 
 type Vulnerability struct {
@@ -50,4 +53,13 @@ type PGPAttestation struct {
 	KeyID     string
 	// OccID is the occurrence ID for containeranalysis Occurrence_Attestation instance
 	OccID string
+}
+
+type Build struct {
+	Provenance *BuildProvenance
+}
+
+type BuildProvenance struct {
+	ProjectID string
+	Creator   string
 }

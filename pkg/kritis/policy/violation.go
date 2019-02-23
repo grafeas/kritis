@@ -28,6 +28,7 @@ const (
 	UnqualifiedImageViolation ViolationType = iota
 	FixUnavailableViolation
 	SeverityViolation
+	BuildProjectIDViolation
 )
 
 // Violation represents a Policy Violation.

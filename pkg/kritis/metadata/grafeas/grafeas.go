@@ -28,6 +28,7 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
+	"github.com/golang/glog"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -230,6 +231,23 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Parent:     fmt.Sprintf("projects/%s", DefaultProject),
 	}
 	return c.client.CreateOccurrence(c.ctx, req)
+}
+
+// Builds gets Build Occurrences for a specified image.
+func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
+	glog.Infof("getttig build occurrences for %s", containerImage)
+	occs, err := c.fetchOccurrence(containerImage, "BUILD")
+	if err != nil {
+		return nil, err
+	}
+	var builds []metadata.Build
+	for _, occ := range occs {
+		if v := util.GetBuildFromOccurrence(occ); v != nil {
+			builds = append(builds, *v)
+		}
+	}
+	glog.Infof("got build occurrences (%d) for %s", len(builds), containerImage)
+	return builds, nil
 }
 
 func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
