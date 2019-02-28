@@ -206,11 +206,15 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview, config *Config) {
 	images := DeploymentImages(*deployment)
-	// check if the Deployments's owner has already been validated
-	if checkOwners(images, &deployment.ObjectMeta) {
-		glog.Infof("all owners for Deployment %s have been validated, returning successful status", deployment.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the Deployments's owner has already been validated
+	// if checkOwners(images, &deployment.ObjectMeta) {
+	// 	glog.Infof("all owners for Deployment %s have been validated, returning successful status", deployment.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the deployment
 	if checkBreakglass(&deployment.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
@@ -260,11 +264,15 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	images := PodImages(*pod)
-	// check if the Pod's owner has already been validated
-	if checkOwners(images, &pod.ObjectMeta) {
-		glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the Pod's owner has already been validated
+	// if checkOwners(images, &pod.ObjectMeta) {
+	// 	glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the pod
 	if checkBreakglass(&pod.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
@@ -275,11 +283,15 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 
 func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview, config *Config) {
 	images := ReplicaSetImages(*replicaSet)
-	// check if the ReplicaSet's owner has already been validated
-	if checkOwners(images, &replicaSet.ObjectMeta) {
-		glog.Infof("all owners for ReplicaSet %s have been validated, returning successful status", replicaSet.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the ReplicaSet's owner has already been validated
+	// if checkOwners(images, &replicaSet.ObjectMeta) {
+	// 	glog.Infof("all owners for ReplicaSet %s have been validated, returning successful status", replicaSet.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the replica set
 	if checkBreakglass(&replicaSet.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
