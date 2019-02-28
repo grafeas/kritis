@@ -49,6 +49,10 @@ spec:
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /secret/{{ .Values.gacSecret.path }}
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
       volumes:
         - name: tls
           secret:
