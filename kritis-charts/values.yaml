@@ -9,6 +9,8 @@ image:
   image: kritis-server
   name: kritis-server
   pullPolicy: Always
+  # pullSecrets:
+  #   - myRegistrKeySecretName
 
 service:
   type: ClusterIP

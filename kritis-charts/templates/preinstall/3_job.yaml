@@ -16,6 +16,12 @@ spec:
       labels:
         app: {{ .Values.preinstall.job.name }}
     spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       restartPolicy: Never
       serviceAccountName: {{ .Values.preinstall.serviceAccount }}
       containers:

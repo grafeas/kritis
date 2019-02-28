@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: release-201903
 description: A Helm chart for Kritis
 name: kritis-charts
-version: 0.1.0-mercari.1
+version: 0.1.0-mercari.2
