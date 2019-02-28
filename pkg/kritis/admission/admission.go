@@ -38,7 +38,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/admission/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -238,10 +238,11 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		return
 	}
 	if len(isps) == 0 {
-		glog.Errorf("No ISP's found in namespace %s", ns)
-	} else {
-		glog.Infof("Found %d ISPs to review image against", len(isps))
+		glog.Errorf("No ISP's found in namespace %s, skip reviewing", ns)
+		return
 	}
+
+	glog.Infof("Found %d ISPs to review image against", len(isps))
 
 	client, err := admissionConfig.fetchMetadataClient(config)
 	if err != nil {
