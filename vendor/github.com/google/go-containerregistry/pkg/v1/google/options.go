@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package remote
+package google
 
 import (
 	"log"
@@ -23,34 +23,34 @@ import (
 
 // WithTransport is a functional option for overriding the default transport
 // on a remote image
-func WithTransport(t http.RoundTripper) ImageOption {
-	return func(i *imageOpener) error {
-		i.transport = t
+func WithTransport(t http.RoundTripper) ListerOption {
+	return func(l *lister) error {
+		l.transport = t
 		return nil
 	}
 }
 
 // WithAuth is a functional option for overriding the default authenticator
 // on a remote image
-func WithAuth(auth authn.Authenticator) ImageOption {
-	return func(i *imageOpener) error {
-		i.auth = auth
+func WithAuth(auth authn.Authenticator) ListerOption {
+	return func(l *lister) error {
+		l.auth = auth
 		return nil
 	}
 }
 
 // WithAuthFromKeychain is a functional option for overriding the default
 // authenticator on a remote image using an authn.Keychain
-func WithAuthFromKeychain(keys authn.Keychain) ImageOption {
-	return func(i *imageOpener) error {
-		auth, err := keys.Resolve(i.ref.Context().Registry)
+func WithAuthFromKeychain(keys authn.Keychain) ListerOption {
+	return func(l *lister) error {
+		auth, err := keys.Resolve(l.repo.Registry)
 		if err != nil {
 			return err
 		}
 		if auth == authn.Anonymous {
 			log.Println("No matching credentials were found, falling back on anonymous")
 		}
-		i.auth = auth
+		l.auth = auth
 		return nil
 	}
 }

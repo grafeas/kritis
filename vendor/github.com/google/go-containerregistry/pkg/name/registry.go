@@ -14,15 +14,31 @@
 
 package name
 
-import "net/url"
+import (
+	"net"
+	"net/url"
+	"regexp"
+	"strings"
+)
 
 const (
+	// DefaultRegistry is Docker Hub, assumed when a hostname is omitted.
 	DefaultRegistry      = "index.docker.io"
 	defaultRegistryAlias = "docker.io"
 )
 
+// Detect more complex forms of local references.
+var reLocal = regexp.MustCompile(`.*\.local(?:host)?(?::\d{1,5})?$`)
+
+// Detect the loopback IP (127.0.0.1)
+var reLoopback = regexp.MustCompile(regexp.QuoteMeta("127.0.0.1"))
+
+// Detect the loopback IPV6 (::1)
+var reipv6Loopback = regexp.MustCompile(regexp.QuoteMeta("::1"))
+
 // Registry stores a docker registry name in a structured form.
 type Registry struct {
+	insecure bool
 	registry string
 }
 
@@ -47,6 +63,44 @@ func (r Registry) String() string {
 func (r Registry) Scope(string) string {
 	// The only resource under 'registry' is 'catalog'. http://goo.gl/N9cN9Z
 	return "registry:catalog:*"
+}
+
+func (r Registry) isRFC1918() bool {
+	ipStr := strings.Split(r.Name(), ":")[0]
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	for _, cidr := range []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"} {
+		_, block, _ := net.ParseCIDR(cidr)
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// Scheme returns https scheme for all the endpoints except localhost or when explicitly defined.
+func (r Registry) Scheme() string {
+	if r.insecure {
+		return "http"
+	}
+	if r.isRFC1918() {
+		return "http"
+	}
+	if strings.HasPrefix(r.Name(), "localhost:") {
+		return "http"
+	}
+	if reLocal.MatchString(r.Name()) {
+		return "http"
+	}
+	if reLoopback.MatchString(r.Name()) {
+		return "http"
+	}
+	if reipv6Loopback.MatchString(r.Name()) {
+		return "http"
+	}
+	return "https"
 }
 
 func checkRegistry(name string) error {
@@ -76,4 +130,15 @@ func NewRegistry(name string, strict Strictness) (Registry, error) {
 	}
 
 	return Registry{registry: name}, nil
+}
+
+// NewInsecureRegistry returns an Insecure Registry based on the given name.
+// Strict validation requires explicit, valid RFC 3986 URI authorities to be given.
+func NewInsecureRegistry(name string, strict Strictness) (Registry, error) {
+	reg, err := NewRegistry(name, strict)
+	if err != nil {
+		return Registry{}, err
+	}
+	reg.insecure = true
+	return reg, nil
 }

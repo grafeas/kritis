@@ -24,6 +24,8 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
+	"github.com/grafeas/kritis/pkg/kritis/util"
+	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
@@ -248,6 +250,14 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 	glog.Infof("Found %d ISPs to review image against", len(isps))
 
+	resolvedImages, err := resolveImagesToDigest(images)
+	if err != nil {
+		errMsg := fmt.Sprintf("error resolving tagged images into digest: %v", err)
+		glog.Errorf(errMsg)
+		createDeniedResponse(ar, errMsg)
+		return
+	}
+
 	client, err := admissionConfig.fetchMetadataClient(config)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
@@ -256,7 +266,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		return
 	}
 	r := admissionConfig.reviewer(client)
-	if err := r.Review(images, isps, pod); err != nil {
+	if err := r.Review(resolvedImages, isps, pod); err != nil {
 		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
@@ -356,4 +366,20 @@ func getReviewer(client metadata.Fetcher) reviewer {
 // TODO: This will be removed in future refactoring.
 type reviewer interface {
 	Review(images []string, isps []kritisv1beta1.ImageSecurityPolicy, pod *v1.Pod) error
+}
+
+func resolveImagesToDigest(images []string) ([]string, error) {
+	resolved := []string{}
+
+	for _, image := range images {
+		resolvedImage, err := util.ResolveImageToDigest(image)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to resolve image into digest")
+		}
+
+		glog.Infof("Resolved tagged image %s to digest %s", image, resolvedImage)
+		resolved = append(resolved, resolvedImage)
+	}
+
+	return resolved, nil
 }
