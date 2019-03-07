@@ -87,13 +87,15 @@
     "pkg/authn",
     "pkg/name",
     "pkg/v1",
+    "pkg/v1/google",
     "pkg/v1/partial",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
+    "pkg/v1/stream",
     "pkg/v1/types",
     "pkg/v1/v1util"
   ]
-  revision = "d54baf9aa28edb9b985a6b35b57e26e3410c2443"
+  revision = "4aac97bd085d96caedbc8213ddb6f489b7eb6706"
 
 [[projects]]
   branch = "master"
@@ -650,6 +652,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e1781657363fcc06c0d6d98a7920521b85e9c28d66ce024452cbba89a3995e94"
+  inputs-digest = "7b3735a28db32508110ce4a58ef6c9d0184b0f05d9d558974da8d38ba7f070f4"
   solver-name = "gps-cdcl"
   solver-version = 1
