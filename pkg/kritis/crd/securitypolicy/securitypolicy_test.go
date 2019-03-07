@@ -277,12 +277,14 @@ func Test_BuiltProjectIDs(t *testing.T) {
 			}
 			for _, sc := range c.subCases {
 				t.Run(sc.name, func(t *testing.T) {
+					builds := []metadata.Build{}
+					if sc.buildProvenance != nil {
+						builds = append(builds, metadata.Build{
+							Provenance: sc.buildProvenance,
+						})
+					}
 					mc := &testutil.MockMetadataClient{
-						Build: []metadata.Build{
-							{
-								Provenance: sc.buildProvenance,
-							},
-						},
+						Build: builds,
 					}
 					violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
 					if err != nil {
