@@ -119,7 +119,6 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		}
 	}
 
-	glog.Infof("handling deployment %s...", deployment.Name)
 	reviewDeployment(&deployment, admitResponse, config)
 	return nil
 }
