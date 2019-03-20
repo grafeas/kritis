@@ -115,6 +115,7 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		// Before deleting a deployment, kubernetes always make replicas to 0 which causes an
 		// UPDATE event.
 		if !hasNewImage(DeploymentImages(deployment), DeploymentImages(oldDeployment)) {
+			glog.Infof("ignoring deployment %s as no new image has been added", deployment.Name)
 			return nil
 		}
 	}
@@ -154,6 +155,7 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		// Before deleting a replicaSet, kubernetes always make replicas to 0 which causes an
 		// UPDATE event.
 		if !hasNewImage(ReplicaSetImages(replicaSet), ReplicaSetImages(oldReplicaSet)) {
+			glog.Infof("ignoring replica set %s as no new image has been added", replicaSet.Name)
 			return nil
 		}
 	}
