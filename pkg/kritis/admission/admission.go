@@ -101,6 +101,25 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		return err
 	}
 	glog.Infof("handling deployment %s...", deployment.Name)
+
+	operation := ar.Request.Operation
+	if operation == v1beta1.Update {
+		oldDeployment := appsv1.Deployment{}
+		if err := json.Unmarshal(ar.Request.OldObject.Raw, &oldDeployment); err != nil {
+			return err
+		}
+
+		// For UPDATE events, if there is no new image added, we can skip the check.
+		// This is required, so that DELETE events work for Deployment.
+		//
+		// Before deleting a deployment, kubernetes always make replicas to 0 which causes an
+		// UPDATE event.
+		if !hasNewImage(DeploymentImages(deployment), DeploymentImages(oldDeployment)) {
+			glog.Infof("ignoring deployment %s as no new image has been added", deployment.Name)
+			return nil
+		}
+	}
+
 	reviewDeployment(&deployment, admitResponse, config)
 	return nil
 }
@@ -121,6 +140,25 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		return err
 	}
 	glog.Infof("handling replica set %s...", replicaSet.Name)
+
+	operation := ar.Request.Operation
+	if operation == v1beta1.Update {
+		oldReplicaSet := appsv1.ReplicaSet{}
+		if err := json.Unmarshal(ar.Request.OldObject.Raw, &oldReplicaSet); err != nil {
+			return err
+		}
+
+		// For UPDATE events, if there is no new image added, we can skip the check.
+		// This is required, so that DELETE events work for ReplicaSet.
+		//
+		// Before deleting a replicaSet, kubernetes always make replicas to 0 which causes an
+		// UPDATE event.
+		if !hasNewImage(ReplicaSetImages(replicaSet), ReplicaSetImages(oldReplicaSet)) {
+			glog.Infof("ignoring replica set %s as no new image has been added", replicaSet.Name)
+			return nil
+		}
+	}
+
 	reviewReplicaSet(&replicaSet, admitResponse, config)
 	return nil
 }

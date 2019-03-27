@@ -56,3 +56,19 @@ func ReplicaSetImages(rs appsv1.ReplicaSet) []string {
 	}
 	return images
 }
+
+func hasNewImage(images, oldImages []string) bool {
+	for _, image := range images {
+		var isOld bool
+		for _, oldImage := range oldImages {
+			if image == oldImage {
+				isOld = true
+			}
+		}
+		if !isOld {
+			return true
+		}
+	}
+
+	return false
+}

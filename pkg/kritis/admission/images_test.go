@@ -100,3 +100,47 @@ func Test_ReplicaSetImages(t *testing.T) {
 	actual := ReplicaSetImages(rs)
 	testutil.DeepEqual(t, expected, actual)
 }
+
+func Test_hasNewImage(t *testing.T) {
+	cases := map[string]struct {
+		images    []string
+		oldImages []string
+		want      bool
+	}{
+		"noImages": {
+			images:    []string{""},
+			oldImages: []string{""},
+			want:      false,
+		},
+		"sameImages": {
+			images:    []string{"image1"},
+			oldImages: []string{"image1"},
+			want:      false,
+		},
+		"differentImages": {
+			images:    []string{"image0"},
+			oldImages: []string{"image1"},
+			want:      true,
+		},
+		"noNewImage": {
+			images:    []string{"image1"},
+			oldImages: []string{"image0", "image1"},
+			want:      false,
+		},
+		"newImage": {
+			images:    []string{"image2"},
+			oldImages: []string{"image0", "image1"},
+			want:      true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := hasNewImage(tc.images, tc.oldImages)
+
+			if tc.want != got {
+				t.Fatalf("got %#v, want %#v", got, tc.want)
+			}
+		})
+	}
+}
