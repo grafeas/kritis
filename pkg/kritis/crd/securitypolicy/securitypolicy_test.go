@@ -208,3 +208,99 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 		t.Errorf("got unexpected violations: %v", violations)
 	}
 }
+
+func Test_BuiltProjectIDs(t *testing.T) {
+	type subCase struct {
+		name            string
+		buildProvenance *metadata.BuildProvenance
+		hasViolation    bool
+	}
+
+	var cases = []struct {
+		name            string
+		builtProjectIDs []string
+		subCases        []subCase
+	}{
+		{
+			"ISP has 1 buildProjectIDs",
+			[]string{"kritis-p-1"},
+			[]subCase{
+				{
+					"should have a build projectID violation",
+					nil,
+					true,
+				},
+				{
+					"allowed with correct build projectID",
+					&metadata.BuildProvenance{
+						ProjectID: "kritis-p-1",
+						Creator:   "kritis-p-1@example.com",
+					},
+					false,
+				},
+			},
+		},
+		{
+			"ISP has 2 buildProjectIDs",
+			[]string{"kritis-p-1", "kritis-p-2"},
+			[]subCase{
+				{
+					"should have a build projectID violation",
+					nil,
+					true,
+				},
+				{
+					"allowed with correct build projectID (1)",
+					&metadata.BuildProvenance{
+						ProjectID: "kritis-p-1",
+						Creator:   "kritis-p-1@example.com",
+					},
+					false,
+				},
+				{
+					"allowed with correct build projectID (2)",
+					&metadata.BuildProvenance{
+						ProjectID: "kritis-p-2",
+						Creator:   "kritis-p-2@example.com",
+					},
+					false,
+				},
+			},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			isp := v1beta1.ImageSecurityPolicy{
+				Spec: v1beta1.ImageSecurityPolicySpec{
+					BuiltProjectIDs: c.builtProjectIDs,
+				},
+			}
+			for _, sc := range c.subCases {
+				t.Run(sc.name, func(t *testing.T) {
+					builds := []metadata.Build{}
+					if sc.buildProvenance != nil {
+						builds = append(builds, metadata.Build{
+							Provenance: sc.buildProvenance,
+						})
+					}
+					mc := &testutil.MockMetadataClient{
+						Build: builds,
+					}
+					violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+					if err != nil {
+						t.Errorf("error validating isp: %v", err)
+					}
+					if sc.hasViolation {
+						if len(violations) != 1 {
+							t.Errorf("should have a violation")
+						}
+					} else {
+						if violations != nil {
+							t.Errorf("got unexpected violations: %v", violations)
+						}
+					}
+				})
+			}
+		})
+	}
+}

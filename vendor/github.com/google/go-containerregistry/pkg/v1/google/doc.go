@@ -12,29 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1util
-
-import (
-	"io"
-)
-
-func nop() error {
-	return nil
-}
-
-// NopWriteCloser wraps the io.Writer as an io.WriteCloser with a Close() method that does nothing.
-func NopWriteCloser(w io.Writer) io.WriteCloser {
-	return &writeAndCloser{
-		Writer:    w,
-		CloseFunc: nop,
-	}
-}
-
-// NopReadCloser wraps the io.Reader as an io.ReadCloser with a Close() method that does nothing.
-// This is technically redundant with ioutil.NopCloser, but provided for symmetry and clarity.
-func NopReadCloser(r io.Reader) io.ReadCloser {
-	return &readAndCloser{
-		Reader:    r,
-		CloseFunc: nop,
-	}
-}
+// Package google provides facilities for listing images in gcr.io.
+package google

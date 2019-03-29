@@ -36,6 +36,8 @@ type ImageSecurityPolicySpec struct {
 	ImageWhitelist                   []string                         `json:"imageWhitelist"`
 	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 	AttestationAuthorityNames        []string                         `json:"attestationAuthorityNames"`
+
+	BuiltProjectIDs []string `json:"builtProjectIDs"`
 }
 
 // PackageVulnerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy

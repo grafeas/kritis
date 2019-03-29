@@ -28,6 +28,7 @@ import (
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
+	Build           []metadata.Build
 	Occ             map[string]string
 }
 
@@ -63,11 +64,16 @@ func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGP
 	return m.PGPAttestations, nil
 }
 
+func (m *MockMetadataClient) Builds(containerImage string) ([]metadata.Build, error) {
+	return m.Build, nil
+}
+
 func NilFetcher() func() (metadata.Fetcher, error) {
 	return func() (metadata.Fetcher, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
 			PGPAttestations: []metadata.PGPAttestation{},
+			Build:           []metadata.Build{},
 		}, nil
 	}
 }

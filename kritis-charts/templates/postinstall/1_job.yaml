@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.postinstall.job.name }}
+  namespace: {{ .Values.serviceNamespace }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+  labels:
+    {{ .Values.kritisInstallLabel }}: ""
+spec:
+  template:
+    metadata:
+      name: {{ .Values.postinstall.job.name }}
+      labels:
+        app: {{ .Values.postinstall.job.name }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      restartPolicy: Never
+      containers:
+        - name: {{ .Values.postinstall.job.name }}
+          image: "{{ .Values.repository }}{{ .Values.postinstall.job.image }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--webhook-name"
+            - {{ .Values.serviceName }}
+            - "--service-name"
+            - {{ .Values.serviceName }}
+            - "--tls-secret-name"
+            - {{ .Values.tlsSecretName }}
+            - "--deployment-webhook-name"
+            - {{ .Values.serviceNameDeployments }}
+            - "--kritis-install-label"
+            - {{ .Values.kritisInstallLabel }}
+          command: {{ .Values.postinstall.job.command }}

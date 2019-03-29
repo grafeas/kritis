@@ -24,6 +24,12 @@ spec:
         label: {{ .Values.serviceLabel }}
         release: {{ .Release.Name }}
     spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+      - name: {{ . }}
+      {{- end }}
+      {{- end }}
       containers:
       - name: {{ .Values.image.name }}
         image: "{{ .Values.repository }}{{ .Values.image.image }}:{{ .Values.image.tag }}"
@@ -43,6 +49,10 @@ spec:
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /secret/{{ .Values.gacSecret.path }}
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
       volumes:
         - name: tls
           secret:

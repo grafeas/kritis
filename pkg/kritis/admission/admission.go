@@ -24,6 +24,8 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
+	"github.com/grafeas/kritis/pkg/kritis/util"
+	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
@@ -38,7 +40,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	"k8s.io/api/admission/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -99,6 +101,25 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		return err
 	}
 	glog.Infof("handling deployment %s...", deployment.Name)
+
+	operation := ar.Request.Operation
+	if operation == v1beta1.Update {
+		oldDeployment := appsv1.Deployment{}
+		if err := json.Unmarshal(ar.Request.OldObject.Raw, &oldDeployment); err != nil {
+			return err
+		}
+
+		// For UPDATE events, if there is no new image added, we can skip the check.
+		// This is required, so that DELETE events work for Deployment.
+		//
+		// Before deleting a deployment, kubernetes always make replicas to 0 which causes an
+		// UPDATE event.
+		if !hasNewImage(DeploymentImages(deployment), DeploymentImages(oldDeployment)) {
+			glog.Infof("ignoring deployment %s as no new image has been added", deployment.Name)
+			return nil
+		}
+	}
+
 	reviewDeployment(&deployment, admitResponse, config)
 	return nil
 }
@@ -119,6 +140,25 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		return err
 	}
 	glog.Infof("handling replica set %s...", replicaSet.Name)
+
+	operation := ar.Request.Operation
+	if operation == v1beta1.Update {
+		oldReplicaSet := appsv1.ReplicaSet{}
+		if err := json.Unmarshal(ar.Request.OldObject.Raw, &oldReplicaSet); err != nil {
+			return err
+		}
+
+		// For UPDATE events, if there is no new image added, we can skip the check.
+		// This is required, so that DELETE events work for ReplicaSet.
+		//
+		// Before deleting a replicaSet, kubernetes always make replicas to 0 which causes an
+		// UPDATE event.
+		if !hasNewImage(ReplicaSetImages(replicaSet), ReplicaSetImages(oldReplicaSet)) {
+			glog.Infof("ignoring replica set %s as no new image has been added", replicaSet.Name)
+			return nil
+		}
+	}
+
 	reviewReplicaSet(&replicaSet, admitResponse, config)
 	return nil
 }
@@ -206,11 +246,15 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 
 func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview, config *Config) {
 	images := DeploymentImages(*deployment)
-	// check if the Deployments's owner has already been validated
-	if checkOwners(images, &deployment.ObjectMeta) {
-		glog.Infof("all owners for Deployment %s have been validated, returning successful status", deployment.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the Deployments's owner has already been validated
+	// if checkOwners(images, &deployment.ObjectMeta) {
+	// 	glog.Infof("all owners for Deployment %s have been validated, returning successful status", deployment.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the deployment
 	if checkBreakglass(&deployment.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
@@ -238,9 +282,18 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		return
 	}
 	if len(isps) == 0 {
-		glog.Errorf("No ISP's found in namespace %s", ns)
-	} else {
-		glog.Infof("Found %d ISPs to review image against", len(isps))
+		glog.Errorf("No ISP's found in namespace %s, skip reviewing", ns)
+		return
+	}
+
+	glog.Infof("Found %d ISPs to review image against", len(isps))
+
+	resolvedImages, err := resolveImagesToDigest(images)
+	if err != nil {
+		errMsg := fmt.Sprintf("error resolving tagged images into digest: %v", err)
+		glog.Errorf(errMsg)
+		createDeniedResponse(ar, errMsg)
+		return
 	}
 
 	client, err := admissionConfig.fetchMetadataClient(config)
@@ -251,7 +304,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		return
 	}
 	r := admissionConfig.reviewer(client)
-	if err := r.Review(images, isps, pod); err != nil {
+	if err := r.Review(resolvedImages, isps, pod); err != nil {
 		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
@@ -259,11 +312,15 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	images := PodImages(*pod)
-	// check if the Pod's owner has already been validated
-	if checkOwners(images, &pod.ObjectMeta) {
-		glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the Pod's owner has already been validated
+	// if checkOwners(images, &pod.ObjectMeta) {
+	// 	glog.Infof("all owners for Pod %s have been validated, returning sucessful status", pod.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the pod
 	if checkBreakglass(&pod.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
@@ -274,11 +331,15 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 
 func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview, config *Config) {
 	images := ReplicaSetImages(*replicaSet)
-	// check if the ReplicaSet's owner has already been validated
-	if checkOwners(images, &replicaSet.ObjectMeta) {
-		glog.Infof("all owners for ReplicaSet %s have been validated, returning successful status", replicaSet.Name)
-		return
-	}
+
+	// Commented out (dragon3)
+	//
+	// // check if the ReplicaSet's owner has already been validated
+	// if checkOwners(images, &replicaSet.ObjectMeta) {
+	// 	glog.Infof("all owners for ReplicaSet %s have been validated, returning successful status", replicaSet.Name)
+	// 	return
+	// }
+
 	// check for a breakglass annotation on the replica set
 	if checkBreakglass(&replicaSet.ObjectMeta) {
 		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
@@ -343,4 +404,20 @@ func getReviewer(client metadata.Fetcher) reviewer {
 // TODO: This will be removed in future refactoring.
 type reviewer interface {
 	Review(images []string, isps []kritisv1beta1.ImageSecurityPolicy, pod *v1.Pod) error
+}
+
+func resolveImagesToDigest(images []string) ([]string, error) {
+	resolved := []string{}
+
+	for _, image := range images {
+		resolvedImage, err := util.ResolveImageToDigest(image)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to resolve image into digest")
+		}
+
+		glog.Infof("Resolved tagged image %s to digest %s", image, resolvedImage)
+		resolved = append(resolved, resolvedImage)
+	}
+
+	return resolved, nil
 }

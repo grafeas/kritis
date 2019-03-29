@@ -21,40 +21,10 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/install"
-	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/sirupsen/logrus"
 )
-
-func waitForPreinstallPod() {
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		logrus.Fatalf("error getting kubernetes client: %v", err)
-	}
-	if err := kubernetesutil.WaitForPodComplete(client.CoreV1().Pods(namespace), "kritis-preinstall"); err != nil {
-		logrus.Fatalf("preinstall pod didn't complete: %v", err)
-	}
-}
-
-func waitForTLSSecret() {
-	foundSecret := false
-	var secretErr error
-	for i := 0; i < 20; i++ {
-		tlsSecretCmd := exec.Command("kubectl", "get", "secret", tlsSecretName, "--namespace", namespace)
-		_, err := tlsSecretCmd.CombinedOutput()
-		if err == nil {
-			foundSecret = true
-			break
-		}
-		secretErr = err
-		time.Sleep(500 * time.Millisecond)
-	}
-	if !foundSecret {
-		logrus.Fatalf("couldn't find csr : %v", secretErr)
-	}
-}
 
 func getCaBundle() {
 	certCmd := exec.Command("kubectl", "get", "secret", tlsSecretName, "-o", "jsonpath='{.data.tls\\.crt}'", "--namespace", namespace)
@@ -114,7 +84,7 @@ webhooks:
         - "*" # TODO(aaron-prindle) minimize this capture group
         operations:
           - CREATE
-          # - UPDATE # TODO(aaron-prindle) add back update when whitelist and helm do not collide
+          - UPDATE
         resources:
           - deployments
           - replicasets
