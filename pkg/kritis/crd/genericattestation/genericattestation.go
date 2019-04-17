@@ -27,7 +27,7 @@ import (
 
 // GenericAttestationPolicies returns all GAPs in the specified namespaces
 // Pass in an empty string to get all GAPs in all namespaces
-func GenericAttestationPolicies(namespace string) ([]v1beta1.GenericAttestationPolicy, error) {
+func Policies(namespace string) ([]v1beta1.GenericAttestationPolicy, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error building config: %v", err)

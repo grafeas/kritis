@@ -223,6 +223,11 @@ func installCRDs() {
 	attestationAuthorityCmd.Stdin = bytes.NewReader([]byte(crd))
 	install.RunCommand(attestationAuthorityCmd)
 
+	gapCommand := exec.Command("kubectl", "apply", "-f", "-")
+	crd = fmt.Sprintf(genericAttestationPolicyCRD, kritisInstallLabel)
+	gapCommand.Stdin = bytes.NewReader([]byte(crd))
+	install.RunCommand(gapCommand)
+
 	ispCommand := exec.Command("kubectl", "apply", "-f", "-")
 	crd = fmt.Sprintf(imageSecurityPolicyCRD, kritisInstallLabel)
 	ispCommand.Stdin = bytes.NewReader([]byte(crd))

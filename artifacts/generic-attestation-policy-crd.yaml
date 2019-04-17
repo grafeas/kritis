@@ -5,7 +5,7 @@ metadata:
 spec:
   group: kritis.grafeas.io
   version: v1beta1
+  scope: Namespaced
   names:
     kind: GenericAttestationPolicy
     plural: genericattestationpolicies
-  scope: Namespaced
