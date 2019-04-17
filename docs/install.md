@@ -53,9 +53,7 @@ Enable the Container Registry API:
 gcloud services enable containerregistry.googleapis.com
 ```
 
-Wait for the above API's to be fully enabled, then enable vulnerability scanning:
-
-- [Enable vulnerability scanning](https://console.cloud.google.com/gcr/settings)
+Wait for the above API's to be fully enabled, then ensure [vulnerability scanning is enabled](https://console.cloud.google.com/gcr/settings).
 
 For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis).
 
