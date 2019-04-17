@@ -34,6 +34,14 @@ type BuildPolicyListerExpansion interface{}
 // BuildPolicyNamespaceLister.
 type BuildPolicyNamespaceListerExpansion interface{}
 
+// GenericAttestationPolicyListerExpansion allows custom methods to be added to
+// GenericAttestationPolicyLister.
+type GenericAttestationPolicyListerExpansion interface{}
+
+// GenericAttestationPolicyNamespaceListerExpansion allows custom methods to be added to
+// GenericAttestationPolicyNamespaceLister.
+type GenericAttestationPolicyNamespaceListerExpansion interface{}
+
 // ImageSecurityPolicyListerExpansion allows custom methods to be added to
 // ImageSecurityPolicyLister.
 type ImageSecurityPolicyListerExpansion interface{}
