@@ -9,3 +9,4 @@ spec:
   names:
     kind: GenericAttestationPolicy
     plural: genericattestationpolicies
+    singular: genericattestationpolicy
