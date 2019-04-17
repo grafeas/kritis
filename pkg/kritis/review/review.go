@@ -21,6 +21,9 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
@@ -30,8 +33,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
-	v1 "k8s.io/api/core/v1"
 )
 
 type Reviewer struct {
@@ -43,6 +44,7 @@ type Config struct {
 	Validate  securitypolicy.ValidateFunc
 	Secret    secrets.Fetcher
 	Auths     authority.Fetcher
+	Attestors securitypolicy.AttestorFetcher
 	Strategy  violation.Strategy
 	IsWebhook bool
 }
@@ -67,31 +69,32 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 	}
 
 	for _, isp := range isps {
-		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
+		glog.Infof("Validating against ImageSecurityPolicy: %s", isp.Name)
 		// Get all AttestationAuthorities in this policy.
 		auths, err := r.getAttestationAuthoritiesForISP(isp)
 		if err != nil {
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
+			glog.Infof("Checking if the image already has valid Kritis attestations: %s", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
-			// Skip vulnerability check for Webhook if attestations found.
+			// Skip check for Webhook if attestations found.
 			if isAttested && r.config.IsWebhook {
+				glog.Infof("Skip validating policy since the image already has valid Kritis attestations: %s", image)
 				continue
 			}
 
-			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.Validate(isp, image, r.client)
+			glog.Infof("Validating policy: %s", image)
+			violations, err := r.config.Validate(isp, image, r.client, r.config.Attestors)
 			if err != nil {
-				return fmt.Errorf("error validating image security policy %v", err)
+				return fmt.Errorf("failed validating image security policy: %v", err)
 			}
 			if len(violations) != 0 {
 				return r.handleViolations(image, pod, violations)
 			}
 			if r.config.IsWebhook {
 				if err := r.addAttestations(image, attestations, isp); err != nil {
-					glog.Errorf("error adding attestations %s", err)
+					glog.Errorf("failed adding attestations: %s", err)
 				}
 			}
 			glog.Infof("Found no violations for %s within ISP %s", image, isp.Name)

@@ -149,7 +149,7 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
-	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, metadataFetcher metadata.Fetcher, attestorFetcher securitypolicy.AttestorFetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
 			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}

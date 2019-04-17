@@ -29,6 +29,7 @@ const (
 	FixUnavailableViolation
 	SeverityViolation
 	BuildProjectIDViolation
+	RequiredAttestationViolation
 )
 
 // Violation represents a Policy Violation.

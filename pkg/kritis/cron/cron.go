@@ -55,6 +55,10 @@ var (
 )
 
 func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
+	attestorFetcher, err := securitypolicy.NewAttestorFetcher()
+	if err != nil {
+		glog.Fatalf("failed to create an attestorFetcher: %v", err)
+	}
 
 	cfg := Config{
 		PodLister: pods.Pods,
@@ -65,6 +69,7 @@ func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
 			Strategy:  defaultViolationStrategy,
 			IsWebhook: false,
 			Validate:  securitypolicy.ValidateImageSecurityPolicy,
+			Attestors: attestorFetcher,
 		},
 		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}

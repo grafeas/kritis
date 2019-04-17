@@ -391,12 +391,18 @@ func checkBreakglass(meta *metav1.ObjectMeta) bool {
 }
 
 func getReviewer(client metadata.Fetcher) reviewer {
+	attestorFetcher, err := securitypolicy.NewAttestorFetcher()
+	if err != nil {
+		glog.Fatalf("failed to create an attestorFetcher: %v", err)
+	}
+
 	return review.New(client, &review.Config{
 		Strategy:  defaultViolationStrategy,
 		IsWebhook: true,
 		Secret:    secrets.Fetch,
 		Auths:     authority.Authority,
 		Validate:  securitypolicy.ValidateImageSecurityPolicy,
+		Attestors: attestorFetcher,
 	})
 }
 

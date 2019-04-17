@@ -288,6 +288,11 @@ func (in *ImageSecurityPolicySpec) DeepCopyInto(out *ImageSecurityPolicySpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.RequireAttestationsBy != nil {
+		in, out := &in.RequireAttestationsBy, &out.RequireAttestationsBy
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
