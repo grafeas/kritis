@@ -1,7 +1,7 @@
 apiVersion: kritis.grafeas.io/v1beta1
 kind: GenericAttestationPolicy
 metadata:
-  name: my-isp
+  name: my-gap
   namespace: default
 spec:
   attestationAuthorityNames:
