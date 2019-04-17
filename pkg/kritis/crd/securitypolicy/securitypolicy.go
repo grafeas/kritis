@@ -60,7 +60,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		return nil, nil
 	}
 	var violations []policy.Violation
-	// Next, check if image in qualified
+	// Next, check if image is qualified
 	if !resolve.FullyQualifiedImage(image) {
 		violations = append(violations, Violation{
 			vType:  policy.UnqualifiedImageViolation,
