@@ -63,7 +63,6 @@ kritis requires a cluster running Kubernetes v1.9.2 or newer. You may create one
 
 ```shell
 gcloud components update
-gcloud config set project $PROJECT
 gcloud config set compute/zone us-central1-a
 gcloud container clusters create kritis-test --num-nodes=2
 ```
