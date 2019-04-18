@@ -5,6 +5,7 @@ Installing Kritis, creates a number of resources in your cluster. Here are the m
 | Resource Name | Resource Kind | Description |
 |---------------|---------------|----------------|
 | kritis-validation-hook| ValidatingWebhookConfiguration | This is Kubernetes [Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers) which enforces the policies. |
+| genericattestationpolicies.kritis.grafeas.io | crd | This CRD defines the generic attestation policy kind GenericAttestationPolicy.|
 | imagesecuritypolicies.kritis.grafeas.io | crd | This CRD defines the image security policy kind ImageSecurityPolicy.|
 | attestationauthorities.kritis.grafeas.io | crd | The CRD defines the attestation authority policy kind AttestationAuthority.|
 | tls-webhook-secret | secret | Secret required for ValidatingWebhookConfiguration|

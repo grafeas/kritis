@@ -36,6 +36,10 @@ func (c *FakeKritisV1beta1) BuildPolicies(namespace string) v1beta1.BuildPolicyI
 	return &FakeBuildPolicies{c, namespace}
 }
 
+func (c *FakeKritisV1beta1) GenericAttestationPolicies(namespace string) v1beta1.GenericAttestationPolicyInterface {
+	return &FakeGenericAttestationPolicies{c, namespace}
+}
+
 func (c *FakeKritisV1beta1) ImageSecurityPolicies(namespace string) v1beta1.ImageSecurityPolicyInterface {
 	return &FakeImageSecurityPolicies{c, namespace}
 }

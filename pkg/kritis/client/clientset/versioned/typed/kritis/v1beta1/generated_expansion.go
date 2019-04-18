@@ -22,6 +22,8 @@ type AttestationAuthorityExpansion interface{}
 
 type BuildPolicyExpansion interface{}
 
+type GenericAttestationPolicyExpansion interface{}
+
 type ImageSecurityPolicyExpansion interface{}
 
 type KritisConfigExpansion interface{}

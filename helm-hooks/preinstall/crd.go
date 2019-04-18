@@ -32,6 +32,20 @@ spec:
         singular: attestationauthority
         kind: AttestationAuthority`
 
+	genericAttestationPolicyCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+    name: genericattestationpolicies.kritis.grafeas.io
+    labels:
+        %s: ""
+spec:
+    group: kritis.grafeas.io
+    version: v1beta1
+    scope: Namespaced
+    names:
+        kind: GenericAttestationPolicy
+        plural: genericattestationpolicies`
+
 	imageSecurityPolicyCRD = `apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:

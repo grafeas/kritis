@@ -29,6 +29,7 @@ type KritisV1beta1Interface interface {
 	RESTClient() rest.Interface
 	AttestationAuthoritiesGetter
 	BuildPoliciesGetter
+	GenericAttestationPoliciesGetter
 	ImageSecurityPoliciesGetter
 	KritisConfigsGetter
 }
@@ -44,6 +45,10 @@ func (c *KritisV1beta1Client) AttestationAuthorities(namespace string) Attestati
 
 func (c *KritisV1beta1Client) BuildPolicies(namespace string) BuildPolicyInterface {
 	return newBuildPolicies(c, namespace)
+}
+
+func (c *KritisV1beta1Client) GenericAttestationPolicies(namespace string) GenericAttestationPolicyInterface {
+	return newGenericAttestationPolicies(c, namespace)
 }
 
 func (c *KritisV1beta1Client) ImageSecurityPolicies(namespace string) ImageSecurityPolicyInterface {
