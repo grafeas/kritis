@@ -367,9 +367,8 @@ func Test_RequireAttestationsBy(t *testing.T) {
 					Name: "attestor-1",
 					PublicKeys: []*AttestorPublicKey{
 						{
-							ID:          "attestor-1-id",
-							AsciiArmor:  testutil.Base64PublicTestKey(t),
-							Fingerprint: testutil.PgpKeyFingerprint,
+							ID:         testutil.PgpKeyFingerprint,
+							AsciiArmor: testutil.Base64PublicTestKey(t),
 						},
 					},
 				}, nil

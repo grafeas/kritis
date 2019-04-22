@@ -35,7 +35,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 )
 
 // ValidateFunc defines the type for Validating Image Security Policies
@@ -246,9 +245,8 @@ type Attestor struct {
 }
 
 type AttestorPublicKey struct {
-	ID          string
-	AsciiArmor  string
-	Fingerprint string
+	ID         string // ID = Fingerprint
+	AsciiArmor string
 }
 
 type AttestorFetcher interface {
@@ -280,14 +278,9 @@ func (f *binauthzAttestorFetcher) GetAttestor(name string) (*Attestor, error) {
 
 	pubKeys := []*AttestorPublicKey{}
 	for _, pubKey := range a.UserOwnedDrydockNote.PublicKeys {
-		fingerprint, err := fingerprint(pubKey.AsciiArmoredPgpPublicKey)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get fingerprint of PGP public key: %s", pubKey.Id)
-		}
 		pubKeys = append(pubKeys, &AttestorPublicKey{
-			ID:          pubKey.Id,
-			AsciiArmor:  pubKey.AsciiArmoredPgpPublicKey,
-			Fingerprint: fingerprint,
+			ID:         pubKey.Id,
+			AsciiArmor: pubKey.AsciiArmoredPgpPublicKey,
 		})
 	}
 
@@ -299,14 +292,6 @@ func (f *binauthzAttestorFetcher) GetAttestor(name string) (*Attestor, error) {
 	return attestor, nil
 }
 
-func fingerprint(key string) (string, error) {
-	s, err := secrets.NewPgpKey("", "", key)
-	if err != nil {
-		return "", err
-	}
-	return s.Fingerprint(), nil
-}
-
 func hasRequiredAttestation(image string, attestor *Attestor, attestations []metadata.PGPAttestation) (bool, error) {
 	sig, err := container.NewAtomicContainerSig(image, map[string]string{})
 	if err != nil {
@@ -316,7 +301,7 @@ func hasRequiredAttestation(image string, attestor *Attestor, attestations []met
 	var verified bool
 	for _, attestation := range attestations {
 		for _, pubKey := range attestor.PublicKeys {
-			if pubKey.Fingerprint == attestation.KeyID {
+			if pubKey.ID == attestation.KeyID {
 				if err := sig.VerifyAttestationSignature(pubKey.AsciiArmor, attestation.Signature); err == nil {
 					verified = true
 					break
