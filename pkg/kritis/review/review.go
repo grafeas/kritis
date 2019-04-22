@@ -54,9 +54,40 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
-// Review reviews a set of images against a set of policies
-// Returns error if violations are found and handles them as per violation strategy
-func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
+// ReviewGAP reviews images against generic attestation policies
+// Returns error if violations are found and handles them per violation strategy
+func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+	if len(gaps) == 0 {
+		glog.Info("No Generic Attestation Policies found")
+		return nil
+	}
+
+	for _, image := range images {
+		glog.Infof("Check if %s has valid Attestations.", image)
+		imgAttested := false
+		for _, gap := range gaps {
+			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
+			// Get all AttestationAuthorities in this policy.
+			auths, err := r.getAttestationAuthoritiesForGAP(gap)
+			if err != nil {
+				return err
+			}
+			isAuthAttested, _ := r.fetchAndVerifyAttestations(image, auths, pod)
+			if isAuthAttested {
+				imgAttested = true
+				break
+			}
+		}
+		if !imgAttested {
+			return fmt.Errorf("image %s is not attested", image)
+		}
+	}
+	return nil
+}
+
+// ReviewISP reviews images against image security policies
+// Returns error if violations are found and handles them per violation strategy
+func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
 	images = util.RemoveGloballyWhitelistedImages(images)
 	if len(images) == 0 {
 		glog.Infof("images are all globally whitelisted, returning successful status: %s", images)
@@ -241,6 +272,18 @@ func (r Reviewer) getAttestationAuthoritiesForISP(isp v1beta1.ImageSecurityPolic
 	auths := make([]v1beta1.AttestationAuthority, len(isp.Spec.AttestationAuthorityNames))
 	for i, aName := range isp.Spec.AttestationAuthorityNames {
 		a, err := r.config.Auths(isp.Namespace, aName)
+		if err != nil {
+			return nil, fmt.Errorf("Error getting attestors: %v", err)
+		}
+		auths[i] = *a
+	}
+	return auths, nil
+}
+
+func (r Reviewer) getAttestationAuthoritiesForGAP(gap v1beta1.GenericAttestationPolicy) ([]v1beta1.AttestationAuthority, error) {
+	auths := make([]v1beta1.AttestationAuthority, len(gap.Spec.AttestationAuthorityNames))
+	for i, aName := range gap.Spec.AttestationAuthorityNames {
+		a, err := r.config.Auths(gap.Namespace, aName)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting attestors: %v", err)
 		}

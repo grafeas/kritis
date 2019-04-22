@@ -31,7 +31,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/admission/v1beta1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -105,6 +105,9 @@ func Test_AdmissionResponse(t *testing.T) {
 		{"valid response when no review error", false, constants.SuccessStatus, constants.SuccessMessage},
 		{"valid response when review error", true, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
 	}
+	mockGAP := func(namespace string) ([]kritisv1beta1.GenericAttestationPolicy, error) {
+		return []kritisv1beta1.GenericAttestationPolicy{{Spec: kritisv1beta1.GenericAttestationPolicySpec{}}}, nil
+	}
 	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
 		return []kritisv1beta1.ImageSecurityPolicy{{Spec: kritisv1beta1.ImageSecurityPolicySpec{}}}, nil
 	}
@@ -118,8 +121,9 @@ func Test_AdmissionResponse(t *testing.T) {
 				fetchMetadataClient: func(config *Config) (metadata.Fetcher, error) {
 					return testutil.NilFetcher()()
 				},
-				fetchImageSecurityPolicies: mockISP,
-				reviewer:                   mReviewer,
+				fetchGenericAttestationPolicies: mockGAP,
+				fetchImageSecurityPolicies:      mockISP,
+				reviewer:                        mReviewer,
 			}
 			RunTest(t, testConfig{
 				mockConfig: mockConfig,

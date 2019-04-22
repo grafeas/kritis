@@ -76,7 +76,7 @@ func TestHasValidAttestations(t *testing.T) {
 	secs := map[string]*secrets.PGPSigningSecret{
 		"test-success": successSec,
 	}
-	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
+	sMock := func(_ string, name string) (*secrets.PGPSigningSecret, error) {
 		s, ok := secs[name]
 		if !ok {
 			return nil, fmt.Errorf("secret not found")
@@ -111,7 +111,134 @@ func TestHasValidAttestations(t *testing.T) {
 	}
 }
 
-func TestReview(t *testing.T) {
+func TestReviewGAP(t *testing.T) {
+	sec, pub := testutil.CreateSecret(t, "sec")
+	secFpr := sec.PgpKey.Fingerprint()
+	img := testutil.QualifiedImage
+	sig, err := util.CreateAttestationSignature(img, sec)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
+		return sec, nil
+	}
+	validAtts := []metadata.PGPAttestation{{Signature: sig, KeyID: secFpr}}
+
+	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	invalidAtts := []metadata.PGPAttestation{{Signature: invalidSig, KeyID: secFpr}}
+
+	var gap = v1beta1.GenericAttestationPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foo",
+		},
+		Spec: v1beta1.GenericAttestationPolicySpec{
+			AttestationAuthorityNames: []string{"test"},
+		},
+	}
+	var gaps = []v1beta1.GenericAttestationPolicy{gap}
+	var twoGaps = []v1beta1.GenericAttestationPolicy{gap,
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: v1beta1.GenericAttestationPolicySpec{
+				AttestationAuthorityNames: []string{"unknown"},
+			},
+		},
+	}
+	authMock := func(_ string, name string) (*v1beta1.AttestationAuthority, error) {
+		return &v1beta1.AttestationAuthority{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec: v1beta1.AttestationAuthoritySpec{
+				NoteReference:        "provider/test",
+				PrivateKeySecretName: "test",
+				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+			}}, nil
+	}
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+		return nil, nil
+	}
+
+	tests := []struct {
+		name         string
+		image        string
+		policies     []v1beta1.GenericAttestationPolicy
+		attestations []metadata.PGPAttestation
+		isAttested   bool
+		shouldErr    bool
+	}{
+		{
+			name:         "valid image with attestation",
+			image:        img,
+			policies:     gaps,
+			attestations: validAtts,
+			isAttested:   true,
+			shouldErr:    false,
+		},
+		{
+			name:         "image without attestation",
+			image:        img,
+			policies:     gaps,
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "image without policies",
+			image:        img,
+			policies:     []v1beta1.GenericAttestationPolicy{},
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    false,
+		},
+		{
+			name:         "image with invalid attestation",
+			image:        img,
+			policies:     gaps,
+			attestations: invalidAtts,
+			isAttested:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "image complies 1 policy",
+			image:        img,
+			policies:     twoGaps,
+			attestations: validAtts,
+			isAttested:   true,
+			shouldErr:    false,
+		},
+	}
+	for _, tc := range tests {
+		th := violation.MemoryStrategy{
+			Violations:   map[string]bool{},
+			Attestations: map[string]bool{},
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			cMock := &testutil.MockMetadataClient{
+				PGPAttestations: tc.attestations,
+			}
+			r := New(cMock, &Config{
+				Validate:  mockValidate,
+				Secret:    sMock,
+				Auths:     authMock,
+				IsWebhook: true,
+				Strategy:  &th,
+			})
+			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil); (err != nil) != tc.shouldErr {
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+			}
+			if th.Attestations[tc.image] != tc.isAttested {
+				t.Errorf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
+			}
+		})
+	}
+}
+
+func TestReviewISP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
 	secFpr := sec.PgpKey.Fingerprint()
 	vulnImage := testutil.QualifiedImage
@@ -126,7 +253,7 @@ func TestReview(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
+	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
 	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}}
@@ -140,7 +267,7 @@ func TestReview(t *testing.T) {
 			},
 		},
 	}
-	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
+	authMock := func(_ string, name string) (*v1beta1.AttestationAuthority, error) {
 		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
@@ -149,7 +276,7 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
-	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.Fetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
 			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}
@@ -170,78 +297,78 @@ func TestReview(t *testing.T) {
 		attestations      []metadata.PGPAttestation
 		handledViolations int
 		isAttested        bool
-		shdAttestImage    bool
-		shdErr            bool
+		shouldAttestImage bool
+		shouldErr         bool
 	}{
 		{
-			name:              "vulnz w attestation for Webhook shd not handle voilations",
+			name:              "vulnz w attestation for Webhook should not handle voilations",
 			image:             vulnImage,
 			isWebhook:         true,
 			attestations:      validAtts,
 			handledViolations: 0,
 			isAttested:        true,
-			shdAttestImage:    false,
-			shdErr:            false,
+			shouldAttestImage: false,
+			shouldErr:         false,
 		},
 		{
-			name:              "vulnz w/o attestation for Webhook shd handle voilations",
+			name:              "vulnz w/o attestation for Webhook should handle voilations",
 			image:             vulnImage,
 			isWebhook:         true,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            true,
+			shouldAttestImage: false,
+			shouldErr:         true,
 		},
 		{
-			name:              "no vulnz w/o attestation for webhook shd add attestation",
+			name:              "no vulnz w/o attestation for webhook should add attestation",
 			image:             noVulnImage,
 			isWebhook:         true,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 0,
 			isAttested:        false,
-			shdAttestImage:    true,
-			shdErr:            false,
+			shouldAttestImage: true,
+			shouldErr:         false,
 		},
 		{
-			name:              "vulnz w attestation for cron shd handle vuln",
+			name:              "vulnz w attestation for cron should handle vuln",
 			image:             vulnImage,
 			isWebhook:         false,
 			attestations:      validAtts,
 			handledViolations: 1,
 			isAttested:        true,
-			shdAttestImage:    false,
-			shdErr:            true,
+			shouldAttestImage: false,
+			shouldErr:         true,
 		},
 		{
-			name:              "vulnz w/o attestation for cron shd handle vuln",
+			name:              "vulnz w/o attestation for cron should handle vuln",
 			image:             vulnImage,
 			isWebhook:         false,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            true,
+			shouldAttestImage: false,
+			shouldErr:         true,
 		},
 		{
-			name:              "no vulnz w/o attestation for cron shd verify attestations",
+			name:              "no vulnz w/o attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 0,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            false,
+			shouldAttestImage: false,
+			shouldErr:         false,
 		},
 		{
-			name:              "no vulnz w attestation for cron shd verify attestations",
+			name:              "no vulnz w attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
 			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: secFpr}},
 			handledViolations: 0,
 			isAttested:        true,
-			shdAttestImage:    false,
-			shdErr:            false,
+			shouldAttestImage: false,
+			shouldErr:         false,
 		},
 		{
 			name:              "unqualified image for cron should fail and should not attest any image",
@@ -250,8 +377,8 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            true,
+			shouldAttestImage: false,
+			shouldErr:         true,
 		},
 		{
 			name:              "unqualified image for webhook should fail should not attest any image",
@@ -260,8 +387,8 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 1,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            true,
+			shouldAttestImage: false,
+			shouldErr:         true,
 		},
 		{
 			name:              "review image in global whitelist",
@@ -270,8 +397,8 @@ func TestReview(t *testing.T) {
 			attestations:      []metadata.PGPAttestation{},
 			handledViolations: 0,
 			isAttested:        false,
-			shdAttestImage:    false,
-			shdErr:            false,
+			shouldAttestImage: false,
+			shouldErr:         false,
 		},
 	}
 	for _, tc := range tests {
@@ -290,8 +417,8 @@ func TestReview(t *testing.T) {
 				IsWebhook: tc.isWebhook,
 				Strategy:  &th,
 			})
-			if err := r.Review([]string{tc.image}, isps, nil); (err != nil) != tc.shdErr {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
+			if err := r.ReviewISP([]string{tc.image}, isps, nil); (err != nil) != tc.shouldErr {
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 			if len(th.Violations) != tc.handledViolations {
 				t.Errorf("expected to handle %d violations. Got %d", tc.handledViolations, len(th.Violations))
@@ -300,7 +427,7 @@ func TestReview(t *testing.T) {
 			if th.Attestations[tc.image] != tc.isAttested {
 				t.Errorf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
 			}
-			if (len(cMock.Occ) != 0) != tc.shdAttestImage {
+			if (len(cMock.Occ) != 0) != tc.shouldAttestImage {
 				t.Errorf("expected an image to be attested, but found none")
 			}
 		})
@@ -367,6 +494,76 @@ func makeAtt(ids []string) []metadata.PGPAttestation {
 	return l
 }
 
+func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
+	authsMap := map[string]v1beta1.AttestationAuthority{
+		"a1": {
+			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
+			Spec: v1beta1.AttestationAuthoritySpec{
+				NoteReference:        "provider/test",
+				PrivateKeySecretName: "test",
+				PublicKeyData:        "testdata",
+			}},
+		"a2": {
+			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
+			Spec: v1beta1.AttestationAuthoritySpec{
+				NoteReference:        "provider/test",
+				PrivateKeySecretName: "test",
+				PublicKeyData:        "testdata",
+			}},
+	}
+	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
+		a, ok := authsMap[name]
+		if !ok {
+			return &v1beta1.AttestationAuthority{}, fmt.Errorf("could not find key %s", name)
+		}
+		return &a, nil
+	}
+
+	r := New(nil, &Config{
+		Auths: authMock,
+	})
+	tcs := []struct {
+		name        string
+		aList       []string
+		shouldErr   bool
+		expectedLen int
+	}{
+		{
+			name:        "correct authorities list",
+			aList:       []string{"a1", "a2"},
+			shouldErr:   false,
+			expectedLen: 2,
+		},
+		{
+			name:      "one incorrect authority in the list",
+			aList:     []string{"a1", "err"},
+			shouldErr: true,
+		},
+		{
+			name:        "empty list should return nothing",
+			aList:       []string{},
+			shouldErr:   false,
+			expectedLen: 0,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			gap := v1beta1.GenericAttestationPolicy{
+				Spec: v1beta1.GenericAttestationPolicySpec{
+					AttestationAuthorityNames: tc.aList,
+				},
+			}
+			auths, err := r.getAttestationAuthoritiesForGAP(gap)
+			if (err != nil) != tc.shouldErr {
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+			}
+			if len(auths) != tc.expectedLen {
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+			}
+		})
+	}
+}
 func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 	authsMap := map[string]v1beta1.AttestationAuthority{
 		"a1": {
@@ -398,24 +595,24 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 	tcs := []struct {
 		name        string
 		aList       []string
-		shdErr      bool
+		shouldErr   bool
 		expectedLen int
 	}{
 		{
 			name:        "correct authorities list",
 			aList:       []string{"a1", "a2"},
-			shdErr:      false,
+			shouldErr:   false,
 			expectedLen: 2,
 		},
 		{
-			name:   "one incorrect authority in the list",
-			aList:  []string{"a1", "err"},
-			shdErr: true,
+			name:      "one incorrect authority in the list",
+			aList:     []string{"a1", "err"},
+			shouldErr: true,
 		},
 		{
 			name:        "empty list should return nothing",
 			aList:       []string{},
-			shdErr:      false,
+			shouldErr:   false,
 			expectedLen: 0,
 		},
 	}
@@ -428,11 +625,11 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 				},
 			}
 			auths, err := r.getAttestationAuthoritiesForISP(isp)
-			if (err != nil) != tc.shdErr {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
+			if (err != nil) != tc.shouldErr {
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 			if len(auths) != tc.expectedLen {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)
+				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 		})
 	}

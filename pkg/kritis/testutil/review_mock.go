@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type ReviewerMock struct {
@@ -35,7 +35,14 @@ func NewReviewer(r bool, s string) *ReviewerMock {
 	}
 }
 
-func (r *ReviewerMock) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
+func (r *ReviewerMock) ReviewGAP(images []string, isps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+	if !r.hasErr {
+		return nil
+	}
+	return fmt.Errorf(r.message)
+}
+
+func (r *ReviewerMock) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
 	if !r.hasErr {
 		return nil
 	}
