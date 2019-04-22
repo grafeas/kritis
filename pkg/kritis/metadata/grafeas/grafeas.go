@@ -118,9 +118,6 @@ func New(config kritisv1beta1.GrafeasConfigSpec) (*Client, error) {
 			Certificates: []tls.Certificate{certificate},
 			RootCAs:      certPool,
 		})
-		if err != nil {
-			return nil, fmt.Errorf("could not load tls cert: %s", err)
-		}
 		conn, err = grpc.Dial(config.Addr, grpc.WithTransportCredentials(creds))
 		if err != nil {
 			return nil, err
