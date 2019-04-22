@@ -22,7 +22,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Strategy interface {
