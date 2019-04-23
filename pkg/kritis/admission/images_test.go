@@ -21,7 +21,7 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func Test_PodImages(t *testing.T) {

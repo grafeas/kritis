@@ -32,7 +32,7 @@ func TestValidateAndSign(t *testing.T) {
 	sec1, pub1 := testutil.CreateSecret(t, "auth1_key")
 	sec2, pub2 := testutil.CreateSecret(t, "auth2_key")
 	sec3, pub3 := testutil.CreateSecret(t, "auth3_key")
-	sMock := func(namespace string, name string) (*secrets.PGPSigningSecret, error) {
+	sMock := func(_ string, name string) (*secrets.PGPSigningSecret, error) {
 		switch name {
 		case "auth1_key":
 			return sec1, nil

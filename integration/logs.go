@@ -20,7 +20,7 @@ import (
 	"os/exec"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 func podLogs(pod string, ns *v1.Namespace) string {
