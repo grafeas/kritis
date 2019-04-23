@@ -17,12 +17,12 @@ limitations under the License.
 package kritisconfig
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 )
 
 // KritisConfigs returns all KritisConfigs in the specified namespace
@@ -30,16 +30,16 @@ import (
 func KritisConfigs(namespace string) ([]v1beta1.KritisConfig, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error building config: %v", err)
+		return nil, errors.Wrap(err, "error building config")
 	}
 
 	client, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("error building clientset: %v", err)
+		return nil, errors.Wrap(err, "error building clientset")
 	}
 	list, err := client.KritisV1beta1().KritisConfigs(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error listing all kritis configs: %v", err)
+		return nil, errors.Wrap(err, "error listing all kritis configs")
 	}
 	return list.Items, nil
 }
@@ -49,12 +49,12 @@ func KritisConfigs(namespace string) ([]v1beta1.KritisConfig, error) {
 func KritisConfig(namespace string, name string) (*v1beta1.KritisConfig, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error building config: %v", err)
+		return nil, errors.Wrap(err, "error building config")
 	}
 
 	client, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("error building clientset: %v", err)
+		return nil, errors.Wrap(err, "error building clientset")
 	}
 	return client.KritisV1beta1().KritisConfigs(namespace).Get(name, metav1.GetOptions{})
 }

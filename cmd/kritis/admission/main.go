@@ -68,9 +68,7 @@ func main() {
 
 	kritisConfigs, err := kritisconfig.KritisConfigs("")
 	if err != nil {
-		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
-		glog.Errorf(errMsg)
-		return
+		glog.Fatalf("failed to get kritis config: %v", err)
 	}
 
 	// Set the defaults that will be used if no KritisConfig is defined
@@ -82,11 +80,12 @@ func main() {
 		Metadata: metadataBackend,
 	}
 
+	if len(kritisConfigs) > 1 {
+		glog.Fatal("more than 1 KritisConfig found, expected to have only 1 in the cluster")
+	}
+
 	if len(kritisConfigs) == 0 {
-		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
-	} else if len(kritisConfigs) > 1 {
-		glog.Errorf("More than 1 KritisConfig found, expected to have only 1 in the cluster")
-		return
+		glog.Info("no KritisConfigs found in any namespace, will assume the defaults")
 	} else {
 		kritisConf := kritisConfigs[0]
 		// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
@@ -110,20 +109,20 @@ func main() {
 	if runCron {
 		cronConfig, err := getCronConfig(config)
 		if err != nil {
-			glog.Fatalf("Could not run cron job in foreground: %s", err)
+			glog.Fatalf("could not run cron job in foreground: %v", err)
 		}
 		if err := cron.RunInForeground(*cronConfig); err != nil {
-			glog.Fatalf("Error Checking pods: %s", err)
+			glog.Fatalf("error checking pods: %v", err)
 		}
 		return
 	}
 	// Kick off back ground cron job.
 	if err := StartCronJob(config, cronInterval); err != nil {
-		glog.Fatal(errors.Wrap(err, "starting background job"))
+		glog.Fatalf("failed to start background job: %v", err)
 	}
 
 	// Start the Kritis Server.
-	glog.Infof("Running the server, address: %s", serverAddr)
+	glog.Infof("running the server: %s", serverAddr)
 	http.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		admission.ReviewHandler(w, r, config)
 	}))

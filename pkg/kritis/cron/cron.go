@@ -82,7 +82,7 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 	done := ctx.Done()
 
 	for {
-		glog.Info("Checking pods.")
+		glog.Info("checking pods")
 		select {
 		case <-c.C:
 			isps, err := cfg.SecurityPolicyLister("")
@@ -108,7 +108,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 			return err
 		}
 		for _, p := range ps {
-			glog.Infof("Checking po %s", p.Name)
+			glog.Infof("checking pod %q", p.Name)
 			if err := r.Review(admission.PodImages(p), isps, &p); err != nil {
 				glog.Error(err)
 			}
@@ -123,6 +123,6 @@ func RunInForeground(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Got isps %v", isps)
+	glog.Infof("got ISPs: %v", isps)
 	return podChecker(cfg, isps)
 }

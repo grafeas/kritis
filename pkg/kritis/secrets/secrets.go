@@ -20,9 +20,11 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -75,7 +77,7 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(pb)))
 		decLen, err := base64.StdEncoding.Decode(decoded, pb)
 		if err != nil {
-			return nil, fmt.Errorf("base64 decode failed %v", err)
+			return nil, errors.Wrap(err, "failed to decode base64")
 		}
 		phrase = string(decoded[:decLen])
 	}

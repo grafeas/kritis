@@ -45,16 +45,16 @@ type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, metadataFe
 func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error building config: %v", err)
+		return nil, errors.Wrap(err, "error building config")
 	}
 
 	client, err := clientset.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("error building clientset: %v", err)
+		return nil, errors.Wrap(err, "error building clientset")
 	}
 	list, err := client.KritisV1beta1().ImageSecurityPolicies(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error listing all image policy requirements: %v", err)
+		return nil, errors.Wrap(err, "error listing all image security policies")
 	}
 	return list.Items, nil
 }
@@ -153,7 +153,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 					policy.BuildProjectIDViolation,
 					policy.Reason(
 						fmt.Sprintf(
-							"%s doesn't have build occurrence with required projectIDs: [%s]",
+							"%q doesn't have build occurrence with required projectIDs: [%s]",
 							image,
 							strings.Join(isp.Spec.BuiltProjectIDs, ","),
 						),
@@ -191,7 +191,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 						policy.RequiredAttestationViolation,
 						policy.Reason(
 							fmt.Sprintf(
-								"%s doesn't have a required attestation: [%s]",
+								"%q doesn't have a required attestation: [%s]",
 								image,
 								required,
 							),
@@ -306,6 +306,7 @@ func hasRequiredAttestation(image string, attestor *Attestor, attestations []met
 					verified = true
 					break
 				}
+				glog.Warningf("failed to verify attestation signature: KeyID=%s, %v", attestation.KeyID, err)
 			}
 		}
 	}

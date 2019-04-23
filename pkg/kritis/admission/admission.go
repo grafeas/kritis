@@ -86,7 +86,7 @@ func MetadataClient(config *Config) (metadata.Fetcher, error) {
 	if config.Metadata == constants.ContainerAnalysisMetadata {
 		return containeranalysis.NewCache()
 	}
-	return nil, fmt.Errorf("unsupported backend %v", config.Metadata)
+	return nil, fmt.Errorf("unsupported backend %q", config.Metadata)
 }
 
 var handlers = map[string]func(*v1beta1.AdmissionReview, *v1beta1.AdmissionReview, *Config) error{
@@ -100,7 +100,7 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
 		return err
 	}
-	glog.Infof("handling deployment %s...", deployment.Name)
+	glog.Infof("handling deployment %q", deployment.Name)
 
 	operation := ar.Request.Operation
 	if operation == v1beta1.Update {
@@ -115,7 +115,7 @@ func handleDeployment(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		// Before deleting a deployment, kubernetes always make replicas to 0 which causes an
 		// UPDATE event.
 		if !hasNewImage(DeploymentImages(deployment), DeploymentImages(oldDeployment)) {
-			glog.Infof("ignoring deployment %s as no new image has been added", deployment.Name)
+			glog.Infof("ignoring deployment %q as no new image has been added", deployment.Name)
 			return nil
 		}
 	}
@@ -129,7 +129,7 @@ func handlePod(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.AdmissionRevi
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
 	}
-	glog.Infof("handling pod %s in...", pod.Name)
+	glog.Infof("handling pod %q", pod.Name)
 	reviewPod(&pod, admitResponse, config)
 	return nil
 }
@@ -139,7 +139,7 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
 		return err
 	}
-	glog.Infof("handling replica set %s...", replicaSet.Name)
+	glog.Infof("handling replica set %q", replicaSet.Name)
 
 	operation := ar.Request.Operation
 	if operation == v1beta1.Update {
@@ -154,7 +154,7 @@ func handleReplicaSet(ar *v1beta1.AdmissionReview, admitResponse *v1beta1.Admiss
 		// Before deleting a replicaSet, kubernetes always make replicas to 0 which causes an
 		// UPDATE event.
 		if !hasNewImage(ReplicaSetImages(replicaSet), ReplicaSetImages(oldReplicaSet)) {
-			glog.Infof("ignoring replica set %s as no new image has been added", replicaSet.Name)
+			glog.Infof("ignoring replica set %q as no new image has been added", replicaSet.Name)
 			return nil
 		}
 	}
@@ -168,13 +168,13 @@ func deserializeRequest(r *http.Request) (ar v1beta1.AdmissionReview, err error)
 	defer r.Body.Close()
 
 	if err != nil {
-		return ar, fmt.Errorf("cannot to read body")
+		return ar, errors.Wrap(err, "failed to read body")
 	}
 
 	deserializer := codecs.UniversalDeserializer()
 	_, _, err = deserializer.Decode(body, nil, &ar)
 	if err != nil {
-		return ar, fmt.Errorf("failed to marshal %v", err)
+		return ar, errors.Wrap(err, "failed to marshal")
 	}
 	if ar.Request == nil {
 		return ar, fmt.Errorf("admission request is empty")
@@ -183,7 +183,7 @@ func deserializeRequest(r *http.Request) (ar v1beta1.AdmissionReview, err error)
 }
 
 func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
-	glog.Infof("Starting admission review handler\nversion: %s\ncommit: %s",
+	glog.Infof("starting admission review handler: %s/%s",
 		version.Version,
 		version.Commit,
 	)
@@ -203,7 +203,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 		}
 		payload, err := json.Marshal(resp)
 		if err != nil {
-			glog.Errorf("unable to marshal %s: %v", payload, err)
+			glog.Errorf("unable to marshal response: %v", err)
 		}
 		if _, err := w.Write(payload); err != nil {
 			glog.Errorf("unable to write payload: %v", err)
@@ -257,7 +257,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1beta1.AdmissionReview
 
 	// check for a breakglass annotation on the deployment
 	if checkBreakglass(&deployment.ObjectMeta) {
-		glog.Infof("found breakglass annotation for %s, returning successful status", deployment.Name)
+		glog.Infof("found breakglass annotation for %q, returning successful status", deployment.Name)
 		return
 	}
 	reviewImages(images, deployment.Namespace, nil, ar, config)
@@ -273,7 +273,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
-	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
+	glog.Infof("reviewing images for pod in namespace %s: %s", ns, images)
 	isps, err := admissionConfig.fetchImageSecurityPolicies(ns)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting image security policies: %v", err)
@@ -282,11 +282,11 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 		return
 	}
 	if len(isps) == 0 {
-		glog.Errorf("No ISP's found in namespace %s, skip reviewing", ns)
+		glog.Errorf("no ImageSecurityPolicy found in namespace %s, skip reviewing", ns)
 		return
 	}
 
-	glog.Infof("Found %d ISPs to review image against", len(isps))
+	glog.Infof("found %d ImageSecurityPolicy to review image against", len(isps))
 
 	resolvedImages, err := resolveImagesToDigest(images)
 	if err != nil {
@@ -305,7 +305,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	}
 	r := admissionConfig.reviewer(client)
 	if err := r.Review(resolvedImages, isps, pod); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
+		glog.Infof("denying %s in namespace %s: %v", resolvedImages, ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
@@ -323,7 +323,7 @@ func reviewPod(pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 
 	// check for a breakglass annotation on the pod
 	if checkBreakglass(&pod.ObjectMeta) {
-		glog.Infof("found breakglass annotation for %s, returning successful status", pod.Name)
+		glog.Infof("found breakglass annotation for %q, returning successful status", pod.Name)
 		return
 	}
 	reviewImages(images, pod.Namespace, pod, ar, config)
@@ -342,7 +342,7 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1beta1.AdmissionReview
 
 	// check for a breakglass annotation on the replica set
 	if checkBreakglass(&replicaSet.ObjectMeta) {
-		glog.Infof("found breakglass annotation for %s, returning successful status", replicaSet.Name)
+		glog.Infof("found breakglass annotation for %q, returning successful status", replicaSet.Name)
 		return
 	}
 	reviewImages(images, replicaSet.Namespace, nil, ar, config)
@@ -421,7 +421,7 @@ func resolveImagesToDigest(images []string) ([]string, error) {
 			return nil, errors.Wrap(err, "failed to resolve image into digest")
 		}
 
-		glog.Infof("Resolved tagged image %s to digest %s", image, resolvedImage)
+		glog.Infof("resolved tagged image %q to digest %q", image, resolvedImage)
 		resolved = append(resolved, resolvedImage)
 	}
 
