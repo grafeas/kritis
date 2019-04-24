@@ -131,7 +131,7 @@ func TestReviewGAP(t *testing.T) {
 	}
 	invalidAtts := []metadata.PGPAttestation{{Signature: invalidSig, KeyID: secFpr}}
 
-	var gap = v1beta1.GenericAttestationPolicy{
+	gap := v1beta1.GenericAttestationPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
@@ -139,8 +139,8 @@ func TestReviewGAP(t *testing.T) {
 			AttestationAuthorityNames: []string{"test"},
 		},
 	}
-	var gaps = []v1beta1.GenericAttestationPolicy{gap}
-	var twoGaps = []v1beta1.GenericAttestationPolicy{gap,
+	gaps := []v1beta1.GenericAttestationPolicy{gap}
+	twoGaps := []v1beta1.GenericAttestationPolicy{gap,
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
@@ -257,7 +257,7 @@ func TestReviewISP(t *testing.T) {
 		return sec, nil
 	}
 	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}}
-	var isps = []v1beta1.ImageSecurityPolicy{
+	isps := []v1beta1.ImageSecurityPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",

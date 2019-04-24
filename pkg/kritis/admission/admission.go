@@ -368,7 +368,7 @@ func getReviewer(client metadata.Fetcher) reviewer {
 	})
 }
 
-// reviewer interface defines Kritis Reviewer struct.
+// reviewer interface defines Kritis Reviewer struct, useful for mocking in tests
 type reviewer interface {
 	ReviewGAP(images []string, isps []kritisv1beta1.GenericAttestationPolicy, pod *v1.Pod) error
 	ReviewISP(images []string, isps []kritisv1beta1.ImageSecurityPolicy, pod *v1.Pod) error

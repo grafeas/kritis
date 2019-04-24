@@ -97,13 +97,15 @@ func TestReviewHandler(t *testing.T) {
 
 func Test_AdmissionResponse(t *testing.T) {
 	tcs := []struct {
-		name        string
-		reviewErr   bool
-		status      constants.Status
-		expectedMsg string
+		name         string
+		reviewGAPErr bool
+		reviewISPErr bool
+		status       constants.Status
+		expectedMsg  string
 	}{
-		{"valid response when no review error", false, constants.SuccessStatus, constants.SuccessMessage},
-		{"valid response when review error", true, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
+		{"valid response when no review error", false, false, constants.SuccessStatus, constants.SuccessMessage},
+		{"invalid response when GAP review error", true, false, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
+		{"valid response when ISP review error", false, true, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
 	}
 	mockGAP := func(namespace string) ([]kritisv1beta1.GenericAttestationPolicy, error) {
 		return []kritisv1beta1.GenericAttestationPolicy{{Spec: kritisv1beta1.GenericAttestationPolicySpec{}}}, nil
@@ -114,7 +116,7 @@ func Test_AdmissionResponse(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			mReviewer := func(client metadata.Fetcher) reviewer {
-				return testutil.NewReviewer(tc.reviewErr, tc.expectedMsg)
+				return testutil.NewReviewer(tc.reviewGAPErr, tc.reviewISPErr, tc.expectedMsg)
 			}
 			mockConfig := config{
 				retrievePod: mockValidPod(),
@@ -128,7 +130,7 @@ func Test_AdmissionResponse(t *testing.T) {
 			RunTest(t, testConfig{
 				mockConfig: mockConfig,
 				httpStatus: http.StatusOK,
-				allowed:    !tc.reviewErr,
+				allowed:    !tc.reviewISPErr && !tc.reviewGAPErr,
 				status:     tc.status,
 				message:    tc.expectedMsg,
 			})
