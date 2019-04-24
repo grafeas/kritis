@@ -52,7 +52,6 @@ test: cross
 	./hack/verify-codegen.sh
 	./hack/dep.sh
 	./hack/test.sh
-	./hack/linter.sh
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_LD_RESOLVE_FLAGS :=""
