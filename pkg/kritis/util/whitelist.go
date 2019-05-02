@@ -17,10 +17,9 @@ limitations under the License.
 package util
 
 import (
-	"reflect"
-
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
+
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
@@ -28,7 +27,7 @@ import (
 func RemoveGloballyWhitelistedImages(images []string) []string {
 	notWhitelisted := []string{}
 	for _, image := range images {
-		whitelisted, err := imageInWhitelist(image)
+		whitelisted, err := ImageInWhitelist(constants.GlobalImageWhitelist, image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
 		}
@@ -39,8 +38,8 @@ func RemoveGloballyWhitelistedImages(images []string) []string {
 	return notWhitelisted
 }
 
-func imageInWhitelist(image string) (bool, error) {
-	for _, w := range constants.GlobalImageWhitelist {
+func ImageInWhitelist(whitelist []string, image string) (bool, error) {
+	for _, w := range whitelist {
 		whitelistRef, err := name.ParseReference(w, name.WeakValidation)
 		if err != nil {
 			return false, err
@@ -49,8 +48,9 @@ func imageInWhitelist(image string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		// Make sure images have the same context
-		if reflect.DeepEqual(whitelistRef.Context(), imageRef.Context()) {
+
+		// Make sure images have the same name
+		if whitelistRef.Context().Name() == imageRef.Context().Name() {
 			return true, nil
 		}
 	}

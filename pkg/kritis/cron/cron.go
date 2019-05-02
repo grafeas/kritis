@@ -29,6 +29,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	corev1 "k8s.io/api/core/v1"
@@ -64,12 +65,13 @@ func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
 		PodLister: pods.Pods,
 		Client:    client,
 		ReviewConfig: &review.Config{
-			Secret:    secrets.Fetch,
-			Auths:     authority.Authority,
-			Strategy:  defaultViolationStrategy,
-			IsWebhook: false,
-			Validate:  securitypolicy.ValidateImageSecurityPolicy,
-			Attestors: attestorFetcher,
+			Secret:                          secrets.Fetch,
+			Auths:                           authority.Authority,
+			Strategy:                        defaultViolationStrategy,
+			IsWebhook:                       false,
+			Validate:                        securitypolicy.ValidateImageSecurityPolicy,
+			Attestors:                       attestorFetcher,
+			ClusterWhitelistedImagesRemover: kritisconfig.RemoveWhitelistedImages,
 		},
 		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}

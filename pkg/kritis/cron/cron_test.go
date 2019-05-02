@@ -33,6 +33,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func NoopClusterWhitelistedImagesRemover(images []string) ([]string, error) {
+	return images, nil
+}
+
 func TestStartCancels(t *testing.T) {
 
 	// Speed up the checks for testing.
@@ -204,11 +208,12 @@ func TestCheckPods(t *testing.T) {
 			Attestations: map[string]bool{},
 		}
 		tt.args.cfg.ReviewConfig = &review.Config{
-			Validate:  tt.args.validate,
-			Secret:    sMock,
-			Auths:     aMock,
-			IsWebhook: false,
-			Strategy:  &th,
+			Validate:                        tt.args.validate,
+			Secret:                          sMock,
+			Auths:                           aMock,
+			IsWebhook:                       false,
+			Strategy:                        &th,
+			ClusterWhitelistedImagesRemover: NoopClusterWhitelistedImagesRemover,
 		}
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CheckPods(tt.args.cfg, tt.args.isps); err != nil {

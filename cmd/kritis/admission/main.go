@@ -66,11 +66,6 @@ func main() {
 		return
 	}
 
-	kritisConfigs, err := kritisconfig.KritisConfigs("")
-	if err != nil {
-		glog.Fatalf("failed to get kritis config: %v", err)
-	}
-
 	// Set the defaults that will be used if no KritisConfig is defined
 	metadataBackend := DefaultMetadataBackend
 	cronInterval := DefaultCronInterval
@@ -80,31 +75,33 @@ func main() {
 		Metadata: metadataBackend,
 	}
 
-	if len(kritisConfigs) > 1 {
-		glog.Fatal("more than 1 KritisConfig found, expected to have only 1 in the cluster")
+	kritisConfig, err := kritisconfig.KritisConfig()
+	if err != nil {
+		glog.Fatalf("failed to get kritis config: %v", err)
 	}
 
-	if len(kritisConfigs) == 0 {
+	if kritisConfig == nil {
 		glog.Info("no KritisConfigs found in any namespace, will assume the defaults")
+
 	} else {
-		kritisConf := kritisConfigs[0]
 		// TODO(https://github.com/grafeas/kritis/issues/304): Use CRD validation instead
-		if kritisConf.Spec.MetadataBackend != "" {
-			config.Metadata = kritisConf.Spec.MetadataBackend
+		if kritisConfig.Spec.MetadataBackend != "" {
+			config.Metadata = kritisConfig.Spec.MetadataBackend
 		}
-		if kritisConf.Spec.CronInterval != "" {
-			cronInterval = kritisConf.Spec.CronInterval
+		if kritisConfig.Spec.CronInterval != "" {
+			cronInterval = kritisConfig.Spec.CronInterval
 		}
-		if kritisConf.Spec.ServerAddr != "" {
-			serverAddr = kritisConf.Spec.ServerAddr
+		if kritisConfig.Spec.ServerAddr != "" {
+			serverAddr = kritisConfig.Spec.ServerAddr
 		}
 		if config.Metadata == constants.GrafeasMetadata {
-			config.Grafeas = kritisConf.Spec.Grafeas
+			config.Grafeas = kritisConfig.Spec.Grafeas
 			if err := grafeas.ValidateConfig(config.Grafeas); err != nil {
 				glog.Fatal(err)
 			}
 		}
 	}
+
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
 	if runCron {
 		cronConfig, err := getCronConfig(config)

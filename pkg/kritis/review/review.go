@@ -28,6 +28,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
@@ -42,12 +43,13 @@ type Reviewer struct {
 }
 
 type Config struct {
-	Validate  securitypolicy.ValidateFunc
-	Secret    secrets.Fetcher
-	Auths     authority.Fetcher
-	Attestors securitypolicy.AttestorFetcher
-	Strategy  violation.Strategy
-	IsWebhook bool
+	Validate                        securitypolicy.ValidateFunc
+	Secret                          secrets.Fetcher
+	Auths                           authority.Fetcher
+	Attestors                       securitypolicy.AttestorFetcher
+	Strategy                        violation.Strategy
+	ClusterWhitelistedImagesRemover kritisconfig.ClusterWhitelistedImagesRemover
+	IsWebhook                       bool
 }
 
 func New(client metadata.Fetcher, c *Config) Reviewer {
@@ -60,12 +62,26 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 // Review reviews a set of images against a set of policies
 // Returns error if violations are found and handles them as per violation strategy
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
-	images = util.RemoveGloballyWhitelistedImages(images)
-	if len(images) == 0 {
-		glog.Infof("images are all globally whitelisted, returning successful status: %s", images)
+	if len(isps) == 0 {
 		return nil
 	}
-	if len(isps) == 0 {
+
+	orgImages := make([]string, len(images))
+	copy(orgImages, images)
+
+	images = util.RemoveGloballyWhitelistedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally whitelisted, returning successful status: %s", orgImages)
+		return nil
+	}
+
+	images, err := r.config.ClusterWhitelistedImagesRemover(images)
+	if err != nil {
+		glog.Errorf("failed to remove cluster whitelisted images: %v", err)
+		return err
+	}
+	if len(images) == 0 {
+		glog.Infof("images are all globally or cluster whitelisted, returning successful status: %s", orgImages)
 		return nil
 	}
 

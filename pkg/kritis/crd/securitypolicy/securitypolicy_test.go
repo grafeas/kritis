@@ -329,9 +329,6 @@ func newTestAttestorFetcher(getAttestor func(name string) (*Attestor, error)) At
 }
 
 func Test_RequireAttestationsBy(t *testing.T) {
-	// TODO: implement
-	t.Log("TODO: implement")
-
 	cases := []struct {
 		name            string
 		hasError        bool

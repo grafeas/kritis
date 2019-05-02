@@ -64,6 +64,7 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, metadataFetcher metadata.Fetcher, attestorFetcher AttestorFetcher) ([]policy.Violation, error) {
 	// First, check if image is whitelisted
 	if imageInWhitelist(isp, image) {
+		glog.Infof("%q is whitelisted in ImageSecurityPolicy", image)
 		return nil, nil
 	}
 	var violations []policy.Violation
