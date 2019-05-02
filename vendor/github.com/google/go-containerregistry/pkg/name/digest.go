@@ -73,6 +73,12 @@ func NewDigest(name string, strict Strictness) (Digest, error) {
 	base := parts[0]
 	digest := parts[1]
 
+        // A digest seems to be the most-specific metadata so it is preferred over a tag match
+        // To avoid conflicts in handling of both tags and digests, when an image is found to have both then prefer the digest
+        if strings.Contains( base,":" ) {
+                base = strings.Split( base,":" )[0]
+        }
+
 	// We don't require a digest, but if we get one check it's valid,
 	// even when not being strict.
 	// If we are being strict, we want to validate the digest regardless in case
