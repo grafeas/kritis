@@ -112,6 +112,17 @@ func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.
 }
 
 func isValidImageOnGCR(containerImage string) bool {
+
+	// if containerImage is formatted by GCP Cloud Build then it will take the form <repo>/<image>:<tag>@sha256:<digest> ; this breaks in name.ParseReference because of how the string is split
+	// instead, if containerImage contains more than 1 ':', split it further and then reassemble the string to pass to ParseReference
+	// this assumes that the digest is the most specific identifier for an image and, as a result, the tag is discarded if both are found
+	parts := strings.Split( containerImage,":" )
+	if len( parts ) > 2 {
+		digest := parts[ len(parts)-1 ]
+		repo := strings.Split( parts[ 0 ],"@" )[0]
+		return isValidImageOnGCR( fmt.Sprintf( "%s@sha256:%s", repo, digest ) )
+	}
+
 	ref, err := name.ParseReference(containerImage, name.WeakValidation)
 	if err != nil {
 		glog.Warning(err)
@@ -190,6 +201,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 
 	// Create Attestation Signature
 	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)
+
 	if err != nil {
 		return nil, err
 	}
