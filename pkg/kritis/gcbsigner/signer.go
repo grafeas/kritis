@@ -17,6 +17,9 @@ limitations under the License.
 package gcbsigner
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
@@ -59,13 +62,27 @@ var (
 // Returns an error if creating an attestation for any authority fails.
 func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy) error {
 	for _, bp := range bps {
-		glog.Infof("Validating %q against BuildPolicy %q", prov.ImageRef, bp.Name)
+
+		// if prov.ImageRef is formatted by GCP Cloud Build then it will take the form <repo>/<image>:<tag>@sha256:<digest> ; this breaks in s.config.Validate because of how the string is split
+		// instead, if prov.ImageRef contains more than 1 ':', split it further and then reassemble the string to pass to Validate
+		// this assumes that the digest is the most specific identifier for an image and, as a result, the tag is discarded if both are found
+		ImageRef := ""
+		parts := strings.Split( prov.ImageRef,":" )
+		if len( parts ) > 2 {
+			digest := parts[ len(parts)-1 ]
+			repo := strings.Split( parts[ 0 ],"@" )[0]
+			ImageRef = ( fmt.Sprintf( "%s@sha256:%s", repo, digest ) )
+		} else {
+			ImageRef = prov.ImageRef
+		}
+
+		glog.Infof("Validating %q against BuildPolicy %q", ImageRef, bp.Name)
 		if result := s.config.Validate(bp, prov.BuiltFrom); result != nil {
-			glog.Errorf("Image %q does not match BuildPolicy %q: %s", prov.ImageRef, bp.ObjectMeta.Name, result)
+			glog.Errorf("Image %q does not match BuildPolicy %q: %s", ImageRef, bp.ObjectMeta.Name, result)
 			continue
 		}
-		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", prov.ImageRef, bp.Name)
-		if err := s.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName); err != nil {
+		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", ImageRef, bp.Name)
+		if err := s.addAttestation(ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName); err != nil {
 			return err
 		}
 	}
