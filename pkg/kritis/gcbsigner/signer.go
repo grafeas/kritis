@@ -67,11 +67,11 @@ func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy)
 		// instead, if prov.ImageRef contains more than 1 ':', split it further and then reassemble the string to pass to Validate
 		// this assumes that the digest is the most specific identifier for an image and, as a result, the tag is discarded if both are found
 		ImageRef := ""
-		parts := strings.Split( prov.ImageRef,":" )
-		if len( parts ) > 2 {
-			digest := parts[ len(parts)-1 ]
-			repo := strings.Split( parts[ 0 ],"@" )[0]
-			ImageRef = ( fmt.Sprintf( "%s@sha256:%s", repo, digest ) )
+		parts := strings.Split(prov.ImageRef, ":")
+		if len(parts) > 2 {
+			digest := parts[len(parts)-1]
+			repo := strings.Split(parts[0], "@")[0]
+			ImageRef = fmt.Sprintf("%s@sha256:%s", repo, digest)
 		} else {
 			ImageRef = prov.ImageRef
 		}
