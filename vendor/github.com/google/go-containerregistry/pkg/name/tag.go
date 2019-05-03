@@ -15,7 +15,6 @@
 package name
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -82,13 +81,6 @@ func NewTag(name string, strict Strictness) (Tag, error) {
 	if len(parts) > 1 && !strings.Contains(parts[len(parts)-1], regRepoDelimiter) {
 		base = strings.Join(parts[:len(parts)-1], tagDelim)
 		tag = parts[len(parts)-1]
-	}
-
-        // GCP Cloud Build returns <repository>:<tag>@sha:<digest>
-        // The above 'split' will strip the digest and attempt to return <repository>:<tag>@sha as the base
-        // If this is detected, consider it an error condition for NewTag; handling is performed in NewDigest
-        if strings.Contains( base,"@" ) {
-                return Tag{}, fmt.Errorf("Found digest; bailing out")
 	}
 
 	// We don't require a tag, but if we get one check it's valid,
