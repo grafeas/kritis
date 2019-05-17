@@ -16,3 +16,5 @@ spec:
       - providers/goog-vulnz/notes/CVE-2017-1000081
   builtProjectIDs:
     - kritis-int-test
+  requireAttestationsBy:
+    - security-team

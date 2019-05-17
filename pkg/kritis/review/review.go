@@ -21,17 +21,20 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
-	v1 "k8s.io/api/core/v1"
 )
 
 type Reviewer struct {
@@ -40,11 +43,13 @@ type Reviewer struct {
 }
 
 type Config struct {
-	Validate  securitypolicy.ValidateFunc
-	Secret    secrets.Fetcher
-	Auths     authority.Fetcher
-	Strategy  violation.Strategy
-	IsWebhook bool
+	Validate                        securitypolicy.ValidateFunc
+	Secret                          secrets.Fetcher
+	Auths                           authority.Fetcher
+	Attestors                       securitypolicy.AttestorFetcher
+	Strategy                        violation.Strategy
+	ClusterWhitelistedImagesRemover kritisconfig.ClusterWhitelistedImagesRemover
+	IsWebhook                       bool
 }
 
 func New(client metadata.Fetcher, c *Config) Reviewer {
@@ -57,44 +62,59 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 // Review reviews a set of images against a set of policies
 // Returns error if violations are found and handles them as per violation strategy
 func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
-	images = util.RemoveGloballyWhitelistedImages(images)
-	if len(images) == 0 {
-		glog.Infof("images are all globally whitelisted, returning successful status: %s", images)
-		return nil
-	}
 	if len(isps) == 0 {
 		return nil
 	}
 
+	orgImages := make([]string, len(images))
+	copy(orgImages, images)
+
+	images = util.RemoveGloballyWhitelistedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally whitelisted, returning successful status: %s", orgImages)
+		return nil
+	}
+
+	images, err := r.config.ClusterWhitelistedImagesRemover(images)
+	if err != nil {
+		glog.Errorf("failed to remove cluster whitelisted images: %v", err)
+		return err
+	}
+	if len(images) == 0 {
+		glog.Infof("images are all globally or cluster whitelisted, returning successful status: %s", orgImages)
+		return nil
+	}
+
 	for _, isp := range isps {
-		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
+		glog.Infof("validating against ImageSecurityPolicy: %s", isp.Name)
 		// Get all AttestationAuthorities in this policy.
 		auths, err := r.getAttestationAuthoritiesForISP(isp)
 		if err != nil {
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
+			glog.Infof("checking if the image already has valid Kritis attestations: %s", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
-			// Skip vulnerability check for Webhook if attestations found.
+			// Skip check for Webhook if attestations found.
 			if isAttested && r.config.IsWebhook {
+				glog.Infof("skip validating policy since the image already has valid Kritis attestations: %s", image)
 				continue
 			}
 
-			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.Validate(isp, image, r.client)
+			glog.Infof("validating policy: %s", image)
+			violations, err := r.config.Validate(isp, image, r.client, r.config.Attestors)
 			if err != nil {
-				return fmt.Errorf("error validating image security policy %v", err)
+				return errors.Wrap(err, "failed validating image security policy")
 			}
 			if len(violations) != 0 {
 				return r.handleViolations(image, pod, violations)
 			}
 			if r.config.IsWebhook {
 				if err := r.addAttestations(image, attestations, isp); err != nil {
-					glog.Errorf("error adding attestations %s", err)
+					glog.Errorf("failed to add attestations: %v", err)
 				}
 			}
-			glog.Infof("Found no violations for %s within ISP %s", image, isp.Name)
+			glog.Infof("found no violations for %q within ISP %q", image, isp.Name)
 		}
 	}
 	return nil
@@ -103,12 +123,12 @@ func (r Reviewer) Review(images []string, isps []v1beta1.ImageSecurityPolicy, po
 func (r Reviewer) fetchAndVerifyAttestations(image string, auths []v1beta1.AttestationAuthority, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
 	attestations, err := r.client.Attestations(image)
 	if err != nil {
-		glog.Errorf("Error while fetching attestations %s", err)
+		glog.Errorf("error while fetching attestations: %v", err)
 		return false, attestations
 	}
 	isAttested := r.hasValidImageAttestations(image, attestations, auths)
 	if err := r.config.Strategy.HandleAttestation(image, pod, isAttested); err != nil {
-		glog.Errorf("error handling attestations %v", err)
+		glog.Errorf("error handling attestations: %v", err)
 	}
 	return isAttested, attestations
 }
@@ -129,15 +149,16 @@ Please see instructions `, image)
 	for _, auth := range auths {
 		key, fingerprint, err := fingerprint(auth.Spec.PublicKeyData)
 		if err != nil {
-			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
+			glog.Errorf("error parsing key for %q: %v", auth.Name, err)
 			continue
 		}
 		keys[fingerprint] = key
 	}
 	for _, a := range attestations {
 		if err = host.VerifyAttestationSignature(keys[a.KeyID], a.Signature); err != nil {
-			glog.Errorf("Could not find verify attestation for attestation authority %s", a.KeyID)
+			glog.Errorf("could not verify attestation for attestation authority: %s", a.KeyID)
 		} else {
+			glog.Infof("image has valid attestation: %s, %s", image, a.OccID)
 			return true
 		}
 	}
@@ -145,17 +166,15 @@ Please see instructions `, image)
 }
 
 func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
-	errMsg := fmt.Sprintf("found violations in %s", image)
+	errMsg := fmt.Sprintf("found violations in %q", image)
 	// Check if one of the violations is that the image is not fully qualified
 	for _, v := range violations {
 		if v.Type() == policy.UnqualifiedImageViolation {
-			errMsg = fmt.Sprintf(`%s is not a fully qualified image.
-			  You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.
-			  Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`, image)
+			errMsg = fmt.Sprintf(`%q is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest. Instructions for installing the plugin can be found at https://github.com/grafeas/kritis/blob/master/cmd/kritis/kubectl/plugins/resolve`, image)
 		}
 	}
 	if err := r.config.Strategy.HandleViolation(image, pod, violations); err != nil {
-		return fmt.Errorf("%s. error handling violation %v", errMsg, err)
+		return errors.Wrapf(err, "failed to handle violation: %s", errMsg)
 	}
 	return fmt.Errorf(errMsg)
 }
@@ -167,13 +186,13 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 		return err
 	}
 	if len(auths) == 0 {
-		return fmt.Errorf("no attestation authorities configured for security policy %s", isp.Name)
+		return fmt.Errorf("no attestation authorities configured for security policy %q", isp.Name)
 	}
 	keys := map[string]string{}
 	for _, auth := range auths {
 		_, fingerprint, err := fingerprint(auth.Spec.PublicKeyData)
 		if err != nil {
-			glog.Errorf("Error parsing key for %q: %v", auth.Name, err)
+			glog.Errorf("error parsing key for %q: %v", auth.Name, err)
 			continue
 		}
 		keys[auth.Name] = fingerprint
@@ -182,7 +201,7 @@ func (r Reviewer) addAttestations(image string, atts []metadata.PGPAttestation, 
 	errMsgs := []string{}
 	u := getUnAttested(auths, keys, atts)
 	if len(u) == 0 {
-		glog.Info("Attestation exists for all authorities")
+		glog.Info("attestation exists for all authorities")
 		return nil
 	}
 	for _, a := range u {
@@ -242,7 +261,7 @@ func (r Reviewer) getAttestationAuthoritiesForISP(isp v1beta1.ImageSecurityPolic
 	for i, aName := range isp.Spec.AttestationAuthorityNames {
 		a, err := r.config.Auths(isp.Namespace, aName)
 		if err != nil {
-			return nil, fmt.Errorf("Error getting attestors: %v", err)
+			return nil, errors.Wrap(err, "faild to get attestation authorities")
 		}
 		auths[i] = *a
 	}

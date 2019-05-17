@@ -33,6 +33,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func NoopClusterWhitelistedImagesRemover(images []string) ([]string, error) {
+	return images, nil
+}
+
 func TestStartCancels(t *testing.T) {
 
 	// Speed up the checks for testing.
@@ -71,7 +75,7 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, metadataFetcher metadata.Fetcher, attestorFetcher securitypolicy.AttestorFetcher) ([]policy.Violation, error) {
 	if ok := iv.imageMap[image]; ok {
 		v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 0, "")
 		vs := []policy.Violation{}
@@ -204,11 +208,12 @@ func TestCheckPods(t *testing.T) {
 			Attestations: map[string]bool{},
 		}
 		tt.args.cfg.ReviewConfig = &review.Config{
-			Validate:  tt.args.validate,
-			Secret:    sMock,
-			Auths:     aMock,
-			IsWebhook: false,
-			Strategy:  &th,
+			Validate:                        tt.args.validate,
+			Secret:                          sMock,
+			Auths:                           aMock,
+			IsWebhook:                       false,
+			Strategy:                        &th,
+			ClusterWhitelistedImagesRemover: NoopClusterWhitelistedImagesRemover,
 		}
 		t.Run(tt.name, func(t *testing.T) {
 			if err := CheckPods(tt.args.cfg, tt.args.isps); err != nil {

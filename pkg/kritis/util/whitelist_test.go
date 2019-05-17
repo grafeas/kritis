@@ -52,26 +52,53 @@ func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
 	}
 }
 
-func Test_imageInWhitelist(t *testing.T) {
+func Test_ImageInWhitelist(t *testing.T) {
 	tests := []struct {
-		name     string
-		image    string
-		expected bool
+		name      string
+		image     string
+		whitelist []string
+		expected  bool
 	}{
 		{
-			name:     "test image in whitelist",
-			image:    "gcr.io/kritis-project/kritis-server:tag",
+			name:  "test image with tag in whitelist",
+			image: "gcr.io/kritis-project/kritis-server:tag",
+			whitelist: []string{
+				"gcr.io/kritis-project/kritis-server",
+				"nginx",
+			},
 			expected: true,
 		},
 		{
-			name:     "test image not in whitelist",
-			image:    "some/image",
+			name:  "test image with digest in whitelist",
+			image: "gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			whitelist: []string{
+				"gcr.io/kritis-project/kritis-server",
+				"nginx",
+			},
+			expected: true,
+		},
+		{
+			name:  "test public image in whitelist",
+			image: "nginx@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			whitelist: []string{
+				"gcr.io/kritis-project/kritis-server",
+				"nginx",
+			},
+			expected: true,
+		},
+		{
+			name:  "test image not in whitelist",
+			image: "some/image",
+			whitelist: []string{
+				"gcr.io/kritis-project/kritis-server",
+				"nginx",
+			},
 			expected: false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := imageInWhitelist(test.image)
+			actual, err := ImageInWhitelist(test.whitelist, test.image)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}

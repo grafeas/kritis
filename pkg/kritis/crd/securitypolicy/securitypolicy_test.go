@@ -17,6 +17,7 @@ limitations under the License.
 package securitypolicy
 
 import (
+	"errors"
 	"reflect"
 	"sort"
 	"testing"
@@ -26,6 +27,12 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
+
+type returnNilAttestorFetcher struct{}
+
+func (a returnNilAttestorFetcher) GetAttestor(name string) (*Attestor, error) {
+	return nil, nil
+}
 
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
@@ -50,7 +57,8 @@ func Test_ValidISP(t *testing.T) {
 			mc := &testutil.MockMetadataClient{
 				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity, HasFixAvailable: true}},
 			}
-			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			violations, err := ValidateImageSecurityPolicy(
+				isp, testutil.QualifiedImage, mc, returnNilAttestorFetcher{})
 			if test.expectErr {
 				if err == nil {
 					t.Errorf("%s: expected error, but got nil. violations: %+v", test.name, violations)
@@ -75,7 +83,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{}, returnNilAttestorFetcher{})
 	expected := []policy.Violation{}
 	expected = append(expected, Violation{
 		vType:  policy.UnqualifiedImageViolation,
@@ -125,7 +133,7 @@ func Test_SeverityThresholds(t *testing.T) {
 					},
 				},
 			}
-			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, returnNilAttestorFetcher{})
 			if err != nil {
 				t.Errorf("%s: error validating isp: %v", test.name, err)
 			}
@@ -155,7 +163,7 @@ func Test_WhitelistedImage(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "image", mc)
+	violations, err := ValidateImageSecurityPolicy(isp, "image", mc, returnNilAttestorFetcher{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -179,7 +187,7 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 			{CVE: "c", Severity: "CRITICAL"},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, returnNilAttestorFetcher{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -200,7 +208,7 @@ func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, returnNilAttestorFetcher{})
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -286,7 +294,8 @@ func Test_BuiltProjectIDs(t *testing.T) {
 					mc := &testutil.MockMetadataClient{
 						Build: builds,
 					}
-					violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+					violations, err := ValidateImageSecurityPolicy(
+						isp, testutil.QualifiedImage, mc, returnNilAttestorFetcher{})
 					if err != nil {
 						t.Errorf("error validating isp: %v", err)
 					}
@@ -304,3 +313,140 @@ func Test_BuiltProjectIDs(t *testing.T) {
 		})
 	}
 }
+
+type testAttestorFetcher struct {
+	getAttestor func(name string) (*Attestor, error)
+}
+
+func (f *testAttestorFetcher) GetAttestor(name string) (*Attestor, error) {
+	return f.getAttestor(name)
+}
+
+func newTestAttestorFetcher(getAttestor func(name string) (*Attestor, error)) AttestorFetcher {
+	return &testAttestorFetcher{
+		getAttestor: getAttestor,
+	}
+}
+
+func Test_RequireAttestationsBy(t *testing.T) {
+	cases := []struct {
+		name            string
+		hasError        bool
+		hasViolation    bool
+		getAttestorFunc func(name string) (*Attestor, error)
+	}{
+		{
+			"attestorFetcher returns error",
+			true,
+			false,
+			func(name string) (*Attestor, error) {
+				return nil, errors.New("failed to get attestor")
+			},
+		},
+		{
+			"attestor not found",
+			true,
+			false,
+			func(name string) (*Attestor, error) {
+				return nil, nil
+			},
+		},
+		{
+			"attestor exists",
+			false,
+			false,
+			func(name string) (*Attestor, error) {
+				if name != "projects/kritis-attestor-p-1/attestors/kritis-required-attestor-1" {
+					return nil, nil
+				}
+
+				return &Attestor{
+					Name: "attestor-1",
+					PublicKeys: []*AttestorPublicKey{
+						{
+							ID:         testutil.PgpKeyFingerprint,
+							AsciiArmor: testutil.Base64PublicTestKey(t),
+						},
+					},
+				}, nil
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			isp := v1beta1.ImageSecurityPolicy{
+				Spec: v1beta1.ImageSecurityPolicySpec{
+					BuiltProjectIDs:       []string{"kritis-p-1"},
+					RequireAttestationsBy: []string{"projects/kritis-attestor-p-1/attestors/kritis-required-attestor-1"},
+				},
+			}
+			mc := &testutil.MockMetadataClient{
+				Build: []metadata.Build{
+					{
+						Provenance: &metadata.BuildProvenance{
+							ProjectID: "kritis-p-1",
+							Creator:   "kritis-p-1@example.com",
+						},
+					},
+				},
+				PGPAttestations: []metadata.PGPAttestation{
+					{
+						KeyID:     testutil.PgpKeyFingerprint,
+						Signature: goodImageSignature,
+					},
+				},
+			}
+
+			violations, err := ValidateImageSecurityPolicy(
+				isp,
+				goodImage,
+				mc,
+				newTestAttestorFetcher(c.getAttestorFunc),
+			)
+
+			if c.hasError {
+				if err == nil {
+					t.Error("error expected, but no error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("error validating isp: %v", err)
+				}
+				if c.hasViolation {
+					if len(violations) != 1 {
+						t.Errorf("should have a violation")
+					}
+				} else {
+					if violations != nil {
+						t.Errorf("got unexpected violations: %v", violations)
+					}
+				}
+			}
+		})
+	}
+}
+
+// from pkg/kritis/container/container_test.go
+var (
+	goodImage          = "gcr.io/kritis-project/kritis-server@sha256:b3f3eccfd27c9864312af3796067e7db28007a1566e1e042c5862eed3ff1b2c8"
+	goodImageSignature = `-----BEGIN PGP MESSAGE-----
+
+owGbwMvMwMW4rjtzimCy6GLG0we0kxiik31OVislF2WWZCYn5ihZVStlpqTmlWSW
+VILYKfnJ2alFukWpaalFqXnJqUpWSunJRXqZ+frZIB3FugVF+VmpySUwbnFqUVlq
+kVKtjlJmbmJ6KpIRuYl5mWmpxSW6KZnpQApoUHFGopGpmVWScZpxanJyWoqRebKl
+hZmJsaFRYpqxuaWZgZl5qnlKkpGFgYF5oqGpmVmqYaqBiVGyqYWZUWpqinFammGS
+UbIFyLKSygKQ0xJL8nMzkxWS8/NKEjPzUosUijPT8xJLSotSlWprOxmPsDAwcjHo
+iSmyXGpe+vXr1zer5n1sPQoLDlYmUFAIyJQAXecA8Y5eflE6AxenAEzJi+fc/wMy
+C8UP8S9ZvsB5Wvg35SX6S+XSWvP1jq/aJ/zOYkedhuGRoAuep/nkcvZkBPXstFZi
+c3rspd9w6KC7kG9v7574Y+1XsvmP/LkcXSX9sqFw7dnfEydU+y4xfv/lS92pS38W
+v2O6fVA13XXB6qedMXKrF2jouu+el32nYLHlu/AKqfS+vwcmCPexrj+Rd3P9VoG4
+KcmrVJuelizOnzXVaZWOUsBpjuRXz3xW+4lNXrFtYcSTjhVR8pMM43WE+eeU3X+X
+6RG4ue3MfZmblifbT3RXiF6c+mJy5g/zNAkdth0fQoI9FpV/sVk8/UTGBeYJf+2Y
+I7Nkpp34OunBiqi3dXady5wM1eralue8OcFaVhIRVLKt2Kpvc2HG+50/eVNZCgJe
+7VLoW5Ypm/1X7e6JMCODVQ/WqMyIYllm5z/zY6iUX5UW76ygqtdT5lndbBKt3CN5
+n2HdhN2nqz4+uhG7Um+VVGT1yQKzn8uu+HBfvat3LVHv09ETQu1C15qmZvayuV1i
+1lLxOcT0b/3XN22f7k4X81b7rgYA
+=eOFW
+-----END PGP MESSAGE-----`
+)

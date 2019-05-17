@@ -19,10 +19,11 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/pods"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
-	"k8s.io/api/core/v1"
 )
 
 type Strategy interface {
@@ -34,11 +35,11 @@ type LoggingStrategy struct {
 }
 
 func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations []policy.Violation) error {
-	glog.Info("HandleViolation via LoggingStrategy")
+	glog.Info("handling violations via LoggingStrategy")
 	if len(violations) == 0 {
 		return nil
 	}
-	glog.Warningf("Found violations in image %s", image)
+	glog.Warningf("found violations in image %q", image)
 	for _, v := range violations {
 		glog.Warning(v.Reason())
 	}
@@ -46,11 +47,11 @@ func (l *LoggingStrategy) HandleViolation(image string, pod *v1.Pod, violations 
 }
 
 func (l *LoggingStrategy) HandleAttestation(image string, pod *v1.Pod, isAttested bool) error {
-	glog.Info("Handling attestation via LoggingStrategy")
+	glog.Info("handling attestation via LoggingStrategy")
 	if isAttested {
-		glog.Infof("Image %s has one or more valid attestation(s)", image)
+		glog.Infof("image %q has one or more valid attestation(s)", image)
 	} else {
-		glog.Infof("No Valid Attestations Found for image %s. Proceeding with next checks", image)
+		glog.Infof("no valid attestations found for image %q, proceeding with next checks", image)
 	}
 	return nil
 }
@@ -78,7 +79,7 @@ func (a *AnnotationStrategy) HandleViolation(image string, pod *v1.Pod, violatio
 	}
 	labels := map[string]string{constants.InvalidImageSecPolicy: labelValue}
 	annotations := map[string]string{constants.InvalidImageSecPolicy: annotationValue}
-	glog.Info(fmt.Sprintf("Adding label %s and annotation %s", labelValue, annotationValue))
+	glog.Info(fmt.Sprintf("adding label %q and annotation %q", labelValue, annotationValue))
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 
@@ -95,7 +96,7 @@ func (a *AnnotationStrategy) HandleAttestation(image string, pod *v1.Pod, isAtte
 	}
 	labels := map[string]string{constants.ImageAttestation: lValue}
 	annotations := map[string]string{constants.ImageAttestation: aValue}
-	glog.Info(fmt.Sprintf("Adding label %s and annotation %s", lValue, aValue))
+	glog.Info(fmt.Sprintf("adding label %q and annotation %q", lValue, aValue))
 	return pods.AddLabelsAndAnnotations(*pod, labels, annotations)
 }
 

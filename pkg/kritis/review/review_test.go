@@ -33,6 +33,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func NoopClusterWhitelistedImagesRemover(images []string) ([]string, error) {
+	return images, nil
+}
+
 func TestHasValidAttestations(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
 	successFpr := successSec.PgpKey.Fingerprint()
@@ -98,10 +102,11 @@ func TestHasValidAttestations(t *testing.T) {
 				PGPAttestations: tc.attestations,
 			}
 			r := New(cMock, &Config{
-				Validate:  nil,
-				Secret:    sMock,
-				IsWebhook: true,
-				Strategy:  nil,
+				Validate:                        nil,
+				Secret:                          sMock,
+				IsWebhook:                       true,
+				Strategy:                        nil,
+				ClusterWhitelistedImagesRemover: NoopClusterWhitelistedImagesRemover,
 			})
 			actual := r.hasValidImageAttestations(testutil.QualifiedImage, tc.attestations, auths)
 			if actual != tc.expected {
@@ -149,7 +154,7 @@ func TestReview(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
-	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, metadataFetcher metadata.Fetcher, attestorFetcher securitypolicy.AttestorFetcher) ([]policy.Violation, error) {
 		if image == vulnImage {
 			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}
@@ -284,11 +289,12 @@ func TestReview(t *testing.T) {
 				PGPAttestations: tc.attestations,
 			}
 			r := New(cMock, &Config{
-				Validate:  mockValidate,
-				Secret:    sMock,
-				Auths:     authMock,
-				IsWebhook: tc.isWebhook,
-				Strategy:  &th,
+				Validate:                        mockValidate,
+				Secret:                          sMock,
+				Auths:                           authMock,
+				IsWebhook:                       tc.isWebhook,
+				Strategy:                        &th,
+				ClusterWhitelistedImagesRemover: NoopClusterWhitelistedImagesRemover,
 			})
 			if err := r.Review([]string{tc.image}, isps, nil); (err != nil) != tc.shdErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shdErr, err)

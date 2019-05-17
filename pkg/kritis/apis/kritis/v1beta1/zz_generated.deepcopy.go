@@ -288,6 +288,11 @@ func (in *ImageSecurityPolicySpec) DeepCopyInto(out *ImageSecurityPolicySpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.RequireAttestationsBy != nil {
+		in, out := &in.RequireAttestationsBy, &out.RequireAttestationsBy
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
@@ -306,7 +311,7 @@ func (in *KritisConfig) DeepCopyInto(out *KritisConfig) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	return
 }
 
@@ -365,6 +370,11 @@ func (in *KritisConfigList) DeepCopyObject() runtime.Object {
 func (in *KritisConfigSpec) DeepCopyInto(out *KritisConfigSpec) {
 	*out = *in
 	out.Grafeas = in.Grafeas
+	if in.ImageWhitelist != nil {
+		in, out := &in.ImageWhitelist, &out.ImageWhitelist
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

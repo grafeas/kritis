@@ -22,6 +22,7 @@ import (
 
 // +genclient
 // +genclient:noStatus
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KritisConfig struct {
@@ -41,6 +42,9 @@ type KritisConfigSpec struct {
 	ServerAddr string `json:"serverAddr"`
 	// Grafeas configuration used for communicating with Grafeas backend
 	Grafeas GrafeasConfigSpec `json:"grafeas"`
+
+	// ImageWhitelist used for admit docker images without validating
+	ImageWhitelist []string `json:"imageWhitelist"`
 }
 
 // GrafeasConfigSpec holds the configuration required for connecting to grafeas instance

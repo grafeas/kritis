@@ -29,8 +29,8 @@ import (
 type KritisConfigLister interface {
 	// List lists all KritisConfigs in the indexer.
 	List(selector labels.Selector) (ret []*v1beta1.KritisConfig, err error)
-	// KritisConfigs returns an object that can list and get KritisConfigs.
-	KritisConfigs(namespace string) KritisConfigNamespaceLister
+	// Get retrieves the KritisConfig from the index for a given name.
+	Get(name string) (*v1beta1.KritisConfig, error)
 	KritisConfigListerExpansion
 }
 
@@ -52,38 +52,9 @@ func (s *kritisConfigLister) List(selector labels.Selector) (ret []*v1beta1.Krit
 	return ret, err
 }
 
-// KritisConfigs returns an object that can list and get KritisConfigs.
-func (s *kritisConfigLister) KritisConfigs(namespace string) KritisConfigNamespaceLister {
-	return kritisConfigNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// KritisConfigNamespaceLister helps list and get KritisConfigs.
-type KritisConfigNamespaceLister interface {
-	// List lists all KritisConfigs in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1beta1.KritisConfig, err error)
-	// Get retrieves the KritisConfig from the indexer for a given namespace and name.
-	Get(name string) (*v1beta1.KritisConfig, error)
-	KritisConfigNamespaceListerExpansion
-}
-
-// kritisConfigNamespaceLister implements the KritisConfigNamespaceLister
-// interface.
-type kritisConfigNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all KritisConfigs in the indexer for a given namespace.
-func (s kritisConfigNamespaceLister) List(selector labels.Selector) (ret []*v1beta1.KritisConfig, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.KritisConfig))
-	})
-	return ret, err
-}
-
-// Get retrieves the KritisConfig from the indexer for a given namespace and name.
-func (s kritisConfigNamespaceLister) Get(name string) (*v1beta1.KritisConfig, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the KritisConfig from the index for a given name.
+func (s *kritisConfigLister) Get(name string) (*v1beta1.KritisConfig, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

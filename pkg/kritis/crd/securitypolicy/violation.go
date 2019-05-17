@@ -60,17 +60,17 @@ func (v Violation) Details() interface{} {
 
 // UnqualifiedImageReason returns a detailed reason if the image is unqualified
 func UnqualifiedImageReason(image string) policy.Reason {
-	return policy.Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
+	return policy.Reason(fmt.Sprintf("%q is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
 // FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity
 func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found unfixable CVE %q in %q which isn't whitelisted, violating max severity %s",
 			v.CVE, image, ms))
 	}
-	return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found unfixable CVE %q in %q, which has severity %s exceeding max severity %s",
 		v.CVE, image, v.Severity, ms))
 }
 
@@ -78,9 +78,9 @@ func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.Im
 func SeverityReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found CVE %q in %q which isn't whitelisted, violating max severity %s",
 			v.CVE, image, ms))
 	}
-	return policy.Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found CVE %q in %q, which has severity %s exceeding max severity %s",
 		v.CVE, image, v.Severity, ms))
 }

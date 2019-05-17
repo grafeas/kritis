@@ -20,29 +20,29 @@ func ResolveImageToDigest(image string) (string, error) {
 	// WeakValidation allow images without tags and consider it as `latest`
 	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create new image tag.")
+		return "", errors.Wrap(err, "failed to create new image tag")
 	}
 
 	if !isRegistryGCR(tag.RegistryStr()) {
 		// Ignore if registry is not GCR
 		// TODO (@vbanthia): Support other registry also
-		glog.Warningf("Only GCR images are supported. Found %s registry instead.", tag.RegistryStr())
+		glog.Warningf("only GCR images are supported, found %q registry instead", tag.RegistryStr())
 		return image, nil
 	}
 
 	auth, err := google.NewEnvAuthenticator()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to authenticate GCR.")
+		return "", errors.Wrap(err, "failed to authenticate GCR")
 	}
 
 	img, err := remote.Image(tag, remote.WithAuth(auth))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create remote image.")
+		return "", errors.Wrap(err, "failed to create remote image")
 	}
 
 	digest, err := img.Digest()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get image digest.")
+		return "", errors.Wrap(err, "failed to get image digest")
 	}
 
 	return fmt.Sprintf("%s@%s", tag.Context(), digest.String()), nil

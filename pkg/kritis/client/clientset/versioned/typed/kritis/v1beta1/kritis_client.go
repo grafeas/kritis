@@ -50,8 +50,8 @@ func (c *KritisV1beta1Client) ImageSecurityPolicies(namespace string) ImageSecur
 	return newImageSecurityPolicies(c, namespace)
 }
 
-func (c *KritisV1beta1Client) KritisConfigs(namespace string) KritisConfigInterface {
-	return newKritisConfigs(c, namespace)
+func (c *KritisV1beta1Client) KritisConfigs() KritisConfigInterface {
+	return newKritisConfigs(c)
 }
 
 // NewForConfig creates a new KritisV1beta1Client for the given config.

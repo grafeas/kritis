@@ -89,7 +89,7 @@ func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, 
 func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+		return nil, fmt.Errorf("%q is not a valid image hosted in GCR", containerImage)
 	}
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
@@ -134,7 +134,7 @@ func isRegistryGCR(r string) bool {
 func getProjectFromNoteReference(ref string) (string, error) {
 	str := strings.Split(ref, "/")
 	if len(str) < 3 {
-		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
+		return "", fmt.Errorf("invalid note reference. should be in format <api>/projects/<project_id>")
 	}
 	return str[2], nil
 }
@@ -184,7 +184,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
 	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+		return nil, fmt.Errorf("%q is not a valid image hosted in GCR", containerImage)
 	}
 	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
@@ -233,7 +233,7 @@ func getProjectFromContainerImage(image string) string {
 
 // Builds gets Build Occurrences for a specified image.
 func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
-	glog.Infof("getttig build occurrences for %s", containerImage)
+	glog.Infof("getttig build occurrences for %q", containerImage)
 	occs, err := c.fetchOccurrence(containerImage, "BUILD")
 	if err != nil {
 		glog.Warning(err)
@@ -245,7 +245,7 @@ func (c Client) Builds(containerImage string) ([]metadata.Build, error) {
 			builds = append(builds, *v)
 		}
 	}
-	glog.Infof("got build occurrences (%d) for %s", len(builds), containerImage)
+	glog.Infof("got build occurrences (%d) for %q", len(builds), containerImage)
 	return builds, nil
 }
 

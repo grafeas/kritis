@@ -29,6 +29,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	corev1 "k8s.io/api/core/v1"
@@ -55,16 +56,22 @@ var (
 )
 
 func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
+	attestorFetcher, err := securitypolicy.NewAttestorFetcher()
+	if err != nil {
+		glog.Fatalf("failed to create an attestorFetcher: %v", err)
+	}
 
 	cfg := Config{
 		PodLister: pods.Pods,
 		Client:    client,
 		ReviewConfig: &review.Config{
-			Secret:    secrets.Fetch,
-			Auths:     authority.Authority,
-			Strategy:  defaultViolationStrategy,
-			IsWebhook: false,
-			Validate:  securitypolicy.ValidateImageSecurityPolicy,
+			Secret:                          secrets.Fetch,
+			Auths:                           authority.Authority,
+			Strategy:                        defaultViolationStrategy,
+			IsWebhook:                       false,
+			Validate:                        securitypolicy.ValidateImageSecurityPolicy,
+			Attestors:                       attestorFetcher,
+			ClusterWhitelistedImagesRemover: kritisconfig.RemoveWhitelistedImages,
 		},
 		SecurityPolicyLister: securitypolicy.ImageSecurityPolicies,
 	}
@@ -77,7 +84,7 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 	done := ctx.Done()
 
 	for {
-		glog.Info("Checking pods.")
+		glog.Info("checking pods")
 		select {
 		case <-c.C:
 			isps, err := cfg.SecurityPolicyLister("")
@@ -103,7 +110,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 			return err
 		}
 		for _, p := range ps {
-			glog.Infof("Checking po %s", p.Name)
+			glog.Infof("checking pod %q", p.Name)
 			if err := r.Review(admission.PodImages(p), isps, &p); err != nil {
 				glog.Error(err)
 			}
@@ -118,6 +125,6 @@ func RunInForeground(cfg Config) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Got isps %v", isps)
+	glog.Infof("got ISPs: %v", isps)
 	return podChecker(cfg, isps)
 }

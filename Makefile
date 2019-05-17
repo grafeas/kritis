@@ -17,7 +17,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
-VERSION ?= v0.1.0
+VERSION ?= v0.3.0-mercari.1
 IMAGE_TAG ?= $(COMMIT)
 
 # Used for integration testing. example:

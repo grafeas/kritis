@@ -41,13 +41,13 @@ func NewPgpKey(privateKeyStr string, passphrase string, publicKeyStr string) (*P
 	if privateKeyStr != "" {
 		privateKey, err = parsePrivateKey(privateKeyStr, passphrase)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing private key")
+			return nil, errors.Wrap(err, "failed to parse private key")
 		}
 	}
 	if publicKeyStr != "" {
 		publicKey, err = parsePublicKey(publicKeyStr)
 		if err != nil {
-			return nil, errors.Wrap(err, "parsing public key")
+			return nil, errors.Wrap(err, "failed to parse public key")
 		}
 	}
 	return &PgpKey{
@@ -75,7 +75,7 @@ func parsePublicKey(publicKey string) (*packet.PublicKey, error) {
 	}
 	key, ok := pkt.(*packet.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("Not a public key")
+		return nil, fmt.Errorf("not a public key")
 	}
 	return key, nil
 }
@@ -87,14 +87,14 @@ func parsePrivateKey(privateKey string, passphrase string) (*packet.PrivateKey, 
 	}
 	key, ok := pkt.(*packet.PrivateKey)
 	if !ok {
-		return nil, fmt.Errorf("Not a private Key")
+		return nil, fmt.Errorf("not a private key")
 	}
 	if passphrase != "" {
 		// Decrypt the private key with the passphrase
 		pb := []byte(passphrase)
 		err := key.Decrypt(pb)
 		if err != nil {
-			return nil, fmt.Errorf("Decrypt failed: %v", err)
+			return nil, errors.Wrap(err, "failed to decrypt private key with passphrase")
 		}
 	}
 	return key, nil
