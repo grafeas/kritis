@@ -126,7 +126,7 @@ Install [helm](https://docs.helm.sh/using_helm/#installing-helm), and execute th
 ```shell
 kubectl create serviceaccount --namespace kube-system tiller
 
-kubectl create clusterrolebinding tiller-cluster-rule \
+kubectl create clusterrolebinding tiller-cluster-role \
   --clusterrole=cluster-admin \
   --serviceaccount=kube-system:tiller
 ```
