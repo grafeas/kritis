@@ -17,6 +17,7 @@ limitations under the License.
 package secrets
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -111,4 +112,17 @@ func parseKey(key string, keytype string) (packet.Packet, error) {
 	}
 	reader := packet.NewReader(block.Body)
 	return reader.Next()
+}
+
+// KeyAndFingerprint returns the key and the fingerprint from the base64 encoded public key data
+func KeyAndFingerprint(publicKeyData string) (key, fingerprint string, err error) {
+	publicData, err := base64.StdEncoding.DecodeString(publicKeyData)
+	if err != nil {
+		return key, fingerprint, err
+	}
+	s, err := NewPgpKey("", "", string(publicData))
+	if err != nil {
+		return key, fingerprint, err
+	}
+	return string(publicData), s.Fingerprint(), nil
 }
