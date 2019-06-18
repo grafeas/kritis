@@ -71,11 +71,21 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			isAuthAttested, _ := r.fetchAndVerifyAttestations(image, auths, pod)
-			if isAuthAttested {
-				imgAttested = true
-				break
+			for _, auth := range auths {
+				transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
+				attestations, err := transport.GetValidatedAttestations(image)
+				if err != nil {
+					// TODO or something better
+					return err
+				}
+				if len(attestations) != 0 {
+					imgAttested = true
+					break
+				}
 			}
+		}
+		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
+			glog.Errorf("error handling attestations %v", err)
 		}
 		if !imgAttested {
 			return fmt.Errorf("image %s is not attested", image)
