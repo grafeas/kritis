@@ -19,7 +19,6 @@ package review
 import (
 	"encoding/base64"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -32,84 +31,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/violation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func TestHasValidAttestations(t *testing.T) {
-	successSec, pub := testutil.CreateSecret(t, "test-success")
-	successFpr := successSec.PgpKey.Fingerprint()
-	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	anotherSig, err := util.CreateAttestationSignature(testutil.IntTestImage, successSec)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	tcs := []struct {
-		name         string
-		expected     bool
-		attestations []metadata.PGPAttestation
-	}{
-		{"atleast one valid sig", true, []metadata.PGPAttestation{
-			{
-				Signature: sig,
-				KeyID:     successFpr,
-			}, {
-				Signature: "invalid-sig",
-				KeyID:     successFpr,
-			}}},
-		{"no valid sig", false, []metadata.PGPAttestation{
-			{
-				Signature: "invalid-sig",
-				KeyID:     successFpr,
-			}}},
-		{"invalid secret", false, []metadata.PGPAttestation{
-			{
-				Signature: "invalid-sig",
-				KeyID:     "invalid-fpr",
-			}}},
-		{"valid sig over another host", false, []metadata.PGPAttestation{
-			{
-				Signature: anotherSig,
-				KeyID:     successFpr,
-			}}},
-	}
-	secs := map[string]*secrets.PGPSigningSecret{
-		"test-success": successSec,
-	}
-	sMock := func(_ string, name string) (*secrets.PGPSigningSecret, error) {
-		s, ok := secs[name]
-		if !ok {
-			return nil, fmt.Errorf("secret not found")
-		}
-		return s, nil
-	}
-
-	auths := []v1beta1.AttestationAuthority{
-		{
-			Spec: v1beta1.AttestationAuthoritySpec{
-				PrivateKeySecretName: "test-success",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
-			},
-		},
-	}
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			cMock := &testutil.MockMetadataClient{
-				PGPAttestations: tc.attestations,
-			}
-			r := New(cMock, &Config{
-				Validate:  nil,
-				Secret:    sMock,
-				IsWebhook: true,
-				Strategy:  nil,
-			})
-			actual := r.hasValidImageAttestations(testutil.QualifiedImage, tc.attestations, auths)
-			if actual != tc.expected {
-				t.Fatalf("Expected %v, Got %v", tc.expected, actual)
-			}
-		})
-	}
-}
 
 func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
@@ -301,7 +222,7 @@ func TestReviewISP(t *testing.T) {
 		shouldErr         bool
 	}{
 		{
-			name:              "vulnz w attestation for Webhook should not handle voilations",
+			name:              "vulnz w attestation for Webhook should not handle violations",
 			image:             vulnImage,
 			isWebhook:         true,
 			attestations:      validAtts,
@@ -430,44 +351,6 @@ func TestReviewISP(t *testing.T) {
 			if (len(cMock.Occ) != 0) != tc.shouldAttestImage {
 				t.Errorf("expected an image to be attested, but found none")
 			}
-		})
-	}
-}
-
-func TestGetUnAttested(t *testing.T) {
-	tcs := []struct {
-		name     string
-		authIds  []string
-		keys     map[string]string
-		attIds   []string
-		eAuthIds []string
-	}{
-		{
-			"not equal",
-			[]string{"a", "b"},
-			map[string]string{"a": "a-fpr", "b": "b-fpr"},
-			[]string{"a-fpr"},
-			[]string{"b"},
-		},
-		{
-			"equal",
-			[]string{"a", "b"},
-			map[string]string{"a": "a-fpr", "b": "b-fpr"},
-			[]string{"a-fpr", "b-fpr"},
-			[]string{},
-		},
-	}
-
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			auths := makeAuth(tc.authIds)
-			atts := makeAtt(tc.attIds)
-			expected := makeAuth(tc.eAuthIds)
-			actual := getUnAttested(auths, tc.keys, atts)
-			if !reflect.DeepEqual(actual, expected) {
-				t.Fatalf("Expected: %v\n Got: %v", expected, actual)
-			}
-
 		})
 	}
 }
