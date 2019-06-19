@@ -64,7 +64,7 @@ func (avt AttestorValidatingTransport) GetValidatedAttestations(artifact string)
 			glog.Errorf("Could not find or verify attestation for attestor %s", a.KeyID)
 			glog.Errorf(err.Error())
 		} else {
-			out = append(out, attestation.ValidatedAttestation{ArtifactName: artifact})
+			out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, ArtifactName: artifact})
 		}
 	}
 	return out, nil
