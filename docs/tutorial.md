@@ -18,7 +18,7 @@ PROJECT=<project ID assigned to you>
 
 ### 1. Defining an ImageSecurityPolicy
 
-Kritis relies on a user-defined *ImageSecurityPolicy* (ISP) to determine whether a pod meets the criteria for deployment. Create an ISP that restricts Kubernetes from deploying a HIGH severity vulnerability, unless it is within a set of white-listed [CVEs]:
+Kritis relies on a user-defined *ImageSecurityPolicy* (ISP) to determine whether a pod meets the criteria for deployment. Create an ISP that restricts Kubernetes from deploying a HIGH severity vulnerability, unless it is within a set of allowlisted [CVEs]:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
@@ -31,7 +31,7 @@ metadata:
 spec:
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
-    whitelistCVEs:
+    allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000081
 EOF
 ```
@@ -177,7 +177,7 @@ Apply the YAML:
 kubectl apply -f resolve.yaml
 ```
 
-Unless the tag is specifically whitelisted, the following error will be displayed:
+Unless the tag is specifically in the allowlist, the following error will be displayed:
 
 ```shell
 admission webhook "kritis-validation-hook.grafeas.io" denied the request: gcr.io/kritis-doc-test/java-with-vulnz:latest is not a fully qualified image
@@ -190,9 +190,9 @@ Instead, to deploy images by a tag name, use the `resolve-tags` plugin:
 kubectl plugin resolve-tags -f resolve.yaml --apply true
 ```
 
-### 6. Whitelist an image
+### 6. Add an image to allowlist
 
-To whitelist an image, specify a path containing a tag (such as `latest`), or sha256:
+To add an image to allowlist, specify a path containing a tag (such as `latest`), or sha256:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
@@ -203,16 +203,16 @@ metadata:
   name: my-isp
   namespace: default
 spec:
-  imageWhitelist:
+  imageAllowlist:
     - gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
-    whitelistCVEs:
+    allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000081
 EOF
 ```
 
-Then deploy the java-with-vulnz pod with the whitelist in place:
+Then deploy the java-with-vulnz pod with the allowlist in place:
 
 ```shell
 cat <<EOF | kubectl apply -f - \
@@ -220,13 +220,13 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: v1
 kind: Pod
 metadata:
-  name: java-with-vulnz-whitelist
+  name: java-with-vulnz-allowlist
   labels: {
     "kritis.grafeas.io/tutorial":""
   }
 spec:
   containers:
-  - name: java-with-vulnz-whitelist
+  - name: java-with-vulnz-allowlist
     image: gcr.io/$PROJECT/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a
     ports:
     - containerPort: 80
@@ -235,7 +235,7 @@ EOF
 
 ### 7. Force deployment with a breakglass annotation
 
-Rather than white-listing an image, you can also force a deployment  that normally fails validation, by adding a *breakglass* annotation to the pod spec:
+Rather than adding an image to allowlist, you can also force a deployment  that normally fails validation, by adding a *breakglass* annotation to the pod spec:
 
 ```shell
 cat <<EOF | kubectl apply -f - \

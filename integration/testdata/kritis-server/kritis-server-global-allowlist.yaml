@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kritis-server-global-allowlist
+spec:
+  containers:
+  - name: kritis-server-global-allowlist
+    image: gcr.io/kritis-project/kritis-server:global-allowlist-int-test
+    command: ["echo", "hi"]
+    ports:
+    - containerPort: 80

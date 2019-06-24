@@ -391,7 +391,7 @@ func TestReviewISP(t *testing.T) {
 			shouldErr:         true,
 		},
 		{
-			name:              "review image in global whitelist",
+			name:              "review image in global allowlist",
 			image:             "gcr.io/kritis-project/preinstall",
 			isWebhook:         true,
 			attestations:      []metadata.PGPAttestation{},

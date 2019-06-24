@@ -6,11 +6,11 @@ metadata:
 spec:
   attestationAuthorityNames:
   - kritis-authority
-  imageWhitelist:
+  imageAllowlist:
   - gcr.io/my/image
   packageVulnerabilityRequirements:
     maximumSeverity: HIGH # LOW|MEDIUM|HIGH|CRITICAL|BLOCK_ALL|ALLOW_ALL
     maximumFixUnavailableSeverity: ALLOW_ALL # LOW|MEDIUM|HIGH|CRITICAL|BLOCK_ALL|ALLOW_ALL
-    whitelistCVEs:
+    allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081

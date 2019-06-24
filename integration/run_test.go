@@ -324,15 +324,15 @@ func TestKritisISPLogic(t *testing.T) {
 			shouldSucceed: false,
 		},
 		{
-			template:      "nginx/nginx-no-digest-whitelist.yaml",
+			template:      "nginx/nginx-no-digest-allowlist.yaml",
 			command:       "create",
-			pods:          []string{"nginx-no-digest-whitelist"},
+			pods:          []string{"nginx-no-digest-allowlist"},
 			shouldSucceed: true,
 		},
 		{
-			template:      "nginx/nginx-digest-whitelist.yaml",
+			template:      "nginx/nginx-digest-allowlist.yaml",
 			command:       "create",
-			pods:          []string{"nginx-digest-whitelist"},
+			pods:          []string{"nginx-digest-allowlist"},
 			shouldSucceed: true,
 		},
 		{
@@ -372,13 +372,13 @@ func TestKritisISPLogic(t *testing.T) {
 			shouldSucceed: true,
 		},
 		{
-			template:      "kritis-server/kritis-server-global-whitelist.yaml",
+			template:      "kritis-server/kritis-server-global-allowlist.yaml",
 			command:       "apply",
-			pods:          []string{"kritis-server-global-whitelist"},
+			pods:          []string{"kritis-server-global-allowlist"},
 			shouldSucceed: true,
 		},
 		{
-			template:      "kritis-server/kritis-server-global-whitelist-with-vulnz.yaml",
+			template:      "kritis-server/kritis-server-global-allowlist-with-vulnz.yaml",
 			command:       "apply",
 			shouldSucceed: false,
 		},
