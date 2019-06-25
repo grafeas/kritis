@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: kritis-server-global-allowlist
-    image: gcr.io/kritis-project/kritis-server:global-allowlist-int-test
+    image: gcr.io/kritis-project/kritis-server:global-whitelist-int-test
     command: ["echo", "hi"]
     ports:
     - containerPort: 80

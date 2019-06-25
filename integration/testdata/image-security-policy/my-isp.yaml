@@ -6,7 +6,7 @@ spec:
   attestationAuthorityNames:
   - test-attestor
   imageAllowlist:
-  - gcr.io/{{ .Project }}/nginx-digest-allowlist:latest
+  - gcr.io/{{ .Project }}/nginx-digest-whitelist:latest
   - gcr.io/{{ .Project }}/nginx-digest-allowlist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72
   packageVulnerabilityRequirements:
     maximumSeverity: HIGH

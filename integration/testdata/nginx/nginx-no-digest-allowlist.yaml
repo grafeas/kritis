@@ -5,6 +5,6 @@ metadata:
 spec:
   containers:
   - name: nginx-no-digest-allowlist
-    image: gcr.io/{{ .Project }}/nginx-digest-allowlist:latest
+    image: gcr.io/{{ .Project }}/nginx-digest-whitelist:latest
     ports:
     - containerPort: 80
