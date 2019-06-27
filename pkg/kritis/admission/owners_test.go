@@ -41,7 +41,7 @@ func Test_imagesAreValid(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "all dependent images are valid or globally whitelisted",
+			name: "all dependent images are valid or globally allowed",
 			dependentImages: []string{
 				testutil.QualifiedImage,
 				"gcr.io/kritis-project/postinstall",

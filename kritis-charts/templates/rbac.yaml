@@ -18,7 +18,7 @@ items:
     namespace: {{ .Values.serviceNamespace }}
     name: default
 
-# to let the admission server read imagewhitelist/imagesecuritypolicies
+# to let the admission server read image allowlist in imagesecuritypolicies
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: ClusterRole
   metadata:

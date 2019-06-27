@@ -201,8 +201,8 @@ setup-integration-local: setup-integration-local
 		gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a \
 		gcr.io/$(GCP_PROJECT)/java-with-vulnz:latest
 	gcloud -q container images add-tag \
-		gcr.io/kritis-tutorial/nginx-digest-whitelist:latest \
-		gcr.io/$(GCP_PROJECT)/nginx-digest-whitelist:latest
+		gcr.io/kritis-tutorial/nginx-digest-allowlist:latest \
+		gcr.io/$(GCP_PROJECT)/nginx-digest-allowlist:latest
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/nginx-no-digest-breakglass:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest-breakglass:latest

@@ -55,8 +55,8 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
 func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
-	// First, check if image is whitelisted
-	if imageInWhitelist(isp, image) {
+	// First, check if image is allowed
+	if imageInAllowlist(isp, image) {
 		return nil, nil
 	}
 	var violations []policy.Violation
@@ -84,8 +84,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 	}
 
 	for _, v := range vulnz {
-		// First, check if the vulnerability is whitelisted
-		if cveInWhitelist(isp, v.CVE) {
+		// First, check if the vulnerability is in allowlist
+		if cveInAllowlist(isp, v.CVE) {
 			continue
 		}
 
@@ -121,8 +121,8 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 	return violations, nil
 }
 
-func imageInWhitelist(isp v1beta1.ImageSecurityPolicy, image string) bool {
-	for _, i := range isp.Spec.ImageWhitelist {
+func imageInAllowlist(isp v1beta1.ImageSecurityPolicy, image string) bool {
+	for _, i := range isp.Spec.ImageAllowlist {
 		if i == image {
 			return true
 		}
@@ -130,8 +130,8 @@ func imageInWhitelist(isp v1beta1.ImageSecurityPolicy, image string) bool {
 	return false
 }
 
-func cveInWhitelist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
-	for _, w := range isp.Spec.PackageVulnerabilityRequirements.WhitelistCVEs {
+func cveInAllowlist(isp v1beta1.ImageSecurityPolicy, cve string) bool {
+	for _, w := range isp.Spec.PackageVulnerabilityRequirements.AllowlistCVEs {
 		if w == cve {
 			return true
 		}

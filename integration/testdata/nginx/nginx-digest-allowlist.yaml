@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx-digest-whitelist
+  name: nginx-digest-allowlist
 spec:
   containers:
-  - name: nginx-digest-whitelist
+  - name: nginx-digest-allowlist
     image: gcr.io/{{ .Project }}/nginx-digest-whitelist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72
     ports:
     - containerPort: 80

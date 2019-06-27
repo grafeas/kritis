@@ -21,14 +21,14 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
+func Test_RemoveGloballyAllowedImages(t *testing.T) {
 	tests := []struct {
 		name     string
 		images   []string
 		expected []string
 	}{
 		{
-			name: "images in whitelist",
+			name: "images in allowlist",
 			images: []string{
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
@@ -36,7 +36,7 @@ func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
 			expected: []string{},
 		},
 		{
-			name: "some images not whitelisted",
+			name: "some images not allowlisted",
 			images: []string{
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
@@ -46,32 +46,32 @@ func Test_RemoveGloballyWhitelistedImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := RemoveGloballyWhitelistedImages(test.images)
+			actual := RemoveGloballyAllowedImages(test.images)
 			testutil.DeepEqual(t, test.expected, actual)
 		})
 	}
 }
 
-func Test_imageInWhitelist(t *testing.T) {
+func Test_imageInAllowlist(t *testing.T) {
 	tests := []struct {
 		name     string
 		image    string
 		expected bool
 	}{
 		{
-			name:     "test image in whitelist",
+			name:     "test image in allowlist",
 			image:    "gcr.io/kritis-project/kritis-server:tag",
 			expected: true,
 		},
 		{
-			name:     "test image not in whitelist",
+			name:     "test image not in allowlist",
 			image:    "some/image",
 			expected: false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := imageInWhitelist(test.image)
+			actual, err := imageInAllowlist(test.image)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}
