@@ -76,3 +76,20 @@ predelete:
     name: "kritis-predelete"
     image: predelete
     command: ["/predelete"]
+
+# certificate values for grafeas
+# Certificates for mutual authentication
+certificates:
+  name: grafeas-ssl-certs
+  ca: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+  cert: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+  key: |-
+      -----BEGIN RSA PRIVATE KEY-----
+      ...
+      -----END RSA PRIVATE KEY-----
