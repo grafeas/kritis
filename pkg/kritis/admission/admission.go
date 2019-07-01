@@ -54,7 +54,7 @@ type config struct {
 }
 
 // Define constants for metav1.Status.Status
-// See https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#response-status-kind
+// See https://github.com/kubernetes/kubernetes/blob/release-1.1/docs/devel/api-conventions.md#response-status-kind
 type Status string
 
 const (
