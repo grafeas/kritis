@@ -67,7 +67,7 @@ func UnqualifiedImageReason(image string) policy.Reason {
 func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't in allowlist, violating max severity %s",
 			v.CVE, image, ms))
 	}
 	return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
@@ -78,7 +78,7 @@ func FixUnavailableReason(image string, v metadata.Vulnerability, isp v1beta1.Im
 func SeverityReason(image string, v metadata.Vulnerability, isp v1beta1.ImageSecurityPolicy) policy.Reason {
 	ms := isp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found CVE %s in %s which isn't whitelisted, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found CVE %s in %s which isn't in allowlist, violating max severity %s",
 			v.CVE, image, ms))
 	}
 	return policy.Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",

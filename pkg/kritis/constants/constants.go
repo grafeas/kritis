@@ -17,9 +17,9 @@ limitations under the License.
 package constants
 
 const (
-	// AllowAll is the value used to allow all images with CVEs, except for whitelisted CVEs
+	// AllowAll is the value used to allow all images with CVEs, except for allowlisted CVEs
 	AllowAll = "ALLOW_ALL"
-	// BlockAll is the value used to block all images with CVEs, except for whitelisted CVEs
+	// BlockAll is the value used to block all images with CVEs, except for allowlisted CVEs
 	BlockAll = "BLOCK_ALL"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
@@ -50,9 +50,9 @@ const (
 )
 
 var (
-	// GlobalImageWhitelist is a list of images that are globally whitelisted
+	// GlobalImageAllowlist is a list of images that are globally allowed
 	// They should always pass the webhook check
-	GlobalImageWhitelist = []string{"gcr.io/kritis-project/kritis-server",
+	GlobalImageAllowlist = []string{"gcr.io/kritis-project/kritis-server",
 		"gcr.io/kritis-project/preinstall",
 		"gcr.io/kritis-project/postinstall",
 		"gcr.io/kritis-project/predelete"}

@@ -114,7 +114,7 @@ webhooks:
         - "*" # TODO(aaron-prindle) minimize this capture group
         operations:
           - CREATE
-          # - UPDATE # TODO(aaron-prindle) add back update when whitelist and helm do not collide
+          # - UPDATE # TODO(aaron-prindle) add back update when allowlist and helm do not collide
         resources:
           - deployments
           - replicasets

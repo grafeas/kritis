@@ -143,10 +143,10 @@ func Test_SeverityThresholds(t *testing.T) {
 	}
 }
 
-func Test_WhitelistedImage(t *testing.T) {
+func Test_AllowlistedImage(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			ImageWhitelist: []string{"image"},
+			ImageAllowlist: []string{"image"},
 			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "LOW",
 			},
@@ -164,13 +164,13 @@ func Test_WhitelistedImage(t *testing.T) {
 	}
 }
 
-func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
+func Test_AllowlistedCVEAboveSeverityThreshold(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
-			ImageWhitelist: []string{"image"},
+			ImageAllowlist: []string{"image"},
 			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity: "LOW",
-				WhitelistCVEs:   []string{"c"},
+				AllowlistCVEs:   []string{"c"},
 			},
 		},
 	}
@@ -187,13 +187,13 @@ func Test_WhitelistedCVEAboveSeverityThreshold(t *testing.T) {
 		t.Errorf("got unexpected violations: %v", violations)
 	}
 }
-func Test_OnlyFixesNotAvailablePassWithWhitelist(t *testing.T) {
+func Test_OnlyFixesNotAvailablePassWithAllowlist(t *testing.T) {
 	isp := v1beta1.ImageSecurityPolicy{
 		Spec: v1beta1.ImageSecurityPolicySpec{
 			PackageVulnerabilityRequirements: v1beta1.PackageVulnerabilityRequirements{
 				MaximumSeverity:               "CRITICAL",
 				MaximumFixUnavailableSeverity: "BLOCK_ALL",
-				WhitelistCVEs:                 []string{"c"},
+				AllowlistCVEs:                 []string{"c"},
 			},
 		},
 	}

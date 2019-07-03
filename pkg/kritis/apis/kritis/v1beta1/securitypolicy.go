@@ -33,7 +33,7 @@ type ImageSecurityPolicy struct {
 
 // ImageSecurityPolicySpec is the spec for a ImageSecurityPolicy resource
 type ImageSecurityPolicySpec struct {
-	ImageWhitelist                   []string                         `json:"imageWhitelist"`
+	ImageAllowlist                   []string                         `json:"imageAllowlist"`
 	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 	AttestationAuthorityNames        []string                         `json:"attestationAuthorityNames"`
 }
@@ -44,7 +44,7 @@ type PackageVulnerabilityRequirements struct {
 	MaximumSeverity string `json:"maximumSeverity"`
 	// CVE's without fixes.
 	MaximumFixUnavailableSeverity string   `json:"maximumFixNotAvailableSeverity"`
-	WhitelistCVEs                 []string `json:"whitelistCVEs"`
+	AllowlistCVEs                 []string `json:"allowlistCVEs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

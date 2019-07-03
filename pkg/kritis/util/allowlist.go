@@ -24,24 +24,24 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// RemoveGloballyWhitelistedImages returns all images that aren't globally whitelisted
-func RemoveGloballyWhitelistedImages(images []string) []string {
-	notWhitelisted := []string{}
+// RemoveGloballyAllowedImages returns all images that aren't in a global allowlist
+func RemoveGloballyAllowedImages(images []string) []string {
+	notAllowlisted := []string{}
 	for _, image := range images {
-		whitelisted, err := imageInWhitelist(image)
+		allowlisted, err := imageInAllowlist(image)
 		if err != nil {
-			glog.Errorf("couldn't check if %s is in global whitelist: %v", image, err)
+			glog.Errorf("couldn't check if %s is in global allowlist: %v", image, err)
 		}
-		if !whitelisted {
-			notWhitelisted = append(notWhitelisted, image)
+		if !allowlisted {
+			notAllowlisted = append(notAllowlisted, image)
 		}
 	}
-	return notWhitelisted
+	return notAllowlisted
 }
 
-func imageInWhitelist(image string) (bool, error) {
-	for _, w := range constants.GlobalImageWhitelist {
-		whitelistRef, err := name.ParseReference(w, name.WeakValidation)
+func imageInAllowlist(image string) (bool, error) {
+	for _, w := range constants.GlobalImageAllowlist {
+		allowlistRef, err := name.ParseReference(w, name.WeakValidation)
 		if err != nil {
 			return false, err
 		}
@@ -50,7 +50,7 @@ func imageInWhitelist(image string) (bool, error) {
 			return false, err
 		}
 		// Make sure images have the same context
-		if reflect.DeepEqual(whitelistRef.Context(), imageRef.Context()) {
+		if reflect.DeepEqual(allowlistRef.Context(), imageRef.Context()) {
 			return true, nil
 		}
 	}
