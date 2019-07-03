@@ -40,6 +40,7 @@ func deleteCSR() {
 func deleteCRDs() {
 	deleteObject("crd", "attestationauthorities.kritis.grafeas.io")
 	deleteObject("crd", "imagesecuritypolicies.kritis.grafeas.io")
+	deleteObject("crd", "kritisconfigs.kritis.grafeas.io")
 }
 
 func deleteObject(object, name string) {

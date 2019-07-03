@@ -30,6 +30,7 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args: ["--tls-cert-file=/var/tls/tls.crt",
                "--tls-key-file=/var/tls/tls.key",
+               "--grafeas-certs=/etc/config/grafeascerts.yaml",
                "--logtostderr"]
         ports:
           - name: https
@@ -40,6 +41,10 @@ spec:
           name: tls
         - name: {{ .Values.gacSecret.name }}
           mountPath: /secret
+        - name: certconfig
+          mountPath: /etc/config
+        - name: certificates
+          mountPath: /certificates
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /secret/{{ .Values.gacSecret.path }}
@@ -50,3 +55,12 @@ spec:
         - name: {{ .Values.gacSecret.name }}
           secret:
             secretName: {{ .Values.gacSecret.name }}
+        - name: certconfig
+          configMap:
+            name: grafeas-certs-config
+            items:
+              - key: config
+                path: grafeascerts.yaml
+        - name: certificates
+          secret:
+            secretName: {{ .Values.certificates.name }}

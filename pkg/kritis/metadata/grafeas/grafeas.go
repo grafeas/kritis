@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -59,27 +58,10 @@ func ValidateConfig(config kritisv1beta1.GrafeasConfigSpec) error {
 	if strings.HasPrefix(config.Addr, "/") { // Unix socket address
 		return nil
 	}
-	if config.CAPath == "" {
-		return fmt.Errorf("certificate authority must be specified")
-	}
-	if config.ClientCertPath == "" {
-		return fmt.Errorf("client cert path must be specified")
-	}
-	if config.ClientKeyPath == "" {
-		return fmt.Errorf("client key path must be specified")
-	}
-	for _, path := range []string{config.CAPath, config.ClientCertPath, config.ClientKeyPath} {
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
-				return fmt.Errorf("certificate path %s does not exist", path)
-			}
-			return err
-		}
-	}
 	return nil
 }
 
-func New(config kritisv1beta1.GrafeasConfigSpec) (*Client, error) {
+func New(config kritisv1beta1.GrafeasConfigSpec, certs *GrafeasCertConfig) (*Client, error) {
 	if err := ValidateConfig(config); err != nil {
 		return nil, err
 	}
@@ -96,12 +78,12 @@ func New(config kritisv1beta1.GrafeasConfigSpec) (*Client, error) {
 			return nil, err
 		}
 	} else {
-		certificate, err := tls.LoadX509KeyPair(config.ClientCertPath, config.ClientKeyPath)
+		certificate, err := tls.LoadX509KeyPair(certs.CertFile, certs.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("could not load client key pair: %s", err)
 		}
 		certPool := x509.NewCertPool()
-		ca, err := ioutil.ReadFile(config.CAPath)
+		ca, err := ioutil.ReadFile(certs.CAFile)
 		if err != nil {
 			return nil, fmt.Errorf("could not read ca certificate: %s", err)
 		}

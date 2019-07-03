@@ -77,10 +77,9 @@ predelete:
     image: predelete
     command: ["/predelete"]
 
-# certificate values for grafeas
-# Certificates for mutual authentication
+# Certificates for Grafeas mutual authentication
 certificates:
-  name: grafeas-ssl-certs
+  name: kritis-ssl-certs
   ca: |-
       -----BEGIN CERTIFICATE-----
       ...
