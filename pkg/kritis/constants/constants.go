@@ -47,6 +47,10 @@ const (
 
 	// Constants relevant for the GCB event parser
 	CloudSourceRepoPattern = "https://source.developers.google.com/p/%s/r/%s%s"
+
+	// Constants for the configuration of which metadata backend
+	ContainerAnalysisMetadata = "containerAnalysis"
+	GrafeasMetadata           = "grafeas"
 )
 
 var (

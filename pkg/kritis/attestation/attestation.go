@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
 
@@ -33,6 +32,10 @@ import (
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
 	"golang.org/x/crypto/openpgp/s2k"
+)
+
+const (
+	RSABits = 4096
 )
 
 var pgpConfig = packet.Config{
@@ -43,7 +46,7 @@ var pgpConfig = packet.Config{
 	CompressionConfig: &packet.CompressionConfig{
 		Level: packet.DefaultCompression,
 	},
-	RSABits: constants.RSABits,
+	RSABits: RSABits,
 }
 
 // VerifyMessageAttestation verifies if the image is attested using the PEM

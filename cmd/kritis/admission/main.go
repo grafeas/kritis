@@ -27,7 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"

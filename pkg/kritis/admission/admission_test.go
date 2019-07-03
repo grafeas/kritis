@@ -26,8 +26,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
-	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritis "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"k8s.io/api/admission/v1beta1"
@@ -40,7 +40,7 @@ type testConfig struct {
 	mockConfig config
 	httpStatus int
 	allowed    bool
-	status     constants.Status
+	status     Status
 	message    string
 }
 
@@ -59,8 +59,8 @@ func Test_BreakglassAnnotation(t *testing.T) {
 		mockConfig: mockConfig,
 		httpStatus: http.StatusOK,
 		allowed:    true,
-		status:     constants.SuccessStatus,
-		message:    constants.SuccessMessage,
+		status:     successStatus,
+		message:    successMessage,
 	})
 }
 
@@ -100,18 +100,18 @@ func Test_AdmissionResponse(t *testing.T) {
 		name         string
 		reviewGAPErr bool
 		reviewISPErr bool
-		status       constants.Status
+		status       Status
 		expectedMsg  string
 	}{
-		{"valid response when no review error", false, false, constants.SuccessStatus, constants.SuccessMessage},
-		{"invalid response when GAP review error", true, false, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
-		{"valid response when ISP review error", false, true, constants.FailureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
+		{"valid response when no review error", false, false, successStatus, successMessage},
+		{"invalid response when GAP review error", true, false, failureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
+		{"valid response when ISP review error", false, true, failureStatus, fmt.Sprintf("found violations in %s", testutil.QualifiedImage)},
 	}
-	mockGAP := func(namespace string) ([]kritisv1beta1.GenericAttestationPolicy, error) {
-		return []kritisv1beta1.GenericAttestationPolicy{{Spec: kritisv1beta1.GenericAttestationPolicySpec{}}}, nil
+	mockGAP := func(namespace string) ([]kritis.GenericAttestationPolicy, error) {
+		return []kritis.GenericAttestationPolicy{{Spec: kritis.GenericAttestationPolicySpec{}}}, nil
 	}
-	mockISP := func(namespace string) ([]kritisv1beta1.ImageSecurityPolicy, error) {
-		return []kritisv1beta1.ImageSecurityPolicy{{Spec: kritisv1beta1.ImageSecurityPolicySpec{}}}, nil
+	mockISP := func(namespace string) ([]kritis.ImageSecurityPolicy, error) {
+		return []kritis.ImageSecurityPolicy{{Spec: kritis.ImageSecurityPolicySpec{}}}, nil
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -200,8 +200,8 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 			UID:     types.UID(""),
 			Allowed: true,
 			Result: &metav1.Status{
-				Status:  string(constants.SuccessStatus),
-				Message: constants.SuccessMessage,
+				Status:  string(successStatus),
+				Message: successMessage,
 			},
 		},
 	}
