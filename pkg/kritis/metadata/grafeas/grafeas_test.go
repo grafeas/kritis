@@ -62,7 +62,7 @@ func TestNewClientTLS(t *testing.T) {
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caData)
-	certs := &GrafeasCertConfig{CertFile: clientCert, KeyFile: clientKey, CAFile: ca}
+	certs := &CertConfig{CertFile: clientCert, KeyFile: clientKey, CAFile: ca}
 	config := kritisv1beta1.GrafeasConfigSpec{Addr: "127.0.0.1:9995"}
 	lis, err := net.Listen("tcp", config.Addr)
 	if err != nil {
@@ -102,14 +102,8 @@ func TestValidateConfig(t *testing.T) {
 		expectedErr bool
 	}{
 		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "/socketaddr"}, expectedErr: false},
-		// Missing certificates -- obsolete, will be removed from KritisConfig
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "addr:port"}, expectedErr: false},
 		// Missing address
 		{config: kritisv1beta1.GrafeasConfigSpec{}, expectedErr: true},
-		// Missing files -- obsolete, will be removed from KritisConfig
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: "ca", ClientKeyPath: "clientcert", ClientCertPath: "path"}, expectedErr: false},
-		// Obsolete, will be removed from KritisConfig
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: ca, ClientKeyPath: clientKey, ClientCertPath: clientCert}, expectedErr: false},
 	} {
 		err := ValidateConfig(tt.config)
 		if err != nil && !tt.expectedErr {

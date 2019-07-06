@@ -23,19 +23,19 @@ import (
 
 // file is the Grafeas configuration file.
 type file struct {
-	GrafeasCerts *GrafeasCertConfig `yaml:"grafeascerts"`
+	GrafeasCerts *CertConfig `yaml:"grafeascerts"`
 }
 
-// GrafeasCertConfig is the Grafeas certificates configuration.
-type GrafeasCertConfig struct {
+// CertConfig is the Grafeas certificates configuration.
+type CertConfig struct {
 	CertFile string `yaml:"certfile"` // A PEM encoded certificate file
 	KeyFile  string `yaml:"keyfile"`  // A PEM encoded private key file
 	CAFile   string `yaml:"cafile"`   // A PEM encoded CA's certificate file
 }
 
 // defaultConfig is a configuration that can be used as a fallback value.
-func defaultConfig() *GrafeasCertConfig {
-	return &GrafeasCertConfig{
+func defaultConfig() *CertConfig {
+	return &CertConfig{
 		CertFile: "",
 		KeyFile:  "",
 		CAFile:   "",
@@ -44,7 +44,7 @@ func defaultConfig() *GrafeasCertConfig {
 
 // LoadConfig creates a config from a YAML-file. If fileName is an empty
 // string a default config will be returned.
-func LoadConfig(fileName string) (*GrafeasCertConfig, error) {
+func LoadConfig(fileName string) (*CertConfig, error) {
 	if fileName == "" {
 		return defaultConfig(), nil
 	}

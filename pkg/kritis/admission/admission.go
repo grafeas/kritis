@@ -85,8 +85,8 @@ var (
 // Config is the metadata client configuration
 type Config struct {
 	Metadata string // Metadata is the name of the metadata client fetcher
-	Grafeas  kritisv1beta1.GrafeasConfigSpec
-	Certs    *grafeas.GrafeasCertConfig
+	Grafeas  kritis.GrafeasConfigSpec
+	Certs    *grafeas.CertConfig
 }
 
 // MetadataClient returns metadata.Fetcher based on the admission control config

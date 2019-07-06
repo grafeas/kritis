@@ -61,7 +61,7 @@ func ValidateConfig(config kritisv1beta1.GrafeasConfigSpec) error {
 	return nil
 }
 
-func New(config kritisv1beta1.GrafeasConfigSpec, certs *GrafeasCertConfig) (*Client, error) {
+func New(config kritisv1beta1.GrafeasConfigSpec, certs *CertConfig) (*Client, error) {
 	if err := ValidateConfig(config); err != nil {
 		return nil, err
 	}
