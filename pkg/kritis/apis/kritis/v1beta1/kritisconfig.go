@@ -45,10 +45,7 @@ type KritisConfigSpec struct {
 
 // GrafeasConfigSpec holds the configuration required for connecting to grafeas instance
 type GrafeasConfigSpec struct {
-	Addr           string `json:"addr"`
-	CAPath         string `json:"caPath"`
-	ClientKeyPath  string `json:"clientKeyPath"`
-	ClientCertPath string `json:"clientCertPath"`
+	Addr string `json:"addr"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

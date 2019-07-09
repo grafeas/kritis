@@ -45,15 +45,17 @@ const (
 )
 
 var (
-	tlsCertFile string
-	tlsKeyFile  string
-	showVersion bool
-	runCron     bool
+	tlsCertFile  string
+	tlsKeyFile   string
+	grafeasCerts string
+	showVersion  bool
+	runCron      bool
 )
 
 func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
+	flag.StringVar(&grafeasCerts, "grafeas-certs", "/etc/config/grafeascerts.yaml", "Grafeas certificates.")
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
 	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
 	flag.Parse()
@@ -66,6 +68,7 @@ func main() {
 		return
 	}
 
+	// KritisConfig is a cluster-wide CRD.
 	kritisConfigs, err := kritisconfig.KritisConfigs("")
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
@@ -104,6 +107,11 @@ func main() {
 			if err := grafeas.ValidateConfig(config.Grafeas); err != nil {
 				glog.Fatal(err)
 			}
+			certs, err := grafeas.LoadConfig(grafeasCerts)
+			if err != nil {
+				glog.Fatal(err)
+			}
+			config.Certs = certs
 		}
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
@@ -117,7 +125,8 @@ func main() {
 		}
 		return
 	}
-	// Kick off back ground cron job.
+
+	// Kick off background cron job.
 	if err := StartCronJob(config, cronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}
