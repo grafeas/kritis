@@ -33,20 +33,11 @@ type CertConfig struct {
 	CAFile   string `yaml:"cafile"`   // A PEM encoded CA's certificate file
 }
 
-// defaultConfig is a configuration that can be used as a fallback value.
-func defaultConfig() *CertConfig {
-	return &CertConfig{
-		CertFile: "",
-		KeyFile:  "",
-		CAFile:   "",
-	}
-}
-
 // LoadConfig creates a config from a YAML-file. If fileName is an empty
 // string a default config will be returned.
 func LoadConfig(fileName string) (*CertConfig, error) {
 	if fileName == "" {
-		return defaultConfig(), nil
+		return &CertConfig{}, nil
 	}
 
 	data, err := ioutil.ReadFile(fileName)
