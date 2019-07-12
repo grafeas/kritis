@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// KritisConfig is a cluster-wide CRD.
-	kritisConfigs, err := kritisconfig.KritisConfigs("")
+	kritisConfigs, err := kritisconfig.KritisConfigs()
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
 		glog.Errorf(errMsg)
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	if len(kritisConfigs) == 0 {
-		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
+		glog.Infof("No KritisConfigs found in any namespace, will assume the defaults")
 	} else if len(kritisConfigs) > 1 {
 		glog.Errorf("More than 1 KritisConfig found, expected to have only 1 in the cluster")
 		return
