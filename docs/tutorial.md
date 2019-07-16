@@ -51,7 +51,7 @@ gpg --armor --export-secret-keys my.attestor@example.com > gpg.priv
 
 Create a secret using the exported public and private keys
 ```shell
-kubectl create secret generic my-attesor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=<passphrase>
+kubectl create secret generic my-attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=<passphrase>
 ```
 Finally create an attestation authority
 1. Grab the base64 encoded value of public key for the secret you just created.
