@@ -7,5 +7,5 @@ data:
     grafeascerts:
       # PKI configuration
       cafile: /certificates/ca.crt
-      keyfile: /certificates/server.key
-      certfile: /certificates/server.crt
+      keyfile: /certificates/client.key
+      certfile: /certificates/client.crt

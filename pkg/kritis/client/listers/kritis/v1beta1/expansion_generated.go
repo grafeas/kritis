@@ -53,7 +53,3 @@ type ImageSecurityPolicyNamespaceListerExpansion interface{}
 // KritisConfigListerExpansion allows custom methods to be added to
 // KritisConfigLister.
 type KritisConfigListerExpansion interface{}
-
-// KritisConfigNamespaceListerExpansion allows custom methods to be added to
-// KritisConfigNamespaceLister.
-type KritisConfigNamespaceListerExpansion interface{}

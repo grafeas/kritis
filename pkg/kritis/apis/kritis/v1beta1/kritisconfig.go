@@ -22,6 +22,7 @@ import (
 
 // +genclient
 // +genclient:noStatus
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KritisConfig struct {
@@ -50,7 +51,7 @@ type GrafeasConfigSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// KritisConfigList is a list of BuildPolicy resources
+// KritisConfigList is a list of KritisConfig resources
 type KritisConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

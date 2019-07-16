@@ -30,7 +30,7 @@ import (
 // KritisConfigsGetter has a method to return a KritisConfigInterface.
 // A group's client should implement this interface.
 type KritisConfigsGetter interface {
-	KritisConfigs(namespace string) KritisConfigInterface
+	KritisConfigs() KritisConfigInterface
 }
 
 // KritisConfigInterface has methods to work with KritisConfig resources.
@@ -49,14 +49,12 @@ type KritisConfigInterface interface {
 // kritisConfigs implements KritisConfigInterface
 type kritisConfigs struct {
 	client rest.Interface
-	ns     string
 }
 
 // newKritisConfigs returns a KritisConfigs
-func newKritisConfigs(c *KritisV1beta1Client, namespace string) *kritisConfigs {
+func newKritisConfigs(c *KritisV1beta1Client) *kritisConfigs {
 	return &kritisConfigs{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -64,7 +62,6 @@ func newKritisConfigs(c *KritisV1beta1Client, namespace string) *kritisConfigs {
 func (c *kritisConfigs) Get(name string, options v1.GetOptions) (result *v1beta1.KritisConfig, err error) {
 	result = &v1beta1.KritisConfig{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -77,7 +74,6 @@ func (c *kritisConfigs) Get(name string, options v1.GetOptions) (result *v1beta1
 func (c *kritisConfigs) List(opts v1.ListOptions) (result *v1beta1.KritisConfigList, err error) {
 	result = &v1beta1.KritisConfigList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do().
@@ -89,7 +85,6 @@ func (c *kritisConfigs) List(opts v1.ListOptions) (result *v1beta1.KritisConfigL
 func (c *kritisConfigs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch()
@@ -99,7 +94,6 @@ func (c *kritisConfigs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 func (c *kritisConfigs) Create(kritisConfig *v1beta1.KritisConfig) (result *v1beta1.KritisConfig, err error) {
 	result = &v1beta1.KritisConfig{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		Body(kritisConfig).
 		Do().
@@ -111,7 +105,6 @@ func (c *kritisConfigs) Create(kritisConfig *v1beta1.KritisConfig) (result *v1be
 func (c *kritisConfigs) Update(kritisConfig *v1beta1.KritisConfig) (result *v1beta1.KritisConfig, err error) {
 	result = &v1beta1.KritisConfig{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		Name(kritisConfig.Name).
 		Body(kritisConfig).
@@ -123,7 +116,6 @@ func (c *kritisConfigs) Update(kritisConfig *v1beta1.KritisConfig) (result *v1be
 // Delete takes name of the kritisConfig and deletes it. Returns an error if one occurs.
 func (c *kritisConfigs) Delete(name string, options *v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		Name(name).
 		Body(options).
@@ -134,7 +126,6 @@ func (c *kritisConfigs) Delete(name string, options *v1.DeleteOptions) error {
 // DeleteCollection deletes a collection of objects.
 func (c *kritisConfigs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
@@ -146,7 +137,6 @@ func (c *kritisConfigs) DeleteCollection(options *v1.DeleteOptions, listOptions 
 func (c *kritisConfigs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.KritisConfig, err error) {
 	result = &v1beta1.KritisConfig{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("kritisconfigs").
 		SubResource(subresources...).
 		Name(name).
