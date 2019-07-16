@@ -41,17 +41,17 @@ Kritis relies on user defined AttestationAuthorities to attest images admitted. 
 Create a public and private key pair:
 
 ```shell
-gpg --quick-generate-key --yes my.attestator@example.com
+gpg --quick-generate-key --yes my.attestor@example.com
 
-gpg --armor --export my.attestator@example.com > gpg.pub
+gpg --armor --export my.attestor@example.com > gpg.pub
 
-gpg --armor --export-secret-keys my.attestator@example.com > gpg.priv
+gpg --armor --export-secret-keys my.attestor@example.com > gpg.priv
 ```
 (if you use Ubuntu on GCP and got hung in above, then please see https://delightlylinux.wordpress.com/2015/07/01/is-gpg-hanging-when-generating-a-key/ to make sure you got enough entropy.)
 
 Create a secret using the exported public and private keys
 ```shell
-kubectl create secret generic my-attestator --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=<passphrase>
+kubectl create secret generic my-attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=<passphrase>
 ```
 Finally create an attestation authority
 1. Grab the base64 encoded value of public key for the secret you just created.
@@ -71,15 +71,15 @@ cat <<EOF | kubectl apply -f - \
 apiVersion: kritis.grafeas.io/v1beta1
 kind: AttestationAuthority
 metadata:
-    name: my-attestator
+    name: my-attestor
     namespace: default
 spec:
-    noteReference: v1alpha1/projects/$PROJECT
-    privateKeySecretName: my-attestator
+    noteReference: v1beta1/projects/$PROJECT
+    privateKeySecretName: my-attestor
     publicKeyData: $PUBLIC_KEY
 EOF
 ```
-This `AttestationAuthority` will create [Attestation Note](https://github.com/grafeas/grafeas#definition-of-terms) in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestator` which we created.
+This `AttestationAuthority` will create [Attestation Note](https://github.com/grafeas/grafeas#definition-of-terms) in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestor` which we created.
 
 ### 3. Copy a vulnerable image
 
