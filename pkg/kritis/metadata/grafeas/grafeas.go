@@ -91,12 +91,8 @@ func New(config kritisv1beta1.GrafeasConfigSpec, certs *CertConfig) (*Client, er
 		if ok := certPool.AppendCertsFromPEM(ca); !ok {
 			return nil, fmt.Errorf("failed to append ca certs")
 		}
-		server, _, err := net.SplitHostPort(config.Addr)
-		if err != nil {
-			return nil, err
-		}
 		creds := credentials.NewTLS(&tls.Config{
-			ServerName:   server,
+			ServerName:   config.Addr,
 			Certificates: []tls.Certificate{certificate},
 			RootCAs:      certPool,
 		})
