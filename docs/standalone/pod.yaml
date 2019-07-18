@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java
+spec:
+  containers:
+    - name: java
+      image: gcr.io/kritis-tutorial/java-with-vulnz:latest
+      ports:
+        - containerPort: 80

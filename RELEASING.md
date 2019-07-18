@@ -5,9 +5,9 @@ We're following [semantic versioning](https://semver.org/) approach to releases 
 ## Create a Release PR
 Modify the Kritis version values for the containers in these locations:
 
-* [Makefile](https://github.com/grafeas/kritis/blob/master/Makefile#L19)
-* [Chart.yaml](https://github.com/grafeas/kritis/blob/master/kritis-charts/Chart.yaml#L5)
-* [values.yaml](https://github.com/grafeas/kritis/blob/master/kritis-charts/values.yaml)
+* [Makefile](Makefile#L19)
+* [Chart.yaml](kritis-charts/Chart.yaml#L5)
+* [values.yaml](kritis-charts/values.yaml#L8)
 
 Assemble all the meaningful changes since the last release into the [CHANGELOG.md](CHANGELOG.md) file.
 See [this PR](https://github.com/grafeas/kritis/pull/244) for an example.
@@ -22,7 +22,7 @@ Make sure your fork of the repository is updated. Assuming `git remote` shows th
 ```
 git pull origin master
 git pull upstream master
-git tag -am "kritis-vX.Y.Z release" X.Y.Z
+git tag -am "kritis-vX.Y.Z release" vX.Y.Z
 git push upstream --tags
 ```
 
