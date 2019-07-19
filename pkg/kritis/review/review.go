@@ -74,7 +74,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 				transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
 				attestations, err := transport.GetValidatedAttestations(image)
 				if err != nil {
-					// TODO or something better
+					glog.Infof("Error getting attestations: %s", err.Error())
 					return err
 				}
 				if len(attestations) != 0 {

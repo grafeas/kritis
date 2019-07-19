@@ -46,12 +46,12 @@ func TestValidatingTransport(t *testing.T) {
 		expected     []attestation.ValidatedAttestation
 		attestations []metadata.PGPAttestation
 	}{
-		{"at least one valid sig", []attestation.ValidatedAttestation{
+		{name: "at least one valid sig", expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
-				ArtifactName: testutil.QualifiedImage,
+				Image:        testutil.QualifiedImage,
 			},
-		}, []metadata.PGPAttestation{
+		}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: sig,
 				KeyID:     successFpr,
@@ -59,17 +59,17 @@ func TestValidatingTransport(t *testing.T) {
 				Signature: "invalid-sig",
 				KeyID:     successFpr,
 			}}},
-		{"no valid sig", []attestation.ValidatedAttestation{}, []metadata.PGPAttestation{
+		{name: "no valid sig", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
 				KeyID:     successFpr,
 			}}},
-		{"invalid secret", []attestation.ValidatedAttestation{}, []metadata.PGPAttestation{
+		{name: "invalid secret", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
 				KeyID:     "invalid-fpr",
 			}}},
-		{"valid sig over another host", []attestation.ValidatedAttestation{}, []metadata.PGPAttestation{
+		{name: "valid sig over another host", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: anotherSig,
 				KeyID:     successFpr,

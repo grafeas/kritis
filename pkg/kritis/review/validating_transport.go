@@ -25,10 +25,10 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 )
 
-// ValidatingTransport allows the caller to obtain validated attestations for a given artifact.
+// ValidatingTransport allows the caller to obtain validated attestations for a given container image.
 // Implementations should return trusted and verified attestations.
 type ValidatingTransport interface {
-	GetValidatedAttestations(artifact string) ([]attestation.ValidatedAttestation, error)
+	GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error)
 }
 
 // Implements ValidatingTransport.
@@ -37,7 +37,7 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-func (avt AttestorValidatingTransport) GetValidatedAttestations(artifact string) ([]attestation.ValidatedAttestation, error) {
+func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
 	keys := map[string]string{}
 	key, fingerprint, err := secrets.KeyAndFingerprint(avt.Attestor.Spec.PublicKeyData)
 	if err != nil {
@@ -47,24 +47,21 @@ func (avt AttestorValidatingTransport) GetValidatedAttestations(artifact string)
 	keys[fingerprint] = key
 
 	out := []attestation.ValidatedAttestation{}
-	host, err := container.NewAtomicContainerSig(artifact, map[string]string{})
+	host, err := container.NewAtomicContainerSig(image, map[string]string{})
 	if err != nil {
 		glog.Error(err)
-		// TODO: maybe do partial validation for other images
 		return nil, err
 	}
-	attestations, err := avt.Client.Attestations(artifact)
+	attestations, err := avt.Client.Attestations(image)
 	if err != nil {
 		glog.Error(err)
-		// TODO: maybe do partial validation for other images
 		return nil, err
 	}
 	for _, a := range attestations {
 		if err = host.VerifyAttestationSignature(keys[a.KeyID], a.Signature); err != nil {
-			glog.Errorf("Could not find or verify attestation for attestor %s", a.KeyID)
-			glog.Errorf(err.Error())
+			glog.Errorf("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
 		} else {
-			out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, ArtifactName: artifact})
+			out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
 		}
 	}
 	return out, nil
