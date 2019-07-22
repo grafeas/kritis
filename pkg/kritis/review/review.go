@@ -57,6 +57,12 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+	images = util.RemoveGloballyAllowedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally allowed, returning successful status: %s", images)
+		return nil
+	}
+
 	if len(gaps) == 0 {
 		glog.Info("No Generic Attestation Policies found")
 		return nil

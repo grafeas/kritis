@@ -60,5 +60,6 @@ var (
 		"gcr.io/kritis-project/preinstall",
 		"gcr.io/kritis-project/postinstall",
 		"gcr.io/kritis-project/predelete",
-		"us.gcr.io/grafeas/grafeas-server"}
+		"us.gcr.io/grafeas/grafeas-server",
+	}
 )
