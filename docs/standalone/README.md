@@ -77,20 +77,17 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
 1. `GenericAttestationPolicy` is set, but no attestation exists for the pod in
    Grafeas.
 
-   NOTE: Make sure to set `gpg` passphrase to the same value as the argument you
-   pass to the script, e.g. `passphrase` in this example.
-
    NOTE: The script below assumes Linux platform, but you can modify it to run
    on MacOS X as described
    [here](../tutorial.md#2-setting-up-an-attestationauthority).
 
    ```shell
-   ./no_attestation.sh passphrase
+   ./no_attestation.sh
    ```
 
    You will get `Error from server: error when creating "pod.yaml": admission
    webhook "kritis-validation-hook.grafeas.io" denied the request: image
-   gcr.io/kritis-tutorial/java-with-vulnz:latest is not attested` in response.
+   gcr.io/kritis-tutorial/java-with-vulnz@sha256:<hash> is not attested` in response.
 
    You can check the reason the pod creation was rejected by looking at the
    Kritis logs:
@@ -100,11 +97,45 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
     ```
 
     You'll find `No attestations found for image
-    gcr.io/kritis-tutorial/java-with-vulnz:latest.` message in the logs.
+    gcr.io/kritis-tutorial/java-with-vulnz@sha256:<hash>.` message in the logs.
 
 1. Create a valid attestation and ensure this pod is now admitted.
 
-    TODO: add example here.
+    To get the external IP address of the Grafeas server, run:
+
+    ```shell
+    kubectl get svc
+    NAME                     TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)         AGE
+    grafeas-server           LoadBalancer   10.31.248.62    35.232.9.51   443:31212/TCP   11m
+    ...
+    ```
+
+    Create an entry in your local `/etc/hosts`, to map `EXTERNAL-IP` to the
+    service name:
+
+    ```shell
+    35.232.9.51 grafeas-server
+    ```
+
+    Run the sample client:
+
+    ```shell
+    go run create_attestation.go
+    ```
+
+    You should get `pod/java created` in response and see the following in
+    `kubectl logs -l app=kritis-validation-hook`:
+
+    ```shell
+    admission.go:124] handling pod java in...
+    admission.go:245] Reviewing images for &Pod{ObjectMeta:k8s_io_apimachinery_pkg_apis_meta_v1.ObjectMeta{Name:java,GenerateName:,Namespace:default,SelfLink:,UID:98a55b42-b87e-11e9-bd23-42010a80011e,ResourceVersion:,Generation:0,CreationTimestamp:2019-08-06 19:15:47 +0000 UTC,DeletionTimestamp:<nil>,DeletionGracePeriodSeconds:nil,Labels:map[string]string{},Annotations:map[string]string{kubectl.kubernetes.io/last-applied-configuration: {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"java","namespace":"default"},"spec":{"containers":[{"image":"gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a","name":"java","ports":[{"containerPort":80}]}]}}
+      ...
+      admission.go:264] Found 1 Generic Attestation Policies
+      review.go:72] Check if gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a has valid Attestations.
+      ...
+      strategy.go:51] Image gcr.io/kritis-tutorial/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a has one or more valid attestation(s)
+      ...
+    ```
 
 ## Cleanup
 

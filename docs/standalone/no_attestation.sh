@@ -15,16 +15,14 @@
 # limitations under the License.
 set -e
 
-PHRASE=$1
-
 # Create a public and private key pair.
-gpg --quick-generate-key --yes my.attestor@example.com
-gpg --armor --export my.attestor@example.com > gpg.pub
-gpg --armor --export-secret-keys my.attestor@example.com > gpg.priv
-
-kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=${PHRASE}
+gpg --quick-generate-key --yes attestor@example.com
+gpg --armor --export attestor@example.com > gpg.pub
+gpg --armor --export-secret-keys attestor@example.com > gpg.priv
 
 PUBLIC_KEY=`base64 gpg.pub -w 0`
+
+kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv
 
 # Create AttestationAuthority CRD in the k8s cluster. It will be used to enforce
 # the GenericAttestationPolicy.
@@ -37,7 +35,7 @@ metadata:
   namespace: default
 spec:
   noteReference: v1beta1/projects/standalone
-  privateKeySecretName: my-attestor
+  privateKeySecretName: attestor
   publicKeyData: $PUBLIC_KEY
 EOF
 
