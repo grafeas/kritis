@@ -42,4 +42,4 @@ openssl x509 -req -days 365 -in kritis.csr -CA ca.crt -CAkey ca.key -set_serial 
 rm kritis.csr
 
 # Install Kritis helm chart
-helm install https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.1.0.tgz --set certificates.ca="$(cat ca.crt)" --set certificates.cert="$(cat kritis.crt)" --set certificates.key="$(cat kritis.key)"
+helm install --name kritis https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.1.0.tgz --set certificates.ca="$(cat ca.crt)" --set certificates.cert="$(cat kritis.crt)" --set certificates.key="$(cat kritis.key)"
