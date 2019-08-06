@@ -111,7 +111,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
+			glog.Infof("Check if %s has valid Attestations.", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
 			// Skip vulnerability check for Webhook if attestations found.
 			if isAttested && r.config.IsWebhook {
