@@ -57,6 +57,12 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+	images = util.RemoveGloballyAllowedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally allowed, returning successful status: %s", images)
+		return nil
+	}
+
 	if len(gaps) == 0 {
 		glog.Info("No Generic Attestation Policies found")
 		return nil
@@ -105,7 +111,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
+			glog.Infof("Check if %s has valid Attestations.", image)
 			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
 			// Skip vulnerability check for Webhook if attestations found.
 			if isAttested && r.config.IsWebhook {
