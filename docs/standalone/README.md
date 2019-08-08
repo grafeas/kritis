@@ -105,11 +105,7 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
     You should get `pod/java created` in response.
 
 1. `GenericAttestationPolicy` is set, but no attestation exists for the pod in
-   Grafeas.
-
-   NOTE: The script below assumes Linux platform, but you can modify it to run
-   on MacOS X as described
-   [here](../tutorial.md#2-setting-up-an-attestationauthority).
+   Grafeas:
 
    ```shell
    ./no_attestation.sh
@@ -147,10 +143,19 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
     35.232.9.51 grafeas-server
     ```
 
-    Run the sample client:
+    Create a combined PEM certificate to talk directly to the standalone Grafeas
+    server by running the command below. You'll want to make sure the *export*
+    and *import* passwords match. Ensure you memorize your PEM passphrase as
+    well when prompted.
 
     ```shell
-    go run create_attestation.go
+    ./combined_cert.sh
+    ```
+
+    Now, create the attestation and see that the pod is admitted:
+
+    ```shell
+    ./attestation_created.sh
     ```
 
     You should get `pod/java created` in response and see the following in

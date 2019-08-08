@@ -15,13 +15,6 @@
 # limitations under the License.
 set -e
 
-kubectl delete pods java
-helm del --purge kritis
-kubectl delete pods,serviceaccount,clusterrolebinding \
-  --selector kritis.grafeas.io/install \
-  --namespace default
-kubectl delete all,validatingwebhookconfiguration,secret,csr,crd \
-  --selector kritis.grafeas.io/install \
-  --namespace default
-kubectl delete secret attestor
-helm del --purge grafeas
+# Create server PEM.
+openssl pkcs12 -export -clcerts -in grafeas.crt -inkey grafeas.key -out grafeas.p12
+openssl pkcs12 -in kritis.p12 -out kritis.pem -clcerts

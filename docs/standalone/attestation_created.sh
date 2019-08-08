@@ -15,13 +15,14 @@
 # limitations under the License.
 set -e
 
-kubectl delete pods java
-helm del --purge kritis
-kubectl delete pods,serviceaccount,clusterrolebinding \
-  --selector kritis.grafeas.io/install \
-  --namespace default
-kubectl delete all,validatingwebhookconfiguration,secret,csr,crd \
-  --selector kritis.grafeas.io/install \
-  --namespace default
-kubectl delete secret attestor
-helm del --purge grafeas
+# Create a project inside Grafeas.
+curl -k --cert grafeas.pem -X POST \
+  https://grafeas-server:443/v1beta1/projects \
+  -H "Content-Type: application/json" \
+  --data '{"name":"projects/kritis"}'
+
+# Now, create an attestation for the image.
+go run create_attestation.go
+
+# The pod should now be admitted.
+kubectl apply -f pod.yaml
