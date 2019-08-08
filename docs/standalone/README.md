@@ -4,11 +4,17 @@
 
 Make sure you have the following installed:
 
-* [Kubernetes](https://kubernetes.io/)
+* [Kubernetes](https://kubernetes.io/) v1.9.2+
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * [helm](https://helm.sh/)
 * [openssl](https://www.openssl.org/)
 * [GnuPG](https://gnupg.org/download/)
+* [Google Cloud](https://cloud.google.com) account with [billing enabled](https://console.cloud.google.com/billing)
+* [Google Cloud SDK](https://cloud.google.com/sdk/docs/) (gcloud)
+
+Note: you will be charged for running on GCP. See [Free
+Tier](https://cloud.google.com/free) for information on how to try out GCP.
+Contributions of the examples running on other k8s engines are welcome!
 
 ## Installation Steps
 
@@ -20,6 +26,30 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
 
     ```shell
     cd ${GOPATH}/src/github.com/grafeas/kritis/docs/standalone
+    ```
+
+1. Set up GCP project where Kubernetes Engine API is enabled. You'll need to create a new project by following the prompts at [Google Cloud Console: New Project](https://console.cloud.google.com/projectcreate).
+    For convenience, save the project ID as an environment variable and set up
+    the GKE cluster.
+
+    ```shell
+    PROJECT=<project ID assigned to you>
+    gcloud config set project $PROJECT
+    gcloud components update
+    gcloud config set compute/zone us-central1-a
+    gcloud container clusters create kritis-test --num-nodes=2
+    gcloud container clusters get-credentials kritis-test
+    ```
+
+    For more documentation, see [Kubernetes Engine: Creating a Cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster).
+
+1. Upload the Service Account Key:
+
+
+    ```shell
+    gcloud iam service-accounts keys create gac.json \
+      --iam-account kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com
+    kubectl create secret generic gac-ca-admin --from-file=gac.json
     ```
 
 1. Set up Helm:

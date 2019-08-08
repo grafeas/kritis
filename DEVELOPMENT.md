@@ -57,17 +57,22 @@ make test
 
 ### Integration tests
 
-On a GCP project where Kritis has already been installed, this will prepare a new cluster named `kritis-integration-test`:
+On a GCP project where Kritis has already been installed (follow [instructions](docs/install.md)), this will prepare a new cluster named `kritis-integration-test`:
 
 ```shell
-make -e GCP_PROJECT=<project id> setup-integration-local
+make -e GCP_PROJECT=${PROJECT} setup-integration-local
 ```
+
+NOTE: the `PROJECT` here is from the installation instructions environment
+variable.
 
 As you develop, you can build new test images and run the integration test on demand:
 
 ```shell
-make -e GCP_PROJECT=<project id> integration-local
+make -e GCP_PROJECT=${PROJECT} integration-local
 ```
+
+NOTE: you'll be charged for using GCP resource to run integration tests. See [Free Tier](https://cloud.google.com/free) for information on how to try out GCP. Alternatively, you can choose to have the integration tests run as part of the PR instead. Fixes to the testing infrastructure to address this problem are WIP.
 
 ## Creating a PR
 
@@ -81,5 +86,5 @@ When you have changes you would like to propose to kritis, you will need to:
 ### Reviews
 
 Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
-to a PR to kick of [the integration tests](#integration-tests), which must pass for the PR
+to a PR to kick of [the integration tests](integration), which must pass for the PR
 to be submitted.
