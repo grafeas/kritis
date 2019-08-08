@@ -17,7 +17,6 @@ limitations under the License.
 package secrets
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -67,19 +66,12 @@ func Fetch(namespace string, name string) (*PGPSigningSecret, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid secret %s. could not find key %s", name, PrivateKey)
 	}
-	pb, ok := secret.Data[Passphrase]
-	phrase := ""
-	if ok {
-		// Passphrase was provided
-		// Verify the passphrase is base64 encoded
-		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(pb)))
-		decLen, err := base64.StdEncoding.Decode(decoded, pb)
-		if err != nil {
-			return nil, fmt.Errorf("base64 decode failed %v", err)
-		}
-		phrase = string(decoded[:decLen])
-	}
-	pgpKey, err := NewPgpKey(string(priv), phrase, string(pub))
+
+	// Get passphrase.
+	// Empty phrase if key does not exist.
+	phrase := secret.Data[Passphrase]
+
+	pgpKey, err := NewPgpKey(string(priv), string(phrase), string(pub))
 	if err != nil {
 		return nil, err
 	}
