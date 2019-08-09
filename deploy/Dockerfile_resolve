@@ -15,7 +15,7 @@
 # Builds the static Go image for Admission validation controller.
 
 # Dockerfile used to build a build step that builds resolve-tags in CI.
-FROM golang:1.10
+FROM golang:1.12
 RUN mkdir -p /go/src/github.com/grafeas/
 RUN ln -s /workspace /go/src/github.com/grafeas/kritis
 WORKDIR /go/src/github.com/grafeas/kritis
