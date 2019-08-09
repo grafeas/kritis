@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.10
+FROM golang:1.12
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 ARG stage
 RUN make ${stage} 
 
 
-FROM golang:1.10
+FROM golang:1.12
 RUN go get -u github.com/cloudflare/cfssl/cmd/...
 
 ENV KUBECTL_VERSION v1.10.0
