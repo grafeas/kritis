@@ -31,54 +31,96 @@ import (
 var pub, priv = createKeys("good")
 var pgpKey, err = NewPgpKey(priv, "", pub)
 
+var pub2, priv2 = passphraseProtectedSecret.publicKey, passphraseProtectedSecret.privateKey
+var goodPassphrase, badPassphrase = passphraseProtectedSecret.passphrase, "bad-passphrase"
+var pgpKey2, err2 = NewPgpKey(priv2, goodPassphrase, pub2)
+
 var tests = []struct {
-	name       string
-	secretName string
-	shdErr     bool
-	expected   *PGPSigningSecret
+	name     string
+	shdErr   bool
+	expected *PGPSigningSecret
 }{
-	{"good", "good-sec", false, &PGPSigningSecret{SecretName: "good-sec", PgpKey: pgpKey}},
-	{"bad1", "bad1-sec", true, nil},
-	{"bad2", "bad2-sec", true, nil},
-	{"notfound", "not-present", true, nil},
+	{"good-sec-nopass", false, &PGPSigningSecret{SecretName: "good-sec-nopass", PgpKey: pgpKey}},
+	{"bad-sec-nopass-miss-private-key", true, nil},
+	{"bad-sec-nopass-miss-public-key", true, nil},
+	{"not-found", true, nil},
+	{"good-sec-withpass", false, &PGPSigningSecret{SecretName: "good-sec-withpass", PgpKey: pgpKey2}},
+	{"bad-sec-withpass-bad-pass", true, nil},
 }
 
 func TestSecrets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pgp key creation failed %v", err)
 	}
+	if err2 != nil {
+		t.Fatalf("pgp key creation failed %v", err2)
+	}
 	getSecretFunc = getTestSecret
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Fetch("test", tc.secretName)
+			actual, err := Fetch("test", tc.name)
 			if !tc.shdErr && err != nil {
 				t.Fatalf("expected error: %v but found %v", tc.shdErr, err)
 			}
-			if !reflect.DeepEqual(tc.expected, actual) {
+			if !isSecretEqual(tc.expected, actual) {
 				t.Fatalf("expected: %v but found %v", tc.expected, actual)
 			}
 		})
 	}
 }
 
+// Custom methods to check if two secrets are equal.
+// We avoid using reflect.DeepEqual() directly bacause a passphrase-protected
+// packet.PrivateKey can contain a function field.
+func isSecretEqual(x, y *PGPSigningSecret) bool {
+	if x == nil || y == nil {
+		return x == y
+	} else {
+		px := x.PgpKey.privateKey
+		py := y.PgpKey.privateKey
+		return reflect.DeepEqual(x.PgpKey.publicKey, y.PgpKey.publicKey) &&
+			reflect.DeepEqual(px.PrivateKey, py.PrivateKey) &&
+			reflect.DeepEqual(px.Encrypted, py.Encrypted) &&
+			reflect.DeepEqual(px.PublicKey, py.PublicKey)
+	}
+}
+
 var testSecrets = []v1.Secret{
+	// Test secrets with no passphrase
 	{
-		ObjectMeta: metav1.ObjectMeta{Name: "good-sec"},
+		ObjectMeta: metav1.ObjectMeta{Name: "good-sec-nopass"},
 		Data: map[string][]byte{
 			"private": []byte(priv),
 			"public":  []byte(pub),
 		},
 	},
 	{
-		ObjectMeta: metav1.ObjectMeta{Name: "bad1-sec"},
+		ObjectMeta: metav1.ObjectMeta{Name: "bad-sec-nopass-miss-private-key"},
 		Data: map[string][]byte{
 			"public": []byte(pub),
 		},
 	},
 	{
-		ObjectMeta: metav1.ObjectMeta{Name: "bad2-sec"},
+		ObjectMeta: metav1.ObjectMeta{Name: "bad-sec-nopass-miss-public-key"},
 		Data: map[string][]byte{
 			"private": []byte(priv),
+		},
+	},
+	// Test secrets with passphrase
+	{
+		ObjectMeta: metav1.ObjectMeta{Name: "good-sec-withpass"},
+		Data: map[string][]byte{
+			"private":    []byte(priv2),
+			"public":     []byte(pub2),
+			"passphrase": []byte(goodPassphrase),
+		},
+	},
+	{
+		ObjectMeta: metav1.ObjectMeta{Name: "bad-sec-withpass-bad-pass"},
+		Data: map[string][]byte{
+			"private":    []byte(priv2),
+			"public":     []byte(pub2),
+			"passphrase": []byte(badPassphrase),
 		},
 	},
 }
