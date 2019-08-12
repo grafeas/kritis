@@ -17,4 +17,4 @@ set -e
 
 # Create server PEM.
 openssl pkcs12 -export -clcerts -in grafeas.crt -inkey grafeas.key -out grafeas.p12
-openssl pkcs12 -in kritis.p12 -out kritis.pem -clcerts
+openssl pkcs12 -in grafeas.p12 -out grafeas.pem -clcerts
