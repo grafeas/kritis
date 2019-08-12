@@ -14,7 +14,7 @@
 
 # Builds the static Go image for Admission validation controller.
 
-FROM golang:1.10
+FROM golang:1.12
 WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 RUN make out/gcb-signer
