@@ -67,11 +67,12 @@ func main() {
 	defer conn.Close()
 
 	client := grafeas.NewGrafeasV1Beta1Client(conn)
+	log.Println("Connecting to Grafeas server")
 
 	ctx := context.Background()
 	req := createNoteRequest()
 	if note, err := client.CreateNote(ctx, req); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to create note: %v", err)
 	} else {
 		log.Printf("Created note %v in project %s", note, DefaultProject)
 	}
@@ -157,7 +158,6 @@ func createOccRequest(note *grafeas.Note) *grafeas.CreateOccurrenceRequest {
 	}
 	occ := &grafeas.Occurrence{
 		Resource: &grafeas.Resource{Uri: Image},
-		Name:     fmt.Sprintf("projects/%s/occurrences/%s", DefaultProject, "img-occ"),
 		NoteName: note.GetName(),
 		Details:  attestationDetails,
 	}

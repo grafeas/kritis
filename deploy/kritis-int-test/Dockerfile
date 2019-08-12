@@ -49,7 +49,7 @@ FROM runtime_deps as builder
 RUN apt-get install --no-install-recommends --no-install-suggests -y \
         build-essential
 
-COPY --from=golang:1.10 /usr/local/go /usr/local/go
+COPY --from=golang:1.12 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:${PATH}
 ENV GOPATH /go/
 
