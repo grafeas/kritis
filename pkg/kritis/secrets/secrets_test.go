@@ -74,7 +74,7 @@ func TestSecrets(t *testing.T) {
 // We avoid using reflect.DeepEqual() directly bacause a passphrase-protected
 // packet.PrivateKey can contain a function field.
 func isSecretEqual(x, y *PGPSigningSecret) bool {
-	if (x == nil || y == nil) {
+	if x == nil || y == nil {
 		return x == y
 	} else {
 		px := x.PgpKey.privateKey
