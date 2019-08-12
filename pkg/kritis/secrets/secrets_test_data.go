@@ -15,9 +15,15 @@ limitations under the License.
 */
 package secrets
 
-const passphraseProtectedSecretPassphrase = `good-passphrase`
+type SecretTestData struct {
+	privateKey string
+	publicKey  string
+	passphrase string
+}
 
-const passphraseProtectedSecretPrivateKey = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+var passphraseProtectedSecret = SecretTestData{
+	passphrase: `good-passphrase`,
+	privateKey: `-----BEGIN PGP PRIVATE KEY BLOCK-----
 
 lQPGBF1N1U4BCADq8a7wfG/N5Q9xsXXN9+1/NXxS2MNzw0Vft9jFUjzjqBVgOuH8
 iYAGPMyyE5dG5L8v8STK6oFnExRDzAnyAsv7VpbQCQsJ++uxAlVAb28zt2ioy+R7
@@ -75,9 +81,8 @@ ssJFUDL3pe/UCMyQqRt/EzWGemDRhk9P83AT7gBJOHPQWPum5fsbJcUDOAlwsclm
 IaZ5GbPNQIdr+67lFsjwu3osJjPPBu0BydpXN2ZmwsOhMpJmsT4JjBBhxUmJQXUC
 fsBJvFTr6RKZRR+RoYcwtggtmQ/PDqlRZDlI8hTdhK+DbClG
 =tFXm
------END PGP PRIVATE KEY BLOCK-----`
-
-const passphraseProtectedSecretPublicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+-----END PGP PRIVATE KEY BLOCK-----`,
+	publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQENBF1N1U4BCADq8a7wfG/N5Q9xsXXN9+1/NXxS2MNzw0Vft9jFUjzjqBVgOuH8
 iYAGPMyyE5dG5L8v8STK6oFnExRDzAnyAsv7VpbQCQsJ++uxAlVAb28zt2ioy+R7
@@ -106,4 +111,5 @@ RVAy96Xv1AjMkKkbfxM1hnpg0YZPT/NwE+4ASThz0Fj7puX7GyXFAzgJcLHJZiGm
 eRmzzUCHa/uu5RbI8Lt6LCYzzwbtAcnaVzdmZsLDoTKSZrE+CYwQYcVJiUF1An7A
 SbxU6+kSmUUfkaGHMLYILZkPzw6pUWQ5SPIU3YSvg2wpRg==
 =i3wd
------END PGP PUBLIC KEY BLOCK-----`
+-----END PGP PUBLIC KEY BLOCK-----`,
+}

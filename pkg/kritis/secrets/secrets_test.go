@@ -31,8 +31,8 @@ import (
 var pub, priv = createKeys("good")
 var pgpKey, err = NewPgpKey(priv, "", pub)
 
-var pub2, priv2 = passphraseProtectedSecretPublicKey, passphraseProtectedSecretPrivateKey
-var goodPassphrase, badPassphrase = passphraseProtectedSecretPassphrase, "bad-passphrase"
+var pub2, priv2 = passphraseProtectedSecret.publicKey, passphraseProtectedSecret.privateKey
+var goodPassphrase, badPassphrase = passphraseProtectedSecret.passphrase, "bad-passphrase"
 var pgpKey2, err2 = NewPgpKey(priv2, goodPassphrase, pub2)
 
 var tests = []struct {
