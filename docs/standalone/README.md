@@ -49,9 +49,6 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
     ```shell
     gcloud iam service-accounts create kritis-ca-admin \
       --display-name "Kritis Service Account"
-    gcloud projects add-iam-policy-binding $PROJECT \
-      --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
-      --role=roles/iam.serviceAccountKeys.create
     gcloud iam service-accounts keys create gac.json \
       --iam-account kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com
     kubectl create secret generic gac-ca-admin --from-file=gac.json
