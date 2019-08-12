@@ -43,10 +43,15 @@ NOTE: The steps described in this section will install Grafeas and Kritis charts
 
     For more documentation, see [Kubernetes Engine: Creating a Cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-cluster).
 
-1. Upload the Service Account Key:
+1. Create and upload the Service Account Key:
 
 
     ```shell
+    gcloud iam service-accounts create kritis-ca-admin \
+      --display-name "Kritis Service Account"
+    gcloud projects add-iam-policy-binding $PROJECT \
+      --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+      --role=roles/iam.serviceAccountKeys.create
     gcloud iam service-accounts keys create gac.json \
       --iam-account kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com
     kubectl create secret generic gac-ca-admin --from-file=gac.json
