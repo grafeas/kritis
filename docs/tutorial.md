@@ -57,18 +57,11 @@
         PUBLIC_KEY=`base64 gpg.pub -w 0`
         ```
 
-    1. Set the base64 encoded value of the passphrase for the secret you
-       created:
-
-        ```shell
-        B64PHRASE=$( echo ${PHRASE} | base64)
-        ```
-
     1. Create a k8s secret using the exported public and private keys and the
        passphrase:
 
         ```shell
-        kubectl create secret generic my-attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=${B64PHRASE}
+        kubectl create secret generic my-attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=${PHRASE}
         ```
 
     1. Create an attestation authority:
