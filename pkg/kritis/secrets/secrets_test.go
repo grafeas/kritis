@@ -36,17 +36,16 @@ var goodPassphrase, badPassphrase = passphraseProtectedSecret.passphrase, "bad-p
 var pgpKey2, err2 = NewPgpKey(priv2, goodPassphrase, pub2)
 
 var tests = []struct {
-	name       string
-	secretName string
-	shdErr     bool
-	expected   *PGPSigningSecret
+	name     string
+	shdErr   bool
+	expected *PGPSigningSecret
 }{
-	{"good-nopass", "good-sec-nopass", false, &PGPSigningSecret{SecretName: "good-sec-nopass", PgpKey: pgpKey}},
-	{"bad1-nopass", "bad-sec-nopass-miss-private-key", true, nil},
-	{"bad2-nopass", "bad-sec-nopass-miss-public-key", true, nil},
-	{"not-found", "not-found", true, nil},
-	{"good-sec-withpass", "good-sec-withpass", false, &PGPSigningSecret{SecretName: "good-sec-withpass", PgpKey: pgpKey2}},
-	{"bad-sec-withpass-bad-pass", "bad-sec-withpass-bad-pass", true, nil},
+	{"good-sec-nopass", false, &PGPSigningSecret{SecretName: "good-sec-nopass", PgpKey: pgpKey}},
+	{"bad-sec-nopass-miss-private-key", true, nil},
+	{"bad-sec-nopass-miss-public-key", true, nil},
+	{"not-found", true, nil},
+	{"good-sec-withpass", false, &PGPSigningSecret{SecretName: "good-sec-withpass", PgpKey: pgpKey2}},
+	{"bad-sec-withpass-bad-pass", true, nil},
 }
 
 func TestSecrets(t *testing.T) {
@@ -59,7 +58,7 @@ func TestSecrets(t *testing.T) {
 	getSecretFunc = getTestSecret
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Fetch("test", tc.secretName)
+			actual, err := Fetch("test", tc.name)
 			if !tc.shdErr && err != nil {
 				t.Fatalf("expected error: %v but found %v", tc.shdErr, err)
 			}
