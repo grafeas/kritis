@@ -45,7 +45,7 @@
         ```
         Export the key.
         ```
-        gpg --armor --export $KEY_FINGERPRINT gpg.pub
+        gpg --armor --export $KEY_FINGERPRINT > gpg.pub
         gpg --armor --export-secret-keys $KEY_FINGERPRINT > gpg.priv
         PHRASE=<passphrase you chose>
         ```
