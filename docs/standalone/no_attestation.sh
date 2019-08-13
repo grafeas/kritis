@@ -24,7 +24,7 @@ if [ ${#KEY_FINGER_PRINT} -ne 40 ]; then echo "Error: key fingerprnt is not 40 c
 else echo "Generated key fingerprint is $KEY_FINGER_PRINT."
 fi
 
-gpg --armor --export $KEY_FINGER_PRINT gpg.pub
+gpg --armor --export $KEY_FINGER_PRINT > gpg.pub
 gpg --armor --export-secret-keys $KEY_FINGER_PRINT > gpg.priv
 
 PUBLIC_KEY=`base64 gpg.pub -w 0`
