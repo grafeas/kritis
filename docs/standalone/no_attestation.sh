@@ -20,7 +20,13 @@ gpg --quick-generate-key --yes attestor@example.com
 gpg --armor --export attestor@example.com > gpg.pub
 gpg --armor --export-secret-keys attestor@example.com > gpg.priv
 
-PUBLIC_KEY=`base64 gpg.pub -w 0`
+if [ "$(uname)" == "Darwin" ]; then
+	# Mac OX
+	PUBLIC_KEY=`base64 gpg.pub`
+else
+	# Linux
+	PUBLIC_KEY=`base64 gpg.pub -w 0`
+fi
 
 kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv
 
