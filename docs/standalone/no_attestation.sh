@@ -21,7 +21,7 @@ GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
 # Save its fingerprint.
 KEY_FINGER_PRINT="$(echo $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
 if [ ${#KEY_FINGER_PRINT} -ne 40 ]; then echo "Error: key fingerprnt is not 40 characters." ; exit
-else echo "Generated key finger print is $KEY_FINGER_PRINT."
+else echo "Generated key fingerprint is $KEY_FINGER_PRINT."
 fi
 
 gpg --armor --export $KEY_FINGER_PRINT gpg.pub
