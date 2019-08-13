@@ -37,16 +37,16 @@
         Generate new key with `gpg` and extract its fingerprint.
         ```shell
         GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
-        KEY_FINGER_PRINT="$(echo $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
+        KEY_FINGERPRINT="$(echo $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
         ```
         Check that the 40-digit fingerprint is correctly extracted.
         ```
-        echo $KEY_FINGER_PRINT
+        echo $KEY_FINGERPRINT
         ```
         Export the key.
         ```
-        gpg --armor --export $KEY_FINGER_PRINT gpg.pub
-        gpg --armor --export-secret-keys $KEY_FINGER_PRINT > gpg.priv
+        gpg --armor --export $KEY_FINGERPRINT gpg.pub
+        gpg --armor --export-secret-keys $KEY_FINGERPRINT > gpg.priv
         PHRASE=<passphrase you chose>
         ```
 
