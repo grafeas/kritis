@@ -27,7 +27,13 @@ fi
 gpg --armor --export $KEY_FINGERPRINT > gpg.pub
 gpg --armor --export-secret-keys $KEY_FINGERPRINT > gpg.priv
 
-PUBLIC_KEY=`base64 gpg.pub -w 0`
+if [ "$(uname)" == "Darwin" ]; then
+	# Mac OX
+	PUBLIC_KEY=`base64 gpg.pub`
+else
+	# Linux
+	PUBLIC_KEY=`base64 gpg.pub -w 0`
+fi
 
 kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv
 
