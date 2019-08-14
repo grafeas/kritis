@@ -16,9 +16,16 @@
 set -e
 
 # Create a public and private key pair.
-gpg --quick-generate-key --yes attestor@example.com
-gpg --armor --export attestor@example.com > gpg.pub
-gpg --armor --export-secret-keys attestor@example.com > gpg.priv
+GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
+
+# Save its fingerprint.
+KEY_FINGERPRINT="$(echo $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
+if [ ${#KEY_FINGERPRINT} -ne 40 ]; then echo "Error: fail to save key fingerprint." ; exit
+else echo "Generated key fingerprint is $KEY_FINGERPRINT."
+fi
+
+gpg --armor --export $KEY_FINGERPRINT > gpg.pub
+gpg --armor --export-secret-keys $KEY_FINGERPRINT > gpg.priv
 
 if [ "$(uname)" == "Darwin" ]; then
 	# Mac OX
