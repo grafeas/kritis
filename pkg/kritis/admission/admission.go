@@ -244,6 +244,8 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
 	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
 	client, err := admissionConfig.fetchMetadataClient(config)
+	defer client.Close()
+
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)

@@ -45,6 +45,11 @@ func NewCache() (*Cache, error) {
 	}, nil
 }
 
+// Close closes client connections
+func (c Cache) Close() {
+	c.client.Close()
+}
+
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 	if v, ok := c.vuln[image]; ok {

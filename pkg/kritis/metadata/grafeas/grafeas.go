@@ -111,6 +111,12 @@ func New(config kritisv1beta1.GrafeasConfigSpec, certs *CertConfig) (*Client, er
 	}, nil
 }
 
+// Close closes client connections
+func (c Client) Close() {
+	// Not Implemented.
+	// grafeas.GrafeasV1Beta1Client does not expose Close() method for conn.
+}
+
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
