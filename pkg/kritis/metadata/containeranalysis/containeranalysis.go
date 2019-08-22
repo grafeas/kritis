@@ -58,6 +58,11 @@ func New() (*Client, error) {
 	}, nil
 }
 
+// Close closes connection
+func (c Client) Close() {
+	c.client.Close()
+}
+
 //Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
