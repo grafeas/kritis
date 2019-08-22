@@ -298,6 +298,8 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 	}
 
 	client, err := admissionConfig.fetchMetadataClient(config)
+	defer client.Close()
+
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)

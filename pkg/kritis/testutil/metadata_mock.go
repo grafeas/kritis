@@ -32,6 +32,9 @@ type MockMetadataClient struct {
 	Occ             map[string]string
 }
 
+func (m *MockMetadataClient) Close() {
+	// No Ops
+}
 func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }

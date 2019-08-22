@@ -52,6 +52,11 @@ type Client struct {
 	ctx    context.Context
 }
 
+// Close closes connection
+func (c Client) Close() {
+	// Not Implemented
+}
+
 // ValidateConfig checks whether the specified configuration is valid
 func ValidateConfig(config kritisv1beta1.GrafeasConfigSpec) error {
 	if config.Addr == "" {

@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"

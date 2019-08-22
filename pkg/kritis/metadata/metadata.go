@@ -38,6 +38,9 @@ type Fetcher interface {
 
 	// Builds get Build Occurrences for given image.
 	Builds(containerImage string) ([]Build, error)
+
+	// Close client connection
+	Close()
 }
 
 type Vulnerability struct {

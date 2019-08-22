@@ -31,7 +31,7 @@ metadata:
 spec:
   containers:
   - name: docker
-    image: golang:1.10
+    image: golang:1.12
     args: ["--arg1=<first>",
            "--arg2=<second>",
            "--arg3=<third>"]
@@ -66,7 +66,7 @@ func Test_recursiveGetTaggedImages(t *testing.T) {
 			name: "test one tagged image",
 			yaml: testYaml1,
 			expected: []string{
-				"golang:1.10",
+				"golang:1.12",
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func setResolver(f func(string) (string, error)) func() {
 func Test_resolveTagsToDigests(t *testing.T) {
 	r := newFakeResolver()
 	r.tagMap["gcr.io/google-appengine/debian9:2017-09-07-161610"] = "gcr.io/google-appengine/debian9@sha256:foo"
-	r.tagMap["golang:1.10"] = "index.docker.io/library/golang@sha256:bar"
+	r.tagMap["golang:1.12"] = "index.docker.io/library/golang@sha256:bar"
 
 	defer setResolver(r.resolve)()
 
@@ -144,10 +144,10 @@ func Test_resolveTagsToDigests(t *testing.T) {
 		{
 			name: "docker registry image",
 			images: []string{
-				"golang:1.10",
+				"golang:1.12",
 			},
 			expected: map[string]string{
-				"golang:1.10": "index.docker.io/library/golang@sha256:bar",
+				"golang:1.12": "index.docker.io/library/golang@sha256:bar",
 			},
 		},
 	}
