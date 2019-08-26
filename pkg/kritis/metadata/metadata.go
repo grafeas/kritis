@@ -35,6 +35,8 @@ type Fetcher interface {
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	//Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string) ([]PGPAttestation, error)
+	// Close closes client connections
+	Close()
 }
 
 type Vulnerability struct {
