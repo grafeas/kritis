@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -52,43 +53,6 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
-// ReviewGAP reviews images against generic attestation policies
-// Returns error if violations are found and handles them per violation strategy
-func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
-	images = util.RemoveGloballyAllowedImages(images)
-	if len(images) == 0 {
-		glog.Infof("images are all globally allowed, returning successful status: %s", images)
-		return nil
-	}
-
-	if len(gaps) == 0 {
-		glog.Info("No Generic Attestation Policies found")
-		return nil
-	}
-
-	for _, image := range images {
-		glog.Infof("Check if %s has valid Attestations.", image)
-		var imgAttested bool
-		for _, gap := range gaps {
-			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
-			// Get all AttestationAuthorities in this policy.
-			auths, err := r.getAttestationAuthoritiesForGAP(gap)
-			if err != nil {
-				return err
-			}
-			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
-			imgAttested = len(notAttestedBy) == 0
-		}
-		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
-			glog.Errorf("error handling attestations %v", err)
-		}
-		if !imgAttested {
-			return fmt.Errorf("image %s is not attested", image)
-		}
-	}
-	return nil
-}
-
 // ReviewISP reviews images against image security policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
@@ -109,21 +73,15 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
-			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
-			imgAttested := len(notAttestedBy) == 0
-
-			if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
-				glog.Errorf("error handling attestations %v", err)
-			}
-
+			glog.Infof("Check if %s has valid Attestations.", image)
+			isAttested, attestations := r.fetchAndVerifyAttestations(image, auths, pod)
 			// Skip vulnerability check for Webhook if attestations found.
 			if imgAttested && r.config.IsWebhook {
 				continue
 			}
 
 			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.Validate(isp, image, r.client)
+			violations, err := r.config.Validate(isp, image, r.client, auths)
 			if err != nil {
 				return fmt.Errorf("error validating image security policy %v", err)
 			}
@@ -141,15 +99,74 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 	return nil
 }
 
-// Returns a subset of 'auths' for which there are no attestations for 'image'.
-// In particular, if this returns an empty result, then 'image' has at least one attestation by every AttestationAuthority from 'auths'.
-func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority) []v1beta1.AttestationAuthority {
-	notAttestedBy := []v1beta1.AttestationAuthority{}
-	for _, auth := range auths {
-		transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
-		attestations, err := transport.GetValidatedAttestations(image)
+// ReviewGAP reviews images against generic attestation policies
+// Returns error if violations are found and handles them per violation strategy
+func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+	images = util.RemoveGloballyAllowedImages(images)
+	if len(images) == 0 {
+		glog.Infof("images are all globally allowed, returning successful status: %s", images)
+		return nil
+	}
+
+	if len(gaps) == 0 {
+		glog.Info("No Generic Attestation Policies found")
+		return nil
+	}
+
+	for _, image := range images {
+		glog.Infof("Check if %s has valid Attestations.", image)
+		imgAttested := false
+		for _, gap := range gaps {
+			// Get all AttestationAuthorities in this policy.
+			attestationAuthorities, err := r.getAttestationAuthoritiesForGAP(gap)
+			if err != nil {
+				return err
+			}
+			isAuthAttested, _ := r.fetchAndVerifyAttestations(image, attestationAuthorities, pod)
+			if isAuthAttested {
+				imgAttested = true
+				break
+			}
+		}
+		if !imgAttested {
+			return fmt.Errorf("image %s is not attested", image)
+		}
+	}
+	return nil
+}
+
+func (r Reviewer) fetchAndVerifyAttestations(image string, attestationAuthorities []v1beta1.AttestationAuthority, pod *v1.Pod) (bool, []metadata.PGPAttestation) {
+	attestations, err := r.client.Attestations(image, attestationAuthorities)
+	if err != nil {
+		glog.Errorf("Error while fetching attestations %s", err)
+		return false, attestations
+	}
+
+	isAttested := r.hasValidImageAttestations(image, attestations, attestationAuthorities)
+	if err := r.config.Strategy.HandleAttestation(image, pod, isAttested); err != nil {
+		glog.Errorf("error handling attestations %v", err)
+	}
+	return isAttested, attestations
+}
+
+// hasValidImageAttestations return true if any one image attestation is verified.
+func (r Reviewer) hasValidImageAttestations(image string, attestations []metadata.PGPAttestation, attestationAuthorities []v1beta1.AttestationAuthority) bool {
+	if len(attestations) == 0 {
+		glog.Infof(`No attestations found for image %s.
+This normally happens when you deploy a pod before kritis or no attestation authority is deployed.
+Please see instructions `, image)
+	}
+	host, err := container.NewAtomicContainerSig(image, map[string]string{})
+	if err != nil {
+		glog.Error(err)
+		return false
+	}
+	keys := map[string]string{}
+	for _, aa := range attestationAuthorities {
+		key, fingerprint, err := fingerprint(aa.Spec.PublicKeyData)
 		if err != nil {
-			glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
+			glog.Errorf("Error parsing key for %q: %v", aa.Name, err)
+			continue
 		}
 		if len(attestations) == 0 {
 			notAttestedBy = append(notAttestedBy, auth)
