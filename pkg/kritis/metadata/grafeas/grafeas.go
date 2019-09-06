@@ -111,31 +111,45 @@ func New(config kritisv1beta1.GrafeasConfigSpec, certs *CertConfig) (*Client, er
 	}, nil
 }
 
+// Close closes client connections
+func (c Client) Close() {
+	// Not Implemented.
+	// grafeas.GrafeasV1Beta1Client does not expose Close() method for conn.
+}
+
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
-func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
-	if err != nil {
-		return nil, err
-	}
-	var vulnz []metadata.Vulnerability
-	for _, occ := range occs {
-		if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
-			vulnz = append(vulnz, *v)
+func (c Client) Vulnerabilities(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
+	vulnz := []metadata.Vulnerability{}
+
+	for _, aa := range attestationAuthorities {
+		occs, err := c.fetchOccurrence(containerImage, PkgVulnerability, &aa)
+		if err != nil {
+			return nil, err
+		}
+		for _, occ := range occs {
+			if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
+				vulnz = append(vulnz, *v)
+			}
 		}
 	}
+
 	return vulnz, nil
 }
 
 // Attestations gets AttesationAuthority Occurrences for a specified image.
-func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
-	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
-	if err != nil {
-		return nil, err
+func (c Client) Attestations(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+	var p []metadata.PGPAttestation
+
+	for _, aa := range attestationAuthorities {
+		occs, err := c.fetchOccurrence(containerImage, AttestationAuthority, &aa)
+		if err != nil {
+			return nil, err
+		}
+		for _, occ := range occs {
+			p = append(p, util.GetPgpAttestationFromOccurrence(occ))
+		}
 	}
-	p := make([]metadata.PGPAttestation, len(occs))
-	for i, occ := range occs {
-		p[i] = util.GetPgpAttestationFromOccurrence(occ)
-	}
+
 	return p, nil
 }
 
@@ -211,7 +225,7 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
-func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
+func (c Client) fetchOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
