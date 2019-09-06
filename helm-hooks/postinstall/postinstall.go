@@ -55,6 +55,9 @@ webhooks:
         resources:
           - pods
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+      - {key: kritis-validation, operator: NotIn, values: [disabled]}
     clientConfig:
       caBundle: %s
       service:
@@ -89,6 +92,9 @@ webhooks:
           - deployments
           - replicasets
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+      - {key: kritis-validation, operator: NotIn, values: [disabled]}
     clientConfig:
       caBundle: %s
       service:
