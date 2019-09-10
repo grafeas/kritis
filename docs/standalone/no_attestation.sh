@@ -15,16 +15,27 @@
 # limitations under the License.
 set -e
 
-PHRASE=$1
-
 # Create a public and private key pair.
-gpg --quick-generate-key --yes my.attestor@example.com
-gpg --armor --export my.attestor@example.com > gpg.pub
-gpg --armor --export-secret-keys my.attestor@example.com > gpg.priv
+GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
 
-kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv --from-literal=passphrase=${PHRASE}
+# Save its fingerprint.
+KEY_FINGERPRINT="$(echo $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
+if [ ${#KEY_FINGERPRINT} -ne 40 ]; then echo "Error: fail to save key fingerprint." ; exit
+else echo "Generated key fingerprint is $KEY_FINGERPRINT."
+fi
 
-PUBLIC_KEY=`base64 gpg.pub -w 0`
+gpg --armor --export $KEY_FINGERPRINT > gpg.pub
+gpg --armor --export-secret-keys $KEY_FINGERPRINT > gpg.priv
+
+if [ "$(uname)" == "Darwin" ]; then
+	# Mac OX
+	PUBLIC_KEY=`base64 gpg.pub`
+else
+	# Linux
+	PUBLIC_KEY=`base64 gpg.pub -w 0`
+fi
+
+kubectl create secret generic attestor --from-file=public=gpg.pub --from-file=private=gpg.priv
 
 # Create AttestationAuthority CRD in the k8s cluster. It will be used to enforce
 # the GenericAttestationPolicy.
@@ -37,7 +48,7 @@ metadata:
   namespace: default
 spec:
   noteReference: v1beta1/projects/standalone
-  privateKeySecretName: my-attestor
+  privateKeySecretName: attestor
   publicKeyData: $PUBLIC_KEY
 EOF
 

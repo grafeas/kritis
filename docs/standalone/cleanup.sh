@@ -15,8 +15,13 @@
 # limitations under the License.
 set -e
 
-helm delete --purge kritis
+kubectl delete pods java
+helm del --purge kritis
 kubectl delete pods,serviceaccount,clusterrolebinding \
   --selector kritis.grafeas.io/install \
   --namespace default
-helm delete --purge grafeas
+kubectl delete all,validatingwebhookconfiguration,secret,csr,crd \
+  --selector kritis.grafeas.io/install \
+  --namespace default
+kubectl delete secret attestor
+helm del --purge grafeas
