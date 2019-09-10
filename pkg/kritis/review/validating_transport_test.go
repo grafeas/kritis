@@ -18,6 +18,7 @@ package review
 
 import (
 	"encoding/base64"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -41,12 +42,29 @@ func TestValidatingTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
+	validAuth := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PrivateKeySecretName: "test-success",
+			PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+		},
+	}
+	invalidAuth := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PrivateKeySecretName: "test-success",
+			PublicKeyData:        "bad-key",
+		},
+	}
 	tcs := []struct {
-		name         string
-		expected     []attestation.ValidatedAttestation
-		attestations []metadata.PGPAttestation
+		name          string
+		auth          v1beta1.AttestationAuthority
+		expected      []attestation.ValidatedAttestation
+		attestations  []metadata.PGPAttestation
+		errorExpected bool
+		attError      error
 	}{
-		{name: "at least one valid sig", expected: []attestation.ValidatedAttestation{
+		{name: "at least one valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
@@ -58,30 +76,28 @@ func TestValidatingTransport(t *testing.T) {
 			}, {
 				Signature: "invalid-sig",
 				KeyID:     successFpr,
-			}}},
-		{name: "no valid sig", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+			}}, errorExpected: false, attError: nil},
+		{name: "no valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
 				KeyID:     successFpr,
-			}}},
-		{name: "invalid secret", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+			}}, errorExpected: false, attError: nil},
+		{name: "invalid secret", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: "invalid-sig",
 				KeyID:     "invalid-fpr",
-			}}},
-		{name: "valid sig over another host", expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+			}}, errorExpected: false, attError: nil},
+		{name: "valid sig over another host", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: anotherSig,
 				KeyID:     successFpr,
-			}}},
-	}
-
-	auth := v1beta1.AttestationAuthority{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
-		Spec: v1beta1.AttestationAuthoritySpec{
-			PrivateKeySecretName: "test-success",
-			PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
-		},
+			}}, errorExpected: false, attError: nil},
+		{name: "attestation fetch error", auth: validAuth, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
+		{name: "invalid attestation authority error", auth: invalidAuth, expected: nil, attestations: []metadata.PGPAttestation{
+			{
+				Signature: sig,
+				KeyID:     successFpr,
+			}}, errorExpected: true, attError: nil},
 	}
 
 	for _, tc := range tcs {
@@ -89,10 +105,15 @@ func TestValidatingTransport(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
-			vat := AttestorValidatingTransport{cMock, auth}
+			if tc.attError != nil {
+				cMock.SetError(tc.attError)
+			}
+			vat := AttestorValidatingTransport{cMock, tc.auth}
 			atts, err := vat.GetValidatedAttestations(testutil.QualifiedImage)
-			if err != nil {
+			if err != nil && !tc.errorExpected {
 				t.Fatal("Error not expected ", err.Error())
+			} else if err == nil && tc.errorExpected {
+				t.Fatal("Expected error but got success")
 			}
 			if !reflect.DeepEqual(atts, tc.expected) {
 				t.Fatalf("Expected %v, Got %v", tc.expected, atts)

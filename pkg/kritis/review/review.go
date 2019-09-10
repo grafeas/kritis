@@ -62,7 +62,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 	for _, image := range images {
 		glog.Infof("Check if %s has valid Attestations.", image)
-		imgAttested := false
+		var imgAttested bool
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 			// Get all AttestationAuthorities in this policy.
@@ -70,18 +70,8 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			for _, auth := range auths {
-				transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
-				attestations, err := transport.GetValidatedAttestations(image)
-				if err != nil {
-					glog.Infof("Error getting attestations: %s", err.Error())
-					return err
-				}
-				if len(attestations) != 0 {
-					imgAttested = true
-					break
-				}
-			}
+			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
+			imgAttested = len(notAttestedBy) == 0
 		}
 		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
 			glog.Errorf("error handling attestations %v", err)
@@ -114,20 +104,8 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 		}
 		for _, image := range images {
 			glog.Infof("Check if %s as valid Attestations.", image)
-			imgAttested := false
-			notAttestedBy := []v1beta1.AttestationAuthority{}
-			for _, auth := range auths {
-				transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
-				attestations, err := transport.GetValidatedAttestations(image)
-				if err != nil {
-					glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
-				}
-				if len(attestations) != 0 {
-					imgAttested = true
-				} else {
-					notAttestedBy = append(notAttestedBy, auth)
-				}
-			}
+			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
+			imgAttested := len(notAttestedBy) == 0
 
 			if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
 				glog.Errorf("error handling attestations %v", err)
@@ -155,6 +133,23 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 		}
 	}
 	return nil
+}
+
+// Returns a subset of 'auths' for which there are no attestations for 'image'.
+// In particular, if this returns an empty result, then 'image' has at least one attestation by every AttestationAuthority from 'auths'.
+func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority) []v1beta1.AttestationAuthority {
+	notAttestedBy := []v1beta1.AttestationAuthority{}
+	for _, auth := range auths {
+		transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
+		attestations, err := transport.GetValidatedAttestations(image)
+		if err != nil {
+			glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
+		}
+		if len(attestations) == 0 {
+			notAttestedBy = append(notAttestedBy, auth)
+		}
+	}
+	return notAttestedBy
 }
 
 func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
