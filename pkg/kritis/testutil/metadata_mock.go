@@ -41,7 +41,7 @@ func (m *MockMetadataClient) Close() {
 	// No ops
 }
 
-func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+func (m *MockMetadataClient) Vulnerabilities(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -81,7 +81,7 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -95,4 +95,8 @@ func NilFetcher() func() (metadata.Fetcher, error) {
 			PGPAttestations: []metadata.PGPAttestation{},
 		}, nil
 	}
+}
+
+func (m *MockMetadataClient) Close() {
+
 }
