@@ -98,3 +98,7 @@ func NilFetcher() func() (metadata.Fetcher, error) {
 		}, nil
 	}
 }
+
+func (m *MockMetadataClient) Close() {
+
+}
