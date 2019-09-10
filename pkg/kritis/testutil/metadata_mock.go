@@ -31,7 +31,7 @@ type MockMetadataClient struct {
 	Occ             map[string]string
 }
 
-func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+func (m *MockMetadataClient) Vulnerabilities(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
 
@@ -59,7 +59,7 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	return m.PGPAttestations, nil
 }
 
@@ -70,4 +70,8 @@ func NilFetcher() func() (metadata.Fetcher, error) {
 			PGPAttestations: []metadata.PGPAttestation{},
 		}, nil
 	}
+}
+
+func (m *MockMetadataClient) Close() {
+
 }
