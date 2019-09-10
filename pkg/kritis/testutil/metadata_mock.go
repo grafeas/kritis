@@ -31,6 +31,11 @@ type MockMetadataClient struct {
 	Occ             map[string]string
 }
 
+// Close does not do anything for MockMetadataClient
+func (m *MockMetadataClient) Close() {
+	// No ops
+}
+
 func (m *MockMetadataClient) Vulnerabilities(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
 	return m.Vulnz, nil
 }
@@ -70,8 +75,4 @@ func NilFetcher() func() (metadata.Fetcher, error) {
 			PGPAttestations: []metadata.PGPAttestation{},
 		}, nil
 	}
-}
-
-func (m *MockMetadataClient) Close() {
-
 }
