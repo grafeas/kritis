@@ -1,5 +1,8 @@
 This is the changelog of Kritis releases
 
+v0.1.1:
+  * Fixed memory leak due to unused connections
+
 v0.1.0:
   * Kritis supports two policies for pod admission:
     * `ImageSecurityPolicy` which allows users to secure their clusters by specifying the vulnerability threshold for containers above which they cannot be deployed;
