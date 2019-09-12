@@ -36,6 +36,11 @@ func (m *MockMetadataClient) SetError(err error) {
 	m.Err = err
 }
 
+// Close does not do anything for MockMetadataClient
+func (m *MockMetadataClient) Close() {
+	// No ops
+}
+
 func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
 	if m.Err != nil {
 		return nil, m.Err

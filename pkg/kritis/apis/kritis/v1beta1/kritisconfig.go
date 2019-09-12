@@ -22,6 +22,7 @@ import (
 
 // +genclient
 // +genclient:noStatus
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KritisConfig struct {
@@ -45,15 +46,12 @@ type KritisConfigSpec struct {
 
 // GrafeasConfigSpec holds the configuration required for connecting to grafeas instance
 type GrafeasConfigSpec struct {
-	Addr           string `json:"addr"`
-	CAPath         string `json:"caPath"`
-	ClientKeyPath  string `json:"clientKeyPath"`
-	ClientCertPath string `json:"clientCertPath"`
+	Addr string `json:"addr"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// KritisConfigList is a list of BuildPolicy resources
+// KritisConfigList is a list of KritisConfig resources
 type KritisConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

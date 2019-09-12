@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafeas-certs-config
+data:
+  config: |
+    grafeascerts:
+      # PKI configuration
+      cafile: /certificates/ca.crt
+      keyfile: /certificates/client.key
+      certfile: /certificates/client.crt

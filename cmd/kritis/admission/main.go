@@ -22,12 +22,13 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	"github.com/grafeas/kritis/pkg/kritis/admission"
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/crd/kritisconfig"
 	"github.com/grafeas/kritis/pkg/kritis/cron"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -45,15 +46,17 @@ const (
 )
 
 var (
-	tlsCertFile string
-	tlsKeyFile  string
-	showVersion bool
-	runCron     bool
+	tlsCertFile  string
+	tlsKeyFile   string
+	grafeasCerts string
+	showVersion  bool
+	runCron      bool
 )
 
 func main() {
 	flag.StringVar(&tlsCertFile, "tls-cert-file", "/var/tls/tls.crt", "TLS certificate file.")
 	flag.StringVar(&tlsKeyFile, "tls-key-file", "/var/tls/tls.key", "TLS key file.")
+	flag.StringVar(&grafeasCerts, "grafeas-certs", "/etc/config/grafeascerts.yaml", "Grafeas certificates.")
 	flag.BoolVar(&showVersion, "version", false, "kritis-server version")
 	flag.BoolVar(&runCron, "run-cron", false, "Run cron job in foreground.")
 	flag.Parse()
@@ -66,7 +69,8 @@ func main() {
 		return
 	}
 
-	kritisConfigs, err := kritisconfig.KritisConfigs("")
+	// KritisConfig is a cluster-wide CRD.
+	kritisConfigs, err := kritisconfig.KritisConfigs()
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting kritis config: %v", err)
 		glog.Errorf(errMsg)
@@ -83,7 +87,7 @@ func main() {
 	}
 
 	if len(kritisConfigs) == 0 {
-		glog.Errorf("No KritisConfigs found in any namespace, will assume the defaults")
+		glog.Infof("No KritisConfigs found in any namespace, will assume the defaults")
 	} else if len(kritisConfigs) > 1 {
 		glog.Errorf("More than 1 KritisConfig found, expected to have only 1 in the cluster")
 		return
@@ -104,6 +108,11 @@ func main() {
 			if err := grafeas.ValidateConfig(config.Grafeas); err != nil {
 				glog.Fatal(err)
 			}
+			certs, err := grafeas.LoadConfig(grafeasCerts)
+			if err != nil {
+				glog.Fatal(err)
+			}
+			config.Certs = certs
 		}
 	}
 	// TODO: (tejaldesai) This is getting complicated. Use CLI Library.
@@ -117,7 +126,8 @@ func main() {
 		}
 		return
 	}
-	// Kick off back ground cron job.
+
+	// Kick off background cron job.
 	if err := StartCronJob(config, cronInterval); err != nil {
 		glog.Fatal(errors.Wrap(err, "starting background job"))
 	}

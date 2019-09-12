@@ -1,4 +1,6 @@
-# Copyright 2018 Google, Inc. All rights reserved.
+#!/bin/bash
+
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set -e
 
-# Builds the static Go image for Admission validation controller.
+# Create an account for Helm in your cluster
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller-cluster-role \
+  --clusterrole=cluster-admin \
+  --serviceaccount=kube-system:tiller
 
-# Dockerfile used to build a build step that builds resolve-tags in CI.
-FROM golang:1.12
-RUN mkdir -p /go/src/github.com/grafeas/
-RUN ln -s /workspace /go/src/github.com/grafeas/kritis
-WORKDIR /go/src/github.com/grafeas/kritis
+# Deploy Helm
+helm init --wait --service-account tiller

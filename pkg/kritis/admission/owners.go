@@ -20,11 +20,17 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/grafeas/kritis/pkg/kritis/admission/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// A list of all Kubernetes objects kritis can validate
+const (
+	Pod        = "Pod"
+	ReplicaSet = "ReplicaSet"
+	Deployment = "Deployment"
 )
 
 func checkOwners(dependentImages []string, meta *metav1.ObjectMeta) bool {
@@ -53,19 +59,19 @@ func retrieveOwnersImages(ns string, or metav1.OwnerReference) ([]string, error)
 	}
 
 	switch or.Kind {
-	case constants.Pod:
+	case Pod:
 		pod, err := clientset.CoreV1().Pods(ns).Get(or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		return PodImages(*pod), nil
-	case constants.Deployment:
+	case Deployment:
 		d, err := clientset.AppsV1().Deployments(ns).Get(or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		return DeploymentImages(*d), nil
-	case constants.ReplicaSet:
+	case ReplicaSet:
 		rs, err := clientset.AppsV1().ReplicaSets(ns).Get(or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
@@ -77,7 +83,7 @@ func retrieveOwnersImages(ns string, or metav1.OwnerReference) ([]string, error)
 }
 
 func imagesAreValid(dependentImages, ownerImages []string) bool {
-	dependentImages = util.RemoveGloballyWhitelistedImages(dependentImages)
+	dependentImages = util.RemoveGloballyAllowedImages(dependentImages)
 	for _, d := range dependentImages {
 		if !resolve.FullyQualifiedImage(d) {
 			return false

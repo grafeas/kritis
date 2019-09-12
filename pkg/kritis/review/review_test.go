@@ -132,6 +132,14 @@ func TestReviewGAP(t *testing.T) {
 			isAttested:   true,
 			shouldErr:    false,
 		},
+		{
+			name:         "image in global allowlist",
+			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
+			policies:     twoGaps,
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    false,
+		},
 	}
 	for _, tc := range tests {
 		th := violation.MemoryStrategy{
@@ -312,7 +320,7 @@ func TestReviewISP(t *testing.T) {
 			shouldErr:         true,
 		},
 		{
-			name:              "review image in global whitelist",
+			name:              "review image in global allowlist",
 			image:             "gcr.io/kritis-project/preinstall",
 			isWebhook:         true,
 			attestations:      []metadata.PGPAttestation{},

@@ -62,7 +62,8 @@ func TestNewClientTLS(t *testing.T) {
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caData)
-	config := kritisv1beta1.GrafeasConfigSpec{Addr: "127.0.0.1:9995", ClientKeyPath: clientKey, ClientCertPath: clientCert, CAPath: ca}
+	certs := &CertConfig{CertFile: clientCert, KeyFile: clientKey, CAFile: ca}
+	config := kritisv1beta1.GrafeasConfigSpec{Addr: "127.0.0.1:9995"}
 	lis, err := net.Listen("tcp", config.Addr)
 	if err != nil {
 		t.Fatal(err)
@@ -84,7 +85,7 @@ func TestNewClientTLS(t *testing.T) {
 	defer func() {
 		gs.GracefulStop()
 	}()
-	client, err := New(config)
+	client, err := New(config, certs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,13 +102,8 @@ func TestValidateConfig(t *testing.T) {
 		expectedErr bool
 	}{
 		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "/socketaddr"}, expectedErr: false},
-		// Missing certificates
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "addr:port"}, expectedErr: true},
 		// Missing address
 		{config: kritisv1beta1.GrafeasConfigSpec{}, expectedErr: true},
-		// Missing files
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: "ca", ClientKeyPath: "clientcert", ClientCertPath: "path"}, expectedErr: true},
-		{config: kritisv1beta1.GrafeasConfigSpec{Addr: "host:port", CAPath: ca, ClientKeyPath: clientKey, ClientCertPath: clientCert}, expectedErr: false},
 	} {
 		err := ValidateConfig(tt.config)
 		if err != nil && !tt.expectedErr {
@@ -143,7 +139,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		server.GracefulStop()
 		os.Remove(socketPath)
 	}()
-	client, err := New(kritisv1beta1.GrafeasConfigSpec{Addr: socketPath})
+	client, err := New(kritisv1beta1.GrafeasConfigSpec{Addr: socketPath}, nil)
 	if err != nil {
 		t.Fatalf("Could not initialize the client %v", err)
 	}
