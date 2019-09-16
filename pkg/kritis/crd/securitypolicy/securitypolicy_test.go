@@ -36,7 +36,7 @@ var (
 	IntProject      = "kritis-int-test"
 )
 
-func GetAA() []kritisv1beta1.AttestationAuthority {
+func GetAAs() []kritisv1beta1.AttestationAuthority {
 	var p []kritisv1beta1.AttestationAuthority
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
