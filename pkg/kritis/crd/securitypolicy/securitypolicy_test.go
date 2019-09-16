@@ -74,7 +74,7 @@ func Test_ValidISP(t *testing.T) {
 				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity, HasFixAvailable: true}},
 			}
 
-			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAA())
+			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 			if test.expectErr {
 				if err == nil {
 					t.Errorf("%s: expected error, but got nil. violations: %+v", test.name, violations)
@@ -100,7 +100,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 		},
 	}
 
-	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{}, GetAA())
+	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{}, GetAAs())
 	expected := []policy.Violation{}
 	expected = append(expected, Violation{
 		vType:  policy.UnqualifiedImageViolation,
@@ -151,7 +151,7 @@ func Test_SeverityThresholds(t *testing.T) {
 				},
 			}
 
-			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAA())
+			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 			if err != nil {
 				t.Errorf("%s: error validating isp: %v", test.name, err)
 			}
@@ -182,7 +182,7 @@ func Test_AllowlistedImage(t *testing.T) {
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
 
-	violations, err := ValidateImageSecurityPolicy(isp, "image", mc, GetAA())
+	violations, err := ValidateImageSecurityPolicy(isp, "image", mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -207,7 +207,7 @@ func Test_AllowlistedCVEAboveSeverityThreshold(t *testing.T) {
 		},
 	}
 
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAA())
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -229,7 +229,7 @@ func Test_OnlyFixesNotAvailablePassWithAllowlist(t *testing.T) {
 		Vulnz: []metadata.Vulnerability{{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true}},
 	}
 
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAA())
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
