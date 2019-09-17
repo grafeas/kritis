@@ -32,15 +32,15 @@ import (
 
 var (
 	TestNoteName = "test-aa-note"
-	IntAPI          = "testv1"
-	IntProject      = "kritis-int-test"
+	API          = "testv1"
+	Project      = "kritis-int-test"
 )
 
 func GetAAs() []kritisv1beta1.AttestationAuthority {
 	var p []kritisv1beta1.AttestationAuthority
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+			NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: TestNoteName,
