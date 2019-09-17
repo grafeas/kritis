@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	IntTestNoteName = "test-aa-note"
+	TestNoteName = "test-aa-note"
 	IntAPI          = "testv1"
 	IntProject      = "kritis-int-test"
 )
@@ -43,7 +43,7 @@ func GetAAs() []kritisv1beta1.AttestationAuthority {
 			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: IntTestNoteName,
+			Name: TestNoteName,
 		},
 	}
 	p = append(p, *aa)
