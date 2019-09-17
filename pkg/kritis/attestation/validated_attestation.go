@@ -18,7 +18,7 @@ package attestation
 
 // ValidatedAttestation represents a trusted and verified attestation made by
 // the named attestation authority about the named container image.
-// An example ValidateAttestation may look like:
+// An example ValidatedAttestation may look like:
 // {
 //   AttestorName: "build-attestor",
 //   Image: "gcr.io/img@sha256:abcd",
