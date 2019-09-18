@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
@@ -109,7 +110,11 @@ func TestValidatingTransport(t *testing.T) {
 				cMock.SetError(tc.attError)
 			}
 			vat := AttestorValidatingTransport{cMock, tc.auth}
-			atts, err := vat.GetValidatedAttestations(testutil.QualifiedImage)
+
+			var auth_list []kritisv1beta1.AttestationAuthority
+			auth_list = append(auth_list, tc.auth)
+
+			atts, err := vat.GetValidatedAttestations(testutil.QualifiedImage, auth_list)
 			if err != nil && !tc.errorExpected {
 				t.Fatal("Error not expected ", err.Error())
 			} else if err == nil && tc.errorExpected {
