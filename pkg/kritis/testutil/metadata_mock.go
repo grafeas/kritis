@@ -26,10 +26,11 @@ import (
 )
 
 type MockMetadataClient struct {
-	Vulnz           []metadata.Vulnerability
-	PGPAttestations []metadata.PGPAttestation
-	Occ             map[string]string
-	Err             error
+	Vulnz              []metadata.Vulnerability
+	PGPAttestations    []metadata.PGPAttestation
+	KritisAttestations []kritisv1beta1.AttestationAuthority
+	Occ                map[string]string
+	Err                error
 }
 
 func (m *MockMetadataClient) SetError(err error) {
@@ -91,12 +92,9 @@ func (m *MockMetadataClient) Attestations(containerImage string, auths []kritisv
 func NilFetcher() func() (metadata.Fetcher, error) {
 	return func() (metadata.Fetcher, error) {
 		return &MockMetadataClient{
-			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
+			Vulnz:              []metadata.Vulnerability{},
+			PGPAttestations:    []metadata.PGPAttestation{},
+			KritisAttestations: []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
-}
-
-func (m *MockMetadataClient) Close() {
-
 }

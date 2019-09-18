@@ -67,7 +67,6 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-
 	aa := GetAAs()
 	_, err = d.CreateAttestationNote(aa)
 	if err != nil {
