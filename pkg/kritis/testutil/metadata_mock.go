@@ -29,6 +29,11 @@ type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
 	Occ             map[string]string
+	Err             error
+}
+
+func (m *MockMetadataClient) SetError(err error) {
+	m.Err = err
 }
 
 // Close does not do anything for MockMetadataClient
@@ -37,11 +42,17 @@ func (m *MockMetadataClient) Close() {
 }
 
 func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
 	return m.Vulnz, nil
 }
 
 func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image string,
 	s *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
@@ -50,6 +61,9 @@ func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image s
 }
 
 func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
 	if aa == nil {
 		return nil, fmt.Errorf("could not get note")
 	}
@@ -59,12 +73,18 @@ func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthor
 }
 
 func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
 	return &grafeas.Note{
 		Name: aa.Spec.NoteReference,
 	}, nil
 }
 
 func (m *MockMetadataClient) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
 	return m.PGPAttestations, nil
 }
 
