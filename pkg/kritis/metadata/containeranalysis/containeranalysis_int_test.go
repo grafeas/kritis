@@ -34,12 +34,26 @@ var (
 	IntProject      = "kritis-int-test"
 )
 
+func GetAAs() []kritisv1beta1.AttestationAuthority {
+	var p []kritisv1beta1.AttestationAuthority
+	aa := &kritisv1beta1.AttestationAuthority{
+		Spec: kritisv1beta1.AttestationAuthoritySpec{
+			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: IntTestNoteName,
+		},
+	}
+	p = append(p, *aa)
+	return p
+}
+
 func TestGetVulnerabilities(t *testing.T) {
 	d, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
+	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a", GetAAs())
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}
@@ -50,17 +64,10 @@ func TestGetVulnerabilities(t *testing.T) {
 
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := New()
-	aa := &kritisv1beta1.AttestationAuthority{
-		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: IntTestNoteName,
-		},
-	}
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
+	aa := GetAAs()
 	_, err = d.CreateAttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)

@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	clientset "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
@@ -31,7 +32,7 @@ import (
 )
 
 // ValidateFunc defines the type for Validating Image Security Policies
-type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error)
+type ValidateFunc func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher, auths []kritisv1beta1.AttestationAuthority) ([]policy.Violation, error)
 
 // ImageSecurityPolicies returns all ISPs in the specified namespaces
 // Pass in an empty string to get all ISPs in all namespaces
@@ -54,7 +55,7 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
-func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher, auths []kritisv1beta1.AttestationAuthority) ([]policy.Violation, error) {
 	// First, check if image is allowed
 	if imageInAllowlist(isp, image) {
 		return nil, nil
@@ -69,7 +70,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		return violations, nil
 	}
 	// Now, check vulnz in the image
-	vulnz, err := client.Vulnerabilities(image)
+	vulnz, err := client.Vulnerabilities(image, auths)
 	if err != nil {
 		return nil, err
 	}

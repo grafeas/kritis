@@ -17,15 +17,38 @@ limitations under the License.
 package securitypolicy
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var (
+	TestNoteName = "test-aa-note"
+	API          = "testv1"
+	Project      = "kritis-int-test"
+)
+
+func GetAAs() []kritisv1beta1.AttestationAuthority {
+	var p []kritisv1beta1.AttestationAuthority
+	aa := &kritisv1beta1.AttestationAuthority{
+		Spec: kritisv1beta1.AttestationAuthoritySpec{
+			NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TestNoteName,
+		},
+	}
+	p = append(p, *aa)
+	return p
+}
 
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
@@ -50,7 +73,7 @@ func Test_ValidISP(t *testing.T) {
 			mc := &testutil.MockMetadataClient{
 				Vulnz: []metadata.Vulnerability{{CVE: "m", Severity: test.cveSeverity, HasFixAvailable: true}},
 			}
-			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 			if test.expectErr {
 				if err == nil {
 					t.Errorf("%s: expected error, but got nil. violations: %+v", test.name, violations)
@@ -75,7 +98,7 @@ func Test_UnqualifiedImage(t *testing.T) {
 			},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{})
+	violations, err := ValidateImageSecurityPolicy(isp, "", &testutil.MockMetadataClient{}, GetAAs())
 	expected := []policy.Violation{}
 	expected = append(expected, Violation{
 		vType:  policy.UnqualifiedImageViolation,
@@ -125,7 +148,7 @@ func Test_SeverityThresholds(t *testing.T) {
 					},
 				},
 			}
-			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+			vs, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 			if err != nil {
 				t.Errorf("%s: error validating isp: %v", test.name, err)
 			}
@@ -155,7 +178,7 @@ func Test_AllowlistedImage(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "l", Severity: "LOW"}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, "image", mc)
+	violations, err := ValidateImageSecurityPolicy(isp, "image", mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -179,7 +202,7 @@ func Test_AllowlistedCVEAboveSeverityThreshold(t *testing.T) {
 			{CVE: "c", Severity: "CRITICAL"},
 		},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
@@ -200,7 +223,7 @@ func Test_OnlyFixesNotAvailablePassWithAllowlist(t *testing.T) {
 	mc := &testutil.MockMetadataClient{
 		Vulnz: []metadata.Vulnerability{{CVE: "c", Severity: "CRITICAL", HasFixAvailable: true}},
 	}
-	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc)
+	violations, err := ValidateImageSecurityPolicy(isp, testutil.QualifiedImage, mc, GetAAs())
 	if err != nil {
 		t.Errorf("error validating isp: %v", err)
 	}
