@@ -155,13 +155,18 @@ func (c Client) Attestations(containerImage string, attestationAuthorities []kri
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
 	aaNote := &attestation.Authority{
 		Hint: &attestation.Authority_Hint{
 			HumanReadableName: aa.Name,
 		},
 	}
 	note := grafeas.Note{
-		Name:             fmt.Sprintf("projects/%s/notes/%s", DefaultProject, aa.Name),
+		Name:             fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
 		ShortDescription: fmt.Sprintf("Image Policy Security Attestor"),
 		LongDescription:  fmt.Sprintf("Image Policy Security Attestor deployed in %s namespace", aa.Namespace),
 		Type: &grafeas.Note_AttestationAuthority{
@@ -172,15 +177,20 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 	req := &grafeas.CreateNoteRequest{
 		Note:   &note,
 		NoteId: aa.Name,
-		Parent: fmt.Sprintf("projects/%s", DefaultProject),
+		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
 	return c.client.CreateNote(c.ctx, req)
 }
 
 //AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
 	req := &grafeas.GetNoteRequest{
-		Name: fmt.Sprintf("projects/%s/notes/%s", DefaultProject, aa.Name),
+		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
 	}
 	return c.client.GetNote(c.ctx, req)
 }
@@ -188,7 +198,7 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 // CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret, aa *kritisv1beta1.AttestationAuthority) (*grafeas.Occurrence, error) {
 	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
@@ -218,18 +228,27 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Details:  attestationDetails,
 	}
 	// Create the AttestationAuthority Occurrence in the Project AttestationAuthority Note.
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", DefaultProject),
+		Parent:     fmt.Sprintf("projects/%s", noteProject),
 	}
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
 func (c Client) fetchOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", DefaultProject),
+		Parent:   fmt.Sprintf("projects/%s", noteProject),
 	}
 	var occs []*grafeas.Occurrence
 	var nextPageToken string
@@ -246,4 +265,12 @@ func (c Client) fetchOccurrence(containerImage string, kind string, aa *kritisv1
 		}
 	}
 	return occs, nil
+}
+
+func getProjectFromNoteReference(ref string) (string, error) {
+	str := strings.Split(ref, "/")
+	if len(str) < 3 {
+		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
+	}
+	return str[2], nil
 }

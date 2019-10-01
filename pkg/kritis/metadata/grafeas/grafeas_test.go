@@ -176,7 +176,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		PgpKey:     pgpKey,
 		SecretName: "test",
 	}
-	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret, aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}

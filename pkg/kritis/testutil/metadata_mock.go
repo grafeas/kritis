@@ -50,7 +50,7 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string, auths []krit
 }
 
 func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image string,
-	s *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	s *secrets.PGPSigningSecret, aa *kritisv1beta1.AttestationAuthority) (*grafeas.Occurrence, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}

@@ -28,7 +28,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -189,7 +188,7 @@ func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy,
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Create Attestation Signature
-		if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
+		if _, err := r.client.CreateAttestationOccurence(n, image, s, &a); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
 
