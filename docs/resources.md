@@ -32,6 +32,60 @@ To view the list of pods it has annotated:
 kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ```
 
+## GenericAttestationPolicy
+
+GenericAttestationPolicy is a Custom Resource Definition which will enforce a
+policy without creating attestations. The policies defined rely on pre existing
+attestations ( occurrences ), rather than creating new ones.
+
+The policy is scoped to the namespace, so the policy can be different per
+Kubernetes namespace.
+
+Example policy:
+
+```yaml
+apiVersion: kritis.grafeas.io/v1beta1
+kind: GenericAttestationPolicy
+metadata:
+  name: my-gap
+  namespace: default
+spec:
+  attestationAuthorityNames:
+  - kritis-authority
+```
+
+To view the CRD:
+
+```shell
+kubectl describe crd genericattestationpolicies.kritis.grafeas.io
+```
+
+To list all Image Security Policies.
+
+```shell
+kubectl get GenericAttestationPolicy --all-namespaces
+```
+
+Example output:
+
+```shell
+NAMESPACE             NAME      AGE
+gap-namespace         my-gap    2d
+qa                    qa-gap    1h
+```
+
+To view the active GenericAttestationPolicy:
+
+```shell
+% kubectl describe GenericAttestationPolicy my-gap
+```
+
+Generic Attestation Policy Spec description:
+
+| Field     | Default (if applicable)   | Description |
+|-----------|---------------------------|-------------|
+| attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) that are required for images before the Admission Controller will admit the pod.|
+
 ## ImageSecurityPolicy CRD
 
 ImageSecurityPolicy is Custom Resource Definition which enforce policies.
