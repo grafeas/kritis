@@ -14,9 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ ! -x "$(command -v gotestsum)" ] && [ ! -x $GOPATH/bin/gotestsum ]; then
+    echo "gotestsum not found, try installing it..."
+    go get -u gotest.tools/gotestsum
+fi
+
 set -ex
 
 echo "Running go tests..."
-go test -cover -v -timeout 60s `go list ./...  | grep -v vendor`
+if [ -x "$(command -v gotestsum)" ]; then
+    timeout 60 gotestsum
+elif [ -x $GOPATH/bin/gotestsum ]; then
+    timeout 60 $GOPATH/bin/gotestsum
+else
+    echo "gotestsum not installed, defaulting to regular test output."
+    go test -cover -v -timeout 60s `go list ./...  | grep -v vendor`
+fi
+
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
 exit $GO_TEST_EXIT_CODE
