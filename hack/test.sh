@@ -23,9 +23,9 @@ set -ex
 
 echo "Running go tests..."
 if [ -x "$(command -v gotestsum)" ]; then
-    timeout 60 gotestsum
+    timeout 60 gotestsum --format short-verbose
 elif [ -x $GOPATH/bin/gotestsum ]; then
-    timeout 60 $GOPATH/bin/gotestsum
+    timeout 60 $GOPATH/bin/gotestsum --format short-verbose
 else
     echo "gotestsum not installed, defaulting to regular test output."
     go test -cover -v -timeout 60s `go list ./...  | grep -v vendor`
