@@ -21,6 +21,10 @@ fi
 
 set -ex
 
+echo $GO111MODULE
+
+GO111MODULE=on
+
 echo "Running go tests..."
 if [ -x "$(command -v gotestsum)" ]; then
     timeout 60 gotestsum --format short-verbose
