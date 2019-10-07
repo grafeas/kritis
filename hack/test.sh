@@ -19,7 +19,7 @@ if [ ! -x "$(command -v gotestsum)" ] && [ ! -x $GOPATH/bin/gotestsum ]; then
     go get -u gotest.tools/gotestsum
 fi
 
-set -ex
+set -e
 
 pkgs2test=`go list ./...  | grep -v vendor`
 
