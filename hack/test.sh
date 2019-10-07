@@ -19,16 +19,18 @@ if [ ! -x "$(command -v gotestsum)" ] && [ ! -x $GOPATH/bin/gotestsum ]; then
     go get -u gotest.tools/gotestsum
 fi
 
-set -x
+set -ex
+
+pkgs2test=`go list ./...  | grep -v vendor`
 
 echo "Running go tests..."
 if [ -x "$(command -v gotestsum)" ]; then
-    timeout 60 gotestsum --format short-verbose
+    gotestsum -- -cover -timeout 60s $pkgs2test
 elif [ -x $GOPATH/bin/gotestsum ]; then
-    timeout 60 $GOPATH/bin/gotestsum --format short-verbose
+    $GOPATH/bin/gotestsum -- -cover -timeout 60s $pkgs2test
 else
     echo "gotestsum not installed, defaulting to regular test output."
-    go test -cover -v -timeout 60s `go list ./...  | grep -v vendor`
+    go test -cover -v -timeout 60s $pkgs2test
 fi
 
 GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
