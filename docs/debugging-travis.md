@@ -17,7 +17,7 @@ $ IMAGE="travisci/ci-sardonyx:packer-1564753982-0c06deb6"
 
 ```shell
 $ BUILDID="build-$RANDOM"
-$ docker run --name $BUILDID -dit $INSTANCE /sbin/init
+$ docker run --name $BUILDID -dit $IMAGE /sbin/init
 ```
 
 3. Run a client and logs into the container
