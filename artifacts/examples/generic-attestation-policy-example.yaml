@@ -6,3 +6,5 @@ metadata:
 spec:
   attestationAuthorityNames:
   - kritis-authority
+  imageAllowlist:
+  - gcr.io/my/image

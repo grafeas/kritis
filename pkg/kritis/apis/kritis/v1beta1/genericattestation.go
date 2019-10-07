@@ -33,6 +33,7 @@ type GenericAttestationPolicy struct {
 
 // GenericAttestationPolicySpec is the spec for a GenericAttestationPolicy resource
 type GenericAttestationPolicySpec struct {
+	ImageAllowlist            []string `json:"imageAllowlist"`
 	AttestationAuthorityNames []string `json:"attestationAuthorityNames"`
 }
 
