@@ -19,11 +19,7 @@ if [ ! -x "$(command -v gotestsum)" ] && [ ! -x $GOPATH/bin/gotestsum ]; then
     go get -u gotest.tools/gotestsum
 fi
 
-set -ex
-
-echo $GO111MODULE
-
-GO111MODULE=on
+set -x
 
 echo "Running go tests..."
 if [ -x "$(command -v gotestsum)" ]; then
