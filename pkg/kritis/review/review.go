@@ -52,6 +52,15 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
+func reviewGAPAllowlist(gap v1beta1.GenericAttestationPolicy, image string) bool {
+	for _, i := range gap.Spec.ImageAllowlist {
+		if i == image {
+			return true
+		}
+	}
+	return false
+}
+
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
@@ -71,6 +80,10 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		var imgAttested bool
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
+			// Check if image is in allowlist.
+			if reviewGAPAllowlist(gap, image) {
+				continue
+			}
 			// Get all AttestationAuthorities in this policy.
 			auths, err := r.getAttestationAuthoritiesForGAP(gap)
 			if err != nil {
