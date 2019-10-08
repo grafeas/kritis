@@ -105,17 +105,19 @@ func (c Client) fetchOccurrence(containerImage string, kind string, auth *kritis
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
-	noteProject, err := getProjectFromNoteReference(auth.Spec.NoteReference)
-	if err != nil {
-		return nil, err
+
+	req := &grafeas.ListNoteOccurrencesRequest{
+		Name: auth.Spec.NoteReference,
+		// TODO: readd `kind` clause in filter
+		//       (currently not supported as per https://github.com/grafeas/kritis/issues/401#issuecomment-538947608)
+		// Example:
+		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
+		PageSize: constants.PageSize,
 	}
 
-	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
-		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", noteProject),
-	}
-	it := c.client.ListOccurrences(c.ctx, req)
+	it := c.client.ListNoteOccurrences(c.ctx, req)
+
 	occs := []*grafeas.Occurrence{}
 	for {
 		occ, err := it.Next()
