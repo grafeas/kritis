@@ -52,7 +52,7 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
-func reviewGAPAllowlist(gap v1beta1.GenericAttestationPolicy, image string) bool {
+func imageInGapAllowlist(image string, gap v1beta1.GenericAttestationPolicy) bool {
 	for _, i := range gap.Spec.ImageAllowlist {
 		if i == image {
 			return true
@@ -61,12 +61,30 @@ func reviewGAPAllowlist(gap v1beta1.GenericAttestationPolicy, image string) bool
 	return false
 }
 
+func removeGapAllowedImages(images []string, gaps []v1beta1.GenericAttestationPolicy) []string {
+	notAllowlisted := []string{}
+	for _, image := range images {
+		allowed := false
+		for _, gap := range gaps {
+			if imageInGapAllowlist(image, gap) {
+				allowed = true
+			}
+		}
+		if !allowed {
+			notAllowlisted = append(notAllowlisted, image)
+		}
+	}
+	return notAllowlisted
+}
+
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
 	images = util.RemoveGloballyAllowedImages(images)
+	images = removeGapAllowedImages(images, gaps)
+
 	if len(images) == 0 {
-		glog.Infof("images are all globally allowed, returning successful status: %s", images)
+		glog.Infof("images are all globally or gap allowed, returning successful status: %s", images)
 		return nil
 	}
 
@@ -80,10 +98,6 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		var imgAttested bool
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
-			// Check if image is in allowlist.
-			if reviewGAPAllowlist(gap, image) {
-				continue
-			}
 			// Get all AttestationAuthorities in this policy.
 			auths, err := r.getAttestationAuthoritiesForGAP(gap)
 			if err != nil {
