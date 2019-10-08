@@ -104,9 +104,13 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 	for _, isp := range isps {
 		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
 		// Get all AttestationAuthorities in this policy.
-		auths, err := r.getAttestationAuthoritiesForISP(isp)
+		a, err := r.getAttestationAuthorityForISP(isp)
 		if err != nil {
 			return err
+		}
+		auths := make([]v1beta1.AttestationAuthority, 0)
+		if a != nil {
+			auths = append(auths, *a)
 		}
 		for _, image := range images {
 			glog.Infof("Check if %s as valid Attestations.", image)
@@ -200,16 +204,16 @@ func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy,
 	return fmt.Errorf("one or more errors adding attestations: %s", errMsgs)
 }
 
-func (r Reviewer) getAttestationAuthoritiesForISP(isp v1beta1.ImageSecurityPolicy) ([]v1beta1.AttestationAuthority, error) {
-	auths := make([]v1beta1.AttestationAuthority, len(isp.Spec.AttestationAuthorityNames))
-	for i, aName := range isp.Spec.AttestationAuthorityNames {
-		a, err := r.config.Auths(isp.Namespace, aName)
-		if err != nil {
-			return nil, fmt.Errorf("Error getting attestors: %v", err)
-		}
-		auths[i] = *a
+func (r Reviewer) getAttestationAuthorityForISP(isp v1beta1.ImageSecurityPolicy) (*v1beta1.AttestationAuthority, error) {
+	aName := isp.Spec.AttestationAuthorityName
+	if aName == "" {
+		return nil, nil
 	}
-	return auths, nil
+	a, err := r.config.Auths(isp.Namespace, aName)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting attestors: %v", err)
+	}
+	return a, nil
 }
 
 func (r Reviewer) getAttestationAuthoritiesForGAP(gap v1beta1.GenericAttestationPolicy) ([]v1beta1.AttestationAuthority, error) {

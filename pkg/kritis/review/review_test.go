@@ -192,7 +192,7 @@ func TestReviewISP(t *testing.T) {
 				Namespace: "foo",
 			},
 			Spec: v1beta1.ImageSecurityPolicySpec{
-				AttestationAuthorityNames: []string{"test"},
+				AttestationAuthorityName: "test",
 			},
 		},
 	}
@@ -484,27 +484,28 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		Auths: authMock,
 	})
 	tcs := []struct {
-		name        string
-		aList       []string
-		shouldErr   bool
-		expectedLen int
+		name      string
+		aName     string
+		shouldErr bool
+		returnNil bool
 	}{
 		{
-			name:        "correct authorities list",
-			aList:       []string{"a1", "a2"},
-			shouldErr:   false,
-			expectedLen: 2,
+			name:      "correct authority",
+			aName:     "a1",
+			shouldErr: false,
+			returnNil: false,
 		},
 		{
-			name:      "one incorrect authority in the list",
-			aList:     []string{"a1", "err"},
+			name:      "incorrect authority",
+			aName:     "err",
 			shouldErr: true,
+			returnNil: true,
 		},
 		{
-			name:        "empty list should return nothing",
-			aList:       []string{},
-			shouldErr:   false,
-			expectedLen: 0,
+			name:      "empty name should return nil",
+			aName:     "",
+			shouldErr: false,
+			returnNil: true,
 		},
 	}
 
@@ -512,15 +513,15 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			isp := v1beta1.ImageSecurityPolicy{
 				Spec: v1beta1.ImageSecurityPolicySpec{
-					AttestationAuthorityNames: tc.aList,
+					AttestationAuthorityName: tc.aName,
 				},
 			}
-			auths, err := r.getAttestationAuthoritiesForISP(isp)
+			a, err := r.getAttestationAuthorityForISP(isp)
 			if (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if len(auths) != tc.expectedLen {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+			if (a == nil) != tc.returnNil {
+				t.Errorf("expected review to return nil %t, actual return nil %t", tc.returnNil, a == nil)
 			}
 		})
 	}

@@ -359,11 +359,6 @@ func (in *ImageSecurityPolicySpec) DeepCopyInto(out *ImageSecurityPolicySpec) {
 		copy(*out, *in)
 	}
 	in.PackageVulnerabilityRequirements.DeepCopyInto(&out.PackageVulnerabilityRequirements)
-	if in.AttestationAuthorityNames != nil {
-		in, out := &in.AttestationAuthorityNames, &out.AttestationAuthorityNames
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 
