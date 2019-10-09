@@ -146,7 +146,7 @@ func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.Attestation
 	notAttestedBy := []v1beta1.AttestationAuthority{}
 	for _, auth := range auths {
 		transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
-		attestations, err := transport.GetValidatedAttestations(image, &auth)
+		attestations, err := transport.GetValidatedAttestations(image)
 		if err != nil {
 			glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
 		}
