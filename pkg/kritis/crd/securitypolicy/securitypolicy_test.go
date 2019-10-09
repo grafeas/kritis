@@ -27,12 +27,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-var (
-	TestNoteName = "test-aa-note"
-	API          = "testv1"
-	Project      = "kritis-int-test"
-)
-
 func Test_ValidISP(t *testing.T) {
 	var tests = []struct {
 		name        string
