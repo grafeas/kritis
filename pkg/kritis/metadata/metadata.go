@@ -24,7 +24,7 @@ import (
 
 type Fetcher interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
-	Vulnerabilities(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]Vulnerability, error)
+	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// Create Attesatation Occurrence for an image.
 	CreateAttestationOccurence(note *grafeasv1beta1.Note,
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret,
@@ -34,7 +34,7 @@ type Fetcher interface {
 	// Create Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, auths []kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
 	// Close closes client connections
 	Close()
 }

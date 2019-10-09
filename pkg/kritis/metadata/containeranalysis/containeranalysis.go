@@ -64,18 +64,15 @@ func (c Client) Close() {
 }
 
 //Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
-func (c Client) Vulnerabilities(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
+func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+	occs, err := c.fetchVulnerabilityOccurrence(containerImage, PkgVulnerability)
+	if err != nil {
+		return nil, err
+	}
 	vulnz := []metadata.Vulnerability{}
-
-	for _, auth := range attestationAuthorities {
-		occs, err := c.fetchOccurrence(containerImage, PkgVulnerability, &auth)
-		if err != nil {
-			return nil, err
-		}
-		for _, occ := range occs {
-			if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
-				vulnz = append(vulnz, *v)
-			}
+	for _, occ := range occs {
+		if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
+			vulnz = append(vulnz, *v)
 		}
 	}
 
@@ -83,24 +80,49 @@ func (c Client) Vulnerabilities(containerImage string, attestationAuthorities []
 }
 
 //Attestations gets AttesationAuthority Occurrences for a specified image.
-func (c Client) Attestations(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	var p []metadata.PGPAttestation
 
-	for _, aa := range attestationAuthorities {
-		occs, err := c.fetchOccurrence(containerImage, AttestationAuthority, &aa)
-		if err != nil {
-			return nil, err
-		}
-		for _, occ := range occs {
-			pgp := util.GetPgpAttestationFromOccurrence(occ)
-			p = append(p, pgp)
-		}
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
+	if err != nil {
+		return nil, err
+	}
+	for _, occ := range occs {
+		pgp := util.GetPgpAttestationFromOccurrence(occ)
+		p = append(p, pgp)
 	}
 
 	return p, nil
 }
 
-func (c Client) fetchOccurrence(containerImage string, kind string, auth *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
+func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
+	// Make sure container image valid and is a GCR image
+	if !isValidImageOnGCR(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	}
+
+	req := &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		PageSize: constants.PageSize,
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+	}
+
+	it := c.client.ListOccurrences(c.ctx, req)
+	occs := []*grafeas.Occurrence{}
+	for {
+		occ, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		occs = append(occs, occ)
+	}
+	return occs, nil
+}
+
+func (c Client) fetchAttestationOccurrence(containerImage string, kind string, auth *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
@@ -108,7 +130,7 @@ func (c Client) fetchOccurrence(containerImage string, kind string, auth *kritis
 
 	req := &grafeas.ListNoteOccurrencesRequest{
 		Name: auth.Spec.NoteReference,
-		// TODO: readd `kind` clause in filter
+		// TODO: re-add `kind` clause in filter
 		//       (currently not supported as per https://github.com/grafeas/kritis/issues/401#issuecomment-538947608)
 		// Example:
 		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
@@ -117,7 +139,6 @@ func (c Client) fetchOccurrence(containerImage string, kind string, auth *kritis
 	}
 
 	it := c.client.ListNoteOccurrences(c.ctx, req)
-
 	occs := []*grafeas.Occurrence{}
 	for {
 		occ, err := it.Next()

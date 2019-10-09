@@ -122,7 +122,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			}
 
 			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.Validate(isp, image, r.client, auths)
+			violations, err := r.config.Validate(isp, image, r.client)
 			if err != nil {
 				return fmt.Errorf("error validating image security policy %v", err)
 			}
@@ -146,7 +146,7 @@ func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.Attestation
 	notAttestedBy := []v1beta1.AttestationAuthority{}
 	for _, auth := range auths {
 		transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
-		attestations, err := transport.GetValidatedAttestations(image, auths)
+		attestations, err := transport.GetValidatedAttestations(image, &auth)
 		if err != nil {
 			glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
 		}

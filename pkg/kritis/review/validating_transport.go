@@ -37,7 +37,7 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string, attestationAuthorities []v1beta1.AttestationAuthority) ([]attestation.ValidatedAttestation, error) {
+func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string, aa *v1beta1.AttestationAuthority) ([]attestation.ValidatedAttestation, error) {
 	keys := map[string]string{}
 	key, fingerprint, err := secrets.KeyAndFingerprint(avt.Attestor.Spec.PublicKeyData)
 	if err != nil {
@@ -52,7 +52,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string, a
 		glog.Error(err)
 		return nil, err
 	}
-	attestations, err := avt.Client.Attestations(image, attestationAuthorities)
+	attestations, err := avt.Client.Attestations(image, aa)
 	if err != nil {
 		glog.Error(err)
 		return nil, err

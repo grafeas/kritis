@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
@@ -72,7 +71,7 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher, auths []kritisv1beta1.AttestationAuthority) ([]policy.Violation, error) {
+func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 	if ok := iv.imageMap[image]; ok {
 		v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 0, "")
 		vs := []policy.Violation{}

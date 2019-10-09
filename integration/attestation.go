@@ -22,7 +22,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 )
 
-func getAttestations(t *testing.T, images []string, attestationAuthorities []kritisv1beta1.AttestationAuthority) map[string]bool {
+func getAttestations(t *testing.T, images []string, attestationAuthority *kritisv1beta1.AttestationAuthority) map[string]bool {
 	t.Helper()
 	m := make(map[string]bool, len(images))
 	if len(images) == 0 {
@@ -37,7 +37,7 @@ func getAttestations(t *testing.T, images []string, attestationAuthorities []kri
 		t.Fatalf("Unexpected error while fetching remote client %v", err)
 	}
 	for _, i := range images {
-		occs, err := client.Attestations(i, attestationAuthorities)
+		occs, err := client.Attestations(i, attestationAuthority)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}

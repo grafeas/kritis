@@ -189,9 +189,8 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
-	var attestationAuthorities []kritisv1beta1.AttestationAuthority
-	attestationAuthorities = append(attestationAuthorities, *aa)
-	occurrences, err := client.Attestations(testutil.IntTestImage, attestationAuthorities)
+
+	occurrences, err := client.Attestations(testutil.IntTestImage, aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}

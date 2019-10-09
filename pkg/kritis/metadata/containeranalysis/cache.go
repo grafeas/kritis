@@ -51,11 +51,11 @@ func (c Cache) Close() {
 }
 
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
-func (c Cache) Vulnerabilities(image string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
+func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 	if v, ok := c.vuln[image]; ok {
 		return v, nil
 	}
-	v, err := c.client.Vulnerabilities(image, auths)
+	v, err := c.client.Vulnerabilities(image)
 	if err != nil {
 		c.vuln[image] = v
 	}
@@ -63,11 +63,11 @@ func (c Cache) Vulnerabilities(image string, auths []kritisv1beta1.AttestationAu
 }
 
 // Attestations gets AttesationAuthority Occurrences for a specified image from cache or from client.
-func (c Cache) Attestations(image string, auths []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	if a, ok := c.att[image]; ok {
 		return a, nil
 	}
-	a, err := c.client.Attestations(image, auths)
+	a, err := c.client.Attestations(image, aa)
 	if err != nil {
 		c.att[image] = a
 	}

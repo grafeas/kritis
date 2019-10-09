@@ -118,36 +118,30 @@ func (c Client) Close() {
 }
 
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
-func (c Client) Vulnerabilities(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.Vulnerability, error) {
-	vulnz := []metadata.Vulnerability{}
-
-	for _, aa := range attestationAuthorities {
-		occs, err := c.fetchOccurrence(containerImage, PkgVulnerability, &aa)
-		if err != nil {
-			return nil, err
-		}
-		for _, occ := range occs {
-			if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
-				vulnz = append(vulnz, *v)
-			}
+func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
+	occs, err := c.fetchVulnerabilityOccurrence(containerImage, PkgVulnerability)
+	if err != nil {
+		return nil, err
+	}
+	var vulnz []metadata.Vulnerability
+	for _, occ := range occs {
+		if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
+			vulnz = append(vulnz, *v)
 		}
 	}
-
 	return vulnz, nil
 }
 
 // Attestations gets AttesationAuthority Occurrences for a specified image.
-func (c Client) Attestations(containerImage string, attestationAuthorities []kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	var p []metadata.PGPAttestation
 
-	for _, aa := range attestationAuthorities {
-		occs, err := c.fetchOccurrence(containerImage, AttestationAuthority, &aa)
-		if err != nil {
-			return nil, err
-		}
-		for _, occ := range occs {
-			p = append(p, util.GetPgpAttestationFromOccurrence(occ))
-		}
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
+	if err != nil {
+		return nil, err
+	}
+	for _, occ := range occs {
+		p = append(p, util.GetPgpAttestationFromOccurrence(occ))
 	}
 
 	return p, nil
@@ -239,7 +233,30 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
-func (c Client) fetchOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
+func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
+	req := &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		PageSize: constants.PageSize,
+		Parent:   fmt.Sprintf("projects/%s", DefaultProject),
+	}
+	var occs []*grafeas.Occurrence
+	var nextPageToken string
+	for {
+		req.PageToken = nextPageToken
+		resp, err := c.client.ListOccurrences(c.ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		occs = append(occs, resp.Occurrences...)
+		nextPageToken = resp.NextPageToken
+		if len(occs) == 0 || nextPageToken == "" {
+			break
+		}
+	}
+	return occs, nil
+}
+
+func (c Client) fetchAttestationOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
 	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
