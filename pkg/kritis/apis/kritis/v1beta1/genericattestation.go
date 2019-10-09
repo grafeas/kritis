@@ -24,6 +24,7 @@ import (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+
 type GenericAttestationPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -31,10 +32,14 @@ type GenericAttestationPolicy struct {
 	Spec GenericAttestationPolicySpec `json:"spec"`
 }
 
+type AdmissionWhitelistPatternSpec struct {
+	NamePattern string `json:"namePattern"`
+}
+
 // GenericAttestationPolicySpec is the spec for a GenericAttestationPolicy resource
 type GenericAttestationPolicySpec struct {
-	ImageAllowlist            []string `json:"imageAllowlist"`
-	AttestationAuthorityNames []string `json:"attestationAuthorityNames"`
+	AmissionWhitelistPatterns []AdmissionWhitelistPatternSpec `json:"admissionWhitelistPatterns"`
+	AttestationAuthorityNames []string                        `json:"attestationAuthorityNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
