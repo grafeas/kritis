@@ -96,7 +96,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret, IntProject)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}

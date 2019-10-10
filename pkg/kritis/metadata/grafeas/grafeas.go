@@ -192,7 +192,7 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 // CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret, aa *kritisv1beta1.AttestationAuthority) (*grafeas.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
@@ -222,13 +222,9 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Details:  attestationDetails,
 	}
 	// Create the AttestationAuthority Occurrence in the Project AttestationAuthority Note.
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return nil, err
-	}
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", noteProject),
+		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
 	return c.client.CreateOccurrence(c.ctx, req)
 }

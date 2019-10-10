@@ -28,7 +28,7 @@ type Fetcher interface {
 	// Create Attesatation Occurrence for an image.
 	CreateAttestationOccurence(note *grafeasv1beta1.Note,
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret,
-		aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Occurrence, error)
+		proj string) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.

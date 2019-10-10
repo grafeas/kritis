@@ -79,7 +79,7 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 	return vulnz, nil
 }
 
-//Attestations gets AttesationAuthority Occurrences for a specified image.
+//Attestations gets AttesationAuthority Occurrences for a specified image, using the note specified in the AttestationAuthority provided.
 func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	var p []metadata.PGPAttestation
 
@@ -224,7 +224,7 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 // CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret, aa *kritisv1beta1.AttestationAuthority) (*grafeas.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
@@ -257,13 +257,9 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		Details:  attestationDetails,
 	}
 	// Create the AttestationAuthrity Occurrence.
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return nil, err
-	}
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", noteProject),
+		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)

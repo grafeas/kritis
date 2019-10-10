@@ -24,6 +24,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
@@ -188,7 +189,7 @@ func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy,
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Create Attestation Signature
-		if _, err := r.client.CreateAttestationOccurence(n, image, s, &a); err != nil {
+		if _, err := r.client.CreateAttestationOccurence(n, image, s, grafeas.DefaultProject); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
 
