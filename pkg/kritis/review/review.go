@@ -53,12 +53,13 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 }
 
 func imageInGapAllowlist(image string, gap v1beta1.GenericAttestationPolicy) bool {
-	for _, i := range gap.Spec.ImageAllowlist {
-		if i == image {
-			return true
-		}
-	}
-	return false
+	return true
+	//for _, i := range gap.Spec.AmissionWhitelistPatterns {
+	//	if i {
+	//		return true
+	//	}
+	//}
+	// return false
 }
 
 func removeGapAllowedImages(images []string, gaps []v1beta1.GenericAttestationPolicy) []string {
