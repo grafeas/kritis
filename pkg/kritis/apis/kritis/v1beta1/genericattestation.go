@@ -37,8 +37,8 @@ type AdmissionWhitelistPatternSpec struct {
 
 // GenericAttestationPolicySpec is the spec for a GenericAttestationPolicy resource
 type GenericAttestationPolicySpec struct {
-	AmissionWhitelistPatterns []AdmissionWhitelistPatternSpec `json:"admissionWhitelistPatterns"`
-	AttestationAuthorityNames []string                        `json:"attestationAuthorityNames"`
+	AdmissionWhitelistPatterns []AdmissionWhitelistPatternSpec `json:"admissionWhitelistPatterns"`
+	AttestationAuthorityNames  []string                        `json:"attestationAuthorityNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -41,6 +41,21 @@ func RemoveGloballyAllowedImages(images []string) []string {
 	return notAllowlisted
 }
 
+// RemoveGloballyAllowedImages returns all images that aren't in gap allowlists
+func RemoveGapAllowedImages(images []string, allowlist []string) []string {
+	notAllowlisted := []string{}
+	for _, image := range images {
+		allowlisted, err := imageInGapAllowlist(image, allowlist)
+		if err != nil {
+			glog.Errorf("couldn't check if %s is in gap allowlist: %v", image, err)
+		}
+		if !allowlisted {
+			notAllowlisted = append(notAllowlisted, image)
+		}
+	}
+	return notAllowlisted
+}
+
 // Do an image match based on reference.
 func imageRefMatch(image string, pattern string) (bool, error) {
 	allowRef, err := name.ParseReference(pattern, name.WeakValidation)

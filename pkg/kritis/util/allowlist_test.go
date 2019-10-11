@@ -53,7 +53,7 @@ func Test_RemoveGloballyAllowedImages(t *testing.T) {
 }
 
 func Test_imageInGapAllowlist(t *testing.T) {
-	allowlist := []string {
+	allowlist := []string{
 		"gcr.io/1-my-image*",
 		"gcr.io/2-my-image-any-tag:*",
 		"gcr.io/3-my-untagged-image",
