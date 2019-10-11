@@ -134,7 +134,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 				return r.handleViolations(image, pod, violations)
 			}
 			if r.config.IsWebhook && auth != nil {
-				if err := r.addAttestations(image, isp, *auth); err != nil {
+				if err := r.addAttestation(image, isp, *auth); err != nil {
 					glog.Errorf("error adding attestations %s", err)
 				}
 			}
@@ -186,7 +186,7 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []polic
 }
 
 // Create attestation for 'image' by ISP auth.
-func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy, auth v1beta1.AttestationAuthority) error {
+func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, auth v1beta1.AttestationAuthority) error {
 	errMsgs := []string{}
 	// Get or Create Note for this this Authority
 	n, err := util.GetOrCreateAttestationNote(r.client, &auth)
