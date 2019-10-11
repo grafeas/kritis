@@ -34,8 +34,10 @@ import (
 
 func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
+	_, pub2 := testutil.CreateSecret(t, "sec2")
 	secFpr := sec.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
+	// An attestation for 'img' verifiable by 'pub'.
 	sig, err := util.CreateAttestationSignature(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -52,33 +54,67 @@ func TestReviewGAP(t *testing.T) {
 	}
 	invalidAtts := []metadata.PGPAttestation{{Signature: invalidSig, KeyID: secFpr}}
 
-	gap := v1beta1.GenericAttestationPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "foo",
-		},
-		Spec: v1beta1.GenericAttestationPolicySpec{
-			AttestationAuthorityNames: []string{"test"},
-		},
-	}
-	gaps := []v1beta1.GenericAttestationPolicy{gap}
-	twoGaps := []v1beta1.GenericAttestationPolicy{gap,
+	// A policy with a single attestor 'test'.
+	oneGAP := []v1beta1.GenericAttestationPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "foo",
 			},
 			Spec: v1beta1.GenericAttestationPolicySpec{
-				AttestationAuthorityNames: []string{"unknown"},
+				AttestationAuthorityNames: []string{"test"},
+			},
+		}}
+	// One policy with a single attestor 'test'.  This attestor can verify 'img'.
+	// Another policy with a single attestor 'test2'.  This attestor cannot verify any images.
+	twoGAPs := []v1beta1.GenericAttestationPolicy{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: v1beta1.GenericAttestationPolicySpec{
+				AttestationAuthorityNames: []string{"test"},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "bar",
+			},
+			Spec: v1beta1.GenericAttestationPolicySpec{
+				AttestationAuthorityNames: []string{"test2"},
 			},
 		},
 	}
+	// One policy with two attestors: 'test', 'test2'.
+	GAPWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foo",
+		},
+		Spec: v1beta1.GenericAttestationPolicySpec{
+			AttestationAuthorityNames: []string{"test", "test2"},
+		},
+	}}
+	// Two attestors: 'test', 'test2'.
 	authMock := func(_ string, name string) (*v1beta1.AttestationAuthority, error) {
-		return &v1beta1.AttestationAuthority{
-			ObjectMeta: metav1.ObjectMeta{Name: name},
-			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
-			}}, nil
+		authMap := map[string]v1beta1.AttestationAuthority{
+			"test": {
+				ObjectMeta: metav1.ObjectMeta{Name: "test"},
+				Spec: v1beta1.AttestationAuthoritySpec{
+					NoteReference:        "provider/test",
+					PrivateKeySecretName: "test",
+					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+				}},
+			"test2": {
+				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
+				Spec: v1beta1.AttestationAuthoritySpec{
+					NoteReference:        "provider/test2",
+					PrivateKeySecretName: "test2",
+					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub2)),
+				}}}
+		auth, exists := authMap[name]
+		if !exists {
+			return nil, fmt.Errorf("no such attestation authority: %s", name)
+		}
+		return &auth, nil
 	}
 	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
 		return nil, nil
@@ -95,7 +131,7 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "valid image with attestation",
 			image:        img,
-			policies:     gaps,
+			policies:     oneGAP,
 			attestations: validAtts,
 			isAttested:   true,
 			shouldErr:    false,
@@ -103,7 +139,7 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "image without attestation",
 			image:        img,
-			policies:     gaps,
+			policies:     oneGAP,
 			attestations: []metadata.PGPAttestation{},
 			isAttested:   false,
 			shouldErr:    true,
@@ -119,15 +155,15 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "image with invalid attestation",
 			image:        img,
-			policies:     gaps,
+			policies:     oneGAP,
 			attestations: invalidAtts,
 			isAttested:   false,
 			shouldErr:    true,
 		},
 		{
-			name:         "image complies 1 policy",
+			name:         "image complies with one policy out of two",
 			image:        img,
-			policies:     twoGaps,
+			policies:     twoGAPs,
 			attestations: validAtts,
 			isAttested:   true,
 			shouldErr:    false,
@@ -135,9 +171,17 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "image in global allowlist",
 			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
-			policies:     twoGaps,
+			policies:     twoGAPs,
 			attestations: []metadata.PGPAttestation{},
 			isAttested:   false,
+			shouldErr:    false,
+		},
+		{
+			name:         "image attested by one attestor out of two",
+			image:        img,
+			policies:     GAPWithTwoAAs,
+			attestations: validAtts,
+			isAttested:   true,
 			shouldErr:    false,
 		},
 	}
