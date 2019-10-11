@@ -52,7 +52,130 @@ func Test_RemoveGloballyAllowedImages(t *testing.T) {
 	}
 }
 
-func Test_imageInAllowlist(t *testing.T) {
+func Test_imageInGapAllowlist(t *testing.T) {
+	allowlist := []string {
+		"gcr.io/1-my-image*",
+		"gcr.io/2-my-image-any-tag:*",
+		"gcr.io/3-my-untagged-image",
+		"gcr.io/4-my-image-tag-prefix:1.*",
+		"gcr.io/5/long/path/my-image*",
+		"gcr.io/6-my-image-w-tag:latest",
+		"gcr.io/7-my-image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+		"gcr.io/8-my-image@sha256:*",
+		"local-image-1:*",
+		"local-image-2:tag",
+		"local-image-3:tag*",
+	}
+	tests := []struct {
+		name     string
+		image    string
+		expected bool
+	}{
+		{
+			name:     "test image exact name and tag match",
+			image:    "gcr.io/6-my-image-w-tag:latest",
+			expected: true,
+		},
+		{
+			name:     "test image name match but tag mismatch",
+			image:    "gcr.io/6-my-image-w-tag:some",
+			expected: false,
+		},
+		{
+			name:     "test image any tag match",
+			image:    "gcr.io/2-my-image-any-tag:any",
+			expected: true,
+		},
+		{
+			name:     "test image wildcard name match",
+			image:    "gcr.io/1-my-image-abc",
+			expected: true,
+		},
+		{
+			name:     "test image wildcard name and tag match",
+			image:    "gcr.io/1-my-image-abc:tag",
+			expected: true,
+		},
+		{
+			name:     "test untagged pattern exact match",
+			image:    "gcr.io/3-my-untagged-image",
+			expected: true,
+		},
+		{
+			name:     "test untagged pattern mismatch",
+			image:    "gcr.io/3-my-untagged-image:tag",
+			expected: false,
+		},
+		{
+			name:     "test tag wildcard pattern match",
+			image:    "gcr.io/4-my-image-tag-prefix:1.3",
+			expected: true,
+		},
+		{
+			name:     "test tag wildcard pattern mismatch",
+			image:    "gcr.io/4-my-image-tag-prefix:2.3",
+			expected: false,
+		},
+		{
+			name:     "test image long path match",
+			image:    "gcr.io/5/long/path/my-image-1:tag",
+			expected: true,
+		},
+		{
+			name:     "test wildcard does not match slash",
+			image:    "gcr.io/5/long/path/my-image/image",
+			expected: false,
+		},
+		{
+			name:     "test image sha exact match",
+			image:    "gcr.io/7-my-image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			expected: true,
+		},
+		{
+			name:     "test image sha mismatch",
+			image:    "gcr.io/7-my-image@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+			expected: false,
+		},
+		{
+			name:     "test wildcard sha match",
+			image:    "gcr.io/8-my-image@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+			expected: true,
+		},
+		{
+			name:     "test local image exact match",
+			image:    "local-image-2:tag",
+			expected: true,
+		},
+		{
+			name:     "test local image tag mismatch",
+			image:    "local-image-2:tag2",
+			expected: false,
+		},
+		{
+			name:     "test local image any tag match",
+			image:    "local-image-1:any-tag",
+			expected: true,
+		},
+		{
+			name:     "test local image tag wildcard match",
+			image:    "local-image-3:tag-any",
+			expected: true,
+		},
+		{
+			name:     "test local image tag wildcard mismatch",
+			image:    "local-image-3:1tag",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := imageInGapAllowlist(test.image, allowlist)
+			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+		})
+	}
+}
+
+func Test_imageInGlobalAllowlist(t *testing.T) {
 	tests := []struct {
 		name     string
 		image    string
@@ -65,7 +188,7 @@ func Test_imageInAllowlist(t *testing.T) {
 		},
 		{
 			name:     "test image with digest in allowlist",
-			image:    "gcr.io/kritis-project/kritis-server@sha:123",
+			image:    "gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			expected: true,
 		},
 		{
@@ -76,7 +199,7 @@ func Test_imageInAllowlist(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := imageInAllowlist(test.image)
+			actual, err := imageInGlobalAllowlist(test.image)
 			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
 		})
 	}

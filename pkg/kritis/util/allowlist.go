@@ -17,7 +17,9 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -28,7 +30,7 @@ import (
 func RemoveGloballyAllowedImages(images []string) []string {
 	notAllowlisted := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInAllowlist(image)
+		allowlisted, err := imageInGlobalAllowlist(image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global allowlist: %v", image, err)
 		}
@@ -39,20 +41,78 @@ func RemoveGloballyAllowedImages(images []string) []string {
 	return notAllowlisted
 }
 
-func imageInAllowlist(image string) (bool, error) {
-	for _, w := range constants.GlobalImageAllowlist {
-		allowlistRef, err := name.ParseReference(w, name.WeakValidation)
-		if err != nil {
-			return false, err
+// Do an image match based on reference.
+func imageRefMatch(image string, pattern string) (bool, error) {
+	allowRef, err := name.ParseReference(pattern, name.WeakValidation)
+	if err != nil {
+		return false, err
+	}
+	imageRef, err := name.ParseReference(image, name.WeakValidation)
+	if err != nil {
+		return false, err
+	}
+	// Make sure images have the same context
+	if reflect.DeepEqual(allowRef.Context(), imageRef.Context()) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// Do an image match based on name pattern.
+// See https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns
+func imageNamePatternMatch(image string, pattern string) (bool, error) {
+	if len(pattern) == 0 {
+		return false, errors.New("empty pattern")
+	}
+	if pattern[len(pattern)-1] == '*' {
+		pattern = pattern[:len(pattern)-1]
+		if strings.HasPrefix(image, pattern) {
+			if strings.LastIndex(image, "/") < len(pattern) {
+				return true, nil
+			}
 		}
-		imageRef, err := name.ParseReference(image, name.WeakValidation)
-		if err != nil {
-			return false, err
-		}
-		// Make sure images have the same context
-		if reflect.DeepEqual(allowlistRef.Context(), imageRef.Context()) {
+	} else {
+		if image == pattern {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func imageInAllowlistByReference(image string, allowList []string) (bool, error) {
+	for _, w := range allowList {
+		match, err := imageRefMatch(image, w)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func imageInAllowlistByPattern(image string, allowList []string) (bool, error) {
+	for _, w := range allowList {
+		match, err := imageNamePatternMatch(image, w)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Check if image is allowed by global allowlist.
+// This method uses reference matching.
+func imageInGlobalAllowlist(image string) (bool, error) {
+	return imageInAllowlistByReference(image, constants.GlobalImageAllowlist)
+}
+
+// Check if image is allowed by a GAP allowlist.
+// This method uses name pattern matching.
+func imageInGapAllowlist(image string, allowlist []string) (bool, error) {
+	return imageInAllowlistByPattern(image, allowlist)
 }
