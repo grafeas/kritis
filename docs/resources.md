@@ -39,11 +39,6 @@ The policy expects all attestation authorities to be satisfied before allowing t
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 
- - Kubernetes Custom resource definition
- - requires pre-existing attestations
- - Expects all attestation authorities to be satisfied
- - does not create attestations
-
 The policy is scoped to the Kubernetes namespace, so the policies can be different per namespace.
 
 Example policy:
