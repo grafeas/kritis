@@ -32,14 +32,19 @@ To view the list of pods it has annotated:
 kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ```
 
-## GenericAttestationPolicy
+## GenericAttestationPolicy CRD
 
-GenericAttestationPolicy is a Custom Resource Definition which will enforce a
-policy without creating attestations. The policies defined rely on pre existing
-attestations ( occurrences ), rather than creating new ones.
+GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
+The policy expects all attestation authorities to be satisfied before allowing the container image to be admitted.
+As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
+The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 
-The policy is scoped to the namespace, so the policy can be different per
-Kubernetes namespace.
+ - Kubernetes Custom resource definition
+ - requires pre-existing attestations
+ - Expects all attestation authorities to be satisfied
+ - does not create attestations
+
+The policy is scoped to the Kubernetes namespace, so the policies can be different per namespace.
 
 Example policy:
 
@@ -60,7 +65,7 @@ To view the CRD:
 kubectl describe crd genericattestationpolicies.kritis.grafeas.io
 ```
 
-To list all Image Security Policies.
+To list all Generic Attestation Policies.
 
 ```shell
 kubectl get GenericAttestationPolicy --all-namespaces
@@ -74,7 +79,7 @@ gap-namespace         my-gap    2d
 qa                    qa-gap    1h
 ```
 
-To view the active GenericAttestationPolicy:
+To view the active Generic Attestation Policy:
 
 ```shell
 % kubectl describe GenericAttestationPolicy my-gap
@@ -84,11 +89,11 @@ Generic Attestation Policy Spec description:
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
-| attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) that are required for images before the Admission Controller will admit the pod.|
+| attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) that are required to be satisfied before the Admission Controller will admit the pod.|
 
 ## ImageSecurityPolicy CRD
 
-ImageSecurityPolicy is Custom Resource Definition which enforce policies.
+ImageSecurityPolicy (ISP) is Custom Resource Definition which enforces policies.
 The ImageSecurityPolicy are Namespace Scoped meaning, it will only be verified against pods in the same namespace.
 You can deploy multiple ImageSecurityPolicies in different namespaces, ideally one per namespace.
 
