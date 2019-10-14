@@ -62,7 +62,7 @@ func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 	return v, err
 }
 
-// Attestations gets AttesationAuthority Occurrences for a specified image from cache or from client.
+// Attestations gets Attestations for a specified image and a specified AttestationAuthority from cache or from client.
 func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	if a, ok := c.att[image]; ok {
 		return a, nil
@@ -91,7 +91,7 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas
 	return n, err
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
+// CreateAttestationOccurence creates an Attestation occurrence for a given image, secret, and project.
 func (c Cache) CreateAttestationOccurence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	return c.client.CreateAttestationOccurence(n, image, p, proj)
 }

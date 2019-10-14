@@ -132,7 +132,7 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 	return vulnz, nil
 }
 
-// Attestations gets AttesationAuthority Occurrences for a specified image.
+// Attestations gets Attestations for a specified image and a specified AttestationAuthority.
 func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	var p []metadata.PGPAttestation
 

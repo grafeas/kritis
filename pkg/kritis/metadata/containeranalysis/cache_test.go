@@ -35,18 +35,6 @@ var (
 	Project      = "kritis-int-test"
 )
 
-func GetAA() *kritisv1beta1.AttestationAuthority {
-	aa := &kritisv1beta1.AttestationAuthority{
-		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: TestNoteName,
-		},
-	}
-	return aa
-}
-
 func TestVCache(t *testing.T) {
 	vCache := []metadata.Vulnerability{{CVE: "CVE-1"}}
 	vClient := []metadata.Vulnerability{{CVE: "CVE-misss"}}
@@ -96,7 +84,16 @@ func TestACache(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := c.Attestations(tc.image, GetAA())
+			aa := &kritisv1beta1.AttestationAuthority{
+				Spec: kritisv1beta1.AttestationAuthoritySpec{
+					NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: TestNoteName,
+				},
+			}
+
+			actual, err := c.Attestations(tc.image, aa)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}

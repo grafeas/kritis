@@ -25,7 +25,7 @@ import (
 type Fetcher interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
-	// Create Attesatation Occurrence for an image.
+	// CreateAttestationOccurence creates an Attestation occurrence for a given image, secret, and project.
 	CreateAttestationOccurence(note *grafeasv1beta1.Note,
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret,
 		proj string) (*grafeasv1beta1.Occurrence, error)
