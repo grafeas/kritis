@@ -84,8 +84,10 @@ func TestReviewGAP(t *testing.T) {
 			},
 		},
 	}
-	// One policy with two attestors: 'test', 'test2'.
-	GAPWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
+	// One policy with two attestors:
+	// 'test' -- satisfies QualifiedImage
+	// 'test2' -- does not satisfy any image in this test
+	gapWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
@@ -179,7 +181,7 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "image attested by one attestor out of two",
 			image:        img,
-			policies:     GAPWithTwoAAs,
+			policies:     gapWithTwoAAs,
 			attestations: validAtts,
 			isAttested:   true,
 			shouldErr:    false,
