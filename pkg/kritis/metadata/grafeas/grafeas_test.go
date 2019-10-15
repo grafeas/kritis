@@ -176,7 +176,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		PgpKey:     pgpKey,
 		SecretName: "test",
 	}
-	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret, DefaultProject)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
@@ -189,7 +189,8 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
-	occurrences, err := client.Attestations(testutil.IntTestImage)
+
+	occurrences, err := client.Attestations(testutil.IntTestImage, aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}
