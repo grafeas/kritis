@@ -34,6 +34,18 @@ var (
 	IntProject      = "kritis-int-test"
 )
 
+func GetAA() []kritisv1beta1.AttestationAuthority {
+	aa := &kritisv1beta1.AttestationAuthority{
+		Spec: kritisv1beta1.AttestationAuthoritySpec{
+			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: IntTestNoteName,
+		},
+	}
+	return aa
+}
+
 func TestGetVulnerabilities(t *testing.T) {
 	d, err := New()
 	if err != nil {
@@ -50,27 +62,25 @@ func TestGetVulnerabilities(t *testing.T) {
 
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	d, err := New()
-	aa := &kritisv1beta1.AttestationAuthority{
-		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: IntTestNoteName,
-		},
-	}
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
+	aa := GetAA()
 	_, err = d.CreateAttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)
 	}
 	defer d.DeleteAttestationNote(aa)
+
 	note, err := d.AttestationNote(aa)
+	if err != nil {
+		t.Fatalf("Unexpected no error while getting attestation note %v", err)
+	}
 	expectedNoteName := fmt.Sprintf("projects/%s/notes/%s", IntProject, IntTestNoteName)
 	if note.Name != expectedNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, note.Name)
 	}
+
 	actualHint := note.GetAttestationAuthority().Hint.GetHumanReadableName()
 	if actualHint != IntTestNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
@@ -86,17 +96,21 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret, IntProject)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
 	expectedPgpKeyID := pgpKey.Fingerprint()
+	if err != nil {
+		t.Fatalf("Unexpected error while extracting PGP key id %v", err)
+	}
 	pgpKeyID := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation().GetPgpKeyId()
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
 	defer d.DeleteOccurrence(occ.GetName())
-	occurrences, err := d.Attestations(testutil.IntTestImage)
+
+	occurrences, err := d.Attestations(testutil.IntTestImage, aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}

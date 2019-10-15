@@ -119,7 +119,7 @@ func (c Client) Close() {
 
 // Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
+	occs, err := c.fetchVulnerabilityOccurrence(containerImage, PkgVulnerability)
 	if err != nil {
 		return nil, err
 	}
@@ -132,28 +132,35 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 	return vulnz, nil
 }
 
-// Attestations gets AttesationAuthority Occurrences for a specified image.
-func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
-	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
+// Attestations gets Attestations for a specified image and a specified AttestationAuthority.
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+	var p []metadata.PGPAttestation
+
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
-	p := make([]metadata.PGPAttestation, len(occs))
-	for i, occ := range occs {
-		p[i] = util.GetPgpAttestationFromOccurrence(occ)
+	for _, occ := range occs {
+		p = append(p, util.GetPgpAttestationFromOccurrence(occ))
 	}
+
 	return p, nil
 }
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
 	aaNote := &attestation.Authority{
 		Hint: &attestation.Authority_Hint{
 			HumanReadableName: aa.Name,
 		},
 	}
 	note := grafeas.Note{
-		Name:             fmt.Sprintf("projects/%s/notes/%s", DefaultProject, aa.Name),
+		Name:             fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
 		ShortDescription: fmt.Sprintf("Image Policy Security Attestor"),
 		LongDescription:  fmt.Sprintf("Image Policy Security Attestor deployed in %s namespace", aa.Namespace),
 		Type: &grafeas.Note_AttestationAuthority{
@@ -164,23 +171,28 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 	req := &grafeas.CreateNoteRequest{
 		Note:   &note,
 		NoteId: aa.Name,
-		Parent: fmt.Sprintf("projects/%s", DefaultProject),
+		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
 	return c.client.CreateNote(c.ctx, req)
 }
 
 //AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
 	req := &grafeas.GetNoteRequest{
-		Name: fmt.Sprintf("projects/%s/notes/%s", DefaultProject, aa.Name),
+		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
 	}
 	return c.client.GetNote(c.ctx, req)
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
+// CreateAttestationOccurence creates an Attestation occurrence for a given image, secret, and project.
 func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
@@ -212,12 +224,12 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 	// Create the AttestationAuthority Occurrence in the Project AttestationAuthority Note.
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", DefaultProject),
+		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
 	return c.client.CreateOccurrence(c.ctx, req)
 }
 
-func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
+func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	req := &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
@@ -238,4 +250,40 @@ func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.
 		}
 	}
 	return occs, nil
+}
+
+func (c Client) fetchAttestationOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
+	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		PageSize: constants.PageSize,
+		Parent:   fmt.Sprintf("projects/%s", noteProject),
+	}
+	var occs []*grafeas.Occurrence
+	var nextPageToken string
+	for {
+		req.PageToken = nextPageToken
+		resp, err := c.client.ListOccurrences(c.ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		occs = append(occs, resp.Occurrences...)
+		nextPageToken = resp.NextPageToken
+		if len(occs) == 0 || nextPageToken == "" {
+			break
+		}
+	}
+	return occs, nil
+}
+
+func getProjectFromNoteReference(ref string) (string, error) {
+	str := strings.Split(ref, "/")
+	if len(str) < 3 {
+		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
+	}
+	return str[2], nil
 }
