@@ -128,8 +128,9 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
+	noteName := fmt.Sprintf("%s/notes/%s", auth.Spec.NoteReference, auth.Name)
 	req := &grafeas.ListNoteOccurrencesRequest{
-		Name: auth.Spec.NoteReference,
+		Name: noteName,
 		// TODO: re-add `kind` clause in filter
 		//       (currently not supported as per https://github.com/grafeas/kritis/issues/401#issuecomment-538947608)
 		// Example:
@@ -173,17 +174,9 @@ func isRegistryGCR(r string) bool {
 	return true
 }
 
-func getProjectFromNoteReference(ref string) (string, error) {
-	str := strings.Split(ref, "/")
-	if len(str) < 3 {
-		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
-	}
-	return str[2], nil
-}
-
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +204,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 
 //AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +270,7 @@ func getProjectFromContainerImage(image string) string {
 
 // DeleteAttestationNote deletes a note for given AttestationAuthority
 func (c Client) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return err
 	}

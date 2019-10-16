@@ -145,7 +145,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", "api", DefaultProject),
+			NoteReference: fmt.Sprintf("projects/%s", DefaultProject),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "note1",
