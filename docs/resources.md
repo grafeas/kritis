@@ -139,7 +139,7 @@ metadata:
     name: qa-attestator
     namespace: qa
 spec:
-    noteReference: v1alpha1/projects/image-attestor
+    noteReference: projects/image-attestor
     privateKeySecretName: foo
     publicKeyData: ...
 ```

@@ -49,7 +49,7 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurence(n *grafeas.Note, image string,
+func (m *MockMetadataClient) CreateAttestationOccurrence(n *grafeas.Note, image string,
 	s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if m.Err != nil {
 		return nil, m.Err
