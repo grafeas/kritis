@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,7 +96,12 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret, IntProject)
+	proj, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		t.Fatalf("Failed to extract project ID %v", err)
+	}
+	occ, err := d.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
+	t.Logf("Occurrence=%v", occ)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
@@ -113,6 +119,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}
+	t.Logf("Occurrences=%v", occurrences)
 	if occurrences == nil {
 		t.Fatal("Should have created at least 1 occurrence")
 	}
