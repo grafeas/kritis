@@ -70,6 +70,12 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		glog.Infof("Check if %s has valid Attestations.", image)
 		var imgAttested bool
 		for _, gap := range gaps {
+			// Check if image is whitelisted
+			if imageInAllowlist(gap, image) {
+				glog.Infof("Image %s is whitelisted.", image)
+				return nil
+			}
+
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 			// Get all AttestationAuthorities in this policy.
 			auths, err := r.getAttestationAuthoritiesForGAP(gap)
@@ -87,6 +93,15 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		}
 	}
 	return nil
+}
+
+func imageInAllowlist(gap v1beta1.GenericAttestationPolicy, image string) bool {
+	for _, i := range gap.Spec.ImageAllowlist {
+		if i == image {
+			return true
+		}
+	}
+	return false
 }
 
 // ReviewISP reviews images against image security policies

@@ -57,6 +57,7 @@ func TestReviewGAP(t *testing.T) {
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
+			ImageAllowlist:            []string{"image"},
 			AttestationAuthorityNames: []string{"test"},
 		},
 	}
@@ -67,6 +68,7 @@ func TestReviewGAP(t *testing.T) {
 				Namespace: "foo",
 			},
 			Spec: v1beta1.GenericAttestationPolicySpec{
+				ImageAllowlist:            []string{"image"},
 				AttestationAuthorityNames: []string{"unknown"},
 			},
 		},
@@ -192,6 +194,7 @@ func TestReviewISP(t *testing.T) {
 				Namespace: "foo",
 			},
 			Spec: v1beta1.ImageSecurityPolicySpec{
+				ImageAllowlist:            []string{"image"},
 				AttestationAuthorityNames: []string{"test"},
 			},
 		},
@@ -442,6 +445,7 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gap := v1beta1.GenericAttestationPolicy{
 				Spec: v1beta1.GenericAttestationPolicySpec{
+					ImageAllowlist:            []string{"image"},
 					AttestationAuthorityNames: tc.aList,
 				},
 			}
