@@ -36,6 +36,7 @@ func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
 	secFpr := sec.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
+	whiteListedImg := testutil.WhitelistedImage
 	sig, err := util.CreateAttestationSignature(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -57,6 +58,7 @@ func TestReviewGAP(t *testing.T) {
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
+			ImageAllowlist:            []string{whiteListedImg},
 			AttestationAuthorityNames: []string{"test"},
 		},
 	}
@@ -135,6 +137,14 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "image in global allowlist",
 			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
+			policies:     twoGaps,
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    false,
+		},
+		{
+			name:         "image whitelisted in GAP",
+			image:        whiteListedImg,
 			policies:     twoGaps,
 			attestations: []metadata.PGPAttestation{},
 			isAttested:   false,

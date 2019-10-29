@@ -19,6 +19,7 @@ package testutil
 const (
 	QualifiedImage    = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
 	IntTestImage      = "gcr.io/kritis-int-test/test-image@sha256:3e2e946cb834c4538b789312d566eb16f4a27734fc6b140a3b3f85baafce965f"
+	WhitelistedImage  = "gcr.io/kritis-int-test/nginx-digest-allowlist@sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72"
 	PgpKeyFingerprint = "D283A5F5F5F5ECAA9EF185C5AE8B6994116315A3"
 )
 
