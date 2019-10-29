@@ -5,4 +5,6 @@ metadata:
   namespace: default
 spec:
   attestationAuthorityNames:
-  - kritis-authority
+    - kritis-authority
+  imageAllowlist:
+    - gcr.io/my/image@sha256:1234
