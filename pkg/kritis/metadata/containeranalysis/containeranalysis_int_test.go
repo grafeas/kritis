@@ -21,6 +21,7 @@ package containeranalysis
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -115,12 +116,23 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	defer d.DeleteOccurrence(occ.GetName())
 
-	occurrences, err := d.Attestations(testutil.IntTestImage, aa)
-	if err != nil {
-		t.Fatalf("Unexpected error while listing Occ %v", err)
-	}
-	if occurrences == nil {
-		t.Fatal("Should have created at least 1 occurrence")
-	}
+	// Keep trying to list attestation occurrences until we time out.
+	// Because the staleness bound is on the order of seconds, no need to try faster than once a second.
+	timeout := time.After(20 * time.Second)
+	tick := time.Tick(1 * time.Second)
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			t.Fatal("Should have created at least 1 occurrence")
 
+			// Got a tick, we should check note occurrences
+		case <-tick:
+			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
+				t.Fatalf("Failed to retrieve attestations: %v", err)
+			} else if len(occurrences) > 0 {
+				break
+			}
+		}
+	}
 }

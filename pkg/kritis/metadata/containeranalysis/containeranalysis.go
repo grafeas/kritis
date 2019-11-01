@@ -19,7 +19,6 @@ package containeranalysis
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
 	"github.com/golang/glog"
@@ -81,6 +80,10 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 }
 
 //Attestations gets AttesationAuthority Occurrences for a specified image, using the note specified in the AttestationAuthority provided.
+// This may take a few seconds to retrieve an attestation occurrence, if it was created very recently.
+// For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
+// For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
+// In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
 func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	var p []metadata.PGPAttestation
 
@@ -138,44 +141,19 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		PageSize: constants.PageSize,
 	}
 
-	return c.listNoteOccurrences(req)
-}
-
-func (c Client) listNoteOccurrences(req *grafeas.ListNoteOccurrencesRequest) ([]*grafeas.Occurrence, error) {
-	// TODO: tighten the timeout, and move to flag config
-	timeout := time.After(20 * time.Second)
-	tick := time.Tick(1 * time.Second)
-
 	occs := []*grafeas.Occurrence{}
-
-	// Keep trying until we're timed out
+	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
-		select {
-		// Got a timeout! fail with a timeout error
-		case <-timeout:
-			return nil, fmt.Errorf("Timed out while retrieving occurrences for note %s", req.Name)
-
-		// Got a tick, we should check note occurrences
-		case <-tick:
-			it := c.client.ListNoteOccurrences(c.ctx, req)
-			for {
-				occ, err := it.Next()
-				if err == iterator.Done {
-					break
-				}
-				if err != nil {
-					return nil, err
-				}
-				occs = append(occs, occ)
-			}
-			if len(occs) > 0 {
-				return occs, nil
-			} else {
-				glog.Info("Occurrences for the attestation note haven't been found yet, but there are no failures, so keep trying.")
-			}
+		occ, err := it.Next()
+		if err == iterator.Done {
+			break
 		}
+		if err != nil {
+			return nil, err
+		}
+		occs = append(occs, occ)
 	}
-	return nil, fmt.Errorf("Failed to retrieve occurrences for note %s", req.Name)
+	return occs, nil
 }
 
 func isValidImageOnGCR(containerImage string) bool {
