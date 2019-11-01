@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
 	"github.com/golang/glog"
@@ -87,7 +88,6 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 	if err != nil {
 		return nil, err
 	}
-	glog.Infof("Got occurrences after fetch=%v", occs)
 	for _, occ := range occs {
 		pgp := util.GetPgpAttestationFromOccurrence(occ)
 		p = append(p, pgp)
@@ -103,7 +103,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 	}
 
 	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
 		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 	}
@@ -130,31 +130,52 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 	}
 
 	noteName := fmt.Sprintf("%s/notes/%s", auth.Spec.NoteReference, auth.Name)
-	glog.Infof("noteName=%s", noteName)
 	req := &grafeas.ListNoteOccurrencesRequest{
 		Name: noteName,
-		// TODO: re-add `kind` clause in filter
-		//       (currently not supported as per https://github.com/grafeas/kritis/issues/401#issuecomment-538947608)
 		// Example:
 		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
-		// Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
+		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
 		PageSize: constants.PageSize,
 	}
 
-	it := c.client.ListNoteOccurrences(c.ctx, req)
+	return c.listNoteOccurrences(req)
+}
+
+func (c Client) listNoteOccurrences(req *grafeas.ListNoteOccurrencesRequest) ([]*grafeas.Occurrence, error) {
+	// TODO: tighten the timeout, and move to flag config
+	timeout := time.After(20 * time.Second)
+	tick := time.Tick(1 * time.Second)
+
 	occs := []*grafeas.Occurrence{}
-	glog.Infof("Occurrences=%v", occs)
+
+	// Keep trying until we're timed out
 	for {
-		occ, err := it.Next()
-		if err == iterator.Done {
-			break
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			return nil, fmt.Errorf("Timed out while retrieving occurrences for note %s", req.Name)
+
+		// Got a tick, we should check note occurrences
+		case <-tick:
+			it := c.client.ListNoteOccurrences(c.ctx, req)
+			for {
+				occ, err := it.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					return nil, err
+				}
+				occs = append(occs, occ)
+			}
+			if len(occs) > 0 {
+				return occs, nil
+			} else {
+				glog.Info("Occurrences for the attestation note haven't been found yet, but there are no failures, so keep trying.")
+			}
 		}
-		if err != nil {
-			return nil, err
-		}
-		occs = append(occs, occ)
 	}
-	return occs, nil
+	return nil, fmt.Errorf("Failed to retrieve occurrences for note %s", req.Name)
 }
 
 func isValidImageOnGCR(containerImage string) bool {

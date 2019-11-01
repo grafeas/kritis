@@ -85,6 +85,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if actualHint != IntTestNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
+
 	// Test Create Attestation Occurence
 	pub, priv := testutil.CreateKeyPair(t, "test")
 	pgpKey, err := secrets.NewPgpKey(priv, "", pub)
@@ -101,7 +102,6 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		t.Fatalf("Failed to extract project ID %v", err)
 	}
 	occ, err := d.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
-	t.Logf("Occurrence=%v", occ)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
@@ -119,7 +119,6 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}
-	t.Logf("Occurrences=%v", occurrences)
 	if occurrences == nil {
 		t.Fatal("Should have created at least 1 occurrence")
 	}
