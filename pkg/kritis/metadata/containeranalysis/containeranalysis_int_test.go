@@ -131,7 +131,8 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
 				t.Fatalf("Failed to retrieve attestations: %v", err)
 			} else if len(occurrences) > 0 {
-				break
+				// Successfully retrieved attestations, exit the loop and the test.
+				return
 			}
 		}
 	}
