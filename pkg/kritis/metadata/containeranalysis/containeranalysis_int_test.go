@@ -21,8 +21,10 @@ package containeranalysis
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,14 +32,13 @@ import (
 
 var (
 	IntTestNoteName = "test-aa-note"
-	IntAPI          = "testv1"
 	IntProject      = "kritis-int-test"
 )
 
-func GetAA() []kritisv1beta1.AttestationAuthority {
+func GetAA() *kritisv1beta1.AttestationAuthority {
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", IntAPI, IntProject),
+			NoteReference: fmt.Sprintf("projects/%s", IntProject),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
@@ -85,6 +86,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if actualHint != IntTestNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, actualHint)
 	}
+
 	// Test Create Attestation Occurence
 	pub, priv := testutil.CreateKeyPair(t, "test")
 	pgpKey, err := secrets.NewPgpKey(priv, "", pub)
@@ -96,7 +98,11 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	occ, err := d.CreateAttestationOccurence(note, testutil.IntTestImage, secret, IntProject)
+	proj, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	if err != nil {
+		t.Fatalf("Failed to extract project ID %v", err)
+	}
+	occ, err := d.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
@@ -110,12 +116,24 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	defer d.DeleteOccurrence(occ.GetName())
 
-	occurrences, err := d.Attestations(testutil.IntTestImage, aa)
-	if err != nil {
-		t.Fatalf("Unexpected error while listing Occ %v", err)
-	}
-	if occurrences == nil {
-		t.Fatal("Should have created at least 1 occurrence")
-	}
+	// Keep trying to list attestation occurrences until we time out.
+	// Because the staleness bound is on the order of seconds, no need to try faster than once a second.
+	timeout := time.After(20 * time.Second)
+	tick := time.Tick(1 * time.Second)
+	for {
+		select {
+		// Got a timeout! fail with a timeout error
+		case <-timeout:
+			t.Fatal("Should have created at least 1 occurrence")
 
+			// Got a tick, we should check note occurrences
+		case <-tick:
+			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
+				t.Fatalf("Failed to retrieve attestations: %v", err)
+			} else if len(occurrences) > 0 {
+				// Successfully retrieved attestations, exit the loop and the test.
+				return
+			}
+		}
+	}
 }
