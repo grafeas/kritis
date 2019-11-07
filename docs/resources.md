@@ -77,7 +77,7 @@ qa                    qa-gap    1h
 To view the active Generic Attestation Policy:
 
 ```shell
-% kubectl describe GenericAttestationPolicy my-gap
+kubectl describe GenericAttestationPolicy my-gap
 ```
 
 Generic Attestation Policy Spec description:
@@ -133,7 +133,7 @@ qa                    qa-isp    11h
 To view the active ImageSecurityPolicy:
 
 ```shell
-% kubectl describe ImageSecurityPolicy my-isp 
+kubectl describe ImageSecurityPolicy my-isp
 ```
 
 Image Security Policy Spec description:
