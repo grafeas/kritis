@@ -149,7 +149,7 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 
 //AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +189,8 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 	return c.client.GetNote(c.ctx, req)
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image, secret, and project.
-func (c Client) CreateAttestationOccurence(note *grafeas.Note,
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
+func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	containerImage string,
 	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
@@ -253,7 +253,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 }
 
 func (c Client) fetchAttestationOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -278,12 +278,4 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		}
 	}
 	return occs, nil
-}
-
-func getProjectFromNoteReference(ref string) (string, error) {
-	str := strings.Split(ref, "/")
-	if len(str) < 3 {
-		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
-	}
-	return str[2], nil
 }

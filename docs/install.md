@@ -102,6 +102,10 @@ gcloud projects add-iam-policy-binding $PROJECT \
 gcloud projects add-iam-policy-binding $PROJECT \
   --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
   --role=roles/containeranalysis.occurrences.editor
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member=serviceAccount:kritis-ca-admin@${PROJECT}.iam.gserviceaccount.com \
+  --role=roles/containeranalysis.notes.occurrences.viewer
 ```
 
 ## Step #5: Upload the Service Account Key

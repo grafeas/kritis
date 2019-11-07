@@ -192,7 +192,7 @@ func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy,
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Create Attestation Signature
-		if _, err := r.client.CreateAttestationOccurence(n, image, s, grafeas.DefaultProject); err != nil {
+		if _, err := r.client.CreateAttestationOccurrence(n, image, s, grafeas.DefaultProject); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
 
