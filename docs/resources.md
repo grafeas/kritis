@@ -32,9 +32,63 @@ To view the list of pods it has annotated:
 kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ```
 
+## GenericAttestationPolicy CRD
+
+GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
+The policy expects any one attestation authority to be satisfied before allowing the container image to be admitted.
+As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
+The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
+
+The policy is scoped to the Kubernetes namespace, so the policies can be different per namespace.
+
+Example policy:
+
+```yaml
+apiVersion: kritis.grafeas.io/v1beta1
+kind: GenericAttestationPolicy
+metadata:
+  name: my-gap
+  namespace: default
+spec:
+  attestationAuthorityNames:
+  - kritis-authority
+```
+
+To view the CRD:
+
+```shell
+kubectl describe crd genericattestationpolicies.kritis.grafeas.io
+```
+
+To list all Generic Attestation Policies.
+
+```shell
+kubectl get GenericAttestationPolicy --all-namespaces
+```
+
+Example output:
+
+```shell
+NAMESPACE             NAME      AGE
+gap-namespace         my-gap    2d
+qa                    qa-gap    1h
+```
+
+To view the active Generic Attestation Policy:
+
+```shell
+% kubectl describe GenericAttestationPolicy my-gap
+```
+
+Generic Attestation Policy Spec description:
+
+| Field     | Default (if applicable)   | Description |
+|-----------|---------------------------|-------------|
+| attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) for which one of is required to be satisfied before the Admission Controller will admit the pod.|
+
 ## ImageSecurityPolicy CRD
 
-ImageSecurityPolicy is Custom Resource Definition which enforce policies.
+ImageSecurityPolicy (ISP) is Custom Resource Definition which enforces policies.
 The ImageSecurityPolicy are Namespace Scoped meaning, it will only be verified against pods in the same namespace.
 You can deploy multiple ImageSecurityPolicies in different namespaces, ideally one per namespace.
 
