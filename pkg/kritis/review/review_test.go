@@ -118,7 +118,7 @@ func TestReviewGAP(t *testing.T) {
 		}
 		return &auth, nil
 	}
-	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.ReadWriteClient) ([]policy.Violation, error) {
 		return nil, nil
 	}
 
@@ -251,7 +251,7 @@ func TestReviewISP(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
-	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.ReadWriteClient) ([]policy.Violation, error) {
 		if image == vulnImage {
 			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}

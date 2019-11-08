@@ -25,7 +25,7 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
-// Implements Fetcher and ReadOnlyClient interfaces.
+// Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
 	PGPAttestations []metadata.PGPAttestation
@@ -90,8 +90,8 @@ func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1bet
 	return m.PGPAttestations, nil
 }
 
-func NilFetcher() func() (metadata.Fetcher, error) {
-	return func() (metadata.Fetcher, error) {
+func NilFetcher() func() (metadata.ReadWriteClient, error) {
+	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
 			PGPAttestations: []metadata.PGPAttestation{},

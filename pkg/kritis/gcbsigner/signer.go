@@ -29,7 +29,7 @@ import (
 
 type Signer struct {
 	config *Config
-	client metadata.Fetcher
+	client metadata.ReadWriteClient
 }
 
 type Config struct {
@@ -37,7 +37,7 @@ type Config struct {
 	Validate buildpolicy.ValidateFunc
 }
 
-func New(client metadata.Fetcher, c *Config) Signer {
+func New(client metadata.ReadWriteClient, c *Config) Signer {
 	return Signer{
 		client: client,
 		config: c,

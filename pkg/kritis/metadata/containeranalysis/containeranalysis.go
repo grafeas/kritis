@@ -40,7 +40,7 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
-// Client struct implements Fetcher and ReadOnlyClient interfaces.
+// Client struct implements ReadWriteClient and ReadOnlyClient interfaces.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context

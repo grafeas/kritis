@@ -91,7 +91,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 // ReviewISP reviews images against image security policies
 // Returns error if violations are found and handles them per violation strategy
-func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.Fetcher) error {
+func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error {
 	images = util.RemoveGloballyAllowedImages(images)
 	if len(images) == 0 {
 		glog.Infof("images are all globally allowed, returning successful status: %s", images)
@@ -176,7 +176,7 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []polic
 }
 
 // Create attestations for 'image' by all 'auths'.
-func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy, auths []v1beta1.AttestationAuthority, c metadata.Fetcher) error {
+func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy, auths []v1beta1.AttestationAuthority, c metadata.ReadWriteClient) error {
 	errMsgs := []string{}
 	for _, a := range auths {
 		// Get or Create Note for this this Authority

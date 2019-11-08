@@ -44,7 +44,7 @@ const (
 	DefaultProject       = "kritis" // DefaultProject is the default project name, only single project is supported
 )
 
-// Client implements the Fetcher and ReadOnlyClient interfaces using grafeas API.
+// Client implements the ReadWriteClient and ReadOnlyClient interfaces using grafeas API.
 type Client struct {
 	client grafeas.GrafeasV1Beta1Client
 	ctx    context.Context

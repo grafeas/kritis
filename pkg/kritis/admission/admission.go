@@ -47,7 +47,7 @@ import (
 type config struct {
 	retrievePod                     func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error)
 	retrieveDeployment              func(r *http.Request) (*appsv1.Deployment, v1beta1.AdmissionReview, error)
-	fetchMetadataClient             func(config *Config) (metadata.Fetcher, error)
+	fetchMetadataClient             func(config *Config) (metadata.ReadWriteClient, error)
 	fetchMetadataReadOnlyClient     func(config *Config) (metadata.ReadOnlyClient, error)
 	fetchGenericAttestationPolicies func(namespace string) ([]kritis.GenericAttestationPolicy, error)
 	fetchImageSecurityPolicies      func(namespace string) ([]kritis.ImageSecurityPolicy, error)
@@ -91,8 +91,8 @@ type Config struct {
 	Certs    *grafeas.CertConfig
 }
 
-// MetadataClient returns metadata.Fetcher based on the admission control config
-func MetadataClient(config *Config) (metadata.Fetcher, error) {
+// MetadataClient returns metadata.ReadWriteClient based on the admission control config
+func MetadataClient(config *Config) (metadata.ReadWriteClient, error) {
 	if config.Metadata == constants.GrafeasMetadata {
 		return grafeas.New(config.Grafeas, config.Certs)
 	}
@@ -406,5 +406,5 @@ func getReviewer() reviewer {
 // reviewer interface defines Kritis Reviewer struct, useful for mocking in tests
 type reviewer interface {
 	ReviewGAP(images []string, isps []kritis.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error
-	ReviewISP(images []string, isps []kritis.ImageSecurityPolicy, pod *v1.Pod, c metadata.Fetcher) error
+	ReviewISP(images []string, isps []kritis.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error
 }

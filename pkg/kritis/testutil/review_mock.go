@@ -45,7 +45,7 @@ func (r *ReviewerMock) ReviewGAP(images []string, isps []v1beta1.GenericAttestat
 	return fmt.Errorf(r.message)
 }
 
-func (r *ReviewerMock) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.Fetcher) error {
+func (r *ReviewerMock) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error {
 	if !r.hasISPErr {
 		return nil
 	}

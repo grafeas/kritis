@@ -26,7 +26,7 @@ import (
 )
 
 // Read/write interface to access Occurrences and Notes using Grafeas API.
-type Fetcher interface {
+type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.

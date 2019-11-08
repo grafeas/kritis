@@ -24,9 +24,9 @@ import (
 )
 
 // Cache struct defines Cache for container analysis client.
-// Implements Fetcher interface.
+// Implements ReadWriteClient interface.
 type Cache struct {
-	client metadata.Fetcher
+	client metadata.ReadWriteClient
 	vuln   map[string][]metadata.Vulnerability
 	att    map[string][]metadata.PGPAttestation
 	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
