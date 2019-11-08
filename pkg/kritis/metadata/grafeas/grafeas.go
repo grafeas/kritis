@@ -44,7 +44,7 @@ const (
 	DefaultProject       = "kritis" // DefaultProject is the default project name, only single project is supported
 )
 
-// Client implements the Fetcher interface using grafeas API.
+// Client implements the Fetcher and ReadOnlyClient interfaces using grafeas API.
 type Client struct {
 	client grafeas.GrafeasV1Beta1Client
 	ctx    context.Context
@@ -61,6 +61,7 @@ func ValidateConfig(config kritisv1beta1.GrafeasConfigSpec) error {
 	return nil
 }
 
+// TODO: separate constructor methods for r/w and r/o clients
 func New(config kritisv1beta1.GrafeasConfigSpec, certs *CertConfig) (*Client, error) {
 	if err := ValidateConfig(config); err != nil {
 		return nil, err

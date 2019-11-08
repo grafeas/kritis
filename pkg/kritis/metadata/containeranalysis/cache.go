@@ -24,6 +24,7 @@ import (
 )
 
 // Cache struct defines Cache for container analysis client.
+// Implements Fetcher interface.
 type Cache struct {
 	client metadata.Fetcher
 	vuln   map[string][]metadata.Vulnerability

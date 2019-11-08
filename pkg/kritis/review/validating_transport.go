@@ -33,7 +33,7 @@ type ValidatingTransport interface {
 
 // Implements ValidatingTransport.
 type AttestorValidatingTransport struct {
-	Client   metadata.Fetcher
+	Client   metadata.ReadOnlyClient
 	Attestor v1beta1.AttestationAuthority
 }
 

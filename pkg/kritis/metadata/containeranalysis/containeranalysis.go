@@ -40,12 +40,13 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
-// Client struct implements Fetcher Interface.
+// Client struct implements Fetcher and ReadOnlyClient interfaces.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context
 }
 
+// TODO: separate constructor methods for r/w and r/o clients
 func New() (*Client, error) {
 	ctx := context.Background()
 	client, err := ca.NewGrafeasV1Beta1Client(ctx)

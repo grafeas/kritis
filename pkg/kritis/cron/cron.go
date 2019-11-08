@@ -96,7 +96,7 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 
 // CheckPods checks all running pods against defined policies.
 func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
-	r := review.New(cfg.Client, cfg.ReviewConfig)
+	r := review.New(cfg.ReviewConfig)
 	for _, isp := range isps {
 		ps, err := cfg.PodLister(isp.Namespace)
 		if err != nil {
@@ -104,7 +104,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 		}
 		for _, p := range ps {
 			glog.Infof("Checking po %s", p.Name)
-			if err := r.ReviewISP(admission.PodImages(p), isps, &p); err != nil {
+			if err := r.ReviewISP(admission.PodImages(p), isps, &p, cfg.Client); err != nil {
 				glog.Error(err)
 			}
 		}
