@@ -18,10 +18,11 @@ package integration
 import (
 	"testing"
 
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 )
 
-func getAttestations(t *testing.T, images []string) map[string]bool {
+func getAttestations(t *testing.T, images []string, attestationAuthority *kritisv1beta1.AttestationAuthority) map[string]bool {
 	t.Helper()
 	m := make(map[string]bool, len(images))
 	if len(images) == 0 {
@@ -36,7 +37,7 @@ func getAttestations(t *testing.T, images []string) map[string]bool {
 		t.Fatalf("Unexpected error while fetching remote client %v", err)
 	}
 	for _, i := range images {
-		occs, err := client.Attestations(i)
+		occs, err := client.Attestations(i, attestationAuthority)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}

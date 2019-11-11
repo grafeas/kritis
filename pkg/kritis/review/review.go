@@ -24,11 +24,11 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -68,7 +68,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 	for _, image := range images {
 		glog.Infof("Check if %s has valid Attestations.", image)
-		var imgAttested bool
+		imgAttested := false
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 			// Get all AttestationAuthorities in this policy.
@@ -76,8 +76,10 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
-			imgAttested = len(notAttestedBy) == 0
+			_, attestedByAny := r.findUnsatisfiedAuths(image, auths)
+			if attestedByAny {
+				imgAttested = true
+			}
 		}
 		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
 			glog.Errorf("error handling attestations %v", err)
@@ -110,8 +112,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 		}
 		for _, image := range images {
 			glog.Infof("Check if %s as valid Attestations.", image)
-			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
-			imgAttested := len(notAttestedBy) == 0
+			notAttestedBy, imgAttested := r.findUnsatisfiedAuths(image, auths)
 
 			if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
 				glog.Errorf("error handling attestations %v", err)
@@ -141,10 +142,10 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 	return nil
 }
 
-// Returns a subset of 'auths' for which there are no attestations for 'image'.
-// In particular, if this returns an empty result, then 'image' has at least one attestation by every AttestationAuthority from 'auths'.
-func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority) []v1beta1.AttestationAuthority {
+// Returns a subset of 'auths' for which there are no attestations for 'image', as well as an indicator if any auth satisfies image.
+func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority) ([]v1beta1.AttestationAuthority, bool) {
 	notAttestedBy := []v1beta1.AttestationAuthority{}
+	attestedByAny := false
 	for _, auth := range auths {
 		transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
 		attestations, err := transport.GetValidatedAttestations(image)
@@ -153,9 +154,11 @@ func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.Attestation
 		}
 		if len(attestations) == 0 {
 			notAttestedBy = append(notAttestedBy, auth)
+		} else {
+			attestedByAny = true
 		}
 	}
-	return notAttestedBy
+	return notAttestedBy, attestedByAny
 }
 
 func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
@@ -189,7 +192,7 @@ func (r Reviewer) addAttestations(image string, isp v1beta1.ImageSecurityPolicy,
 			errMsgs = append(errMsgs, err.Error())
 		}
 		// Create Attestation Signature
-		if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
+		if _, err := r.client.CreateAttestationOccurrence(n, image, s, grafeas.DefaultProject); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
 

@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
@@ -80,13 +81,13 @@ func TestGetProjectFromNoteRef(t *testing.T) {
 		shdErr bool
 		output string
 	}{
-		{"good", "v1aplha1/projects/name", false, "name"},
+		{"good", "projects/name", false, "name"},
 		{"bad1", "some", true, ""},
-		{"bad2", "some/t", true, ""},
+		{"bad2", "v1aplha1/projects/name", true, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := getProjectFromNoteReference(tc.input)
+			actual, err := metadata.GetProjectFromNoteReference(tc.input)
 			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.output, actual)
 		})
 	}
