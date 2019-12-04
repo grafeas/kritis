@@ -90,7 +90,7 @@ func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1bet
 	return m.PGPAttestations, nil
 }
 
-func NilFetcher() func() (metadata.ReadWriteClient, error) {
+func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},

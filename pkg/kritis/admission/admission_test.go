@@ -121,7 +121,7 @@ func Test_AdmissionResponse(t *testing.T) {
 			mockConfig := config{
 				retrievePod: mockValidPod(),
 				fetchMetadataClient: func(config *Config) (metadata.ReadWriteClient, error) {
-					return testutil.NilFetcher()()
+					return testutil.NilReadWriteClient()()
 				},
 				fetchMetadataReadOnlyClient: func(config *Config) (metadata.ReadOnlyClient, error) {
 					return testutil.NilReadOnlyClient()()
