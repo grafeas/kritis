@@ -118,7 +118,7 @@ func TestReviewGAP(t *testing.T) {
 		}
 		return &auth, nil
 	}
-	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(isp v1beta1.ImageSecurityPolicy, image string, client metadata.ReadWriteClient) ([]policy.Violation, error) {
 		return nil, nil
 	}
 
@@ -196,14 +196,14 @@ func TestReviewGAP(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
-			r := New(cMock, &Config{
+			r := New(&Config{
 				Validate:  mockValidate,
 				Secret:    sMock,
 				Auths:     authMock,
 				IsWebhook: true,
 				Strategy:  &th,
 			})
-			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil); (err != nil) != tc.shouldErr {
+			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 			if th.Attestations[tc.image] != tc.isAttested {
@@ -251,7 +251,7 @@ func TestReviewISP(t *testing.T) {
 				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
-	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.Fetcher) ([]policy.Violation, error) {
+	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.ReadWriteClient) ([]policy.Violation, error) {
 		if image == vulnImage {
 			v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 1, "")
 			vs := []policy.Violation{}
@@ -385,14 +385,14 @@ func TestReviewISP(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
 				PGPAttestations: tc.attestations,
 			}
-			r := New(cMock, &Config{
+			r := New(&Config{
 				Validate:  mockValidate,
 				Secret:    sMock,
 				Auths:     authMock,
 				IsWebhook: tc.isWebhook,
 				Strategy:  &th,
 			})
-			if err := r.ReviewISP([]string{tc.image}, isps, nil); (err != nil) != tc.shouldErr {
+			if err := r.ReviewISP([]string{tc.image}, isps, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
 			if len(th.Violations) != tc.handledViolations {
@@ -456,7 +456,7 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 		return &a, nil
 	}
 
-	r := New(nil, &Config{
+	r := New(&Config{
 		Auths: authMock,
 	})
 	tcs := []struct {
@@ -526,7 +526,7 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		return &a, nil
 	}
 
-	r := New(nil, &Config{
+	r := New(&Config{
 		Auths: authMock,
 	})
 	tcs := []struct {

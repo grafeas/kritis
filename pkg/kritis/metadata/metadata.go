@@ -25,7 +25,8 @@ import (
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
-type Fetcher interface {
+// Read/write interface to access Occurrences and Notes using Grafeas API.
+type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
@@ -36,6 +37,16 @@ type Fetcher interface {
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
+	//Attestations get Attestation Occurrences for given image.
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
+	// Close closes client connections
+	Close()
+}
+
+// Read-only interface to access Occurrences and Notes using Grafeas API.
+type ReadOnlyClient interface {
+	// Vulnerabilities returns package vulnerabilities for a given image.
+	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	//Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
 	// Close closes client connections
