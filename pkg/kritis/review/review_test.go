@@ -46,13 +46,13 @@ func TestReviewGAP(t *testing.T) {
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sig, KeyID: secFpr}}
+	validAtts := []metadata.PGPAttestation{{Signature: enc(sig), KeyID: secFpr}}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	invalidAtts := []metadata.PGPAttestation{{Signature: invalidSig, KeyID: secFpr}}
+	invalidAtts := []metadata.PGPAttestation{{Signature: enc(invalidSig), KeyID: secFpr}}
 
 	// A policy with a single attestor 'test'.
 	oneGAP := []v1beta1.GenericAttestationPolicy{
@@ -231,7 +231,7 @@ func TestReviewISP(t *testing.T) {
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}}
+	validAtts := []metadata.PGPAttestation{{Signature: enc(sigVuln), KeyID: secFpr}}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -339,7 +339,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: secFpr}},
+			attestations:      []metadata.PGPAttestation{{Signature: enc(sigNoVuln), KeyID: secFpr}},
 			handledViolations: 0,
 			isAttested:        true,
 			shouldAttestImage: false,

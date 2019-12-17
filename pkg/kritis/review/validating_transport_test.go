@@ -31,6 +31,10 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
+func enc(in string) string {
+	return base64.StdEncoding.EncodeToString([]byte(in))
+}
+
 func TestValidatingTransport(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
 	successFpr := successSec.PgpKey.Fingerprint()
@@ -71,31 +75,36 @@ func TestValidatingTransport(t *testing.T) {
 			},
 		}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: sig,
+				Signature: enc(sig),
 				KeyID:     successFpr,
 			}, {
-				Signature: "invalid-sig",
+				Signature: enc("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "no valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: "invalid-sig",
+				Signature: enc("invalid-sig"),
+				KeyID:     successFpr,
+			}}, errorExpected: false, attError: nil},
+		{name: "sig not base64 encoded", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+			{
+				Signature: sig,
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "invalid secret", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: "invalid-sig",
+				Signature: enc("invalid-sig"),
 				KeyID:     "invalid-fpr",
 			}}, errorExpected: false, attError: nil},
 		{name: "valid sig over another host", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: anotherSig,
+				Signature: enc(anotherSig),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuth, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
 		{name: "invalid attestation authority error", auth: invalidAuth, expected: nil, attestations: []metadata.PGPAttestation{
 			{
-				Signature: sig,
+				Signature: enc(sig),
 				KeyID:     successFpr,
 			}}, errorExpected: true, attError: nil},
 	}
