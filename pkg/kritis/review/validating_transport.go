@@ -47,6 +47,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, err
 	}
 	keys[fingerprint] = key
+	glog.Infof("----> Found attestor with key fingerprint %v", fingerprint)
 
 	out := []attestation.ValidatedAttestation{}
 	host, err := container.NewAtomicContainerSig(image, map[string]string{})

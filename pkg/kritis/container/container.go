@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
@@ -117,12 +118,12 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig string) error {
 	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error verifying signature")
 	}
 	// Unmarshall the json host string to get AtomicContainerSig struct
 	var host AtomicContainerSig
 	if err := json.Unmarshal(hostSig, &host); err != nil {
-		return err
+		return errors.Wrap(err, "error unmarshaling json")
 	}
 
 	if !host.Equals(acs) {

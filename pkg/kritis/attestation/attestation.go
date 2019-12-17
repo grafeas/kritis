@@ -21,10 +21,12 @@ package attestation
 import (
 	"bytes"
 	"crypto"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
 
@@ -66,6 +68,7 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 // GetPlainMessage verifies if the image is attested using the PEM
 // encoded public key and returns the plain text in bytes
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
+	glog.Infof("----> getting plaing message for key %v, signature %v", pubKey, sig)
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return nil, errors.Wrap(err, "read armored key ring")
@@ -83,12 +86,17 @@ func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	// MessageDetails.UnverifiedBody signature is not verified until we read it.
 	// This will call PublicKey.VerifySignature for the keys in the keyring.
 	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
+	glog.Infof("---> message details %v", md)
+	glog.Infof("----> plaintext %v %s", plaintext, string(plaintext))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not verify armor signature")
 	}
 	// Make sure after reading the UnverifiedBody above, there is no signature error.
-	if md.SignatureError != nil || md.Signature == nil {
-		return nil, fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
+	if md.SignatureError != nil {
+		return nil, fmt.Errorf("bad signature found: %s", md.SignatureError)
+	}
+	if md.Signature == nil {
+		return nil, fmt.Errorf("no signature found for given key")
 	}
 
 	return plaintext, nil

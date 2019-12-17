@@ -45,11 +45,6 @@ spec:
 // Secret name for test-attestor
 var aaSecret = "test-attestor"
 
-// CRDs is a map of CRD type to names of the expected CRDs to create.
-var crdNames = map[string]string{
-	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
-}
-
 func createAttestationAuthority(t *testing.T, ns string) {
 	t.Helper()
 	// Generate a key value pair
@@ -82,7 +77,8 @@ func createAttestationAuthority(t *testing.T, ns string) {
 	createAA(t, ns, pubKeyEnc)
 }
 
-func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
+// crdNames is a map of CRD type to names of the expected CRDs to create.
+func waitForCRDExamples(t *testing.T, ns *v1.Namespace, crdNames map[string]string) {
 	t.Helper()
 	t.Logf("Waiting for CRD examples ...")
 	for crd, name := range crdNames {

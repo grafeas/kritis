@@ -210,6 +210,20 @@ setup-integration-local: setup-integration-local
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
 
+.PHONY: setup-gap-temp
+setup-gap-temp: setup-gap-temp
+	cat > /tmp/note_payload.json << EOM \
+{ \
+  "name": "projects/$(GCP_PROJECT)/notes/attestor-note-1" \
+  "attestation": { \
+    "hint": { \
+      "human_readable_name": "bla bla" \
+    } \
+  } \
+} \
+EOM
+
+
 .PHONY: just-the-integration-test
 just-the-integration-test:
 	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"

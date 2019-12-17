@@ -1,0 +1,7 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: GenericAttestationPolicy
+metadata:
+  name: my-gap
+spec:
+  attestationAuthorityNames:
+  - test-attestor-1
