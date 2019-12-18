@@ -4,4 +4,5 @@ metadata:
   name: my-gap
   namespace: default
 spec:
-  attestationAuthorityName: kritis-authority
+  attestationAuthorityNames:
+  - kritis-authority

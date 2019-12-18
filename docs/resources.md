@@ -47,6 +47,7 @@ metadata:
     name: my-isp
     namespace: example-namespace
 spec:
+  attestationAuthorityName: kritis-authority
   imageAllowlist:
   - gcr.io/my-project/allowlist-image@sha256:<DIGEST>
   packageVulnerabilityPolicy:
@@ -87,6 +88,7 @@ Image Security Policy Spec description:
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 |imageAllowlist | | List of images that are allowlisted and are not inspected by Admission Controller.|
+|attestationAuthorityName | | Attestation authority name for adding attestation.|
 |packageVulnerabilityPolicy.allowlistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
@@ -105,6 +107,12 @@ Here are the valid values for Policy Specs.
 |                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchaable vulnerabilities. |
 |                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
 |                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in allowlist. |
+
+### Image Security Policy Behavior
+An Image Security Policy will evaluate an image based on vulnerability policy specified in `packageVulnerabilityPolicy`.
+
+If the `attestationAuthorityName` field is specified in ISP with a non-empty value, ISP decision based on `packageVulnerabilityPolicy`
+will create an attestation for the specified attestation authority. The attestation will serve as a cache for fast decision next time.
 
 ## AttestationAuthority CRD
 
