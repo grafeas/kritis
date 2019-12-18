@@ -406,7 +406,7 @@ func TestKritisGAPLogic(t *testing.T) {
 	}
 }
 
-func XTestKritisISPLogic(t *testing.T) {
+func TestKritisISPLogic(t *testing.T) {
 	cs, ns, tearDown := setUp(t)
 	defer tearDown(t)
 
@@ -547,7 +547,7 @@ func XTestKritisISPLogic(t *testing.T) {
 	}
 }
 
-func XTestKritisCron(t *testing.T) {
+func TestKritisCron(t *testing.T) {
 	cs, ns, tearDown := setUp(t)
 	defer tearDown(t)
 

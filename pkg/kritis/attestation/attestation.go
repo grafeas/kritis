@@ -21,7 +21,6 @@ package attestation
 import (
 	"bytes"
 	"crypto"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"strings"
