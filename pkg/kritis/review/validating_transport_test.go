@@ -109,6 +109,7 @@ func TestValidatingTransport(t *testing.T) {
 				cMock.SetError(tc.attError)
 			}
 			vat := AttestorValidatingTransport{cMock, tc.auth}
+
 			atts, err := vat.GetValidatedAttestations(testutil.QualifiedImage)
 			if err != nil && !tc.errorExpected {
 				t.Fatal("Error not expected ", err.Error())

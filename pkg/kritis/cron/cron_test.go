@@ -71,7 +71,7 @@ type imageViolations struct {
 	imageMap map[string]bool
 }
 
-func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.Fetcher) ([]policy.Violation, error) {
+func (iv *imageViolations) violationChecker(isp v1beta1.ImageSecurityPolicy, image string, client metadata.ReadWriteClient) ([]policy.Violation, error) {
 	if ok := iv.imageMap[image]; ok {
 		v := securitypolicy.NewViolation(&metadata.Vulnerability{Severity: "foo"}, 0, "")
 		vs := []policy.Violation{}

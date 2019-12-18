@@ -115,13 +115,16 @@ func Test_AdmissionResponse(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			mReviewer := func(client metadata.Fetcher) reviewer {
+			mReviewer := func() reviewer {
 				return testutil.NewReviewer(tc.reviewGAPErr, tc.reviewISPErr, tc.expectedMsg)
 			}
 			mockConfig := config{
 				retrievePod: mockValidPod(),
-				fetchMetadataClient: func(config *Config) (metadata.Fetcher, error) {
-					return testutil.NilFetcher()()
+				fetchMetadataClient: func(config *Config) (metadata.ReadWriteClient, error) {
+					return testutil.NilReadWriteClient()()
+				},
+				fetchMetadataReadOnlyClient: func(config *Config) (metadata.ReadOnlyClient, error) {
+					return testutil.NilReadOnlyClient()()
 				},
 				fetchGenericAttestationPolicies: mockGAP,
 				fetchImageSecurityPolicies:      mockISP,

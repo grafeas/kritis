@@ -88,7 +88,7 @@ func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) strin
 }
 
 // GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
-func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
+func GetOrCreateAttestationNote(c metadata.ReadWriteClient, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	n, err := c.AttestationNote(a)
 	if err == nil {
 		return n, nil

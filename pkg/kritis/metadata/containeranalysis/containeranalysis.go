@@ -40,12 +40,13 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
-// Client struct implements Fetcher Interface.
+// Client struct implements ReadWriteClient and ReadOnlyClient interfaces.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context
 }
 
+// TODO: separate constructor methods for r/w and r/o clients
 func New() (*Client, error) {
 	ctx := context.Background()
 	client, err := ca.NewGrafeasV1Beta1Client(ctx)
@@ -65,7 +66,7 @@ func (c Client) Close() {
 
 //Vulnerabilities gets Package Vulnerabilities Occurrences for a specified image.
 func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability, error) {
-	occs, err := c.fetchOccurrence(containerImage, PkgVulnerability)
+	occs, err := c.fetchVulnerabilityOccurrence(containerImage, PkgVulnerability)
 	if err != nil {
 		return nil, err
 	}
@@ -75,34 +76,74 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 			vulnz = append(vulnz, *v)
 		}
 	}
+
 	return vulnz, nil
 }
 
-//Attestations gets AttesationAuthority Occurrences for a specified image.
-func (c Client) Attestations(containerImage string) ([]metadata.PGPAttestation, error) {
-	occs, err := c.fetchOccurrence(containerImage, AttestationAuthority)
+//Attestations gets AttesationAuthority Occurrences for a specified image, using the note specified in the AttestationAuthority provided.
+// This may take a few seconds to retrieve an attestation occurrence, if it was created very recently.
+// For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
+// For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
+// In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+	var p []metadata.PGPAttestation
+
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
-	p := make([]metadata.PGPAttestation, len(occs))
-	for i, occ := range occs {
-		p[i] = util.GetPgpAttestationFromOccurrence(occ)
+	for _, occ := range occs {
+		pgp := util.GetPgpAttestationFromOccurrence(occ)
+		p = append(p, pgp)
 	}
+
 	return p, nil
 }
 
-func (c Client) fetchOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
+func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
+
 	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
 		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 	}
+
 	it := c.client.ListOccurrences(c.ctx, req)
 	occs := []*grafeas.Occurrence{}
+	for {
+		occ, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		occs = append(occs, occ)
+	}
+	return occs, nil
+}
+
+func (c Client) fetchAttestationOccurrence(containerImage string, kind string, auth *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
+	// Make sure container image valid and is a GCR image
+	if !isValidImageOnGCR(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	}
+
+	noteName := fmt.Sprintf("%s/notes/%s", auth.Spec.NoteReference, auth.Name)
+	req := &grafeas.ListNoteOccurrencesRequest{
+		Name: noteName,
+		// Example:
+		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
+		PageSize: constants.PageSize,
+	}
+
+	occs := []*grafeas.Occurrence{}
+	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
 		occ, err := it.Next()
 		if err == iterator.Done {
@@ -136,17 +177,9 @@ func isRegistryGCR(r string) bool {
 	return true
 }
 
-func getProjectFromNoteReference(ref string) (string, error) {
-	str := strings.Split(ref, "/")
-	if len(str) < 3 {
-		return "", fmt.Errorf("invalid Note Reference. should be in format <api>/projects/<project_id>")
-	}
-	return str[2], nil
-}
-
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +207,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 
 //AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -184,10 +217,10 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 	return c.client.GetNote(c.ctx, req)
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Client) CreateAttestationOccurence(note *grafeas.Note,
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
+func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
+	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
@@ -219,10 +252,10 @@ func (c Client) CreateAttestationOccurence(note *grafeas.Note,
 		NoteName: note.GetName(),
 		Details:  attestationDetails,
 	}
-	// Create the AttestationAuthrity Occurrence in the Project AttestationAuthority Note.
+	// Create the AttestationAuthrity Occurrence.
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)
@@ -240,7 +273,7 @@ func getProjectFromContainerImage(image string) string {
 
 // DeleteAttestationNote deletes a note for given AttestationAuthority
 func (c Client) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
-	noteProject, err := getProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return err
 	}
@@ -255,5 +288,6 @@ func (c Client) DeleteOccurrence(ID string) error {
 	req := &grafeas.DeleteOccurrenceRequest{
 		Name: ID,
 	}
+	glog.Infof("executed deletion of occurrence=%s", ID)
 	return c.client.DeleteOccurrence(c.ctx, req)
 }

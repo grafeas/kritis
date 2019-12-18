@@ -33,7 +33,7 @@ type ValidatingTransport interface {
 
 // Implements ValidatingTransport.
 type AttestorValidatingTransport struct {
-	Client   metadata.Fetcher
+	Client   metadata.ReadOnlyClient
 	Attestor v1beta1.AttestationAuthority
 }
 
@@ -52,7 +52,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		glog.Error(err)
 		return nil, err
 	}
-	attestations, err := avt.Client.Attestations(image)
+	attestations, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		glog.Error(err)
 		return nil, err

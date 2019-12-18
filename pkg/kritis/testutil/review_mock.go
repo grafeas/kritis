@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -37,14 +38,14 @@ func NewReviewer(gapErr, ispErr bool, s string) *ReviewerMock {
 	}
 }
 
-func (r *ReviewerMock) ReviewGAP(images []string, isps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+func (r *ReviewerMock) ReviewGAP(images []string, isps []v1beta1.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error {
 	if !r.hasGAPErr {
 		return nil
 	}
 	return fmt.Errorf(r.message)
 }
 
-func (r *ReviewerMock) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
+func (r *ReviewerMock) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error {
 	if !r.hasISPErr {
 		return nil
 	}

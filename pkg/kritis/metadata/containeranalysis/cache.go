@@ -24,8 +24,9 @@ import (
 )
 
 // Cache struct defines Cache for container analysis client.
+// Implements ReadWriteClient interface.
 type Cache struct {
-	client metadata.Fetcher
+	client metadata.ReadWriteClient
 	vuln   map[string][]metadata.Vulnerability
 	att    map[string][]metadata.PGPAttestation
 	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
@@ -62,12 +63,12 @@ func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 	return v, err
 }
 
-// Attestations gets AttesationAuthority Occurrences for a specified image from cache or from client.
-func (c Cache) Attestations(image string) ([]metadata.PGPAttestation, error) {
+// Attestations gets Attestations for a specified image and a specified AttestationAuthority from cache or from client.
+func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
 	if a, ok := c.att[image]; ok {
 		return a, nil
 	}
-	a, err := c.client.Attestations(image)
+	a, err := c.client.Attestations(image, aa)
 	if err != nil {
 		c.att[image] = a
 	}
@@ -91,7 +92,7 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas
 	return n, err
 }
 
-// CreateAttestationOccurence creates an Attestation occurrence for a given image and secret.
-func (c Cache) CreateAttestationOccurence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret) (*grafeas.Occurrence, error) {
-	return c.client.CreateAttestationOccurence(n, image, p)
+// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
+func (c Cache) CreateAttestationOccurrence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+	return c.client.CreateAttestationOccurrence(n, image, p, proj)
 }
