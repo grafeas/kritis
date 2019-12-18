@@ -210,6 +210,12 @@ setup-integration-local: setup-integration-local
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
 
+# Fully clean-up local integration testing resources
+.PHONY: clean-integration-local
+clean-integration-local:
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
+		&& gcloud --project=$(GCP_PROJECT) container clusters delete $(GCP_CLUSTER)
+
 .PHONY: just-the-integration-test
 just-the-integration-test:
 	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"
