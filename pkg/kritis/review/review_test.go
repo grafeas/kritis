@@ -57,7 +57,7 @@ func TestReviewGAP(t *testing.T) {
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
-			AdmissionWhitelistPatterns: []v1beta1.AdmissionWhitelistPatternSpec{
+			AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
 				{NamePattern: "allowed_image_name"},
 			},
 			AttestationAuthorityNames: []string{"test"},

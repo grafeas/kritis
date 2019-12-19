@@ -31,13 +31,13 @@ type GenericAttestationPolicy struct {
 	Spec GenericAttestationPolicySpec `json:"spec"`
 }
 
-type AdmissionWhitelistPatternSpec struct {
+type AdmissionAllowlistPatternSpec struct {
 	NamePattern string `json:"namePattern"`
 }
 
 // GenericAttestationPolicySpec is the spec for a GenericAttestationPolicy resource
 type GenericAttestationPolicySpec struct {
-	AdmissionWhitelistPatterns []AdmissionWhitelistPatternSpec `json:"admissionWhitelistPatterns"`
+	AdmissionAllowlistPatterns []AdmissionAllowlistPatternSpec `json:"admissionAllowlistPatterns"`
 	AttestationAuthorityNames  []string                        `json:"attestationAuthorityNames"`
 }
 

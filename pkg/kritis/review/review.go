@@ -56,7 +56,7 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 func generateGapAllowlist(gaps []v1beta1.GenericAttestationPolicy) []string {
 	allowlist := []string{}
 	for _, gap := range gaps {
-		for _, pattern := range gap.Spec.AdmissionWhitelistPatterns {
+		for _, pattern := range gap.Spec.AdmissionAllowlistPatterns {
 			allowlist = append(allowlist, pattern.NamePattern)
 		}
 	}

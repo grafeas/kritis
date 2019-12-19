@@ -66,7 +66,7 @@ func imageRefMatch(image string, pattern string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// Make sure images have the same context
+	// Make sure c
 	if reflect.DeepEqual(allowRef.Context(), imageRef.Context()) {
 		return true, nil
 	}
@@ -74,17 +74,24 @@ func imageRefMatch(image string, pattern string) (bool, error) {
 }
 
 // Do an image match based on name pattern.
-// See https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns
+// This method uses name pattern matching,
+// where the pattern is the path to a single image by
+// exact match, or to any images matching a pattern using the wildcard symbol
+// (`*`). The wildcards may only be present in the end, and not anywhere
+// else in the pattern, i.e., `gcr.io/n*x` is not allowed,
+// but `gcr.io/nginx*` is allowed. Also wilcards can be not used to match `/`,
+// i.e., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+// but it does not match `gcr.io/nginx/image`.
+// See more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns
 func imageNamePatternMatch(image string, pattern string) (bool, error) {
 	if len(pattern) == 0 {
 		return false, errors.New("empty pattern")
 	}
 	if pattern[len(pattern)-1] == '*' {
 		pattern = pattern[:len(pattern)-1]
-		if strings.HasPrefix(image, pattern) {
-			if strings.LastIndex(image, "/") < len(pattern) {
-				return true, nil
-			}
+		if strings.HasPrefix(image, pattern) &&
+			strings.LastIndex(image, "/") < len(pattern) {
+			return true, nil
 		}
 	} else {
 		if image == pattern {
@@ -127,7 +134,6 @@ func imageInGlobalAllowlist(image string) (bool, error) {
 }
 
 // Check if image is allowed by a GAP allowlist.
-// This method uses name pattern matching.
 func imageInGapAllowlist(image string, allowlist []string) (bool, error) {
 	return imageInAllowlistByPattern(image, allowlist)
 }
