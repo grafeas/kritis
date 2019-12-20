@@ -375,6 +375,28 @@ func TestReviewISP(t *testing.T) {
 			shouldAttestImage: false,
 			shouldErr:         false,
 		},
+		{
+			name:              "regression: vulnz w old non-encoded attestation should handle violations",
+			image:             vulnImage,
+			isWebhook:         true,
+			// Invalid because not base64-encoded.
+			attestations:      []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}},
+			handledViolations: 1,
+			isAttested:        false,
+			shouldAttestImage: false,
+			shouldErr:         true,
+		},
+		{
+			name:              "regression: no vulnz w old non-encoded attestation should create new attestation",
+			image:             noVulnImage,
+			isWebhook:         true,
+			// Invalid because not base64-encoded.
+			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: secFpr}},
+			handledViolations: 0,
+			isAttested:        false,
+			shouldAttestImage: true,
+			shouldErr:         false,
+		},
 	}
 	for _, tc := range tests {
 		th := violation.MemoryStrategy{
