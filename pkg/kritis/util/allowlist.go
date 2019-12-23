@@ -57,6 +57,11 @@ func RemoveGapAllowedImages(images []string, allowlist []string) []string {
 }
 
 // Do an image match based on reference.
+// It checks whether the image and the pattern resolves to same URL,
+// e.g., gcr.io/kritis-project/preinstall.
+// Note that it does not check digest or tag in the pattern.
+// For example, a pattern of gcr.io/hello/world:latest will match any image
+// in the gcr.io/hello/world repository.
 func imageRefMatch(image string, pattern string) (bool, error) {
 	allowRef, err := name.ParseReference(pattern, name.WeakValidation)
 	if err != nil {

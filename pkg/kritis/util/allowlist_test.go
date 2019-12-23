@@ -192,11 +192,6 @@ func Test_imageInGlobalAllowlist(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "test image with digest not in allowlist",
-			image:    "gcr.io/kritis-project/kritis-server2@sha256:0000000000000000000000000000000000000000000000000000000000000000",
-			expected: true,
-		},
-		{
 			name:     "test image not in allowlist",
 			image:    "some/image",
 			expected: false,
