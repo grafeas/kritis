@@ -57,6 +57,9 @@ func TestReviewGAP(t *testing.T) {
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
+			AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
+				{NamePattern: "allowed_image_name"},
+			},
 			AttestationAuthorityNames: []string{"test"},
 		},
 	}
@@ -107,6 +110,22 @@ func TestReviewGAP(t *testing.T) {
 			attestations: []metadata.PGPAttestation{},
 			isAttested:   false,
 			shouldErr:    true,
+		},
+		{
+			name:         "allowlisted image",
+			image:        "allowed_image_name",
+			policies:     gaps,
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    false,
+		},
+		{
+			name:         "image allowlisted in 1 policy",
+			image:        "allowed_image_name",
+			policies:     twoGaps,
+			attestations: []metadata.PGPAttestation{},
+			isAttested:   false,
+			shouldErr:    false,
 		},
 		{
 			name:         "image without policies",

@@ -52,12 +52,26 @@ func New(client metadata.Fetcher, c *Config) Reviewer {
 	}
 }
 
+// Flatten allowlist from a list of generic attestation policies
+func generateGapAllowlist(gaps []v1beta1.GenericAttestationPolicy) []string {
+	allowlist := []string{}
+	for _, gap := range gaps {
+		for _, pattern := range gap.Spec.AdmissionAllowlistPatterns {
+			allowlist = append(allowlist, pattern.NamePattern)
+		}
+	}
+	return allowlist
+}
+
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
 	images = util.RemoveGloballyAllowedImages(images)
+
+	images = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
+
 	if len(images) == 0 {
-		glog.Infof("images are all globally allowed, returning successful status: %s", images)
+		glog.Infof("images are all globally or gap allowed, returning successful status: %s", images)
 		return nil
 	}
 
