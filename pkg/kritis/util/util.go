@@ -46,7 +46,7 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerabi
 
 func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	for _, pi := range pis {
-		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
+		if pi.GetFixedLocation() == nil || pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
 			return false
 		}

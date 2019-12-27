@@ -87,3 +87,72 @@ func TestGetResource(t *testing.T) {
 	e := &grafeas.Resource{Uri: "https://gcr.io/test/image:sha"}
 	testutil.DeepEqual(t, e, r)
 }
+
+func TestIsFixable(t *testing.T) {
+	tests := []struct {
+		name            string
+		pis             []*vulnerability.PackageIssue
+		expectedFixable bool
+	}{
+		{"fix version normal is fixable",
+			[]*vulnerability.PackageIssue{
+				{
+					AffectedLocation: &vulnerability.VulnerabilityLocation{},
+					FixedLocation: &vulnerability.VulnerabilityLocation{
+						Version: &pkg.Version{
+							Kind: pkg.Version_NORMAL,
+						},
+					},
+				},
+			},
+			true,
+		},
+		{"fix version maximum is not fixable",
+			[]*vulnerability.PackageIssue{
+				{
+					AffectedLocation: &vulnerability.VulnerabilityLocation{},
+					FixedLocation: &vulnerability.VulnerabilityLocation{
+						Version: &pkg.Version{
+							Kind: pkg.Version_MAXIMUM,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{"fix location nil is not fixable",
+			[]*vulnerability.PackageIssue{
+				{
+					AffectedLocation: &vulnerability.VulnerabilityLocation{},
+					FixedLocation:    nil,
+				},
+			},
+			false,
+		},
+		{"one issue fixable one issue not fixable is not fixable",
+			[]*vulnerability.PackageIssue{
+				{
+					AffectedLocation: &vulnerability.VulnerabilityLocation{},
+					FixedLocation: &vulnerability.VulnerabilityLocation{
+						Version: &pkg.Version{
+							Kind: pkg.Version_NORMAL,
+						},
+					},
+				},
+				{
+					AffectedLocation: &vulnerability.VulnerabilityLocation{},
+					FixedLocation:    nil,
+				},
+			},
+			false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actualFixable := IsFixAvailable(tc.pis)
+			if actualFixable != tc.expectedFixable {
+				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedFixable, actualFixable)
+			}
+		})
+	}
+}
