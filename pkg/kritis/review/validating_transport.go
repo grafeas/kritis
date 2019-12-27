@@ -43,7 +43,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 	keys := map[string]string{}
 	key, fingerprint, err := secrets.KeyAndFingerprint(avt.Attestor.Spec.PublicKeyData)
 	if err != nil {
-		glog.Infof("Error parsing key for %q: %v", avt.Attestor.Name, err)
+		glog.Errorf("Error parsing key for %q: %v", avt.Attestor.Name, err)
 		return nil, err
 	}
 	keys[fingerprint] = key

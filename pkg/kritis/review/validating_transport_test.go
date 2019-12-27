@@ -31,7 +31,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
-func enc(in string) string {
+func encodeB64(in string) string {
 	return base64.StdEncoding.EncodeToString([]byte(in))
 }
 
@@ -75,15 +75,15 @@ func TestValidatingTransport(t *testing.T) {
 			},
 		}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: enc(sig),
+				Signature: encodeB64(sig),
 				KeyID:     successFpr,
 			}, {
-				Signature: enc("invalid-sig"),
+				Signature: encodeB64("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "no valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: enc("invalid-sig"),
+				Signature: encodeB64("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "sig not base64 encoded", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
@@ -93,18 +93,18 @@ func TestValidatingTransport(t *testing.T) {
 			}}, errorExpected: false, attError: nil},
 		{name: "invalid secret", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: enc("invalid-sig"),
+				Signature: encodeB64("invalid-sig"),
 				KeyID:     "invalid-fpr",
 			}}, errorExpected: false, attError: nil},
 		{name: "valid sig over another host", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
-				Signature: enc(anotherSig),
+				Signature: encodeB64(anotherSig),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuth, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
 		{name: "invalid attestation authority error", auth: invalidAuth, expected: nil, attestations: []metadata.PGPAttestation{
 			{
-				Signature: enc(sig),
+				Signature: encodeB64(sig),
 				KeyID:     successFpr,
 			}}, errorExpected: true, attError: nil},
 	}
