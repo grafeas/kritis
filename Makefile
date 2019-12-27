@@ -179,6 +179,8 @@ gcb-signer-push-image: gcb-signer-image
 	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
 
 # Fully setup local integration testing: only needs to run just once
+# TODO: move entire setup into bash script
+# TODO: enable necessary dependency APIs (GKE, containeranslysis) or give instructions to do so
 .PHONY: setup-integration-local
 setup-integration-local: setup-integration-local
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
@@ -209,20 +211,13 @@ setup-integration-local: setup-integration-local
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.notes.occurrences.viewer
 
-.PHONY: setup-gap-temp
-setup-gap-temp: setup-gap-temp
-	cat > /tmp/note_payload.json << EOM \
-{ \
-  "name": "projects/$(GCP_PROJECT)/notes/attestor-note-1" \
-  "attestation": { \
-    "hint": { \
-      "human_readable_name": "bla bla" \
-    } \
-  } \
-} \
-EOM
-
+.PHONY: test-setup
+test-setup: test-setup
+	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
 
 .PHONY: just-the-integration-test
 just-the-integration-test:

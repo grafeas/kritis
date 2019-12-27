@@ -92,7 +92,6 @@ cat > ${TMPDIR}/note_payload.json << EOM
 }
 EOM
 
-# TODO: below is v1beta1, rest is v1, should be consistent
 curl -X POST \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
@@ -103,6 +102,7 @@ curl -X POST \
 gpg --homedir=${TMPDIR} --import "${ATTESTOR_1_SECRET_KEY_PATH}"
 gpg --homedir=${TMPDIR} --import "${ATTESTOR_2_SECRET_KEY_PATH}"
 
+# To generate new keys suitable for tests, you can use this as a starting point:
 #gpg --homedir=${TMPDIR} --batch --gen-key <(
 #  cat <<- EOF
 #    Key-Type: RSA
@@ -115,7 +115,6 @@ gpg --homedir=${TMPDIR} --import "${ATTESTOR_2_SECRET_KEY_PATH}"
 #EOF
 #)
 
-#gpg --armor --export "${ATTESTOR_EMAIL}" > ${TMPDIR}/generated-key.pgp
 PUBLIC_KEY_FINGERPRINT=$(gpg --homedir=${TMPDIR} --with-colons --list-keys ${ATTESTOR_EMAIL} | grep '^fpr'  | cut --delimiter=: -f 10 - )
 PUBLIC_KEY=$(gpg --homedir=${TMPDIR} --armor --export ${ATTESTOR_EMAIL})
 
@@ -141,22 +140,6 @@ gpg \
     --sign ${TMPDIR}/generated_payload.json
 
 
-#cat > ${TMPDIR}/attestation.json << EOM
-#{
-#  "resourceUri": "${IMAGE_TO_ATTEST}",
-#  "note_name": "${NOTE_URI}",
-#  "attestation": {
-#     "serialized_payload": "$(base64 --wrap=0 ${TMPDIR}/generated_payload.json)",
-#     "signatures": [
-#        {
-#         "public_key_id": "B0F4423C50957EDD41EBC46BAA89F39DD6429920",
-#         "signature": "$(base64 --wrap=0 ${TMPDIR}/generated_signature.pgp)"
-#         }
-#     ]
-#  }
-# }
-#EOM
-
 # TODO get key id programatically
 cat > ${TMPDIR}/attestation.json << EOM
 {
@@ -168,7 +151,7 @@ cat > ${TMPDIR}/attestation.json << EOM
      "attestation": {
         "pgpSignedAttestation": {
           "signature": "$(base64 --wrap=0 ${TMPDIR}/generated_signature.pgp)",
-	  "pgpKeyId": "EDEEBA8C1643F102542055B1B77522D28FA683D6"
+          "pgpKeyId": "EDEEBA8C1643F102542055B1B77522D28FA683D6"
         }
      }
   }
