@@ -46,13 +46,13 @@ func TestReviewGAP(t *testing.T) {
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sig, KeyID: secFpr}}
+	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	invalidAtts := []metadata.PGPAttestation{{Signature: invalidSig, KeyID: secFpr}}
+	invalidAtts := []metadata.PGPAttestation{{Signature: encodeB64(invalidSig), KeyID: secFpr}}
 
 	// A policy with a single attestor 'test'.
 	oneGAP := []v1beta1.GenericAttestationPolicy{
@@ -231,7 +231,7 @@ func TestReviewISP(t *testing.T) {
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}}
+	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sigVuln), KeyID: secFpr}}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
 			ObjectMeta: metav1.ObjectMeta{
@@ -339,7 +339,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: secFpr}},
+			attestations:      []metadata.PGPAttestation{{Signature: encodeB64(sigNoVuln), KeyID: secFpr}},
 			handledViolations: 0,
 			isAttested:        true,
 			shouldAttestImage: false,
@@ -373,6 +373,28 @@ func TestReviewISP(t *testing.T) {
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
+			shouldErr:         false,
+		},
+		{
+			name:      "regression: vulnz w old non-encoded attestation should handle violations",
+			image:     vulnImage,
+			isWebhook: true,
+			// Invalid because not base64-encoded.
+			attestations:      []metadata.PGPAttestation{{Signature: sigVuln, KeyID: secFpr}},
+			handledViolations: 1,
+			isAttested:        false,
+			shouldAttestImage: false,
+			shouldErr:         true,
+		},
+		{
+			name:      "regression: no vulnz w old non-encoded attestation should create new attestation",
+			image:     noVulnImage,
+			isWebhook: true,
+			// Invalid because not base64-encoded.
+			attestations:      []metadata.PGPAttestation{{Signature: sigNoVuln, KeyID: secFpr}},
+			handledViolations: 0,
+			isAttested:        false,
+			shouldAttestImage: true,
 			shouldErr:         false,
 		},
 	}

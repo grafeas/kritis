@@ -17,6 +17,7 @@ limitations under the License.
 package containeranalysis
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -232,7 +233,7 @@ func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 		return nil, err
 	}
 	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: sig,
+		Signature: base64.StdEncoding.EncodeToString([]byte(sig)),
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
 			PgpKeyId: fingerprint,
 		},
