@@ -67,7 +67,6 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 // GetPlainMessage verifies if the image is attested using the PEM
 // encoded public key and returns the plain text in bytes
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
-	glog.Infof("----> getting plaing message for key %v, signature %v", pubKey, sig)
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
 		return nil, errors.Wrap(err, "read armored key ring")
@@ -85,8 +84,6 @@ func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	// MessageDetails.UnverifiedBody signature is not verified until we read it.
 	// This will call PublicKey.VerifySignature for the keys in the keyring.
 	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
-	glog.Infof("---> message details %v", md)
-	glog.Infof("----> plaintext %v %s", plaintext, string(plaintext))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not verify armor signature")
 	}
