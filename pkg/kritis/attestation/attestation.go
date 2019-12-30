@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
 
