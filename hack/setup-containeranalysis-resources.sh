@@ -71,8 +71,8 @@ echo Created tempdir ${TMPDIR}
 ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
 NOTE_ID=test-attestor-1
 NOTE_URI=projects/${PROJECT_ID}/notes/${NOTE_ID}
-IMAGE_PATH=gcr.io/${PROJECT_ID}/acceptable-vulnz
-IMAGE_DIGEST=sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6
+IMAGE_PATH=gcr.io/${PROJECT_ID}/nginx-digest-whitelist
+IMAGE_DIGEST=sha256:56e0af16f4a9d2401d3f55bc8d214d519f070b5317512c87568603f315a8be72
 IMAGE_TO_ATTEST="https://${IMAGE_PATH}@${IMAGE_DIGEST}"
 ATTESTOR_NAME=test-attestor-1
 ATTESTOR_EMAIL=test-attestor-1@example.com

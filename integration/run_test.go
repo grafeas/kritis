@@ -387,22 +387,53 @@ func TestKritisGAPLogic(t *testing.T) {
 	cs, ns, tearDown := setUpGAP(t)
 	defer tearDown(t)
 
-	path, err := processTemplate("vulnz/acceptable-vulnz.yaml", ns.Name)
-	defer cleanupTemplate(t, path, ns.Name)
-	if err != nil {
-		t.Fatalf("failed to process template: %v", err)
+	var testCases = []struct {
+		template string
+
+		pods []string
+		err string
+	}{
+		{
+			"nginx/nginx-digest.yaml",
+			[]string{"nginx-digest"},
+			"",
+		},
+		{
+			"java/java-with-digest.yaml",
+			[]string{},
+			"not atested",
+		},
 	}
 
-	cmd := exec.Command("kubectl", "apply", "-f", path, "--namespace", ns.Name)
-	t.Logf("Running: %s", cmd.Args)
-	out, err := integration_util.RunCmdOut(cmd)
+	for _, tc := range testCases {
+		path, err := processTemplate(tc.template, ns.Name)
+		defer cleanupTemplate(t, path, ns.Name)
+		if err != nil {
+			t.Fatalf("failed to process template: %v", err)
+		}
 
-	if err != nil {
-		t.Fatalf("failed: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
-	}
+		cmd := exec.Command("kubectl", "apply", "-f", path, "--namespace", ns.Name)
+		t.Logf("Running: %s", cmd.Args)
+		out, err := integration_util.RunCmdOut(cmd)
 
-	if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), "image-with-acceptable-vulnz"); err != nil {
-		t.Errorf("timeout waiting for pod\n%s\n%s", kritisLogs(ns), out)
+		if err != nil && len(tc.err) == 0 {
+			t.Fatalf("failed because error not expected: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
+		}
+
+		if len(tc.err) > 0 {
+			if err == nil {
+				t.Fatalf("failed because error was expected")
+			}
+			if !strings.Contains(err.Error(), tc.err) {
+				t.Fatalf("wrong error: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
+			}
+		}
+
+		for _, pod := range tc.pods {
+			if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), pod); err != nil {
+				t.Errorf("timeout waiting for pod\n%s\n%s", kritisLogs(ns), out)
+			}
+		}
 	}
 }
 
