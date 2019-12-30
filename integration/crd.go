@@ -37,7 +37,7 @@ kind: AttestationAuthority
 metadata:
   name: test-attestor
 spec:
-  noteReference: projects/kritis-int-test
+  noteReference: projects/%s
   privateKeySecretName: %s
   publicKeyData: %s`
 )
@@ -45,7 +45,7 @@ spec:
 // Secret name for test-attestor
 var aaSecret = "test-attestor"
 
-func createAttestationAuthority(t *testing.T, ns string) {
+func createAttestationAuthority(t *testing.T, project string, ns string) {
 	t.Helper()
 	// Generate a key value pair
 	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
@@ -74,7 +74,7 @@ func createAttestationAuthority(t *testing.T, ns string) {
 	}
 
 	// Create the Attestation authority
-	createAA(t, ns, pubKeyEnc)
+	createAA(t, project, ns, pubKeyEnc)
 }
 
 // crdNames is a map of CRD type to names of the expected CRDs to create.
@@ -105,10 +105,10 @@ func createFileWithContents(t *testing.T, d string, c string) string {
 	return file.Name()
 }
 
-func createAA(t *testing.T, ns string, pubkey string) {
+func createAA(t *testing.T, project string, ns string, pubkey string) {
 	t.Helper()
 	cmd := exec.Command("kubectl", "apply", "-n", ns, "-f", "-")
-	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, aaSecret, pubkey)))
+	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, aaSecret, pubkey)))
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
