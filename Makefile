@@ -223,10 +223,6 @@ setup-integration-local: setup-integration-local
 		--role=roles/containeranalysis.occurrences.viewer
 	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
 
-.PHONY: test-setup
-test-setup: test-setup
-	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
-
 # Fully clean-up local integration testing resources
 .PHONY: clean-integration-local
 clean-integration-local:
