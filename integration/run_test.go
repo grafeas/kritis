@@ -401,7 +401,7 @@ func TestKritisGAPLogic(t *testing.T) {
 		{
 			"java/java-with-digest.yaml",
 			[]string{},
-			"not atested",
+			"not attested",
 		},
 	}
 
