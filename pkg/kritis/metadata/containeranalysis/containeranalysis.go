@@ -143,8 +143,6 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		PageSize: constants.PageSize,
 	}
 
-	glog.Infof("ListNoteOccurrenceRequest: %v", req)
-
 	occs := []*grafeas.Occurrence{}
 	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
@@ -156,7 +154,6 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 			return nil, err
 		}
 		occs = append(occs, occ)
-		glog.Infof("got occurrence: %v", occ)
 	}
 	return occs, nil
 }
