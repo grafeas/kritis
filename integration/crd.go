@@ -82,7 +82,8 @@ func createAttestationAuthority(t *testing.T, project string, ns string) {
 	createAA(t, project, ns, pubKeyEnc)
 }
 
-func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
+// crdNames is a map of CRD type to names of the expected CRDs to create.
+func waitForCRDExamples(t *testing.T, ns *v1.Namespace, crdNames map[string]string) {
 	t.Helper()
 	t.Logf("Waiting for CRD examples ...")
 	for crd, name := range crdNames {

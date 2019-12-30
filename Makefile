@@ -179,8 +179,11 @@ gcb-signer-push-image: gcb-signer-image
 	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
 
 # Fully setup local integration testing: only needs to run just once
+# TODO: move entire setup into bash script
+# TODO: enable necessary dependency APIs (GKE, containeranslysis) or give instructions to do so
 .PHONY: setup-integration-local
 setup-integration-local: setup-integration-local
+	gcloud --project=$(GCP_PROJECT) services enable container.googleapis.com
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
 		|| gcloud --project=$(GCP_PROJECT) container clusters create $(GCP_CLUSTER) \
 		--num-nodes=2 --zone=$(GCP_ZONE)
@@ -194,6 +197,9 @@ setup-integration-local: setup-integration-local
 		  --clusterrole=cluster-admin \
 		    --serviceaccount=kube-system:tiller
 	helm init --wait --service-account tiller
+	gcloud --project=$(GCP_PROJECT) services enable containerregistry.googleapis.com
+	gcloud --project=$(GCP_PROJECT) services enable containeranalysis.googleapis.com
+	gcloud --project=$(GCP_PROJECT) services enable containerscanning.googleapis.com
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6 \
 		gcr.io/$(GCP_PROJECT)/acceptable-vulnz:latest
@@ -209,6 +215,17 @@ setup-integration-local: setup-integration-local
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.notes.occurrences.viewer
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.occurrences.viewer
+	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
+
+.PHONY: test-setup
+test-setup: test-setup
+	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
 
 # Fully clean-up local integration testing resources
 .PHONY: clean-integration-local
