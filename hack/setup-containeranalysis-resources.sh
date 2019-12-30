@@ -14,6 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###############################################################################
+
+# This script creates Container Analysis resources which represent attestations
+# over images used in integration-testing the Generic Attestation Policy.
+# Occurrences and Notes are created in the project specified via --project flag.
+#
+# Specifically:
+# - Create a Note ${NOTE_ID}
+# - Create attestation Occurrence attached to this Note:
+#   * attesting ${IMAGE_TO_ATTEST}
+#   * signed with key derived from ${ATTESTOR_1_SECRET_KEY_PATH}
+#
+# The key ${ATTESTOR_1_SECRET_KEY_PATH} is a gpg secret key checked into this
+# source repo.  It can be used to sign messages, like in this script, as well as
+# to reconstruct the corresponding public key as needed.
+
 cleanup () {
   echo "Deleting Occurrences and Notes"
 
