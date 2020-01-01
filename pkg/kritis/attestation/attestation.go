@@ -68,9 +68,9 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read armored key ring")
 	}
-	buf := bytes.NewBuffer([]byte(sig))
+	buf := bytes.NewBufferString(sig)
 	armorBlock, err := armor.Decode(buf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode armor signature")
