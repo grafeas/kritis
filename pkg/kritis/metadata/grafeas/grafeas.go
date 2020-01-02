@@ -250,7 +250,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 
 func (c Client) fetchAttestationOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
 	req := &grafeas.ListNoteOccurrencesRequest{
-		Name: aa.Spec.NoteReference,
+		Name:     aa.Spec.NoteReference,
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
 	}
