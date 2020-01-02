@@ -150,7 +150,7 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, noteId, err := metadata.ParseNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 		},
 	}
 	note := grafeas.Note{
-		Name:             fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		Name:             aa.Spec.NoteReference,
 		ShortDescription: fmt.Sprintf("Image Policy Security Attestor"),
 		LongDescription:  fmt.Sprintf("Image Policy Security Attestor deployed in %s namespace", aa.Namespace),
 		Type: &grafeas.Note_AttestationAuthority{
@@ -171,21 +171,16 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 
 	req := &grafeas.CreateNoteRequest{
 		Note:   &note,
-		NoteId: aa.Name,
+		NoteId: noteId,
 		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
 	return c.client.CreateNote(c.ctx, req)
 }
 
-//AttestationNote returns a note if it exists for given AttestationAuthority
+// AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return nil, err
-	}
-
 	req := &grafeas.GetNoteRequest{
-		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		Name: aa.Spec.NoteReference,
 	}
 	return c.client.GetNote(c.ctx, req)
 }
@@ -254,21 +249,16 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 }
 
 func (c Client) fetchAttestationOccurrence(containerImage string, kind string, aa *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return nil, err
-	}
-
-	req := &grafeas.ListOccurrencesRequest{
+	req := &grafeas.ListNoteOccurrencesRequest{
+		Name: aa.Spec.NoteReference,
 		Filter:   fmt.Sprintf("resource_url=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", noteProject),
 	}
 	var occs []*grafeas.Occurrence
 	var nextPageToken string
 	for {
 		req.PageToken = nextPageToken
-		resp, err := c.client.ListOccurrences(c.ctx, req)
+		resp, err := c.client.ListNoteOccurrences(c.ctx, req)
 		if err != nil {
 			return nil, err
 		}

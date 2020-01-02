@@ -37,7 +37,7 @@ kind: AttestationAuthority
 metadata:
   name: test-attestor
 spec:
-  noteReference: projects/%s
+  noteReference: projects/%s/notes/test-attestor
   privateKeySecretName: %s
   publicKeyData: %s`
 )

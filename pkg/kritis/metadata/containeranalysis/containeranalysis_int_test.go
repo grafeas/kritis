@@ -98,7 +98,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	proj, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	proj, _, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		t.Fatalf("Failed to extract project ID %v", err)
 	}
