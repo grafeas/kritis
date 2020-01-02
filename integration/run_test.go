@@ -353,7 +353,7 @@ func TestKritisGAPLogic(t *testing.T) {
 		template string
 
 		pods []string
-		err string
+		err  string
 	}{
 		{
 			"nginx/nginx-digest.yaml",
