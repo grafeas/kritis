@@ -278,7 +278,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 		t.Fatalf("install: %v", err)
 	}
 
-	createAttestationAuthority(t, ns.Name)
+	createAttestationAuthority(t, *gcpProject, ns.Name)
 	isp, err := processTemplate("image-security-policy/my-isp.yaml", ns.Name)
 	if err != nil {
 		t.Fatalf("failed to process isp template: %v", err)

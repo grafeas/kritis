@@ -17,6 +17,8 @@ limitations under the License.
 package review
 
 import (
+	"encoding/base64"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
@@ -58,11 +60,16 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, err
 	}
 	for _, a := range attestations {
-		if err = host.VerifyAttestationSignature(keys[a.KeyID], a.Signature); err != nil {
-			glog.Errorf("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
-		} else {
-			out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+		decoded_sig, err := base64.StdEncoding.DecodeString(a.Signature)
+		if err != nil {
+			glog.Infof("Cannot base64 decode signature: %v", err)
+			continue
 		}
+		if err = host.VerifyAttestationSignature(keys[a.KeyID], string(decoded_sig)); err != nil {
+			glog.Infof("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
+			continue
+		}
+		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
 	}
 	return out, nil
 }

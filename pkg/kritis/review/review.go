@@ -109,7 +109,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			return err
 		}
 		for _, image := range images {
-			glog.Infof("Check if %s as valid Attestations.", image)
+			glog.Infof("Check if %s has valid Attestations.", image)
 			notAttestedBy, imgAttested := r.findUnsatisfiedAuths(image, auths, c)
 
 			if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
