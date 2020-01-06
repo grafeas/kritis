@@ -17,14 +17,22 @@ limitations under the License.
 package containeranalysis
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	TestNoteName = "test-aa-note"
+	API          = "testv1"
+	Project      = "kritis-int-test"
 )
 
 func TestVCache(t *testing.T) {
@@ -76,7 +84,16 @@ func TestACache(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := c.Attestations(tc.image)
+			aa := &kritisv1beta1.AttestationAuthority{
+				Spec: kritisv1beta1.AttestationAuthoritySpec{
+					NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: TestNoteName,
+				},
+			}
+
+			actual, err := c.Attestations(tc.image, aa)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}

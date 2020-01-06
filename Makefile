@@ -17,7 +17,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
-VERSION ?= v0.1.1
+VERSION ?= v0.2.0
 IMAGE_TAG ?= $(COMMIT)
 
 # Used for integration testing. example:
@@ -209,6 +209,12 @@ setup-integration-local: setup-integration-local
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+
+# Fully clean-up local integration testing resources
+.PHONY: clean-integration-local
+clean-integration-local:
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
+		&& gcloud --project=$(GCP_PROJECT) container clusters delete $(GCP_CLUSTER)
 
 .PHONY: just-the-integration-test
 just-the-integration-test:

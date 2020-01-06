@@ -1,5 +1,20 @@
 This is the changelog of Kritis releases
 
+v0.2.0:
+  * Added support for separating image and Attestor into different GCP projects.
+  * Improvements for highly available Kritis:
+    * `namespaceSelector` to allowlist critical namespaces, e.g. `kube-system`,
+      in the event Kritis is unavailable.
+  * No-op refactoring to use two new interfaces to work with attestations:
+    * `ValidatedAttestation` -- a trusted, verified attestion.
+    * `ValidatingTransport` -- allows caller to obtain `ValidatedAttestation`
+      for a given image.
+  * Added clarifications for guarantees in `ListNoteOccurrences` when retrieving
+    attestations.
+  * Cleanup:
+    * removed API version from NoteReference.
+    * s/Occurence/Occurrence where applicable.
+
 v0.1.1:
   * Fixed memory leak due to unused connections
 

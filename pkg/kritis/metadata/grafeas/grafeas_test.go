@@ -145,7 +145,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("%s/projects/%s", "api", DefaultProject),
+			NoteReference: fmt.Sprintf("projects/%s", DefaultProject),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "note1",
@@ -176,9 +176,9 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		PgpKey:     pgpKey,
 		SecretName: "test",
 	}
-	occ, err := client.CreateAttestationOccurence(note, testutil.IntTestImage, secret)
+	occ, err := client.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, DefaultProject)
 	if err != nil {
-		t.Fatalf("Unexpected error while creating Occurence %v", err)
+		t.Fatalf("Unexpected error while creating Occurrence %v", err)
 	}
 	expectedPgpKeyID := pgpKey.Fingerprint()
 	if err != nil {
@@ -189,7 +189,8 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
-	occurrences, err := client.Attestations(testutil.IntTestImage)
+
+	occurrences, err := client.Attestations(testutil.IntTestImage, aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while listing Occ %v", err)
 	}

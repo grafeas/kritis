@@ -24,17 +24,16 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/policy"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-
 	v1 "k8s.io/api/core/v1"
 )
 
 type Reviewer struct {
 	config *Config
-	client metadata.Fetcher
 }
 
 type Config struct {
@@ -45,9 +44,8 @@ type Config struct {
 	IsWebhook bool
 }
 
-func New(client metadata.Fetcher, c *Config) Reviewer {
+func New(c *Config) Reviewer {
 	return Reviewer{
-		client: client,
 		config: c,
 	}
 }
@@ -65,7 +63,7 @@ func generateGapAllowlist(gaps []v1beta1.GenericAttestationPolicy) []string {
 
 // ReviewGAP reviews images against generic attestation policies
 // Returns error if violations are found and handles them per violation strategy
-func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod) error {
+func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error {
 	images = util.RemoveGloballyAllowedImages(images)
 
 	images = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
@@ -82,7 +80,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 	for _, image := range images {
 		glog.Infof("Check if %s has valid Attestations.", image)
-		var imgAttested bool
+		imgAttested := false
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 			// Get all AttestationAuthorities in this policy.
@@ -90,8 +88,10 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			notAttestedBy := r.findUnsatisfiedAuths(image, auths)
-			imgAttested = len(notAttestedBy) == 0
+			_, attestedByAny := r.findUnsatisfiedAuths(image, auths, c)
+			if attestedByAny {
+				imgAttested = true
+			}
 		}
 		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
 			glog.Errorf("error handling attestations %v", err)
@@ -105,7 +105,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 // ReviewISP reviews images against image security policies
 // Returns error if violations are found and handles them per violation strategy
-func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod) error {
+func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error {
 	images = util.RemoveGloballyAllowedImages(images)
 	if len(images) == 0 {
 		glog.Infof("images are all globally allowed, returning successful status: %s", images)
@@ -127,7 +127,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			glog.Infof("Check if %s as valid Attestations.", image)
 			imgAttested := false
 			if auth != nil {
-				imgAttested = r.isAttestedBy(image, *auth)
+				imgAttested = r.isAttestedBy(image, *auth, c)
 			}
 
 			if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
@@ -140,7 +140,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			}
 
 			glog.Infof("Getting vulnz for %s", image)
-			violations, err := r.config.Validate(isp, image, r.client)
+			violations, err := r.config.Validate(isp, image, c)
 			if err != nil {
 				return fmt.Errorf("error validating image security policy %v", err)
 			}
@@ -148,7 +148,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 				return r.handleViolations(image, pod, violations)
 			}
 			if r.config.IsWebhook && auth != nil {
-				if err := r.addAttestation(image, isp, *auth); err != nil {
+				if err := r.addAttestation(image, isp, *auth, c); err != nil {
 					glog.Errorf("error adding attestations %s", err)
 				}
 			}
@@ -159,8 +159,8 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 }
 
 // Check if a image is attested by a given attestation authority.
-func (r Reviewer) isAttestedBy(image string, auth v1beta1.AttestationAuthority) bool {
-	transport := AttestorValidatingTransport{Client: r.client, Attestor: auth}
+func (r Reviewer) isAttestedBy(image string, auth v1beta1.AttestationAuthority, c metadata.ReadOnlyClient) bool {
+	transport := AttestorValidatingTransport{Client: c, Attestor: auth}
 	attestations, err := transport.GetValidatedAttestations(image)
 	if err != nil {
 		glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
@@ -171,16 +171,18 @@ func (r Reviewer) isAttestedBy(image string, auth v1beta1.AttestationAuthority) 
 	return true
 }
 
-// Returns a subset of 'auths' for which there are no attestations for 'image'.
-// In particular, if this returns an empty result, then 'image' has at least one attestation by every AttestationAuthority from 'auths'.
-func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority) []v1beta1.AttestationAuthority {
+// Returns a subset of 'auths' for which there are no attestations for 'image', as well as an indicator if any auth satisfies image.
+func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.AttestationAuthority, c metadata.ReadOnlyClient) ([]v1beta1.AttestationAuthority, bool) {
 	notAttestedBy := []v1beta1.AttestationAuthority{}
+	attestedByAny := false
 	for _, auth := range auths {
-		if !r.isAttestedBy(image, auth) {
+		if !r.isAttestedBy(image, auth, c) {
 			notAttestedBy = append(notAttestedBy, auth)
+		} else {
+			attestedByAny = true
 		}
 	}
-	return notAttestedBy
+	return notAttestedBy, attestedByAny
 }
 
 func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
@@ -199,11 +201,11 @@ func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []polic
 	return fmt.Errorf(errMsg)
 }
 
-// Create attestation for 'image' by ISP auth.
-func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, auth v1beta1.AttestationAuthority) error {
+// Create attestations for 'image' by ISP auth.
+func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, auth v1beta1.AttestationAuthority, c metadata.ReadWriteClient) error {
 	errMsgs := []string{}
 	// Get or Create Note for this this Authority
-	n, err := util.GetOrCreateAttestationNote(r.client, &auth)
+	n, err := util.GetOrCreateAttestationNote(c, &auth)
 	if err != nil {
 		errMsgs = append(errMsgs, err.Error())
 	}
@@ -213,7 +215,7 @@ func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, 
 		errMsgs = append(errMsgs, err.Error())
 	}
 	// Create Attestation Signature
-	if _, err := r.client.CreateAttestationOccurence(n, image, s); err != nil {
+	if _, err := c.CreateAttestationOccurrence(n, image, s, grafeas.DefaultProject); err != nil {
 		errMsgs = append(errMsgs, err.Error())
 	}
 
