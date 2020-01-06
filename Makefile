@@ -180,7 +180,6 @@ gcb-signer-push-image: gcb-signer-image
 
 # Fully setup local integration testing: only needs to run just once
 # TODO: move entire setup into bash script
-# TODO: enable necessary dependency APIs (GKE, containeranslysis) or give instructions to do so
 .PHONY: setup-integration-local
 setup-integration-local: setup-integration-local
 	gcloud --project=$(GCP_PROJECT) services enable container.googleapis.com
@@ -221,6 +220,9 @@ setup-integration-local: setup-integration-local
 	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
 		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
 		--role=roles/containeranalysis.occurrences.viewer
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.occurrences.editor
 	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
 
 # Fully clean-up local integration testing resources

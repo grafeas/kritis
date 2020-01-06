@@ -351,7 +351,6 @@ func TestKritisGAPLogic(t *testing.T) {
 
 	var testCases = []struct {
 		template string
-
 		pods []string
 		err  string
 	}{
