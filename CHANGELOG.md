@@ -1,5 +1,9 @@
 This is the changelog of Kritis releases
 
+v0.2.1:
+  * Treat the signature in an Attestation Occurrence as base64 encoded.
+  * Bump kubectl version in helm hook container images.
+
 v0.2.0:
   * Added support for separating image and Attestor into different GCP projects.
   * Improvements for highly available Kritis:
