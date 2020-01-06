@@ -46,7 +46,7 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerabi
 
 func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	for _, pi := range pis {
-		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
+		if pi.GetFixedLocation() == nil || pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
 			return false
 		}
@@ -88,7 +88,7 @@ func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) strin
 }
 
 // GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
-func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
+func GetOrCreateAttestationNote(c metadata.ReadWriteClient, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	n, err := c.AttestationNote(a)
 	if err == nil {
 		return n, nil

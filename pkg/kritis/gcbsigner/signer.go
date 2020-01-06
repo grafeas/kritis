@@ -22,13 +22,14 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/buildpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
+	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
 type Signer struct {
 	config *Config
-	client metadata.Fetcher
+	client metadata.ReadWriteClient
 }
 
 type Config struct {
@@ -36,7 +37,7 @@ type Config struct {
 	Validate buildpolicy.ValidateFunc
 }
 
-func New(client metadata.Fetcher, c *Config) Signer {
+func New(client metadata.ReadWriteClient, c *Config) Signer {
 	return Signer{
 		client: client,
 		config: c,
@@ -88,6 +89,6 @@ func (s Signer) addAttestation(image string, ns string, authority string) error 
 		return err
 	}
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurence(n, image, sec)
+	_, err = s.client.CreateAttestationOccurrence(n, image, sec, grafeas.DefaultProject)
 	return err
 }
