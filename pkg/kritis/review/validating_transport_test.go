@@ -55,7 +55,12 @@ func TestValidatingTransport(t *testing.T) {
 	validAuthWithTwoKeys := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PrivateKeySecretName: "test-success",
+			PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub))},
+		},
+	}
+	validAuthWithTwoKeys := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeyList:        []string{"bad-key", base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}

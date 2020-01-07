@@ -127,7 +127,7 @@ func TestReviewGAP(t *testing.T) {
 			"test2": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference: "provider/test2",
+					NoteReference:        "provider/test2",
 					PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub2))},
 				}}}
 		auth, exists := authMap[name]
@@ -305,7 +305,7 @@ func TestReviewISP(t *testing.T) {
 		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference:        "provider/test",
 				PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 			}}, nil
 	}
