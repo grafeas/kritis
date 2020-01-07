@@ -351,8 +351,8 @@ func TestKritisGAPLogic(t *testing.T) {
 
 	var testCases = []struct {
 		template string
-		pods []string
-		err  string
+		pods     []string
+		err      string
 	}{
 		{
 			"nginx/nginx-digest.yaml",
