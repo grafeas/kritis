@@ -48,7 +48,6 @@ metadata:
   namespace: default
 spec:
   noteReference: v1beta1/projects/standalone
-  privateKeySecretName: attestor
   publicKeyData: $PUBLIC_KEY
 EOF
 

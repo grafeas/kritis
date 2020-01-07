@@ -38,11 +38,10 @@ metadata:
   name: test-attestor
 spec:
   noteReference: projects/%s
-  privateKeySecretName: %s
   publicKeyData: %s`
 )
 
-// Secret name for test-attestor
+// Secret name for test-attestor, which matches integration/testdata/image-security-policy/my-isp.yaml
 var aaSecret = "test-attestor"
 
 // CRDs is a map of CRD type to names of the expected CRDs to create.
@@ -112,7 +111,7 @@ func createFileWithContents(t *testing.T, d string, c string) string {
 func createAA(t *testing.T, project string, ns string, pubkey string) {
 	t.Helper()
 	cmd := exec.Command("kubectl", "apply", "-n", ns, "-f", "-")
-	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, aaSecret, pubkey)))
+	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, pubkey)))
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v", err)
 	}
