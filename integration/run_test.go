@@ -322,11 +322,20 @@ func setUpGAP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
 
-	aa, err := processTemplate("generic-attestation-policy/test-attestor-1.yaml", ns.Name)
+	aa1, err := processTemplate("generic-attestation-policy/test-attestor-1.yaml", ns.Name)
 	if err != nil {
 		t.Fatalf("failed to process attestation-authority template: %v", err)
 	}
-	cmd = exec.Command("kubectl", "create", "-f", aa, "-n", ns.Name)
+	cmd = exec.Command("kubectl", "create", "-f", aa1, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	aa2, err := processTemplate("generic-attestation-policy/test-attestor-2.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process attestation-authority template: %v", err)
+	}
+	cmd = exec.Command("kubectl", "create", "-f", aa2, "-n", ns.Name)
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}

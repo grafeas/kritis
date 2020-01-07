@@ -5,3 +5,4 @@ metadata:
 spec:
   attestationAuthorityNames:
   - test-attestor-1
+  - test-attestor-2
