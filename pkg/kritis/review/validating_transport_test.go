@@ -49,13 +49,20 @@ func TestValidatingTransport(t *testing.T) {
 	validAuth := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyData: base64.StdEncoding.EncodeToString([]byte(pub)),
+			PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub))},
+		},
+	}
+	validAuthWithTwoKeys := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PrivateKeySecretName: "test-success",
+			PublicKeyList:        []string{"bad-key", base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}
 	invalidAuth := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyData: "bad-key",
+			PublicKeyList:        []string{"bad-key"},
 		},
 	}
 	tcs := []struct {
@@ -67,6 +74,19 @@ func TestValidatingTransport(t *testing.T) {
 		attError      error
 	}{
 		{name: "at least one valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{
+			{
+				AttestorName: "test-attestor",
+				Image:        testutil.QualifiedImage,
+			},
+		}, attestations: []metadata.PGPAttestation{
+			{
+				Signature: encodeB64(sig),
+				KeyID:     successFpr,
+			}, {
+				Signature: encodeB64("invalid-sig"),
+				KeyID:     successFpr,
+			}}, errorExpected: false, attError: nil},
+		{name: "auth with at least one good key", auth: validAuthWithTwoKeys, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,

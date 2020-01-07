@@ -37,7 +37,9 @@ metadata:
   name: test-attestor
 spec:
   noteReference: projects/%s
-  publicKeyData: %s`
+  publicKeyList: 
+  - %s
+`
 )
 
 // Secret name for test-attestor, which matches integration/testdata/image-security-policy/my-isp.yaml

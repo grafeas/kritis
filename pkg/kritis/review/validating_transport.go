@@ -18,6 +18,7 @@ package review
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -41,12 +42,18 @@ type AttestorValidatingTransport struct {
 
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
 	keys := map[string]string{}
-	key, fingerprint, err := secrets.KeyAndFingerprint(avt.Attestor.Spec.PublicKeyData)
-	if err != nil {
-		glog.Errorf("Error parsing key for %q: %v", avt.Attestor.Name, err)
-		return nil, err
+	for _, keyData := range avt.Attestor.Spec.PublicKeyList {
+		key, fingerprint, err := secrets.KeyAndFingerprint(keyData)
+		if err != nil {
+			glog.Warningf("Error parsing key for %q: %v", avt.Attestor.Name, err)
+		} else {
+			keys[fingerprint] = key
+		}
 	}
-	keys[fingerprint] = key
+	if len(keys) == 0 {
+		glog.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
+		return nil, fmt.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
+	}
 
 	out := []attestation.ValidatedAttestation{}
 	host, err := container.NewAtomicContainerSig(image, map[string]string{})
