@@ -364,11 +364,17 @@ func TestKritisGAPLogic(t *testing.T) {
 		err      string
 	}{
 		{
+			// Policy under test has two attestation authorities,
+			// but the image deployed only has an attestation by
+			// one of those auths (assuming the one-time setup was
+			// done correctly).  So this test case exercises the
+			// needs-only-one (disjunctive) semantics of GAP.
 			"nginx/nginx-digest.yaml",
 			[]string{"nginx-digest"},
 			"",
 		},
 		{
+			// Image deployed has no required attestations.
 			"java/java-with-digest.yaml",
 			[]string{},
 			"not attested",
