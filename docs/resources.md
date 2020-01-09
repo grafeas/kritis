@@ -35,7 +35,8 @@ kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ## GenericAttestationPolicy CRD
 
 GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
-The policy expects any one attestation authority to be satisfied before allowing the container image to be admitted.
+The policy expects ALL attestation authorities to be satisfied before allowing the container image to be admitted.
+If no attestation authority is present in GAP, the container image will be admitted automatically.
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 

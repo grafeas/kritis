@@ -80,7 +80,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 
 	for _, image := range images {
 		glog.Infof("Check if %s has valid Attestations.", image)
-		imgAttested := false
+		imgAttestedByAll := false
 		for _, gap := range gaps {
 			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 			// Get all AttestationAuthorities in this policy.
@@ -88,16 +88,16 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			_, attestedByAny := r.findUnsatisfiedAuths(image, auths, c)
-			if attestedByAny {
-				imgAttested = true
+			notAttestedBy, _ := r.findUnsatisfiedAuths(image, auths, c)
+			if len(notAttestedBy) == 0 {
+				imgAttestedByAll = true
 			}
 		}
-		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
+		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttestedByAll); err != nil {
 			glog.Errorf("error handling attestations %v", err)
 		}
-		if !imgAttested {
-			return fmt.Errorf("image %s is not attested", image)
+		if !imgAttestedByAll {
+			return fmt.Errorf("image %s is not attested by all authories in any gap policy", image)
 		}
 	}
 	return nil
