@@ -188,3 +188,18 @@ func TestPgpKey(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyAndFingerprint(t *testing.T) {
+	// Public key below is obtained from the integration test key:
+	// $ mkdir /tmp/h
+	// $ gpg --homedir=/tmp/h --import integration/testdata/keys/attestor-1-secret-key.pgp
+	// $ gpg --homedir=/tmp/h --armor --export attestor-1@example.com | base64 -w 0
+	publicKey := `LS0tLS1CRUdJTiBQR1AgUFVCTElDIEtFWSBCTE9DSy0tLS0tCgptUUVOQkYzejNKc0JDQURTUStEU2p1Rkw2ME5mTGt6cUpyZDJESHAydHdqTkx5Y05zMGhBSkw1YUpsVU9JYWd4CkZ5QmRlb2VWSWxTSUV1LzN4UjA4V2RpUmJDZDNPbU8zbm1BTHB6Ti9hOUpDVzlCUXBTQ2Ftc3l6cHJZa2RzMzEKSGhTSzNHTC9PeVd6VzhKYzVMaFlNQzN2ZmJjQjJTc0E1WTdwU0dzcndtKy8wMHlKNU5BUzk2NERDbllBS0c5SgpWMk5QU01rZWU0em0vUEllUklaK2laVmFydXEzSDVCNGNIZnlQOHBzSE1hVnVMbVlPYnJPaTlPc1BzcnNlQk9RClExaVlEZnFpZytNVEdGbVNDZEhBM2RNTXFucHhKcW5sMHhtY0pjWHJrSXFrWXJsNVFaOElZMGxucUUyRnNjc24KZklFbDNZdlpDYXQxanI4SVE2L0hRZDhKcER4MUNHOGN4Nm5qQUJFQkFBRzBMQ0owWlhOMExXRjBkR1Z6ZEc5eQpMVEVpSUR3aVlYUjBaWE4wYjNJdE1VQmxlR0Z0Y0d4bExtTnZiU0kraVFGT0JCTUJDZ0E0RmlFRXNQUkNQRkNWCmZ0MUI2OFJycW9uem5kWkNtU0FGQWwzejNKc0NHeThGQ3drSUJ3SUdGUW9KQ0FzQ0JCWUNBd0VDSGdFQ0Y0QUEKQ2drUXFvbnpuZFpDbVNBRzJBZjlIWXViRUs3dW1ER2RHQzcvejV3L3pPREtERUZDNVZySU94MEJkU1RuM1JPSwpXdTR5S3hHZzR6NDVWTjZVL1d4NGYzbitOcTBab085MTBrZWVheGN6VmNTdVBibTEzMkZoM21VblJZZURXc0RtCmY4bFRwTWowMUVzQW5PZTJmWDdrOUZSRFl3TCtGZmR6VSt1RUhML243Nmd0MFBoKy9CbXdZbUUveWlUVjR2S2gKajhMS2pPSHJ0TUpDQm1GcU5UOGlhcnhUVXUrblBWMFc3SFlaTHFWOEpVdFVXRVdYbDlBVmxmZDJ1TkV6a1hqcApoMTloOVlMdEt3czFBM0lGZXQwS0dDcTVCdFo3WkdqdnMyQ0pqaGcvV3Z2YStNWXgyelVlRnVNRWlNZ1VGSTJZCkdjL3hMbGthTUtaQmRBcWdyaVBnL2FtVDBqVzlqdFFmcHNaZHQxQXhmUT09Cj1LMko3Ci0tLS0tRU5EIFBHUCBQVUJMSUMgS0VZIEJMT0NLLS0tLS0K`
+	_, fingerprint, err := KeyAndFingerprint(publicKey)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if fingerprint != "B0F4423C50957EDD41EBC46BAA89F39DD6429920" {
+		t.Errorf("Unexpected fingerprint: %v", fingerprint)
+	}
+}
