@@ -42,7 +42,7 @@ spec:
   publicKeyData: %s`
 )
 
-// Secret name for test-attestor
+// Secret name for test-attestor.
 var aaSecret = "test-attestor"
 
 // CRDs is a map of CRD type to names of the expected CRDs to create.

@@ -322,11 +322,20 @@ func setUpGAP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
 
-	aa, err := processTemplate("generic-attestation-policy/test-attestor-1.yaml", ns.Name)
+	aa1, err := processTemplate("generic-attestation-policy/test-attestor-1.yaml", ns.Name)
 	if err != nil {
 		t.Fatalf("failed to process attestation-authority template: %v", err)
 	}
-	cmd = exec.Command("kubectl", "create", "-f", aa, "-n", ns.Name)
+	cmd = exec.Command("kubectl", "create", "-f", aa1, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	aa2, err := processTemplate("generic-attestation-policy/test-attestor-2.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process attestation-authority template: %v", err)
+	}
+	cmd = exec.Command("kubectl", "create", "-f", aa2, "-n", ns.Name)
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
@@ -351,16 +360,21 @@ func TestKritisGAPLogic(t *testing.T) {
 
 	var testCases = []struct {
 		template string
-
-		pods []string
-		err  string
+		pods     []string
+		err      string
 	}{
 		{
+			// Policy under test has two attestation authorities,
+			// but the image deployed only has an attestation by
+			// one of those auths (assuming the one-time setup was
+			// done correctly).  So this test case exercises the
+			// needs-only-one (disjunctive) semantics of GAP.
 			"nginx/nginx-digest.yaml",
 			[]string{"nginx-digest"},
 			"",
 		},
 		{
+			// Image deployed has no required attestations.
 			"java/java-with-digest.yaml",
 			[]string{},
 			"not attested",
