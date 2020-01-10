@@ -38,7 +38,7 @@ var (
 func GetAA() *kritisv1beta1.AttestationAuthority {
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("projects/%s", IntProject),
+			NoteReference: fmt.Sprintf("projects/%s/note/%s", IntProject, IntTestNoteName),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
