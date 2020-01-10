@@ -80,12 +80,12 @@ func imageRefMatch(image string, pattern string) (bool, error) {
 
 // Do an image match based on name pattern.
 // This method uses name pattern matching,
-// where the pattern is the path to a single image by
+// where a pattern is a path to a single image by
 // exact match, or to any images matching a pattern using the wildcard symbol
 // (`*`). The wildcards may only be present in the end, and not anywhere
-// else in the pattern, i.e., `gcr.io/n*x` is not allowed,
-// but `gcr.io/nginx*` is allowed. Also wilcards can be not used to match `/`,
-// i.e., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+// else in the pattern, e.g., `gcr.io/n*x` is not allowed,
+// but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
+// e.g., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
 // but it does not match `gcr.io/nginx/image`.
 // See more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns
 func imageNamePatternMatch(image string, pattern string) (bool, error) {

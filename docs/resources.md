@@ -50,6 +50,9 @@ metadata:
   name: my-gap
   namespace: default
 spec:
+  admissionAllowlistPatterns:
+  - namePattern: gcr.io/1-my-image-any-tag:*
+  - namePattern: gcr.io/2-my-image:latest
   attestationAuthorityNames:
   - kritis-authority
 ```
@@ -84,7 +87,24 @@ Generic Attestation Policy Spec description:
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
+| admissionAllowlistPatterns | | List of AdmissionAllowlistPatterns (see below) that specify which images are not inspected by Admission Controller.|
 | attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) for which one of is required to be satisfied before the Admission Controller will admit the pod.|
+
+Admission Allowlist Pattern Spec description
+
+| Field     | Default (if applicable)   | Description |
+|-----------|---------------------------|-------------|
+| namePattern | | A name pattern that specifies which images are not inspected by Admission Controller.|
+
+A pattern is a path to a single image by
+exact match, or to any images matching a pattern using the wildcard symbol
+(`*`). The wildcards may only be present in the end, and not anywhere
+ else in the pattern, e.g., `gcr.io/n*x` is not allowed,
+but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
+e.g.,, `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+but it does not match `gcr.io/nginx/image`.
+The name pattern matching rule is compatible with that of Binary Authorization, 
+see more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns.
 
 ## ImageSecurityPolicy CRD
 
