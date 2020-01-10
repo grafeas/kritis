@@ -90,7 +90,7 @@ Generic Attestation Policy Spec description:
 | attestationAuthorityNames | | Non-empty List of [Attestation Authorities](#attestationauthority-crd) for which all of them are required to be satisfied before the Admission Controller will admit the pod.|
 | attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) for which one of is required to be satisfied before the Admission Controller will admit the pod.|
 
-Note that the list of [Attestation Authorities](#attestationauthority-crd) must be non-empty. If the list is empty, images can only be admitted through allowlist (GAP allowlist is WIP).
+Note that the list of [Attestation Authorities](#attestationauthority-crd) must be non-empty. If the list is empty, an error will be thrown for malformed policy, and no image will be admitted, including allowlisted images.
 
 Admission Allowlist Pattern Spec description
 
