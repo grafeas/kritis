@@ -17,7 +17,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
-VERSION ?= v0.2.1
+VERSION ?= v0.2.2
 IMAGE_TAG ?= $(COMMIT)
 
 # Used for integration testing. example:
