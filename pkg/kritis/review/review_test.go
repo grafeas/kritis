@@ -111,6 +111,9 @@ func TestReviewGAP(t *testing.T) {
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
+			AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
+				{NamePattern: "allowed_image_name"},
+			},
 			AttestationAuthorityNames: []string{},
 		},
 	}}
@@ -166,6 +169,14 @@ func TestReviewGAP(t *testing.T) {
 		{
 			name:         "gap without attestor should error",
 			image:        img,
+			policies:     gapWithoutAA,
+			attestations: []metadata.PGPAttestation{},
+			isAdmitted:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "gap without attestor should error on allowlisted image",
+			image:        "allowed_image_name",
 			policies:     gapWithoutAA,
 			attestations: []metadata.PGPAttestation{},
 			isAdmitted:   false,

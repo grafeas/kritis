@@ -70,9 +70,6 @@ func (r Reviewer) ReviewImageWithGAP(image string, gap v1beta1.GenericAttestatio
 	if err != nil {
 		return false, nil, err
 	}
-	if len(auths) == 0 {
-		return false, nil, fmt.Errorf("Generic attestation policy %s did not specify any attestation authority.", gap.Name)
-	}
 
 	notAttestedBy, _ := r.findUnsatisfiedAuths(image, auths, c)
 	if len(notAttestedBy) == 0 {
@@ -89,19 +86,37 @@ func (r Reviewer) ReviewImageWithGAP(image string, gap v1beta1.GenericAttestatio
 	return false, notAttestedAuthNames, nil
 }
 
+func (r Reviewer) checkGAPs(gaps []v1beta1.GenericAttestationPolicy) error {
+	for _, gap := range gaps {
+		// Get all AttestationAuthorities in this policy.
+		auths, err := r.getAttestationAuthoritiesForGAP(gap)
+		if err != nil {
+			return err
+		}
+		if len(auths) == 0 {
+			return fmt.Errorf("Generic attestation policy %s did not specify any attestation authority.", gap.Name)
+		}
+	}
+	return nil
+}
+
 // ReviewGAP reviews images against generic attestation policies
 func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error {
-	images = util.RemoveGloballyAllowedImages(images)
+	// If no policy found, images should be admitted.
+	if len(gaps) == 0 {
+		glog.Info("No Generic Attestation Policies found")
+		return nil
+	}
 
+	// Check if all GAPs are well-formed.
+	if err := r.checkGAPs(gaps); err != nil {
+		return err
+	}
+	images = util.RemoveGloballyAllowedImages(images)
 	images = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
 
 	if len(images) == 0 {
 		glog.Infof("images are all globally or gap allowed, returning successful status: %s", images)
-		return nil
-	}
-
-	if len(gaps) == 0 {
-		glog.Info("No Generic Attestation Policies found")
 		return nil
 	}
 
