@@ -48,7 +48,7 @@ var crdNames = map[string]string{
 	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
 }
 
-func createKeySecret(t *testing.T, project string, ns string, pubKey string, privKey string) {
+func createKeySecret(t *testing.T, secretName string, ns string, pubKey string, privKey string) {
 	t.Helper()
 	// create a tmp dir for keys
 	d, err := ioutil.TempDir("", "_keys")
@@ -63,7 +63,7 @@ func createKeySecret(t *testing.T, project string, ns string, pubKey string, pri
 	privFile := createFileWithContents(t, d, privKey)
 
 	// Finally create a kubernetes secret.
-	cmd := exec.Command("kubectl", "create", "secret", "generic", aaSecret,
+	cmd := exec.Command("kubectl", "create", "secret", "generic", secretName,
 		fmt.Sprintf("--from-file=public=%s", pubFile),
 		fmt.Sprintf("--from-file=private=%s", privFile),
 		"-n", ns)
