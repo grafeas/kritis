@@ -210,7 +210,7 @@ func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, 
 		errMsgs = append(errMsgs, err.Error())
 	}
 	// Get secret for this Authority
-	s, err := r.config.Secret(isp.Namespace, auth.Spec.PrivateKeySecretName)
+	s, err := r.config.Secret(isp.Namespace, isp.Spec.PrivateKeySecretName)
 	if err != nil {
 		errMsgs = append(errMsgs, err.Error())
 	}

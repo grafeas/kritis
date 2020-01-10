@@ -3,6 +3,7 @@ kind: ImageSecurityPolicy
 metadata:
   name: my-isp
 spec:
+  privateKeySecretName: kritis-authority-key
   attestationAuthorityName: test-attestor
   imageAllowlist:
   - gcr.io/kritis-int-test/nginx-digest-allowlist:latest

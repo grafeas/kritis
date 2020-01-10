@@ -122,6 +122,7 @@ metadata:
     namespace: example-namespace
 spec:
   attestationAuthorityName: kritis-authority
+  privateKeySecretName: foo
   imageAllowlist:
   - gcr.io/my-project/allowlist-image@sha256:<DIGEST>
   packageVulnerabilityPolicy:
@@ -162,7 +163,8 @@ Image Security Policy Spec description:
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 |imageAllowlist | | List of images that are allowlisted and are not inspected by Admission Controller.|
-|attestationAuthorityName | | Attestation authority name for adding attestation.|
+|attestationAuthorityName | | Attestation authority name for verifying attestation.|
+|privateKeySecretname | | Private secret key name for adding attestation.|
 |packageVulnerabilityPolicy.allowlistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
@@ -222,7 +224,6 @@ metadata:
     namespace: qa
 spec:
     noteReference: projects/image-attestor
-    privateKeySecretName: foo
     publicKeyData: ...
 ```
 
