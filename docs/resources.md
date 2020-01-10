@@ -96,12 +96,12 @@ Admission Allowlist Pattern Spec description
 |-----------|---------------------------|-------------|
 | namePattern | | A name pattern that specifies which images are not inspected by Admission Controller.|
 
-A pattern is the path to a single image by
+A pattern is a path to a single image by
 exact match, or to any images matching a pattern using the wildcard symbol
 (`*`). The wildcards may only be present in the end, and not anywhere
- else in the pattern, i.e., `gcr.io/n*x` is not allowed,
-but `gcr.io/nginx*` is allowed. Also wilcards can be not used to match `/`,
-i.e., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+ else in the pattern, e.g., `gcr.io/n*x` is not allowed,
+but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
+e.g.,, `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
 but it does not match `gcr.io/nginx/image`.
 The name pattern matching rule is compatible with that of Binary Authorization, 
 see more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns.
