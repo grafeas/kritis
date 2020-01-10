@@ -26,7 +26,6 @@ import (
 	"time"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -49,13 +48,8 @@ var crdNames = map[string]string{
 	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
 }
 
-func createAttestationAuthority(t *testing.T, project string, ns string) {
+func createKeySecret(t *testing.T, project string, ns string, pubKey string, privKey string) {
 	t.Helper()
-	// Generate a key value pair
-	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
-	// get the base encoded value for public key.
-	pubKeyEnc := base64.StdEncoding.EncodeToString([]byte(pubKey))
-
 	// create a tmp dir for keys
 	d, err := ioutil.TempDir("", "_keys")
 	if err != nil {
@@ -76,9 +70,6 @@ func createAttestationAuthority(t *testing.T, project string, ns string) {
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-
-	// Create the Attestation authority
-	createAA(t, project, ns, pubKeyEnc)
 }
 
 func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
@@ -110,8 +101,10 @@ func createFileWithContents(t *testing.T, d string, c string) string {
 
 func createAA(t *testing.T, project string, ns string, pubkey string) {
 	t.Helper()
+	// get the base encoded value for public key.
+	pubKeyEnc := base64.StdEncoding.EncodeToString([]byte(pubkey))
 	cmd := exec.Command("kubectl", "apply", "-n", ns, "-f", "-")
-	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, pubkey)))
+	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, pubKeyEnc)))
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v", err)
 	}

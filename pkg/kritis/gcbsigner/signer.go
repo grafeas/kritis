@@ -73,7 +73,7 @@ func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy)
 	return nil
 }
 
-func (s Signer) addAttestation(image string, ns string, authority string, keyName string) error {
+func (s Signer) addAttestation(image string, ns string, authority string, keySecretName string) error {
 	// Get AttestaionAuthority specified in the buildpolicy.
 	a, err := authFetcher(ns, authority)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s Signer) addAttestation(image string, ns string, authority string, keyNam
 		return err
 	}
 	// Get secret for this Authority
-	sec, err := s.config.Secret(ns, keyName)
+	sec, err := s.config.Secret(ns, keySecretName)
 	if err != nil {
 		return err
 	}
