@@ -34,19 +34,33 @@ import (
 
 func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
-	_, pub2 := testutil.CreateSecret(t, "sec2")
-	secFpr := sec.PgpKey.Fingerprint()
+	sec2, pub2 := testutil.CreateSecret(t, "sec2")
+	secFpr, secFpr2 := sec.PgpKey.Fingerprint(), sec2.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
 	// An attestation for 'img' verifiable by 'pub'.
 	sig, err := util.CreateAttestationSignature(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
+	sig2, err := util.CreateAttestationSignature(img, sec2)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
 
-	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
-		return sec, nil
+	sMock := func(_, name string) (*secrets.PGPSigningSecret, error) {
+		if name == "sec" {
+			return sec, nil
+		}
+		if name == "sec2" {
+			return sec2, nil
+		}
+		return nil, fmt.Errorf("Not such secret for %s", name)
 	}
 	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+	twoValidAtts := []metadata.PGPAttestation{
+		{Signature: encodeB64(sig), KeyID: secFpr},
+		{Signature: encodeB64(sig2), KeyID: secFpr2},
+	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
@@ -152,12 +166,12 @@ func TestReviewGAP(t *testing.T) {
 			shouldErr:    true,
 		},
 		{
-			name:         "gap without attestor passes image without attestation",
+			name:         "gap without attestor should error",
 			image:        img,
 			policies:     gapWithoutAA,
 			attestations: []metadata.PGPAttestation{},
-			isAdmitted:   true,
-			shouldErr:    false,
+			isAdmitted:   false,
+			shouldErr:    true,
 		},
 		{
 			name:         "allowlisted image",
@@ -214,6 +228,14 @@ func TestReviewGAP(t *testing.T) {
 			attestations: validAtts,
 			isAdmitted:   false,
 			shouldErr:    true,
+		},
+		{
+			name:         "image attested by two attestors out of two",
+			image:        img,
+			policies:     gapWithTwoAAs,
+			attestations: twoValidAtts,
+			isAdmitted:   true,
+			shouldErr:    false,
 		},
 	}
 	for _, tc := range tests {
