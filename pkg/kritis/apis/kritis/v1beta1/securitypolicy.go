@@ -36,6 +36,7 @@ type ImageSecurityPolicySpec struct {
 	ImageAllowlist                   []string                         `json:"imageAllowlist"`
 	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 	AttestationAuthorityName         string                           `json:"attestationAuthorityName"`
+	PrivateKeySecretName             string                           `json:"privateKeySecretName"`
 }
 
 // PackageVulnerabilityRequirements is the requirements for package vulnz for an ImageSecurityPolicy

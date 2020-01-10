@@ -3,6 +3,7 @@ kind: ImageSecurityPolicy
 metadata:
   name: my-isp
 spec:
+  privateKeySecretName: test-attestor
   attestationAuthorityName: test-attestor
   imageAllowlist:
   - gcr.io/{{ .Project }}/nginx-digest-whitelist:latest

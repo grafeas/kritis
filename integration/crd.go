@@ -26,7 +26,6 @@ import (
 	"time"
 
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -38,11 +37,10 @@ metadata:
   name: test-attestor
 spec:
   noteReference: projects/%s
-  privateKeySecretName: %s
   publicKeyData: %s`
 )
 
-// Secret name for test-attestor
+// Secret name for test-attestor, which matches integration/testdata/image-security-policy/my-isp.yaml
 var aaSecret = "test-attestor"
 
 // CRDs is a map of CRD type to names of the expected CRDs to create.
@@ -50,13 +48,8 @@ var crdNames = map[string]string{
 	"imagesecuritypolicies.kritis.grafeas.io": "my-isp",
 }
 
-func createAttestationAuthority(t *testing.T, project string, ns string) {
+func createKeySecret(t *testing.T, secretName string, ns string, pubKey string, privKey string) {
 	t.Helper()
-	// Generate a key value pair
-	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
-	// get the base encoded value for public key.
-	pubKeyEnc := base64.StdEncoding.EncodeToString([]byte(pubKey))
-
 	// create a tmp dir for keys
 	d, err := ioutil.TempDir("", "_keys")
 	if err != nil {
@@ -70,16 +63,13 @@ func createAttestationAuthority(t *testing.T, project string, ns string) {
 	privFile := createFileWithContents(t, d, privKey)
 
 	// Finally create a kubernetes secret.
-	cmd := exec.Command("kubectl", "create", "secret", "generic", aaSecret,
+	cmd := exec.Command("kubectl", "create", "secret", "generic", secretName,
 		fmt.Sprintf("--from-file=public=%s", pubFile),
 		fmt.Sprintf("--from-file=private=%s", privFile),
 		"-n", ns)
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
-
-	// Create the Attestation authority
-	createAA(t, project, ns, pubKeyEnc)
 }
 
 func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
@@ -111,8 +101,10 @@ func createFileWithContents(t *testing.T, d string, c string) string {
 
 func createAA(t *testing.T, project string, ns string, pubkey string) {
 	t.Helper()
+	// get the base encoded value for public key.
+	pubKeyEnc := base64.StdEncoding.EncodeToString([]byte(pubkey))
 	cmd := exec.Command("kubectl", "apply", "-n", ns, "-f", "-")
-	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, aaSecret, pubkey)))
+	cmd.Stdin = bytes.NewReader([]byte(fmt.Sprintf(testAttesationAuthority, project, pubKeyEnc)))
 	if _, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v", err)
 	}

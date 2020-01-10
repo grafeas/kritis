@@ -5,6 +5,7 @@ metadata:
   namespace: default
 spec:
   attestationAuthorityName: kritis-authority
+  privateKeySecretName: kritis-authority-key
   imageAllowlist:
   - gcr.io/my/image
   packageVulnerabilityRequirements:

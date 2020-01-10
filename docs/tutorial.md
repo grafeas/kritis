@@ -85,7 +85,6 @@
             namespace: default
         spec:
             noteReference: v1beta1/projects/$PROJECT
-            privateKeySecretName: my-attestor
             publicKeyData: $PUBLIC_KEY
         EOF
         ```

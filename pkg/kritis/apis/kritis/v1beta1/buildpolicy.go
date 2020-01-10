@@ -34,6 +34,7 @@ type BuildPolicy struct {
 // BuildPolicySpec is the spec for a BuildPolicy resource
 type BuildPolicySpec struct {
 	AttestationAuthorityName string            `yaml:"attestationAuthorityName"`
+	PrivateKeySecretName     string            `yaml:"privateKeySecretName"`
 	BuildRequirements        BuildRequirements `yaml:"buildRequirements"`
 }
 
