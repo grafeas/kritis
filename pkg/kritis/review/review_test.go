@@ -120,16 +120,14 @@ func TestReviewGAP(t *testing.T) {
 			"test": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "provider/test",
-					PrivateKeySecretName: "test",
-					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+					NoteReference: "provider/test",
+					PublicKeyData: base64.StdEncoding.EncodeToString([]byte(pub)),
 				}},
 			"test2": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "provider/test2",
-					PrivateKeySecretName: "test2",
-					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub2)),
+					NoteReference: "provider/test2",
+					PublicKeyData: base64.StdEncoding.EncodeToString([]byte(pub2)),
 				}}}
 		auth, exists := authMap[name]
 		if !exists {
@@ -290,6 +288,7 @@ func TestReviewISP(t *testing.T) {
 			},
 			Spec: v1beta1.ImageSecurityPolicySpec{
 				AttestationAuthorityName: "test",
+				PrivateKeySecretName:     "test",
 			},
 		},
 	}
@@ -297,9 +296,8 @@ func TestReviewISP(t *testing.T) {
 		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+				NoteReference: "provider/test",
+				PublicKeyData: base64.StdEncoding.EncodeToString([]byte(pub)),
 			}}, nil
 	}
 	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.ReadWriteClient) ([]policy.Violation, error) {
@@ -509,16 +507,14 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "provider/test",
+				PublicKeyData: "testdata",
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "provider/test",
+				PublicKeyData: "testdata",
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
@@ -579,16 +575,14 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "provider/test",
+				PublicKeyData: "testdata",
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "provider/test",
+				PublicKeyData: "testdata",
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
@@ -633,6 +627,7 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 			isp := v1beta1.ImageSecurityPolicy{
 				Spec: v1beta1.ImageSecurityPolicySpec{
 					AttestationAuthorityName: tc.aName,
+					PrivateKeySecretName:     "test",
 				},
 			}
 			a, err := r.getAttestationAuthorityForISP(isp)

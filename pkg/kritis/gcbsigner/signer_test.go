@@ -52,6 +52,7 @@ func TestValidateAndSign(t *testing.T) {
 			},
 			Spec: v1beta1.BuildPolicySpec{
 				AttestationAuthorityName: "auth1",
+				PrivateKeySecretName:     "auth1_key",
 				BuildRequirements: v1beta1.BuildRequirements{
 					BuiltFrom: "single_attestor",
 				},
@@ -64,6 +65,7 @@ func TestValidateAndSign(t *testing.T) {
 			},
 			Spec: v1beta1.BuildPolicySpec{
 				AttestationAuthorityName: "auth2",
+				PrivateKeySecretName:     "auth2_key",
 				BuildRequirements: v1beta1.BuildRequirements{
 					BuiltFrom: "multi_attestor",
 				},
@@ -76,6 +78,7 @@ func TestValidateAndSign(t *testing.T) {
 			},
 			Spec: v1beta1.BuildPolicySpec{
 				AttestationAuthorityName: "auth3",
+				PrivateKeySecretName:     "auth3_key",
 				BuildRequirements: v1beta1.BuildRequirements{
 					BuiltFrom: "multi_attestor",
 				},
@@ -88,6 +91,7 @@ func TestValidateAndSign(t *testing.T) {
 			},
 			Spec: v1beta1.BuildPolicySpec{
 				AttestationAuthorityName: "auth4",
+				PrivateKeySecretName:     "missing_key",
 				BuildRequirements: v1beta1.BuildRequirements{
 					BuiltFrom: "no_key_attestor",
 				},
@@ -102,9 +106,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth1_note",
-					PrivateKeySecretName: "auth1_key",
-					PublicKeyData:        pub1,
+					NoteReference: "auth1_note",
+					PublicKeyData: pub1,
 				},
 			},
 			{
@@ -113,9 +116,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth2_note",
-					PrivateKeySecretName: "auth2_key",
-					PublicKeyData:        pub2,
+					NoteReference: "auth2_note",
+					PublicKeyData: pub2,
 				},
 			},
 			{
@@ -124,9 +126,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth3_note",
-					PrivateKeySecretName: "auth3_key",
-					PublicKeyData:        pub3,
+					NoteReference: "auth3_note",
+					PublicKeyData: pub3,
 				},
 			},
 			{
@@ -135,8 +136,7 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth4_note",
-					PrivateKeySecretName: "missing_key",
+					NoteReference: "auth4_note",
 				},
 			},
 		}

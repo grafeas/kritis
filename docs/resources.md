@@ -50,6 +50,9 @@ metadata:
   name: my-gap
   namespace: default
 spec:
+  admissionAllowlistPatterns:
+  - namePattern: gcr.io/1-my-image-any-tag:*
+  - namePattern: gcr.io/2-my-image:latest
   attestationAuthorityNames:
   - kritis-authority
 ```
@@ -85,8 +88,25 @@ Generic Attestation Policy Spec description:
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 | attestationAuthorityNames | | Non-empty List of [Attestation Authorities](#attestationauthority-crd) for which all of them are required to be satisfied before the Admission Controller will admit the pod.|
+| attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) for which one of is required to be satisfied before the Admission Controller will admit the pod.|
 
 Note that the list of [Attestation Authorities](#attestationauthority-crd) must be non-empty. If the list is empty, images can only be admitted through allowlist (GAP allowlist is WIP).
+
+Admission Allowlist Pattern Spec description
+
+| Field     | Default (if applicable)   | Description |
+|-----------|---------------------------|-------------|
+| namePattern | | A name pattern that specifies which images are not inspected by Admission Controller.|
+
+A pattern is a path to a single image by
+exact match, or to any images matching a pattern using the wildcard symbol
+(`*`). The wildcards may only be present in the end, and not anywhere
+ else in the pattern, e.g., `gcr.io/n*x` is not allowed,
+but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
+e.g.,, `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+but it does not match `gcr.io/nginx/image`.
+The name pattern matching rule is compatible with that of Binary Authorization, 
+see more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns.
 
 ## ImageSecurityPolicy CRD
 
@@ -104,6 +124,7 @@ metadata:
     namespace: example-namespace
 spec:
   attestationAuthorityName: kritis-authority
+  privateKeySecretName: foo
   imageAllowlist:
   - gcr.io/my-project/allowlist-image@sha256:<DIGEST>
   packageVulnerabilityPolicy:
@@ -144,7 +165,8 @@ Image Security Policy Spec description:
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 |imageAllowlist | | List of images that are allowlisted and are not inspected by Admission Controller.|
-|attestationAuthorityName | | Attestation authority name for adding attestation.|
+|attestationAuthorityName | | Attestation authority name for verifying attestation.|
+|privateKeySecretname | | Private secret key name for adding attestation.|
 |packageVulnerabilityPolicy.allowlistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
@@ -204,7 +226,6 @@ metadata:
     namespace: qa
 spec:
     noteReference: projects/image-attestor
-    privateKeySecretName: foo
     publicKeyData: ...
 ```
 
