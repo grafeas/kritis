@@ -56,7 +56,7 @@ func TestReviewGAP(t *testing.T) {
 		}
 		return nil, fmt.Errorf("Not such secret for %s", name)
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+	oneValidAtt := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
 	twoValidAtts := []metadata.PGPAttestation{
 		{Signature: encodeB64(sig), KeyID: secFpr},
 		{Signature: encodeB64(sig2), KeyID: secFpr2},
@@ -94,9 +94,7 @@ func TestReviewGAP(t *testing.T) {
 			},
 		},
 	}
-	// One policy with two attestors:
-	// 'test' -- satisfies QualifiedImage
-	// 'test2' -- does not satisfy any image in this test
+	// One policy with two attestors.
 	gapWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
@@ -105,7 +103,7 @@ func TestReviewGAP(t *testing.T) {
 			AttestationAuthorityNames: []string{"test", "test2"},
 		},
 	}}
-	// One policy without attestor:
+	// One policy without attestor.
 	gapWithoutAA := []v1beta1.GenericAttestationPolicy{{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
@@ -154,7 +152,7 @@ func TestReviewGAP(t *testing.T) {
 			name:         "valid image with attestation",
 			image:        img,
 			policies:     oneGAP,
-			attestations: validAtts,
+			attestations: oneValidAtt,
 			isAdmitted:   true,
 			shouldErr:    false,
 		},
@@ -218,7 +216,7 @@ func TestReviewGAP(t *testing.T) {
 			name:         "image complies with one policy out of two",
 			image:        img,
 			policies:     twoGAPs,
-			attestations: validAtts,
+			attestations: oneValidAtt,
 			isAdmitted:   true,
 			shouldErr:    false,
 		},
@@ -234,7 +232,7 @@ func TestReviewGAP(t *testing.T) {
 			name:         "image attested by one attestor out of two",
 			image:        img,
 			policies:     gapWithTwoAAs,
-			attestations: validAtts,
+			attestations: oneValidAtt,
 			isAdmitted:   false,
 			shouldErr:    true,
 		},
