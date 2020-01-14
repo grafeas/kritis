@@ -49,25 +49,19 @@ func TestValidatingTransport(t *testing.T) {
 	validAuth := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub))},
+			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}
 	validAuthWithTwoKeys := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyList:        []string{base64.StdEncoding.EncodeToString([]byte(pub))},
-		},
-	}
-	validAuthWithTwoKeys := v1beta1.AttestationAuthority{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
-		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyList:        []string{"bad-key", base64.StdEncoding.EncodeToString([]byte(pub))},
+			PublicKeyList: []string{"bad-key", base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}
 	invalidAuth := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeyList:        []string{"bad-key"},
+			PublicKeyList: []string{"bad-key"},
 		},
 	}
 	tcs := []struct {

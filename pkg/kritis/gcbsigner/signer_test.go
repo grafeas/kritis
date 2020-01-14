@@ -106,8 +106,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth1_note",
-					PublicKeyList:        []string{pub1},
+					NoteReference: "auth1_note",
+					PublicKeyList: []string{pub1},
 				},
 			},
 			{
@@ -116,8 +116,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth2_note",
-					PublicKeyList:        []string{pub2},
+					NoteReference: "auth2_note",
+					PublicKeyList: []string{pub2},
 				},
 			},
 			{
@@ -126,8 +126,8 @@ func TestValidateAndSign(t *testing.T) {
 					Namespace: "foo",
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "auth3_note",
-					PublicKeyList:        []string{pub3},
+					NoteReference: "auth3_note",
+					PublicKeyList: []string{pub3},
 				},
 			},
 			{
