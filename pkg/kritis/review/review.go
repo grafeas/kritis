@@ -61,11 +61,58 @@ func generateGapAllowlist(gaps []v1beta1.GenericAttestationPolicy) []string {
 	return allowlist
 }
 
-// ReviewGAP reviews images against generic attestation policies
-// Returns error if violations are found and handles them per violation strategy
-func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error {
-	images = util.RemoveGloballyAllowedImages(images)
+// reviewImageWithGAP reviews single image against a single generic attestation policy
+func (r Reviewer) reviewImageWithGAP(image string, gap v1beta1.GenericAttestationPolicy, c metadata.ReadOnlyClient) (bool, []string, error) {
+	glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 
+	// Get all AttestationAuthorities in this policy.
+	auths, err := r.getAttestationAuthoritiesForGAP(gap)
+	if err != nil {
+		return false, nil, err
+	}
+
+	notAttestedBy, _ := r.findUnsatisfiedAuths(image, auths, c)
+	if len(notAttestedBy) == 0 {
+		glog.Infof("Image is attested by gap %s", gap.Name)
+		return true, make([]string, 0), nil
+	}
+
+	notAttestedAuthNames := make([]string, len(notAttestedBy))
+	for i, notAttestedAuth := range notAttestedBy {
+		notAttestedAuthNames[i] = notAttestedAuth.Name
+	}
+	glog.Infof("Image is missing attestations from %+q in gap %s", notAttestedAuthNames, gap.Name)
+
+	return false, notAttestedAuthNames, nil
+}
+
+func (r Reviewer) checkGAPs(gaps []v1beta1.GenericAttestationPolicy) error {
+	for _, gap := range gaps {
+		// Get all AttestationAuthorities in this policy.
+		auths, err := r.getAttestationAuthoritiesForGAP(gap)
+		if err != nil {
+			return err
+		}
+		if len(auths) == 0 {
+			return fmt.Errorf("Generic attestation policy %s did not specify any attestation authority.", gap.Name)
+		}
+	}
+	return nil
+}
+
+// ReviewGAP reviews images against generic attestation policies
+func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPolicy, pod *v1.Pod, c metadata.ReadOnlyClient) error {
+	// If no policy found, images should be admitted.
+	if len(gaps) == 0 {
+		glog.Info("No Generic Attestation Policies found")
+		return nil
+	}
+
+	// Check if all GAPs are well-formed.
+	if err := r.checkGAPs(gaps); err != nil {
+		return err
+	}
+	images = util.RemoveGloballyAllowedImages(images)
 	images = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
 
 	if len(images) == 0 {
@@ -73,33 +120,43 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		return nil
 	}
 
-	if len(gaps) == 0 {
-		glog.Info("No Generic Attestation Policies found")
-		return nil
-	}
-
+	allImgsAttested := true
+	missingAttestations := map[string]map[string][]string{}
+	var badImages []string
 	for _, image := range images {
 		glog.Infof("Check if %s has valid Attestations.", image)
-		imgAttested := false
+		imgAttestedByAnyGap := false
+		missingAttestations[image] = map[string][]string{}
 		for _, gap := range gaps {
-			glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
-			// Get all AttestationAuthorities in this policy.
-			auths, err := r.getAttestationAuthoritiesForGAP(gap)
+			isAttested, notAttestedAuthNames, err := r.reviewImageWithGAP(image, gap, c)
 			if err != nil {
 				return err
 			}
-			_, attestedByAny := r.findUnsatisfiedAuths(image, auths, c)
-			if attestedByAny {
-				imgAttested = true
+			if isAttested {
+				imgAttestedByAnyGap = true
 			}
+			missingAttestations[image][gap.Name] = notAttestedAuthNames
 		}
-		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
+		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttestedByAnyGap); err != nil {
 			glog.Errorf("error handling attestations %v", err)
 		}
-		if !imgAttested {
-			return fmt.Errorf("image %s is not attested", image)
+		if !imgAttestedByAnyGap {
+			glog.Infof("Image %s is not attested by any gap policy.", image)
+			allImgsAttested = false
+			badImages = append(badImages, image)
 		}
 	}
+	if !allImgsAttested {
+		errMsg := "Some images are not attested by all authorities in any GAP policy:\n"
+		for _, image := range badImages {
+			errMsg = errMsg + fmt.Sprintf("- image %s is not attested by\n", image)
+			for gapName, authNames := range missingAttestations[image] {
+				errMsg = errMsg + fmt.Sprintf("  - %+q in gap %s\n", authNames, gapName)
+			}
+		}
+		return fmt.Errorf(errMsg)
+	}
+	glog.Infof("All images are either allow or attested.")
 	return nil
 }
 

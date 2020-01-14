@@ -35,7 +35,7 @@ kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ## GenericAttestationPolicy CRD
 
 GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
-The policy expects any one attestation authority to be satisfied before allowing the container image to be admitted.
+The policy expects ALL attestation authorities to be satisfied before allowing the container image to be admitted.
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 
@@ -87,8 +87,10 @@ Generic Attestation Policy Spec description:
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
-| admissionAllowlistPatterns | | List of AdmissionAllowlistPatterns (see below) that specify which images are not inspected by Admission Controller.|
+| attestationAuthorityNames | | Non-empty List of [Attestation Authorities](#attestationauthority-crd) for which all of them are required to be satisfied before the Admission Controller will admit the pod.|
 | attestationAuthorityNames | | List of [Attestation Authorities](#attestationauthority-crd) for which one of is required to be satisfied before the Admission Controller will admit the pod.|
+
+Note that the list of [Attestation Authorities](#attestationauthority-crd) must be non-empty. If the list is empty, an error will be thrown for malformed policy, and no image will be admitted, including allowlisted images.
 
 Admission Allowlist Pattern Spec description
 

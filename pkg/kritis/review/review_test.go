@@ -34,19 +34,33 @@ import (
 
 func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
-	_, pub2 := testutil.CreateSecret(t, "sec2")
-	secFpr := sec.PgpKey.Fingerprint()
+	sec2, pub2 := testutil.CreateSecret(t, "sec2")
+	secFpr, secFpr2 := sec.PgpKey.Fingerprint(), sec2.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
 	// An attestation for 'img' verifiable by 'pub'.
 	sig, err := util.CreateAttestationSignature(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-
-	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
-		return sec, nil
+	sig2, err := util.CreateAttestationSignature(img, sec2)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+
+	sMock := func(_, name string) (*secrets.PGPSigningSecret, error) {
+		if name == "sec" {
+			return sec, nil
+		}
+		if name == "sec2" {
+			return sec2, nil
+		}
+		return nil, fmt.Errorf("Not such secret for %s", name)
+	}
+	oneValidAtt := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+	twoValidAtts := []metadata.PGPAttestation{
+		{Signature: encodeB64(sig), KeyID: secFpr},
+		{Signature: encodeB64(sig2), KeyID: secFpr2},
+	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
@@ -80,15 +94,25 @@ func TestReviewGAP(t *testing.T) {
 			},
 		},
 	}
-	// One policy with two attestors:
-	// 'test' -- satisfies QualifiedImage
-	// 'test2' -- does not satisfy any image in this test
+	// One policy with two attestors.
 	gapWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
 		Spec: v1beta1.GenericAttestationPolicySpec{
 			AttestationAuthorityNames: []string{"test", "test2"},
+		},
+	}}
+	// One policy without attestor.
+	gapWithoutAA := []v1beta1.GenericAttestationPolicy{{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foo",
+		},
+		Spec: v1beta1.GenericAttestationPolicySpec{
+			AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
+				{NamePattern: "allowed_image_name"},
+			},
+			AttestationAuthorityNames: []string{},
 		},
 	}}
 	// Two attestors: 'test', 'test2'.
@@ -121,15 +145,15 @@ func TestReviewGAP(t *testing.T) {
 		image        string
 		policies     []v1beta1.GenericAttestationPolicy
 		attestations []metadata.PGPAttestation
-		isAttested   bool
+		isAdmitted   bool
 		shouldErr    bool
 	}{
 		{
 			name:         "valid image with attestation",
 			image:        img,
 			policies:     oneGAP,
-			attestations: validAtts,
-			isAttested:   true,
+			attestations: oneValidAtt,
+			isAdmitted:   true,
 			shouldErr:    false,
 		},
 		{
@@ -137,7 +161,23 @@ func TestReviewGAP(t *testing.T) {
 			image:        img,
 			policies:     oneGAP,
 			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
+			isAdmitted:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "gap without attestor should error",
+			image:        img,
+			policies:     gapWithoutAA,
+			attestations: []metadata.PGPAttestation{},
+			isAdmitted:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "gap without attestor should error on allowlisted image",
+			image:        "allowed_image_name",
+			policies:     gapWithoutAA,
+			attestations: []metadata.PGPAttestation{},
+			isAdmitted:   false,
 			shouldErr:    true,
 		},
 		{
@@ -145,7 +185,7 @@ func TestReviewGAP(t *testing.T) {
 			image:        "allowed_image_name",
 			policies:     oneGAP,
 			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
+			isAdmitted:   false,
 			shouldErr:    false,
 		},
 		{
@@ -153,7 +193,7 @@ func TestReviewGAP(t *testing.T) {
 			image:        "allowed_image_name",
 			policies:     twoGAPs,
 			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
+			isAdmitted:   false,
 			shouldErr:    false,
 		},
 		{
@@ -161,7 +201,7 @@ func TestReviewGAP(t *testing.T) {
 			image:        img,
 			policies:     []v1beta1.GenericAttestationPolicy{},
 			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
+			isAdmitted:   false,
 			shouldErr:    false,
 		},
 		{
@@ -169,15 +209,15 @@ func TestReviewGAP(t *testing.T) {
 			image:        img,
 			policies:     oneGAP,
 			attestations: invalidAtts,
-			isAttested:   false,
+			isAdmitted:   false,
 			shouldErr:    true,
 		},
 		{
 			name:         "image complies with one policy out of two",
 			image:        img,
 			policies:     twoGAPs,
-			attestations: validAtts,
-			isAttested:   true,
+			attestations: oneValidAtt,
+			isAdmitted:   true,
 			shouldErr:    false,
 		},
 		{
@@ -185,15 +225,23 @@ func TestReviewGAP(t *testing.T) {
 			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
 			policies:     twoGAPs,
 			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
+			isAdmitted:   false,
 			shouldErr:    false,
 		},
 		{
 			name:         "image attested by one attestor out of two",
 			image:        img,
 			policies:     gapWithTwoAAs,
-			attestations: validAtts,
-			isAttested:   true,
+			attestations: oneValidAtt,
+			isAdmitted:   false,
+			shouldErr:    true,
+		},
+		{
+			name:         "image attested by two attestors out of two",
+			image:        img,
+			policies:     gapWithTwoAAs,
+			attestations: twoValidAtts,
+			isAdmitted:   true,
 			shouldErr:    false,
 		},
 	}
@@ -216,8 +264,8 @@ func TestReviewGAP(t *testing.T) {
 			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if th.Attestations[tc.image] != tc.isAttested {
-				t.Errorf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
+			if th.Attestations[tc.image] != tc.isAdmitted {
+				t.Errorf("expected to get image attested: %t. Got %t", tc.isAdmitted, th.Attestations[tc.image])
 			}
 		})
 	}
