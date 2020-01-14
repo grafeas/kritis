@@ -68,11 +68,11 @@ type PGPAttestation struct {
 	OccID string
 }
 
-// ParseNoteReference extracts the project ID and the note ID form the NoteReference.
+// ParseNoteReference extracts the project ID and the note ID from the NoteReference.
 func ParseNoteReference(ref string) (string, string, error) {
-	str := strings.Split(ref, "/")
-	if len(str) != 4 || str[0] != "projects" || str[2] != "notes" {
+	parts := strings.Split(ref, "/")
+	if len(parts) != 4 || parts[0] != "projects" || parts[2] != "notes" {
 		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>")
 	}
-	return str[1], str[3], nil
+	return parts[1], parts[3], nil
 }
