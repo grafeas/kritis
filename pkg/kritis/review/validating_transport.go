@@ -47,11 +47,13 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		if err != nil {
 			glog.Warningf("Error parsing key for %q: %v", avt.Attestor.Name, err)
 		} else {
+			if _, ok := keys[fingerprint]; ok {
+				glog.Warningf("Duplicate keys with fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
+			}
 			keys[fingerprint] = key
 		}
 	}
 	if len(keys) == 0 {
-		glog.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
 		return nil, fmt.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
 	}
 
