@@ -85,7 +85,8 @@
             namespace: default
         spec:
             noteReference: v1beta1/projects/$PROJECT
-            publicKeyData: $PUBLIC_KEY
+            publicKeyList: 
+            - $PUBLIC_KEY
         EOF
         ```
 

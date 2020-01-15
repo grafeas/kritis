@@ -226,7 +226,9 @@ metadata:
     namespace: qa
 spec:
     noteReference: projects/image-attestor
-    publicKeyData: ...
+    publicKeyList:
+    - ...
+    - ...
 ```
 
 Where “image-attestor” is the project for creating AttestationAuthority Notes.
@@ -235,4 +237,6 @@ In order to create notes, the service account `gac-ca-admin` must have `containe
 
 The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
 
-`publicKeyData` is the base encoded PEM public key for the gpg secret.
+`publicKeyList` is a list of base64 encoded PEM public keys for the gpg secret.
+The list is used to support key rotations. 
+An image is attested if it has an attestation verifiable by ANY of the public keys.

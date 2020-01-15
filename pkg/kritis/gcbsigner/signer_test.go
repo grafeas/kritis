@@ -107,7 +107,7 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth1_note",
-					PublicKeyData: pub1,
+					PublicKeyList: []string{pub1},
 				},
 			},
 			{
@@ -117,7 +117,7 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth2_note",
-					PublicKeyData: pub2,
+					PublicKeyList: []string{pub2},
 				},
 			},
 			{
@@ -127,7 +127,7 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth3_note",
-					PublicKeyData: pub3,
+					PublicKeyList: []string{pub3},
 				},
 			},
 			{

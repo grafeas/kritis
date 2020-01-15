@@ -48,7 +48,8 @@ metadata:
   namespace: default
 spec:
   noteReference: v1beta1/projects/standalone
-  publicKeyData: $PUBLIC_KEY
+  publicKeyList:
+  - $PUBLIC_KEY
 EOF
 
 # Create GenericAttestationPolicy that references the AttestationAuthority we
