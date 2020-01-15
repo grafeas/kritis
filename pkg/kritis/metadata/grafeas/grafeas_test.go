@@ -145,7 +145,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("projects/%s", DefaultProject),
+			NoteReference: fmt.Sprintf("projects/%s/notes/note1", DefaultProject),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "note1",
@@ -270,7 +270,11 @@ func (g *grafeasServerMock) UpdateNote(context.Context, *grafeas.UpdateNoteReque
 }
 
 func (g *grafeasServerMock) ListNoteOccurrences(context.Context, *grafeas.ListNoteOccurrencesRequest) (*grafeas.ListNoteOccurrencesResponse, error) {
-	return nil, nil
+	var resp grafeas.ListNoteOccurrencesResponse
+	for _, occ := range g.occurrences {
+		resp.Occurrences = append(resp.Occurrences, occ)
+	}
+	return &resp, nil
 }
 
 func (g *grafeasServerMock) GetVulnerabilityOccurrencesSummary(context.Context, *grafeas.GetVulnerabilityOccurrencesSummaryRequest) (*grafeas.VulnerabilityOccurrencesSummary, error) {
