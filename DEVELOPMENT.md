@@ -1,6 +1,7 @@
 # Development
 
 This doc explains the development workflow so you can get started [contributing](CONTRIBUTING.md) to Kritis!
+Before get started, don't forget to join the [kritis-users mailing list](https://groups.google.com/forum/#!forum/kritis-users)!
 
 ## Getting started
 

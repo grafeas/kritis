@@ -22,6 +22,10 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+## Joing mailing list
+
+We encourage all contributors to join our mailing list [kritis-users](https://groups.google.com/forum/#!forum/kritis-users).
+
 ## Community Guidelines
 
 This project follows [Google's Open Source Community
