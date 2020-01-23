@@ -43,7 +43,7 @@ type PackageVulnerabilityRequirements struct {
 	// CVE's with fixes.
 	MaximumSeverity string `json:"maximumSeverity"`
 	// CVE's without fixes.
-	MaximumFixUnavailableSeverity string   `json:"maximumFixNotAvailableSeverity"`
+	MaximumFixUnavailableSeverity string   `json:"maximumFixUnavailableSeverity"`
 	AllowlistCVEs                 []string `json:"allowlistCVEs"`
 }
 
