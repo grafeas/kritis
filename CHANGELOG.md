@@ -1,5 +1,8 @@
 This is the changelog of Kritis releases
 
+v0.2.2:
+  * Update Helm chart to work with Kubernetes 1.16.
+
 v0.2.1:
   * Treat the signature in an Attestation Occurrence as base64 encoded.
   * Bump kubectl version in helm hook container images.

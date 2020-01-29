@@ -231,8 +231,7 @@ func installKritis(cs kubernetes.Interface, ns *v1.Namespace) (func(*testing.T),
 	return cleanup, nil
 }
 
-// Complete setUp for a test. Returns a tearDown function.
-func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T)) {
+func setUpKritisInNS(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(*testing.T)) {
 	t.Helper()
 
 	// Otherwise the credentials are stored in an unexpected path within /secret
@@ -278,6 +277,15 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("install: %v", err)
 	}
+	return cs, ns, func(t *testing.T) {
+		instCleanup(t)
+		nsCleanup(t)
+	}
+}
+
+// Complete setUp for an ISP test. Returns a tearDown function.
+func setUpISP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T)) {
+	cs, ns, instInNsCleanup := setUpKritisInNS(t)
 
 	// Generate a key value pair
 	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
@@ -290,7 +298,7 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 	if err != nil {
 		t.Fatalf("failed to process isp template: %v", err)
 	}
-	cmd = exec.Command("kubectl", "create", "-f", isp, "-n", ns.Name)
+	cmd := exec.Command("kubectl", "create", "-f", isp, "-n", ns.Name)
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
@@ -300,18 +308,119 @@ func setUp(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T
 		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
 
-	waitForCRDExamples(t, ns)
+	waitForCRDExamples(t, ns, map[string]string{"imagesecuritypolicies.kritis.grafeas.io": "my-isp"})
 
 	return cs, ns, func(t *testing.T) {
 		cleanupTemplate(t, isp, ns.Name)
-		instCleanup(t)
-		nsCleanup(t)
+		instInNsCleanup(t)
 		t.Logf("tearDown complete, have a wonderful day!")
 	}
 }
 
+// Complete setUp for a GAP test. Returns a tearDown function.
+func setUpGAP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T)) {
+	cs, ns, instInNsCleanup := setUpKritisInNS(t)
+
+	gap, err := processTemplate("generic-attestation-policy/my-gap.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process gap template: %v", err)
+	}
+	cmd := exec.Command("kubectl", "create", "-f", gap, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	aa1, err := processTemplate("generic-attestation-policy/test-attestor-1.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process attestation-authority template: %v", err)
+	}
+	cmd = exec.Command("kubectl", "create", "-f", aa1, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	aa2, err := processTemplate("generic-attestation-policy/test-attestor-2.yaml", ns.Name)
+	if err != nil {
+		t.Fatalf("failed to process attestation-authority template: %v", err)
+	}
+	cmd = exec.Command("kubectl", "create", "-f", aa2, "-n", ns.Name)
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	cmd = exec.Command("kubectl", "apply", "-f", "testdata/kritis-server/kritis-config.yaml")
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
+	}
+
+	waitForCRDExamples(t, ns, map[string]string{"genericattestationpolicies.kritis.grafeas.io": "my-gap"})
+
+	return cs, ns, func(t *testing.T) {
+		cleanupTemplate(t, gap, ns.Name)
+		instInNsCleanup(t)
+		t.Logf("tearDown complete, have a wonderful day!")
+	}
+}
+
+func TestKritisGAPLogic(t *testing.T) {
+	cs, ns, tearDown := setUpGAP(t)
+	defer tearDown(t)
+
+	var testCases = []struct {
+		template string
+		pods     []string
+		err      string
+	}{
+		{
+			// Policy under test has two attestation authorities,
+			// but the image deployed only has an attestation by
+			// one of those auths.
+			"nginx/nginx-digest.yaml",
+			[]string{},
+			"not attested",
+		},
+		{
+			// Image deployed has no required attestations.
+			"java/java-with-digest.yaml",
+			[]string{},
+			"not attested",
+		},
+	}
+
+	for _, tc := range testCases {
+		path, err := processTemplate(tc.template, ns.Name)
+		defer cleanupTemplate(t, path, ns.Name)
+		if err != nil {
+			t.Fatalf("failed to process template: %v", err)
+		}
+
+		cmd := exec.Command("kubectl", "apply", "-f", path, "--namespace", ns.Name)
+		t.Logf("Running: %s", cmd.Args)
+		out, err := integration_util.RunCmdOut(cmd)
+
+		if err != nil && len(tc.err) == 0 {
+			t.Fatalf("failed because error not expected: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
+		}
+
+		if len(tc.err) > 0 {
+			if err == nil {
+				t.Fatalf("failed because error was expected")
+			}
+			if !strings.Contains(err.Error(), tc.err) {
+				t.Fatalf("wrong error: %v\n\noutput:\n%s\n\nlogs:\n%s\n", err, out, kritisLogs(ns))
+			}
+		}
+
+		for _, pod := range tc.pods {
+			if err := kubernetesutil.WaitForPodReady(cs.CoreV1().Pods(ns.Name), pod); err != nil {
+				t.Errorf("timeout waiting for pod\n%s\n%s", kritisLogs(ns), out)
+			}
+		}
+	}
+}
+
 func TestKritisISPLogic(t *testing.T) {
-	cs, ns, tearDown := setUp(t)
+	cs, ns, tearDown := setUpISP(t)
 	defer tearDown(t)
 
 	var testCases = []struct {
@@ -452,7 +561,7 @@ func TestKritisISPLogic(t *testing.T) {
 }
 
 func TestKritisCron(t *testing.T) {
-	cs, ns, tearDown := setUp(t)
+	cs, ns, tearDown := setUpISP(t)
 	defer tearDown(t)
 
 	var testCases = []struct {

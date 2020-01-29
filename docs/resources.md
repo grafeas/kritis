@@ -225,7 +225,7 @@ metadata:
     name: qa-attestator
     namespace: qa
 spec:
-    noteReference: projects/image-attestor
+    noteReference: projects/image-attestor/notes/qa-note
     publicKeyList:
     - ...
     - ...

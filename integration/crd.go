@@ -36,7 +36,7 @@ kind: AttestationAuthority
 metadata:
   name: test-attestor
 spec:
-  noteReference: projects/%s
+  noteReference: projects/%s/notes/test-attestor
   publicKeyList: 
   - %s
 `
@@ -74,7 +74,8 @@ func createKeySecret(t *testing.T, secretName string, ns string, pubKey string, 
 	}
 }
 
-func waitForCRDExamples(t *testing.T, ns *v1.Namespace) {
+// crdNames is a map of CRD type to names of the expected CRDs to create.
+func waitForCRDExamples(t *testing.T, ns *v1.Namespace, crdNames map[string]string) {
 	t.Helper()
 	t.Logf("Waiting for CRD examples ...")
 	for crd, name := range crdNames {

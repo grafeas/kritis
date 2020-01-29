@@ -4,4 +4,5 @@ metadata:
   name: kritis-authority
   namespace: default
 spec:
-  noteReference: projects/kritis-test1
+  noteReference: projects/kritis-test1/notes/kritis-authority
+  privateKeySecretName: kritis-authority-key

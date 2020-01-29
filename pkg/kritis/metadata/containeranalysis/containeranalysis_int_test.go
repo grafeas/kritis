@@ -38,7 +38,7 @@ var (
 func GetAA() *kritisv1beta1.AttestationAuthority {
 	aa := &kritisv1beta1.AttestationAuthority{
 		Spec: kritisv1beta1.AttestationAuthoritySpec{
-			NoteReference: fmt.Sprintf("projects/%s", IntProject),
+			NoteReference: fmt.Sprintf("projects/%s/notes/%s", IntProject, IntTestNoteName),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: IntTestNoteName,
@@ -98,7 +98,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		SecretName: "test",
 	}
 
-	proj, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	proj, _, err := metadata.ParseNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		t.Fatalf("Failed to extract project ID %v", err)
 	}
