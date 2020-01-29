@@ -38,11 +38,11 @@ Authorization](https://cloud.google.com/binary-authorization/).  For details see
 
 ## Getting Started
 
-* Watch the talk on [Software Supply Chain Management with Grafeas and Kritis](https://www.infoq.com/presentations/supply-grafeas-kritis/)
-* Learn the concepts in the [Kritis whitepaper](docs/binary-authorization.md)
-* Try out Kritis with standalone Grafeas by following [instructions](docs/standalone/README.md)
-* Try the [Tutorial](docs/tutorial.md) to learn how to block vulnerabilities using [GCP Container Analysis](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities)
-* Read the [Resource Reference](docs/resources.md) to configure and interact with Kritis resources
+* Watch the talk on [Software Supply Chain Management with Grafeas and Kritis](https://www.infoq.com/presentations/supply-grafeas-kritis/).
+* Learn the concepts in the [Kritis Whitepaper](docs/binary-authorization.md).
+* Try out Kritis with standalone Grafeas by following [Standalone Mode Tutorial](docs/standalone/README.md)
+* Try the [Tutorial](docs/tutorial.md) to learn how to block vulnerabilities using [GCP Container Analysis](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities).
+* Read the [Resource Reference](docs/resources.md) to configure and interact with Kritis resources.
 
 ## Support
 
