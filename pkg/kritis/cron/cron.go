@@ -103,7 +103,7 @@ func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
 			return err
 		}
 		for _, p := range ps {
-			glog.Infof("Checking po %s", p.Name)
+			glog.Infof("Checking pod %s", p.Name)
 			if err := r.ReviewISP(admission.PodImages(p), isps, &p, cfg.Client); err != nil {
 				glog.Error(err)
 			}
