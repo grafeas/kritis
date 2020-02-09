@@ -20,7 +20,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
-	"github.com/grafeas/kritis/pkg/kritis/crd/buildpolicy"
+	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
@@ -34,7 +34,7 @@ type Signer struct {
 
 type Config struct {
 	Secret   secrets.Fetcher
-	Validate buildpolicy.ValidateFunc
+	Validate vulnzsigningpolicy.ValidateFunc
 }
 
 func New(client metadata.ReadWriteClient, c *Config) Signer {
@@ -58,7 +58,7 @@ var (
 // ValidateAndSign validates builtFrom against the build policies and creates
 // attestations for all authorities for the matching policies.
 // Returns an error if creating an attestation for any authority fails.
-func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy) error {
+func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.VulnzSigningPolicy) error {
 	for _, bp := range bps {
 		glog.Infof("Validating %q against BuildPolicy %q", prov.ImageRef, bp.Name)
 		if result := s.config.Validate(bp, prov.BuiltFrom); result != nil {
