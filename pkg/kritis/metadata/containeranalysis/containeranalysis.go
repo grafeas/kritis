@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	"encoding/base64"
 	"fmt"
+	"google.golang.org/api/option"
 	"strings"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
@@ -48,9 +49,9 @@ type Client struct {
 }
 
 // TODO: separate constructor methods for r/w and r/o clients
-func New() (*Client, error) {
+func New(opts ...option.ClientOption) (*Client, error) {
 	ctx := context.Background()
-	client, err := ca.NewGrafeasV1Beta1Client(ctx)
+	client, err := ca.NewGrafeasV1Beta1Client(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

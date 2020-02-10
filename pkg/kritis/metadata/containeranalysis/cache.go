@@ -20,6 +20,7 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
@@ -33,8 +34,8 @@ type Cache struct {
 }
 
 // NewCache Create a new Cache for container analysis client.
-func NewCache() (*Cache, error) {
-	c, err := New()
+func NewCache(opts ...option.ClientOption) (*Cache, error) {
+	c, err := New(opts ...)
 	if err != nil {
 		return nil, err
 	}
