@@ -24,7 +24,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	"github.com/grafeas/kritis/pkg/kritis/metadata/grafeas"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
@@ -39,6 +38,7 @@ type Config struct {
 	Validate  vulnzsigningpolicy.ValidateFunc
 	PgpKey    *secrets.PgpKey
 	Authority v1beta1.AttestationAuthority
+	Project   string
 }
 
 func New(client metadata.ReadWriteClient, c *Config) Signer {
@@ -87,6 +87,6 @@ func (s Signer) addAttestation(image string) error {
 	}
 
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n, image, sec, grafeas.DefaultProject)
+	_, err = s.client.CreateAttestationOccurrence(n, image, sec, s.config.Project)
 	return err
 }

@@ -72,7 +72,7 @@ type PGPAttestation struct {
 func ParseNoteReference(ref string) (string, string, error) {
 	parts := strings.Split(ref, "/")
 	if len(parts) != 4 || parts[0] != "projects" || parts[2] != "notes" {
-		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>")
+		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>, actual: %s", ref)
 	}
 	return parts[1], parts[3], nil
 }
