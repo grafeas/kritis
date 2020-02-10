@@ -35,11 +35,11 @@ import (
 func main() {
 	var image, json_key_path, pri_key_path, pub_key_path, policy_path string
 
-	flag.StringVar(&image, "image url", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
-	flag.StringVar(&json_key_path, "json credentials file path", "", "json credentials file path, e.g., ./key.json")
-	flag.StringVar(&pri_key_path, "signer private key path", "", "signer private key path, e.g., /dev/shm/key.pgp")
-	flag.StringVar(&pub_key_path, "matching public key path", "", "public key path, e.g., /dev/shm/key.pub")
-	flag.StringVar(&policy_path, "vulnerability signing policy file path", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
+	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
+	flag.StringVar(&json_key_path, "credentials", "", "json credentials file path, e.g., ./key.json")
+	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
+	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
 	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, json_key_path, pri_key_path, policy_path)
