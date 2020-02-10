@@ -35,8 +35,10 @@ type Signer struct {
 }
 
 type Config struct {
-	Secret   secrets.Fetcher
-	Validate vulnzsigningpolicy.ValidateFunc
+	Secret    secrets.Fetcher
+	Validate  vulnzsigningpolicy.ValidateFunc
+	PgpKey    *secrets.PgpKey
+	Authority v1beta1.AttestationAuthority
 }
 
 func New(client metadata.ReadWriteClient, c *Config) Signer {
@@ -47,7 +49,7 @@ func New(client metadata.ReadWriteClient, c *Config) Signer {
 }
 
 type ImageVulnerabilities struct {
-	ImageRef  string
+	ImageRef        string
 	Vulnerabilities []metadata.Vulnerability
 }
 
@@ -59,35 +61,31 @@ var (
 // ValidateAndSign validates image from vulnz signing policy and then creates
 // attestation for the passing image.
 // Returns an error if image does not pass or creating an attestation fails.
-func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.VulnzSigningPolicy, pgpKey *secrets.PgpKey) error {
+func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.VulnzSigningPolicy) error {
 	glog.Infof("Validating %q against VulnzSigningPolicy %q", imageVulnz.ImageRef, vps.Name)
 	if violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities); err != nil {
 		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
 	} else {
 		glog.Infof("Image %q passes VulnzSigningPolicy %s, creating attestations", imageVulnz.ImageRef, vps.Name)
 
-		if err := s.addAttestation(imageVulnz.ImageRef, pgpKey); err != nil {
+		if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
 			return err
 		}
 		return nil
 	}
 }
 
-func (s Signer) addAttestation(image string, pgpKey *secrets.PgpKey) error {
-	// Create an AttestaionAuthority to help create noteOcurrences.
-	a, err := authFetcher(ns, authority)
+func (s Signer) addAttestation(image string) error {
+	n, err := util.GetOrCreateAttestationNote(s.client, &s.config.Authority)
 	if err != nil {
 		return err
 	}
-	n, err := util.GetOrCreateAttestationNote(s.client, a)
-	if err != nil {
-		return err
+	// Create secret for this authority
+	sec := &secrets.PGPSigningSecret{
+		PgpKey:     s.config.PgpKey,
+		SecretName: "signing-secret",
 	}
-	// Get secret for this Authority
-	sec, err := s.config.Secret(ns, a.Spec.PrivateKeySecretName)
-	if err != nil {
-		return err
-	}
+
 	// Create Attestation Signature
 	_, err = s.client.CreateAttestationOccurrence(n, image, sec, grafeas.DefaultProject)
 	return err

@@ -32,7 +32,7 @@ type ValidateFunc func(vsp v1beta1.VulnzSigningPolicy, image string, vulnz []met
 
 // ValidateImageSecurityPolicy checks if an image satisfies ISP requirements
 // It returns a list of vulnerabilities that don't pass
-func ValidateVulnzSigningPolicy (vsp v1beta1.VulnzSigningPolicy, image string, vulnz []metadata.Vulnerability) ([]policy.Violation, error) {
+func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vulnz []metadata.Vulnerability) ([]policy.Violation, error) {
 	var violations []policy.Violation
 	// Next, check if image is qualified
 	if !resolve.FullyQualifiedImage(image) {

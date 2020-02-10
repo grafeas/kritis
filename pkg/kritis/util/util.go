@@ -95,15 +95,3 @@ func GetOrCreateAttestationNote(c metadata.ReadWriteClient, a *v1beta1.Attestati
 	}
 	return c.CreateAttestationNote(a)
 }
-
-func GetOrCreateNote(c metadata.ReadWriteClient, noteReference string) (*grafeas.Note, error) {
-	req := &grafeas.GetNoteRequest{
-		Name: noteReference,
-	}
-	return c.client.GetNote(c.ctx, req)
-	if err == nil {
-		return n, nil
-	}
-	return c.CreateAttestationNote(a)
-}
-

@@ -35,7 +35,7 @@ type Cache struct {
 
 // NewCache Create a new Cache for container analysis client.
 func NewCache(opts ...option.ClientOption) (*Cache, error) {
-	c, err := New(opts ...)
+	c, err := New(opts...)
 	if err != nil {
 		return nil, err
 	}

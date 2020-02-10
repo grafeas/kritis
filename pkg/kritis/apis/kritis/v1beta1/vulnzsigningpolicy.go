@@ -33,8 +33,8 @@ type VulnzSigningPolicy struct {
 
 // v is the spec for a BuildPolicy resource
 type VulnzSigningPolicySpec struct {
-	NoteReference string   `json:"noteReference"`
-	PackageVulnerabilityRequirements	PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
+	NoteReference                    string                           `json:"noteReference"`
+	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

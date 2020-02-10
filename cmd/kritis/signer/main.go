@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -10,25 +26,32 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/signer"
 	"google.golang.org/api/option"
 	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
 	"gopkg.in/yaml.v2"
 )
 
 func main() {
-	var image, json_key_path, s_key_path, policy_path string
+	var image, json_key_path, pri_key_path, pub_key_path, policy_path string
 
 	flag.StringVar(&image, "image url", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&json_key_path, "json credentials file path", "", "json credentials file path, e.g., ./key.json")
-	flag.StringVar(&s_key_path, "signer private key path", "", "signer private key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&pri_key_path, "signer private key path", "", "signer private key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&pub_key_path, "matching public key path", "", "public key path, e.g., /dev/shm/key.pub")
 	flag.StringVar(&policy_path, "vulnerability signing policy file path", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
-	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, json_key_path, s_key_path, policy_path)
+	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, json_key_path, pri_key_path, policy_path)
 
-	signerKey, err := ioutil.ReadFile(s_key_path)
+	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
 		glog.Fatalf("Fail to read signer key: %v", err)
+	}
+
+	pubKey, err := ioutil.ReadFile(pub_key_path)
+	if err != nil {
+		glog.Fatalf("Fail to read public key: %v", err)
 	}
 
 	policyFile, err := ioutil.ReadFile(policy_path)
@@ -64,7 +87,6 @@ func main() {
 	fmt.Printf("policy %v\n", policy)
 	fmt.Printf("signer_key %v\n", signerKey)
 
-
 	// Run the signer
 	client, err := containeranalysis.NewCache()
 	if err != nil {
@@ -72,18 +94,33 @@ func main() {
 	}
 
 	// Create pgp key
-	pgpKey, err := secrets.NewPgpKey(string(priv), string(phrase), string(pub))
+	// Assume empty passphrase
+	// TODO: support non-empty passphrase
+	passphrase := ""
+	pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
+	// Create AA
+	// Create an AttestaionAuthority to help create noteOcurrences.
+	// This is quite hacky.
+	// TODO: refactor out the authority code
+	authority := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PublicKeyList: []string{string(pubKey)},
+		},
+	}
 
 	r := signer.New(client, &signer.Config{
-		Secret:   secrets.Fetch,
-		Validate: vulnzsigningpolicy.ValidateVulnzSigningPolicy,
+		Secret:    secrets.Fetch,
+		Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
+		PgpKey:    pgpKey,
+		Authority: authority,
 	})
 	imageVulnz := signer.ImageVulnerabilities{
 		ImageRef:        image,
 		Vulnerabilities: vulnz,
 	}
 
-	if err := r.ValidateAndSign(imageVulnz, policy, pgpKey); err != nil {
+	if err := r.ValidateAndSign(imageVulnz, policy); err != nil {
 		glog.Fatalf("Error creating signature: %v", err)
 	}
 }
