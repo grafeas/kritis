@@ -119,7 +119,6 @@ func main() {
 	}
 
 	r := signer.New(client, &signer.Config{
-		Secret:    secrets.Fetch,
 		Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
 		PgpKey:    pgpKey,
 		Authority: authority,

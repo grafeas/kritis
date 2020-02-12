@@ -34,7 +34,6 @@ type Signer struct {
 }
 
 type Config struct {
-	Secret    secrets.Fetcher
 	Validate  vulnzsigningpolicy.ValidateFunc
 	PgpKey    *secrets.PgpKey
 	Authority v1beta1.AttestationAuthority
