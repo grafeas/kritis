@@ -27,6 +27,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"github.com/grafeas/kritis/pkg/kritis/util"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -77,6 +79,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected no error while getting attestation note %v", err)
 	}
+
 	expectedNoteName := fmt.Sprintf("projects/%s/notes/%s", IntProject, IntTestNoteName)
 	if note.Name != expectedNoteName {
 		t.Fatalf("Expected %s.\n Got %s", expectedNoteName, note.Name)
@@ -126,7 +129,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		case <-timeout:
 			t.Fatal("Should have created at least 1 occurrence")
 
-			// Got a tick, we should check note occurrences
+		// Got a tick, we should check note occurrences
 		case <-tick:
 			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
 				t.Fatalf("Failed to retrieve attestations: %v", err)
@@ -135,5 +138,33 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 				return
 			}
 		}
+	}
+}
+
+func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
+	d, err := New()
+	if err != nil {
+		t.Fatalf("Could not initialize the client %s", err)
+	}
+
+	// Set PageSize to 300
+	createListOccurrencesRequest = createListOccurrencesRequest_test
+
+	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
+	if err != nil {
+		t.Fatalf("Found err %s", err)
+	}
+
+	if len(vuln) <= 300 {
+		t.Errorf("Pagination error: only received results from first page.")
+	}
+}
+
+// TODO: Remove this function if we use the same PageSize -- it would be redundant
+func createListOccurrencesRequest_test(containerImage, kind string) *grafeas.ListOccurrencesRequest {
+	return &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+		PageSize: int32(300),
 	}
 }
