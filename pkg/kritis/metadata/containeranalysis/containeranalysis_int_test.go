@@ -160,7 +160,6 @@ func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
 	}
 }
 
-// TODO: Remove this function if we use the same PageSize -- it would be redundant
 func createListOccurrencesRequest_test(containerImage, kind string) *grafeas.ListOccurrencesRequest {
 	return &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
