@@ -148,7 +148,7 @@ func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
 	}
 
 	// Set PageSize to 300
-	createListOccurrencesRequest = createListOccurrencesRequest_test
+	createListOccurrencesRequest = createListOccurrencesRequestTest
 
 	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
 	if err != nil {
@@ -160,7 +160,7 @@ func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
 	}
 }
 
-func createListOccurrencesRequest_test(containerImage, kind string) *grafeas.ListOccurrencesRequest {
+func createListOccurrencesRequestTest(containerImage, kind string) *grafeas.ListOccurrencesRequest {
 	return &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),

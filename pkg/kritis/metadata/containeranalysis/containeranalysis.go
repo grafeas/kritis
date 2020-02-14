@@ -121,7 +121,6 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 	}
 
 	req := createListOccurrencesRequest(containerImage, kind)
-	fmt.Println(req)
 
 	it := c.client.ListOccurrences(c.ctx, req)
 	p := iterator.NewPager(it, int(req.PageSize), "")
