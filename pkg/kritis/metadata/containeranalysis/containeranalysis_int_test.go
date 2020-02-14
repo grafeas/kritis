@@ -155,8 +155,8 @@ func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
 		t.Fatalf("Found err %s", err)
 	}
 
-	if len(vuln) <= 300 {
-		t.Errorf("Pagination error: only received results from first page.")
+	if len(vuln) <= 900 {
+		t.Errorf("Pagination error: did not receive results from the final page.")
 	}
 }
 
@@ -164,6 +164,6 @@ func createListOccurrencesRequestTest(containerImage, kind string) *grafeas.List
 	return &grafeas.ListOccurrencesRequest{
 		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
-		PageSize: int32(300),
+		PageSize: int32(100),
 	}
 }
