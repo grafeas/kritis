@@ -129,7 +129,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 		case <-timeout:
 			t.Fatal("Should have created at least 1 occurrence")
 
-		// Got a tick, we should check note occurrences
+			// Got a tick, we should check note occurrences
 		case <-tick:
 			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
 				t.Fatalf("Failed to retrieve attestations: %v", err)

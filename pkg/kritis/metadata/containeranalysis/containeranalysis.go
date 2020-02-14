@@ -146,7 +146,7 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 	req := &grafeas.ListNoteOccurrencesRequest{
 		Name: auth.Spec.NoteReference,
 		// Example:
-		//              Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
 		PageSize: constants.PageSize,
 	}
