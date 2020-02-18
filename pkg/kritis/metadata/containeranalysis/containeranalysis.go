@@ -123,16 +123,16 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 	req := createListOccurrencesRequest(containerImage, kind)
 
 	it := c.client.ListOccurrences(c.ctx, req)
-	p := iterator.NewPager(it, int(req.PageSize), "")
 	occs := []*grafeas.Occurrence{}
 	for {
-		nextPageToken, err := p.NextPage(&occs)
+		occ, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
-		if nextPageToken == "" {
-			break
-		}
+		occs = append(occs, occ)
 	}
 	return occs, nil
 }

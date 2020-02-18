@@ -141,7 +141,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	}
 }
 
-func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
+func TestGetMultiplePagesVulnerabilities(t *testing.T) {
 	d, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
@@ -156,7 +156,7 @@ func TestGetMultiplePages_Vulnerabilities(t *testing.T) {
 	}
 
 	if len(vuln) <= 900 {
-		t.Errorf("Pagination error: did not receive results from the final page.")
+		t.Fatalf("Pagination error: expected at least 900 results on image 'gcr.io/kritis-int-test/java-with-vulnz'. Received %d.", len(vuln))
 	}
 }
 
