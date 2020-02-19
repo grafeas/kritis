@@ -156,7 +156,7 @@ func TestGetMultiplePagesVulnerabilities(t *testing.T) {
 	}
 
 	if len(vuln) <= 900 {
-		t.Fatalf("Pagination error: expected at least 900 results on image 'gcr.io/kritis-int-test/java-with-vulnz'. Received %client.", len(vuln))
+		t.Fatalf("Pagination error: expected at least 900 results on image 'gcr.io/kritis-int-test/java-with-vulnz'. Received %d.", len(vuln))
 	}
 }
 
