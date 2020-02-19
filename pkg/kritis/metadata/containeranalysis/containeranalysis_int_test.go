@@ -50,11 +50,11 @@ func GetAA() *kritisv1beta1.AttestationAuthority {
 }
 
 func TestGetVulnerabilities(t *testing.T) {
-	d, err := New()
+	client, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
-	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
+	vuln, err := client.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}
@@ -64,18 +64,18 @@ func TestGetVulnerabilities(t *testing.T) {
 }
 
 func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
-	d, err := New()
+	client, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
 	aa := GetAA()
-	_, err = d.CreateAttestationNote(aa)
+	_, err = client.CreateAttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Note %v", err)
 	}
-	defer d.DeleteAttestationNote(aa)
+	defer client.DeleteAttestationNote(aa)
 
-	note, err := d.AttestationNote(aa)
+	note, err := client.AttestationNote(aa)
 	if err != nil {
 		t.Fatalf("Unexpected no error while getting attestation note %v", err)
 	}
@@ -105,7 +105,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to extract project ID %v", err)
 	}
-	occ, err := d.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
+	occ, err := client.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
@@ -117,7 +117,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if pgpKeyID != expectedPgpKeyID {
 		t.Errorf("Expected PGP key id: %q, got %q", expectedPgpKeyID, pgpKeyID)
 	}
-	defer d.DeleteOccurrence(occ.GetName())
+	defer client.DeleteOccurrence(occ.GetName())
 
 	// Keep trying to list attestation occurrences until we time out.
 	// Because the staleness bound is on the order of seconds, no need to try faster than once a second.
@@ -131,7 +131,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 
 			// Got a tick, we should check note occurrences
 		case <-tick:
-			if occurrences, err := d.Attestations(testutil.IntTestImage, aa); err != nil {
+			if occurrences, err := client.Attestations(testutil.IntTestImage, aa); err != nil {
 				t.Fatalf("Failed to retrieve attestations: %v", err)
 			} else if len(occurrences) > 0 {
 				// Successfully retrieved attestations, exit the loop and the test.
@@ -142,7 +142,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 }
 
 func TestGetMultiplePagesVulnerabilities(t *testing.T) {
-	d, err := New()
+	client, err := New()
 	if err != nil {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
@@ -150,13 +150,13 @@ func TestGetMultiplePagesVulnerabilities(t *testing.T) {
 	// Set PageSize to 300
 	createListOccurrencesRequest = createListOccurrencesRequestTest
 
-	vuln, err := d.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
+	vuln, err := client.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
 	if err != nil {
 		t.Fatalf("Found err %s", err)
 	}
 
 	if len(vuln) <= 900 {
-		t.Fatalf("Pagination error: expected at least 900 results on image 'gcr.io/kritis-int-test/java-with-vulnz'. Received %d.", len(vuln))
+		t.Fatalf("Pagination error: expected at least 900 results on image 'gcr.io/kritis-int-test/java-with-vulnz'. Received %client.", len(vuln))
 	}
 }
 
