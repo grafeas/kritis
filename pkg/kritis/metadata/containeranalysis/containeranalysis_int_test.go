@@ -147,7 +147,7 @@ func TestGetMultiplePagesVulnerabilities(t *testing.T) {
 		t.Fatalf("Could not initialize the client %s", err)
 	}
 
-	// Set PageSize to 300
+	// Set PageSize to 100
 	createListOccurrencesRequest = createListOccurrencesRequestTest
 
 	vuln, err := client.Vulnerabilities("gcr.io/kritis-int-test/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a")
