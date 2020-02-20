@@ -90,6 +90,7 @@ REGISTRY?=gcr.io/kritis-project
 TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
+SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/signer
 
 
 out/kritis-server: $(GO_FILES)
@@ -97,6 +98,9 @@ out/kritis-server: $(GO_FILES)
 
 out/gcb-signer: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCB_SIGNER_PACKAGE)
+
+out/signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -106,6 +110,14 @@ build-image: out/kritis-server
 .PHONY: build-test-image
 build-test-image: out/kritis-server
 	docker build -t $(TEST_REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
+
+.PHONY: signer-image
+signer-image: out/signer
+	docker build -t $(REGISTRY)/kritis-signer:$(IMAGE_TAG) -f deploy/kritis-signer/Dockerfile .
+
+.PHONY: signer-push-image
+signer-push-image: signer-image
+	docker push $(REGISTRY)/kritis-signer:$(IMAGE_TAG)
 
 HELM_HOOKS = preinstall postinstall predelete
 
