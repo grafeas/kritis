@@ -1,0 +1,3 @@
+FROM gcr.io/google-appengine/debian10:latest
+
+RUN uuidgen > /IAMUNIQUE

@@ -1,0 +1,40 @@
+# Cloudbuild pipeline for a build with an image
+# that FAILS the vuln policy
+steps:
+  # Build a 'bad' image
+  - name: gcr.io/cloud-builders/docker
+    args:
+    - build
+    - '-t'
+    - 'gcr.io/projectgut-215417/binauthz-test'
+    - './Dockerfile.bad'
+    id: build
+  - name: gcr.io/cloud-builders/docker
+    args:
+    - push
+    - '-t'
+    - 'gcr.io/projectgut-215417/binauthz-test'
+    id: push
+  # Wait for vulnerability scanning reaults
+  # NOTE currently commented out
+  # - name: gcr.io/projectgut-215417/python-builder
+  # args:
+  # - ./wait_for_vulns.py
+  # - https://gcr.io/projectgut-215417/binauthz-test
+  # - projectgut-215417
+  # id: vulnpoll
+  #
+  # This step should fail because the image has fixes
+  # for vulnerabilities
+  - name: gcr.io/projectgut-215417/kritis-signer
+    args:
+    - '-v=10'
+    - '-alsologtostderr'
+    - '-image=gcr.io/projectgut-215417/binauthz-test'
+    - '-credentials=kritis-service-account.json'
+    - '-public_key=gpg.pub'
+    - '-private_key=gpg.priv'
+    - '-policy=policy.yaml'
+    waitFor: vulnpoll
+    id: vulnsign
+images: ['gcr.io/projectgut-215417/binauthz-test']

@@ -1,0 +1,1 @@
+FROM gcr.io/google-appengine/debian10@sha256:18c1a945ff7d83ee8a5f3a2351e6c8e0d86c22af35f8102b042c1916decea7ae

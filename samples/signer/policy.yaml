@@ -1,0 +1,13 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: VulnzSigningPolicy
+metadata:
+  name: my-vsp
+spec:
+  project: projectgut-215417
+  noteReference: projects/projectgut-215417/notes/test-attestor-1
+  packageVulnerabilityRequirements:
+    maximumSeverity: HIGH
+    maximumFixUnavailableSeverity: ALLOW_ALL
+    allowlistCVEs:
+      - providers/goog-vulnz/notes/CVE-2017-1000082
+      - providers/goog-vulnz/notes/CVE-2017-1000081
