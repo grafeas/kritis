@@ -65,8 +65,13 @@ func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.Vul
 	if violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities); err != nil {
 		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
 	} else {
-		glog.Infof("Image %q passes VulnzSigningPolicy %s, creating attestations", imageVulnz.ImageRef, vps.Name)
-
+		glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
+		existed, _ := s.isAttestationAlreadyExist(imageVulnz.ImageRef)
+		if existed {
+			glog.Warningf("Attestation for image %q has not already been created.", imageVulnz.ImageRef)
+			return nil
+		}
+		glog.Infof("Creating attestations for image %q.", imageVulnz.ImageRef)
 		if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
 			return err
 		}
@@ -88,4 +93,13 @@ func (s Signer) addAttestation(image string) error {
 	// Create Attestation Signature
 	_, err = s.client.CreateAttestationOccurrence(n, image, sec, s.config.Project)
 	return err
+}
+
+func (s Signer) isAttestationAlreadyExist(image string) (bool, error) {
+	atts, err := s.client.Attestations(image, &s.config.Authority)
+	if err == nil && len(atts) > 0 {
+		return true, nil
+	}
+
+	return false, err
 }
