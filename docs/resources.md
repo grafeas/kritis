@@ -156,7 +156,7 @@ Here are the valid values for Policy Specs.
 |                                           | BLOCK_ALL | Block all vulnerabilities except listed in allowlist. |
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity | LOW | Only allow containers with low unpatchable vulnerabilities. |
 |                          | MEDIUM | Allow Containers with Low and Medium unpatchable vulnerabilities. |
-|                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchaable vulnerabilities. |
+|                                           | HIGH  | Allow Containers with Low, Medium & High  unpatchable vulnerabilities. |
 |                                           | ALLOW_ALL | Allow all unpatchable vulnerabilities.  |
 |                                           | BLOCK_ALL | Block all unpatchable vulnerabilities except listed in allowlist. |
 
@@ -193,7 +193,7 @@ metadata:
     name: qa-attestator
     namespace: qa
 spec:
-    noteReference: projects/image-attestor
+    noteReference: projects/image-attestor/notes/qa-note
     privateKeySecretName: foo
     publicKeyData: ...
 ```

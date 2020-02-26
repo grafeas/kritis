@@ -74,21 +74,26 @@ func Test_getProjectFromContainerImage(t *testing.T) {
 	}
 }
 
-func TestGetProjectFromNoteRef(t *testing.T) {
+func TestParseNoteReference(t *testing.T) {
+	type ProjAndNote struct {
+		projId string
+		noteId string
+	}
 	tests := []struct {
 		name   string
 		input  string
 		shdErr bool
-		output string
+		output ProjAndNote
 	}{
-		{"good", "projects/name", false, "name"},
-		{"bad1", "some", true, ""},
-		{"bad2", "v1aplha1/projects/name", true, ""},
+		{"good", "projects/name/notes/noteName", false, ProjAndNote{"name", "noteName"}},
+		{"bad1", "some", true, ProjAndNote{"", ""}},
+		{"bad2", "v1aplha1/projects/name", true, ProjAndNote{"", ""}},
+		{"bad3", "projects/name", true, ProjAndNote{"", ""}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := metadata.GetProjectFromNoteReference(tc.input)
-			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.output, actual)
+			actualProj, actualNote, err := metadata.ParseNoteReference(tc.input)
+			testutil.CheckErrorAndDeepEqual(t, tc.shdErr, err, tc.output, ProjAndNote{actualProj, actualNote})
 		})
 	}
 }

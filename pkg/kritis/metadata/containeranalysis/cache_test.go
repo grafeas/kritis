@@ -31,7 +31,6 @@ import (
 
 var (
 	TestNoteName = "test-aa-note"
-	API          = "testv1"
 	Project      = "kritis-int-test"
 )
 
@@ -86,7 +85,7 @@ func TestACache(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			aa := &kritisv1beta1.AttestationAuthority{
 				Spec: kritisv1beta1.AttestationAuthoritySpec{
-					NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
+					NoteReference: fmt.Sprintf("projects/%s/notes/%s", Project, TestNoteName),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: TestNoteName,

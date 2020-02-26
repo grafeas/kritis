@@ -84,7 +84,7 @@
             name: my-attestor
             namespace: default
         spec:
-            noteReference: v1beta1/projects/$PROJECT
+            noteReference: projects/$PROJECT/notes/my-attestor
             privateKeySecretName: my-attestor
             publicKeyData: $PUBLIC_KEY
         EOF
@@ -319,7 +319,7 @@ kubectl exec $POD_ID -- /kritis/kritis-server --run-cron
 The output is similar to this:
 
 ```shell
-I0810 23:46:10.353516      23 cron.go:103] Checking po java-with-vulnz
+I0810 23:46:10.353516      23 cron.go:103] Checking pod java-with-vulnz
 I0810 23:46:10.354142      23 review.go:68] Validating against ImageSecurityPolicy my-isp
 I0810 23:46:10.354395      23 review.go:70] Check if gcr.io/tejaldesai-personal/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a as valid Attestations.
 I0810 23:46:10.881752      23 strategy.go:98] Adding label attested and annotation Previously attested.

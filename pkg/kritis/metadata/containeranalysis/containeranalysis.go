@@ -41,10 +41,23 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
+// For testing -- injectable functions
+var (
+	createListOccurrencesRequest = defaultListOccurrencesRequest
+)
+
 // Client struct implements ReadWriteClient and ReadOnlyClient interfaces.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context
+}
+
+func defaultListOccurrencesRequest(containerImage, kind string) *grafeas.ListOccurrencesRequest {
+	return &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+		PageSize: constants.PageSize,
+	}
 }
 
 // TODO: separate constructor methods for r/w and r/o clients
@@ -107,11 +120,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
-		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
-	}
+	req := createListOccurrencesRequest(containerImage, kind)
 
 	it := c.client.ListOccurrences(c.ctx, req)
 	occs := []*grafeas.Occurrence{}
@@ -134,15 +143,13 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	noteName := fmt.Sprintf("%s/notes/%s", auth.Spec.NoteReference, auth.Name)
 	req := &grafeas.ListNoteOccurrencesRequest{
-		Name: noteName,
+		Name: auth.Spec.NoteReference,
 		// Example:
 		// 		Filter:  fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
 		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
 		PageSize: constants.PageSize,
 	}
-
 	occs := []*grafeas.Occurrence{}
 	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
@@ -180,7 +187,7 @@ func isRegistryGCR(r string) bool {
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
 func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
+	noteProject, noteId, err := metadata.ParseNoteReference(aa.Spec.NoteReference)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +197,7 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 		},
 	}
 	note := grafeas.Note{
-		Name:             fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		Name:             aa.Spec.NoteReference,
 		ShortDescription: fmt.Sprintf("Image Policy Security Attestor"),
 		LongDescription:  fmt.Sprintf("Image Policy Security Attestor deployed in %s namespace", aa.Namespace),
 		Type: &grafeas.Note_AttestationAuthority{
@@ -200,20 +207,16 @@ func (c Client) CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*
 
 	req := &grafeas.CreateNoteRequest{
 		Note:   &note,
-		NoteId: aa.Name,
+		NoteId: noteId,
 		Parent: fmt.Sprintf("projects/%s", noteProject),
 	}
 	return c.client.CreateNote(c.ctx, req)
 }
 
-//AttestationNote returns a note if it exists for given AttestationAuthority
+// AttestationNote returns a note if it exists for given AttestationAuthority
 func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return nil, err
-	}
 	req := &grafeas.GetNoteRequest{
-		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		Name: aa.Spec.NoteReference,
 	}
 	return c.client.GetNote(c.ctx, req)
 }
@@ -274,12 +277,8 @@ func getProjectFromContainerImage(image string) string {
 
 // DeleteAttestationNote deletes a note for given AttestationAuthority
 func (c Client) DeleteAttestationNote(aa *kritisv1beta1.AttestationAuthority) error {
-	noteProject, err := metadata.GetProjectFromNoteReference(aa.Spec.NoteReference)
-	if err != nil {
-		return err
-	}
 	req := &grafeas.DeleteNoteRequest{
-		Name: fmt.Sprintf("projects/%s/notes/%s", noteProject, aa.Name),
+		Name: aa.Spec.NoteReference,
 	}
 	return c.client.DeleteNote(c.ctx, req)
 }
