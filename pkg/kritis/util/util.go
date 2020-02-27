@@ -78,11 +78,23 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttest
 				OccID: occ.GetName(),
 			},
 		}
-	// UNCOMMENT when attestation proto gets updated
-	// case *attestationpb.Attestation_GenericSignedAttestation:
-	// 	return metadata.RawAttestation{
-	// 		AttestationType: metadata.GenericAttestationType,
-	// 	}
+	case *attestationpb.Attestation_GenericSignedAttestation:
+		gsa := att.GetGenericSignedAttestation()
+		signatures := []metadata.Signature{}
+		for _, sig := range gsa.GetSignatures() {
+			newSig := metadata.Signature{
+				Signature:   sig.Signature,
+				PublicKeyId: sig.PublicKeyId,
+			}
+			signatures = append(signatures, newSig)
+		}
+		return metadata.RawAttestation{
+			AttestationType: metadata.GenericAttestationType,
+			GenericAttestation: metadata.GenericAttestation{
+				SerializedPayload: gsa.SerializedPayload,
+				Signatures:        signatures,
+			},
+		}
 	default:
 		return metadata.RawAttestation{
 			AttestationType: metadata.UnknownAttestationType,
