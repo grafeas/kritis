@@ -41,10 +41,23 @@ const (
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
 )
 
+// For testing -- injectable functions
+var (
+	createListOccurrencesRequest = defaultListOccurrencesRequest
+)
+
 // Client struct implements ReadWriteClient and ReadOnlyClient interfaces.
 type Client struct {
 	client *ca.GrafeasV1Beta1Client
 	ctx    context.Context
+}
+
+func defaultListOccurrencesRequest(containerImage, kind string) *grafeas.ListOccurrencesRequest {
+	return &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+		PageSize: constants.PageSize,
+	}
 }
 
 // TODO: separate constructor methods for r/w and r/o clients
@@ -107,11 +120,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
-		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
-	}
+	req := createListOccurrencesRequest(containerImage, kind)
 
 	it := c.client.ListOccurrences(c.ctx, req)
 	occs := []*grafeas.Occurrence{}
@@ -141,7 +150,6 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
 		PageSize: constants.PageSize,
 	}
-
 	occs := []*grafeas.Occurrence{}
 	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
