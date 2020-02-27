@@ -134,18 +134,18 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
-	var p []metadata.PGPAttestation
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
+	var ras []metadata.RawAttestation
 
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
 	for _, occ := range occs {
-		p = append(p, util.GetPgpAttestationFromOccurrence(occ))
+		ras = append(ras, util.GetRawAttestationFromOccurrence(occ))
 	}
 
-	return p, nil
+	return ras, nil
 }
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority

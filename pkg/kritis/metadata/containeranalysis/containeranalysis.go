@@ -86,19 +86,19 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 // For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
 // For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
 // In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
-	var p []metadata.PGPAttestation
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
+	var ras []metadata.RawAttestation
 
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
 	for _, occ := range occs {
-		pgp := util.GetPgpAttestationFromOccurrence(occ)
-		p = append(p, pgp)
+		ra := util.GetRawAttestationFromOccurrence(occ)
+		ras = append(ras, ra)
 	}
 
-	return p, nil
+	return ras, nil
 }
 
 func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {

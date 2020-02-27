@@ -25,6 +25,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
@@ -62,12 +63,31 @@ func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func GetPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttestation {
-	pgp := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation()
-	return metadata.PGPAttestation{
-		Signature: pgp.GetSignature(),
-		KeyID:     pgp.GetPgpKeyId(),
-		OccID:     occ.GetName(),
+func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttestation {
+	att := occ.GetAttestation().GetAttestation()
+	switch att.Signature.(type) {
+	case *attestationpb.Attestation_PgpSignedAttestation:
+		psa := att.GetPgpSignedAttestation()
+		return metadata.RawAttestation{
+			AttestationType: metadata.PgpAttestationType,
+			PGPAttestation: metadata.PGPAttestation{
+				Signature: metadata.Signature{
+					Signature:   []byte(psa.GetSignature()),
+					PublicKeyId: psa.GetPgpKeyId(),
+				},
+				OccID: occ.GetName(),
+			},
+		}
+	// UNCOMMENT when attestation proto gets updated
+	// case *attestationpb.Attestation_GenericSignedAttestation:
+	// 	return metadata.RawAttestation{
+	// 		AttestationType: metadata.GenericAttestationType,
+	// 	}
+	default:
+		return metadata.RawAttestation{
+			AttestationType: metadata.UnknownAttestationType,
+		}
+
 	}
 }
 

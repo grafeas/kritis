@@ -69,13 +69,17 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, err
 	}
 	for _, a := range attestations {
-		decoded_sig, err := base64.StdEncoding.DecodeString(a.Signature)
+		// TODO(acamadeo): Temporarily hardcoding this to work only for PGP Attestations.
+		signature := a.PGPAttestation.Signature.Signature
+		decodedSig := make([]byte, len(signature))
+		_, err := base64.StdEncoding.Decode(decodedSig, signature)
 		if err != nil {
 			glog.Infof("Cannot base64 decode signature: %v", err)
 			continue
 		}
-		if err = host.VerifyAttestationSignature(keys[a.KeyID], string(decoded_sig)); err != nil {
-			glog.Infof("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
+		keyID := a.PGPAttestation.Signature.PublicKeyId
+		if err = host.VerifyAttestationSignature(keys[keyID], string(decodedSig)); err != nil {
+			glog.Infof("Could not find or verify attestation for attestor %s: %s", keyID, err.Error())
 			continue
 		}
 		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})

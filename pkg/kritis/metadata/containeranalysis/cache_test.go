@@ -65,18 +65,18 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []metadata.PGPAttestation{{OccID: "occc-1"}}
-	aClient := []metadata.PGPAttestation{{OccID: "occc-miss"}}
+	aCache := []metadata.RawAttestation{makeRawAttestationPgp("", "", "occc-1")}
+	aClient := []metadata.RawAttestation{makeRawAttestationPgp("", "", "occc-miss")}
 	c := Cache{
-		client: &testutil.MockMetadataClient{PGPAttestations: aClient},
+		client: &testutil.MockMetadataClient{RawAttestations: aClient},
 		vuln:   nil,
-		att:    map[string][]metadata.PGPAttestation{"image-hit": aCache},
+		att:    map[string][]metadata.RawAttestation{"image-hit": aCache},
 		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
-		expected []metadata.PGPAttestation
+		expected []metadata.RawAttestation
 	}{
 		{"hit", "image-hit", aCache},
 		{"miss", "image-miss", aClient},
@@ -136,5 +136,22 @@ func TestNCache(t *testing.T) {
 				t.Errorf("Expected %v, Got %v", tc.expected, actual)
 			}
 		})
+	}
+}
+
+func makeRawAttestationPgp(signature, id, occID string) metadata.RawAttestation {
+	return metadata.RawAttestation{
+		AttestationType: metadata.PgpAttestationType,
+		PGPAttestation:  makePgpAtt(signature, id, occID),
+	}
+}
+
+func makePgpAtt(signature, id, occID string) metadata.PGPAttestation {
+	return metadata.PGPAttestation{
+		Signature: metadata.Signature{
+			Signature:   []byte(signature),
+			PublicKeyId: id,
+		},
+		OccID: occID,
 	}
 }

@@ -25,6 +25,14 @@ import (
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
+type AttestationType int
+
+const (
+	UnknownAttestationType AttestationType = iota
+	PgpAttestationType
+	GenericAttestationType
+)
+
 // Read/write interface to access Occurrences and Notes using Grafeas API.
 type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
@@ -38,7 +46,7 @@ type ReadWriteClient interface {
 	// Create Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]RawAttestation, error)
 	// Close closes client connections
 	Close()
 }
@@ -48,7 +56,7 @@ type ReadOnlyClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]PGPAttestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]RawAttestation, error)
 	// Close closes client connections
 	Close()
 }
@@ -59,13 +67,36 @@ type Vulnerability struct {
 	CVE             string
 }
 
+// RawAttestation is an internal wrapper for PgpAttestations and
+// GenericAttestations. It contains signatures, which are verified by
+// public keys held by the AttestationAuthority.
+type RawAttestation struct {
+	AttestationType    AttestationType
+	PGPAttestation     PGPAttestation
+	GenericAttestation GenericAttestation
+}
+
 // PGPAttestation represents the Signature and the Signer Key Id from the
 // containeranalysis Occurrence_Attestation instance.
 type PGPAttestation struct {
-	Signature string
-	KeyID     string
+	Signature Signature
 	// OccID is the occurrence ID for containeranalysis Occurrence_Attestation instance
 	OccID string
+}
+
+// GenericAttestation holds a message payload and Signatures generated over
+// that payload.
+type GenericAttestation struct {
+	SerializedPayload []byte
+	Signatures        []Signature
+}
+
+// Signature contains the signature content as an opaque bytestring and an ID
+// for the public key that can verify the signature. The ID does not by itself
+// verify the signature. It is merely a key lookup hint.
+type Signature struct {
+	Signature   []byte
+	PublicKeyId string
 }
 
 // ParseNoteReference extracts the project ID and the note ID from the NoteReference.
