@@ -45,8 +45,9 @@ func getAttestations(t *testing.T, images []string, attestationAuthority *kritis
 			m[i] = true
 		}
 		for _, o := range occs {
-			if err := remote.DeleteOccurrence(o.OccID); err != nil {
-				t.Logf("could not delete attestations occurrence %s due to %v", o.OccID, err)
+			// TODO(acamadeo): This is hard-coded to work for PGPAttestation. Undo this
+			if err := remote.DeleteOccurrence(o.PGPAttestation.OccID); err != nil {
+				t.Logf("could not delete attestations occurrence %s due to %v", o.PGPAttestation.OccID, err)
 			}
 		}
 	}
