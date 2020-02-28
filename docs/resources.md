@@ -226,17 +226,37 @@ metadata:
     namespace: qa
 spec:
     noteReference: projects/image-attestor/notes/qa-note
-    publicKeyList:
+    publicKeys:
+    - keyType: PGP_KEY
+      keyId: ...
+      pgpPublicKey: ...
+    - keyType: PKIX_KEY
+      keyId: ...
+      pkixPublicKey:
+        publicKey: ...
+        signatureAlgorithm: ...
     - ...
     - ...
 ```
 
-Where “image-attestor” is the project for creating AttestationAuthority Notes.
+where “image-attestor” is the project for creating AttestationAuthority Notes.
 
 In order to create notes, the service account `gac-ca-admin` must have `containeranalysis.notes.attacher role` on this project.
 
 The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
 
-`publicKeyList` is a list of base64 encoded PEM public keys for the gpg secret.
-The list is used to support key rotations. 
+
+`publicKeys` is a list of public keys for the Kubernetes secret. Key rotation is supported by listing multiple keys.
 An image is attested if it has an attestation verifiable by ANY of the public keys.
+
+
+Two types of public keys are supported: PGP keys and PKIX keys.
+All public keys should specify their `keyType` (either `PGP_KEY` or `PKIX_KEY`). All public keys should also specify a`keyId`.
+For PGP keys, `keyId` should be the OpenPGP RFC4880 V4 fingerprint of the key payload.
+For PKIX keys, `keyId` can be any valid RFC3986 URI.
+
+For PGP keys, provide the base64-encoded PEM public key under `pgpPublicKey`.
+PKIX key data should be provided under `pkixPublicKey`. It should include the `signatureAlgorithm` used to generate the key,
+and the `publicKey` payload.
+
+Note that keys should contain only one of `pgpPublicKey` or `pkixPublicKey`. Keys that specify both fields are disregarded.

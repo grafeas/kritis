@@ -107,7 +107,12 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth1_note",
-					PublicKeyList: []string{pub1},
+					PublicKeys: []v1beta1.PublicKey{
+						{
+							KeyType:      "PGP_KEY",
+							PgpPublicKey: pub1,
+						},
+					},
 				},
 			},
 			{
@@ -117,7 +122,12 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth2_note",
-					PublicKeyList: []string{pub2},
+					PublicKeys: []v1beta1.PublicKey{
+						{
+							KeyType:      "PGP_KEY",
+							PgpPublicKey: pub2,
+						},
+					},
 				},
 			},
 			{
@@ -127,7 +137,12 @@ func TestValidateAndSign(t *testing.T) {
 				},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "auth3_note",
-					PublicKeyList: []string{pub3},
+					PublicKeys: []v1beta1.PublicKey{
+						{
+							KeyType:      "PGP_KEY",
+							PgpPublicKey: pub3,
+						},
+					},
 				},
 			},
 			{

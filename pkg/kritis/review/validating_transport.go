@@ -19,6 +19,7 @@ package review
 import (
 	"encoding/base64"
 	"fmt"
+	"net/url"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -40,18 +41,69 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	keys := map[string]string{}
-	for _, keyData := range avt.Attestor.Spec.PublicKeyList {
-		key, fingerprint, err := secrets.KeyAndFingerprint(keyData)
-		if err != nil {
-			glog.Warningf("Error parsing key for %q: %v", avt.Attestor.Name, err)
-		} else {
-			if _, ok := keys[fingerprint]; ok {
-				glog.Warningf("Duplicate keys with fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
-			}
-			keys[fingerprint] = key
+func (avt *AttestorValidatingTransport) ValidatePublicKey(pubKey v1beta1.PublicKey) error {
+	if err := validatePublicKeyType(pubKey); err != nil {
+		return err
+	}
+	if err := avt.validatePublicKeyId(pubKey); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
+	switch pubKey.KeyType {
+	case v1beta1.PgpKeyType:
+		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {
+			return fmt.Errorf("Invalid PGP key: %v. PkixPublicKey field should not be set", pubKey)
 		}
+		if pubKey.PgpPublicKey == "" {
+			return fmt.Errorf("Invalid PGP key: %v. PgpPublicKey field should be set", pubKey)
+		}
+	case v1beta1.PkixKeyType:
+		if pubKey.PgpPublicKey != "" {
+			return fmt.Errorf("Invalid PKIX key: %v. PgpPublicKey field should not be set", pubKey)
+		}
+		if pubKey.PkixPublicKey == (v1beta1.PkixPublicKey{}) {
+			return fmt.Errorf("Invalid PKIX key: %v. PkixPublicKey field should be set", pubKey)
+		}
+	default:
+		return fmt.Errorf("Unsupported key type %s for key %v", pubKey.KeyType, pubKey)
+	}
+	return nil
+}
+
+func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.PublicKey) error {
+	switch pubKey.KeyType {
+	case v1beta1.PgpKeyType:
+		_, keyId, err := secrets.KeyAndFingerprint(pubKey.PgpPublicKey)
+		if err != nil {
+			return fmt.Errorf("Error parsing PGP key for %q: %v", avt.Attestor.Name, err)
+		}
+		if keyId != pubKey.KeyId {
+			return fmt.Errorf("PGP key with id %s was skipped. KeyId should be the RFC4880 V4 fingerprint of the public key", pubKey.KeyId)
+		}
+	case v1beta1.PkixKeyType:
+		if _, err := url.Parse(pubKey.KeyId); err != nil {
+			return fmt.Errorf("PKIX key with id %s was skipped. KeyId should be a valid RFC3986 URI", pubKey.KeyId)
+		}
+	default:
+		return fmt.Errorf("Unsupported key type %s for key %v", pubKey.KeyType, pubKey)
+	}
+	return nil
+}
+
+func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
+	keys := map[string]v1beta1.PublicKey{}
+	for _, pubKey := range avt.Attestor.Spec.PublicKeys {
+		if err := avt.ValidatePublicKey(pubKey); err != nil {
+			glog.Errorf("%v", err)
+			continue
+		}
+		if _, ok := keys[pubKey.KeyId]; ok {
+			glog.Warningf("Duplicate keys with keyId %s for %q.", pubKey.KeyId, avt.Attestor.Name)
+		}
+		keys[pubKey.KeyId] = pubKey
 	}
 	if len(keys) == 0 {
 		return nil, fmt.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
@@ -79,7 +131,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 			continue
 		}
 		keyId := rawAtt.Signature.PublicKeyId
-		if err = host.VerifyPgpSignature(keys[keyId], string(decodedSig)); err != nil {
+		if err = host.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
 			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 			continue
 		}

@@ -48,8 +48,11 @@ metadata:
   namespace: default
 spec:
   noteReference: v1beta1/projects/standalone
-  publicKeyList:
-  - $PUBLIC_KEY
+  publicKeys:
+  - keyType: PGP_KEY 
+    keyId: $KEY_FINGERPRINT
+    pgpPublicKey: $PUBLIC_KEY
+
 EOF
 
 # Create GenericAttestationPolicy that references the AttestationAuthority we

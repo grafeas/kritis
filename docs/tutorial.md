@@ -85,8 +85,10 @@
             namespace: default
         spec:
             noteReference: projects/$PROJECT/notes/my-attestor
-            publicKeyList: 
-            - $PUBLIC_KEY
+            publicKeys: 
+            - keyType: PGP_KEY
+              keyId: $KEY_FINGERPRINT
+              pgpPublicKey: $PUBLIC_KEY
         EOF
         ```
 
