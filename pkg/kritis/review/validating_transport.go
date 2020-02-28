@@ -77,9 +77,9 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 			glog.Infof("Cannot base64 decode signature: %v", err)
 			continue
 		}
-		keyID := a.PGPAttestation.Signature.PublicKeyId
-		if err = host.VerifyAttestationSignature(keys[keyID], string(decodedSig)); err != nil {
-			glog.Infof("Could not find or verify attestation for attestor %s: %s", keyID, err.Error())
+		keyId := a.PGPAttestation.Signature.PublicKeyId
+		if err = host.VerifyAttestationSignature(keys[keyId], string(decodedSig)); err != nil {
+			glog.Infof("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 			continue
 		}
 		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
