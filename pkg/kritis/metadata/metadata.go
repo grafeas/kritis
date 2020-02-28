@@ -72,13 +72,13 @@ type Vulnerability struct {
 // public keys held by the AttestationAuthority.
 type RawAttestation struct {
 	AttestationType    AttestationType
-	PGPAttestation     PGPAttestation
+	PgpAttestation     PgpAttestation
 	GenericAttestation GenericAttestation
 }
 
-// PGPAttestation represents the Signature and the Signer Key Id from the
+// PgpAttestation represents the Signature and the Signer Key Id from the
 // containeranalysis Occurrence_Attestation instance.
-type PGPAttestation struct {
+type PgpAttestation struct {
 	// OccId is the occurrence ID for containeranalysis Occurrence_Attestation instance
 	OccId     string
 	Signature Signature

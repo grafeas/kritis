@@ -142,12 +142,12 @@ func TestNCache(t *testing.T) {
 func makeRawAttestationPgp(signature, id, occId string) metadata.RawAttestation {
 	return metadata.RawAttestation{
 		AttestationType: metadata.PgpAttestationType,
-		PGPAttestation:  makePgpAtt(signature, id, occId),
+		PgpAttestation:  makePgpAtt(signature, id, occId),
 	}
 }
 
-func makePgpAtt(signature, id, occId string) metadata.PGPAttestation {
-	return metadata.PGPAttestation{
+func makePgpAtt(signature, id, occId string) metadata.PgpAttestation {
+	return metadata.PgpAttestation{
 		Signature: metadata.Signature{
 			Signature:   []byte(signature),
 			PublicKeyId: id,

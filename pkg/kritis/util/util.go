@@ -70,7 +70,7 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttest
 		psa := att.GetPgpSignedAttestation()
 		return metadata.RawAttestation{
 			AttestationType: metadata.PgpAttestationType,
-			PGPAttestation: metadata.PGPAttestation{
+			PgpAttestation: metadata.PgpAttestation{
 				Signature: metadata.Signature{
 					Signature:   []byte(psa.GetSignature()),
 					PublicKeyId: psa.GetPgpKeyId(),
