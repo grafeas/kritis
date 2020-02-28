@@ -139,19 +139,19 @@ func TestNCache(t *testing.T) {
 	}
 }
 
-func makeRawAttestationPgp(signature, id, occID string) metadata.RawAttestation {
+func makeRawAttestationPgp(signature, id, occId string) metadata.RawAttestation {
 	return metadata.RawAttestation{
 		AttestationType: metadata.PgpAttestationType,
-		PGPAttestation:  makePgpAtt(signature, id, occID),
+		PGPAttestation:  makePgpAtt(signature, id, occId),
 	}
 }
 
-func makePgpAtt(signature, id, occID string) metadata.PGPAttestation {
+func makePgpAtt(signature, id, occId string) metadata.PGPAttestation {
 	return metadata.PGPAttestation{
 		Signature: metadata.Signature{
 			Signature:   []byte(signature),
 			PublicKeyId: id,
 		},
-		OccId: occID,
+		OccId: occId,
 	}
 }
