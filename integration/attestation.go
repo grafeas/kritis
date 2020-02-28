@@ -37,17 +37,17 @@ func getAttestations(t *testing.T, images []string, attestationAuthority *kritis
 		t.Fatalf("Unexpected error while fetching remote client %v", err)
 	}
 	for _, i := range images {
-		occs, err := client.Attestations(i, attestationAuthority)
+		ras, err := client.Attestations(i, attestationAuthority)
 		if err != nil {
 			t.Fatalf("Unexpected error while listing attestations for image %s, %v", i, err)
 		}
-		if occs != nil {
+		if ras != nil {
 			m[i] = true
 		}
-		for _, o := range occs {
+		for _, ra := range ras {
 			// TODO(acamadeo): This is hard-coded to work for PGPAttestation. Undo this
-			if err := remote.DeleteOccurrence(o.PGPAttestation.OccID); err != nil {
-				t.Logf("could not delete attestations occurrence %s due to %v", o.PGPAttestation.OccID, err)
+			if err := remote.DeleteOccurrence(ra.PGPAttestation.OccID); err != nil {
+				t.Logf("could not delete attestations occurrence %s due to %v", ra.PGPAttestation.OccID, err)
 			}
 		}
 	}
