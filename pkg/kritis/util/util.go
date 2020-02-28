@@ -75,7 +75,7 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttest
 					Signature:   []byte(psa.GetSignature()),
 					PublicKeyId: psa.GetPgpKeyId(),
 				},
-				OccID: occ.GetName(),
+				OccId: occ.GetName(),
 			},
 		}
 	case *attestationpb.Attestation_GenericSignedAttestation:

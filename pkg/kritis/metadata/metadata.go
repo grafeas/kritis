@@ -79,8 +79,8 @@ type RawAttestation struct {
 // PGPAttestation represents the Signature and the Signer Key Id from the
 // containeranalysis Occurrence_Attestation instance.
 type PGPAttestation struct {
-	// OccID is the occurrence ID for containeranalysis Occurrence_Attestation instance
-	OccID     string
+	// OccId is the occurrence ID for containeranalysis Occurrence_Attestation instance
+	OccId     string
 	Signature Signature
 }
 

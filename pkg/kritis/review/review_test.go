@@ -662,6 +662,6 @@ func makePgpAtt(signature, id, occID string) metadata.PGPAttestation {
 			Signature:   []byte(signature),
 			PublicKeyId: id,
 		},
-		OccID: occID,
+		OccId: occID,
 	}
 }
