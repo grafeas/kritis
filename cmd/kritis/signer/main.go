@@ -34,11 +34,12 @@ import (
 )
 
 func main() {
-	var image, json_key_path, pri_key_path, policy_path string
+	var image, json_key_path, passphrase, pri_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&json_key_path, "credentials", "", "json credentials file path, e.g., ./key.json")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
@@ -93,9 +94,6 @@ func main() {
 	}
 
 	// Create pgp key
-	// Assume empty passphrase
-	// TODO: support non-empty passphrase
-	passphrase := ""
 	pgpKey, err := secrets.NewPgpSigningKey(string(signerKey), passphrase)
 	if err != nil {
 		glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\n", err, string(signerKey))
