@@ -33,6 +33,10 @@ const (
 	GenericSignatureType
 )
 
+func (st SignatureType) String() string {
+	return [...]string{"UnknownSignatureType", "PgpSignatureType", "GenericSignatureType"}[st]
+}
+
 // Read/write interface to access Occurrences and Notes using Grafeas API.
 type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.

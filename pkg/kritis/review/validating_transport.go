@@ -69,6 +69,10 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, err
 	}
 	for _, a := range attestations {
+		if a.SignatureType == metadata.GenericSignatureType || a.SignatureType == metadata.UnknownSignatureType {
+			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", a.SignatureType.String(), a)
+		}
+
 		for _, rawSig := range a.Signatures {
 			decodedSig, err := base64.StdEncoding.DecodeString(rawSig.Signature)
 			if err != nil {
