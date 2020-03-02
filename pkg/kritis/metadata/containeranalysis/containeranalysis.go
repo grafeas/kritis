@@ -108,7 +108,7 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 	}
 	for _, occ := range occs {
 		ra := util.GetRawAttestationFromOccurrence(occ)
-		ras = append(ras, ra)
+		ras = append(ras, *ra)
 	}
 
 	return ras, nil

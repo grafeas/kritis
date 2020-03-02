@@ -16,11 +16,15 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
+
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
@@ -77,6 +81,49 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 			actualVuln := GetVulnerabilityFromOccurrence(occ)
 			if !reflect.DeepEqual(*actualVuln, tc.expectedVul) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedVul, actualVuln)
+			}
+		})
+	}
+}
+
+func TestGetRawAttestationFromOccurrence(t *testing.T) {
+	tests := []struct {
+		name           string
+		noteName       string
+		att            attestation.Attestation
+		expectedRawAtt metadata.RawAttestation
+	}{
+		{
+			"pgp attestation",
+			"CVE-1",
+			makeOccAttestationPgp("sig-1", "id-1"),
+			makeRawAttestationPgp("sig-1", "id-1"),
+		},
+		{
+			"generic attestation",
+			"CVE-2",
+			makeGenericAttestation([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
+			makeRawAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
+		},
+		{
+			"generic attestation multiple signatures",
+			"CVE-3",
+			makeGenericAttestation([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
+			makeRawAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			occ := &grafeas.Occurrence{
+				NoteName: tc.noteName,
+				Details: &grafeas.Occurrence_Attestation{
+					Attestation: &attestation.Details{Attestation: &tc.att},
+				},
+			}
+			fmt.Printf("About to parse occ: %v\n", occ)
+			actualRawAtt := GetRawAttestationFromOccurrence(occ)
+			if !reflect.DeepEqual(*actualRawAtt, tc.expectedRawAtt) {
+				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedRawAtt, *actualRawAtt)
 			}
 		})
 	}
@@ -154,5 +201,67 @@ func TestIsFixable(t *testing.T) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedFixable, actualFixable)
 			}
 		})
+	}
+}
+
+func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
+	return metadata.RawAttestation{
+		SignatureType: metadata.PgpSignatureType,
+		Signatures: []metadata.RawSignature{
+			{
+				Signature:   signature,
+				PublicKeyId: id,
+			},
+		},
+	}
+}
+
+func makeOccAttestationPgp(signature, id string) attestation.Attestation {
+	return attestation.Attestation{
+		Signature: &attestation.Attestation_PgpSignedAttestation{
+			PgpSignedAttestation: &attestation.PgpSignedAttestation{
+				Signature: signature,
+				KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
+					PgpKeyId: id,
+				},
+			},
+		},
+	}
+}
+
+func makeRawAttestationGeneric(sigs, ids []string, payload string) metadata.RawAttestation {
+	signatures := []metadata.RawSignature{}
+	for i, sig := range sigs {
+		newSig := metadata.RawSignature{
+			PublicKeyId: ids[i],
+			Signature:   sig,
+		}
+		signatures = append(signatures, newSig)
+	}
+	fmt.Printf("Expect payload: %v", payload)
+	return metadata.RawAttestation{
+		SignatureType:     metadata.GenericSignatureType,
+		SerializedPayload: []byte(payload),
+		Signatures:        signatures,
+	}
+}
+
+func makeGenericAttestation(sigs, ids []string, payload string) attestation.Attestation {
+	signatures := []*common.Signature{}
+	for i, sig := range sigs {
+		newSig := &common.Signature{
+			PublicKeyId: ids[i],
+			Signature:   []byte(sig),
+		}
+		signatures = append(signatures, newSig)
+	}
+	fmt.Printf("Received payload: %v", payload)
+	return attestation.Attestation{
+		Signature: &attestation.Attestation_GenericSignedAttestation{
+			GenericSignedAttestation: &attestation.GenericSignedAttestation{
+				SerializedPayload: []byte(payload),
+				Signatures:        signatures,
+			},
+		},
 	}
 }

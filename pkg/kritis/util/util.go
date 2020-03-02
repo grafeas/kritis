@@ -63,7 +63,7 @@ func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttestation {
+func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) *metadata.RawAttestation {
 	signatureType := metadata.UnknownSignatureType
 	var signatures []metadata.RawSignature
 	var serializedPayload []byte
@@ -81,6 +81,7 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttest
 	case *attestationpb.Attestation_GenericSignedAttestation:
 		gsa := att.GetGenericSignedAttestation()
 		signatureType = metadata.GenericSignatureType
+		serializedPayload = gsa.GetSerializedPayload()
 		for _, sig := range gsa.GetSignatures() {
 			newSig := metadata.RawSignature{
 				PublicKeyId: sig.PublicKeyId,
@@ -89,7 +90,7 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttest
 			signatures = append(signatures, newSig)
 		}
 	}
-	return metadata.RawAttestation{
+	return &metadata.RawAttestation{
 		SignatureType:     signatureType,
 		Signatures:        signatures,
 		SerializedPayload: serializedPayload,
