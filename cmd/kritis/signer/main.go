@@ -34,12 +34,11 @@ import (
 )
 
 func main() {
-	var image, json_key_path, pri_key_path, pub_key_path, policy_path string
+	var image, json_key_path, pri_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&json_key_path, "credentials", "", "json credentials file path, e.g., ./key.json")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
-	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
@@ -48,11 +47,6 @@ func main() {
 	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
 		glog.Fatalf("Fail to read signer key: %v", err)
-	}
-
-	pubKey, err := ioutil.ReadFile(pub_key_path)
-	if err != nil {
-		glog.Fatalf("Fail to read public key: %v", err)
 	}
 
 	policyFile, err := ioutil.ReadFile(policy_path)
@@ -102,9 +96,9 @@ func main() {
 	// Assume empty passphrase
 	// TODO: support non-empty passphrase
 	passphrase := ""
-	pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
+	pgpKey, err := secrets.NewPgpSigningKey(string(signerKey), passphrase)
 	if err != nil {
-		glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\npublic key:\n%s\n", err, string(signerKey), string(pubKey))
+		glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\n", err, string(signerKey))
 	}
 	// Create AA
 	// Create an AttestaionAuthority to help create noteOcurrences.
@@ -114,7 +108,7 @@ func main() {
 		ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
 		Spec: v1beta1.AttestationAuthoritySpec{
 			NoteReference: policy.Spec.NoteReference,
-			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pubKey))},
+			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(""))},
 		},
 	}
 

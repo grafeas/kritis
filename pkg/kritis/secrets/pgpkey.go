@@ -57,6 +57,24 @@ func NewPgpKey(privateKeyStr string, passphrase string, publicKeyStr string) (*P
 	}, nil
 }
 
+// PgpKey without public key
+// TODO: refactor this
+func NewPgpSigningKey(privateKeyStr string, passphrase string) (*PgpKey, error) {
+	var privateKey *packet.PrivateKey
+	var err error
+
+	if privateKeyStr != "" {
+		privateKey, err = parsePrivateKey(privateKeyStr, passphrase)
+		if err != nil {
+			return nil, errors.Wrap(err, "parsing private key")
+		}
+	}
+	return &PgpKey{
+		privateKey: privateKey,
+		publicKey:  nil,
+	}, nil
+}
+
 func (key *PgpKey) PublicKey() *packet.PublicKey {
 	return key.publicKey
 }
