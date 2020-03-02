@@ -57,11 +57,11 @@ func TestReviewGAP(t *testing.T) {
 		return nil, fmt.Errorf("Not such secret for %s", name)
 	}
 	oneValidAtt := []metadata.RawAttestation{
-		makeRawAttestationPgp(encodeB64(sig), secFpr, ""),
+		makeRawAttestationPgp(encodeB64(sig), secFpr),
 	}
 	twoValidAtts := []metadata.RawAttestation{
-		makeRawAttestationPgp(encodeB64(sig), secFpr, ""),
-		makeRawAttestationPgp(encodeB64(sig2), secFpr2, ""),
+		makeRawAttestationPgp(encodeB64(sig), secFpr),
+		makeRawAttestationPgp(encodeB64(sig2), secFpr2),
 	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
@@ -69,7 +69,7 @@ func TestReviewGAP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 	invalidAtts := []metadata.RawAttestation{
-		makeRawAttestationPgp(encodeB64(invalidSig), secFpr, ""),
+		makeRawAttestationPgp(encodeB64(invalidSig), secFpr),
 	}
 
 	// A policy with a single attestor 'test'.
@@ -294,10 +294,10 @@ func TestReviewISP(t *testing.T) {
 		return sec, nil
 	}
 	validAtts := []metadata.RawAttestation{
-		makeRawAttestationPgp(encodeB64(sigVuln), secFpr, ""),
+		makeRawAttestationPgp(encodeB64(sigVuln), secFpr),
 	}
 	invalidAtts := []metadata.RawAttestation{
-		makeRawAttestationPgp(encodeB64(sigNoVuln), secFpr, ""),
+		makeRawAttestationPgp(encodeB64(sigNoVuln), secFpr),
 	}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
@@ -447,7 +447,7 @@ func TestReviewISP(t *testing.T) {
 			image:     vulnImage,
 			isWebhook: true,
 			// Invalid because not base64-encoded.
-			attestations:      []metadata.RawAttestation{makeRawAttestationPgp(sigVuln, secFpr, "")},
+			attestations:      []metadata.RawAttestation{makeRawAttestationPgp(sigVuln, secFpr)},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -458,7 +458,7 @@ func TestReviewISP(t *testing.T) {
 			image:     noVulnImage,
 			isWebhook: true,
 			// Invalid because not base64-encoded.
-			attestations:      []metadata.RawAttestation{makeRawAttestationPgp(sigNoVuln, secFpr, "")},
+			attestations:      []metadata.RawAttestation{makeRawAttestationPgp(sigNoVuln, secFpr)},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
@@ -649,19 +649,14 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 	}
 }
 
-func makeRawAttestationPgp(signature, id, occId string) metadata.RawAttestation {
+func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
 	return metadata.RawAttestation{
-		AttestationType: metadata.PgpAttestationType,
-		PgpAttestation:  makePgpAtt(signature, id, occId),
-	}
-}
-
-func makePgpAtt(signature, id, occId string) metadata.PgpAttestation {
-	return metadata.PgpAttestation{
-		Signature: metadata.Signature{
-			Signature:   []byte(signature),
-			PublicKeyId: id,
+		SignatureType: metadata.PgpSignatureType,
+		Signatures: []metadata.RawSignature{
+			{
+				Signature:   signature,
+				PublicKeyId: id,
+			},
 		},
-		OccId: occId,
 	}
 }

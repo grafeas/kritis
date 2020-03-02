@@ -65,8 +65,8 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []metadata.RawAttestation{makeRawAttestationPgp("", "", "occc-1")}
-	aClient := []metadata.RawAttestation{makeRawAttestationPgp("", "", "occc-miss")}
+	aCache := []metadata.RawAttestation{makeRawAttestationPgp("sig-cache", "key-cache")}
+	aClient := []metadata.RawAttestation{makeRawAttestationPgp("sig-client", "key-client")}
 	c := Cache{
 		client: &testutil.MockMetadataClient{RawAttestations: aClient},
 		vuln:   nil,
@@ -139,19 +139,14 @@ func TestNCache(t *testing.T) {
 	}
 }
 
-func makeRawAttestationPgp(signature, id, occId string) metadata.RawAttestation {
+func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
 	return metadata.RawAttestation{
-		AttestationType: metadata.PgpAttestationType,
-		PgpAttestation:  makePgpAtt(signature, id, occId),
-	}
-}
-
-func makePgpAtt(signature, id, occId string) metadata.PgpAttestation {
-	return metadata.PgpAttestation{
-		Signature: metadata.Signature{
-			Signature:   []byte(signature),
-			PublicKeyId: id,
+		SignatureType: metadata.PgpSignatureType,
+		Signatures: []metadata.RawSignature{
+			{
+				Signature:   signature,
+				PublicKeyId: id,
+			},
 		},
-		OccId: occId,
 	}
 }

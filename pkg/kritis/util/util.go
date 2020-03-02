@@ -64,42 +64,35 @@ func GetResource(image string) *grafeas.Resource {
 }
 
 func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.RawAttestation {
+	signatureType := metadata.UnknownSignatureType
+	var signatures []metadata.RawSignature
+	var serializedPayload []byte
+
 	att := occ.GetAttestation().GetAttestation()
 	switch att.Signature.(type) {
 	case *attestationpb.Attestation_PgpSignedAttestation:
 		psa := att.GetPgpSignedAttestation()
-		return metadata.RawAttestation{
-			AttestationType: metadata.PgpAttestationType,
-			PgpAttestation: metadata.PgpAttestation{
-				Signature: metadata.Signature{
-					Signature:   []byte(psa.GetSignature()),
-					PublicKeyId: psa.GetPgpKeyId(),
-				},
-				OccId: occ.GetName(),
-			},
+		signatureType = metadata.PgpSignatureType
+		sig := metadata.RawSignature{
+			PublicKeyId: psa.GetPgpKeyId(),
+			Signature:   psa.GetSignature(),
 		}
+		signatures = append(signatures, sig)
 	case *attestationpb.Attestation_GenericSignedAttestation:
 		gsa := att.GetGenericSignedAttestation()
-		signatures := []metadata.Signature{}
+		signatureType = metadata.GenericSignatureType
 		for _, sig := range gsa.GetSignatures() {
-			newSig := metadata.Signature{
-				Signature:   sig.Signature,
+			newSig := metadata.RawSignature{
 				PublicKeyId: sig.PublicKeyId,
+				Signature:   string(sig.Signature),
 			}
 			signatures = append(signatures, newSig)
 		}
-		return metadata.RawAttestation{
-			AttestationType: metadata.GenericAttestationType,
-			GenericAttestation: metadata.GenericAttestation{
-				SerializedPayload: gsa.SerializedPayload,
-				Signatures:        signatures,
-			},
-		}
-	default:
-		return metadata.RawAttestation{
-			AttestationType: metadata.UnknownAttestationType,
-		}
-
+	}
+	return metadata.RawAttestation{
+		SignatureType:     signatureType,
+		Signatures:        signatures,
+		SerializedPayload: serializedPayload,
 	}
 }
 

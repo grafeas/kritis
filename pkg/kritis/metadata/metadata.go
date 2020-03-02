@@ -25,12 +25,12 @@ import (
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
-type AttestationType int
+type SignatureType int
 
 const (
-	UnknownAttestationType AttestationType = iota
-	PgpAttestationType
-	GenericAttestationType
+	UnknownSignatureType SignatureType = iota
+	PgpSignatureType
+	GenericSignatureType
 )
 
 // Read/write interface to access Occurrences and Notes using Grafeas API.
@@ -71,32 +71,17 @@ type Vulnerability struct {
 // GenericAttestations. It contains signatures, which are verified by
 // public keys held by the AttestationAuthority.
 type RawAttestation struct {
-	AttestationType    AttestationType
-	PgpAttestation     PgpAttestation
-	GenericAttestation GenericAttestation
-}
-
-// PgpAttestation represents the Signature and the Signer Key Id from the
-// containeranalysis Occurrence_Attestation instance.
-type PgpAttestation struct {
-	// OccId is the occurrence ID for containeranalysis Occurrence_Attestation instance
-	OccId     string
-	Signature Signature
-}
-
-// GenericAttestation holds a message payload and Signatures generated over
-// that payload.
-type GenericAttestation struct {
+	SignatureType     SignatureType
+	Signatures        []RawSignature
 	SerializedPayload []byte
-	Signatures        []Signature
 }
 
-// Signature contains the signature content as an opaque bytestring and an ID
-// for the public key that can verify the signature. The ID does not by itself
-// verify the signature. It is merely a key lookup hint.
-type Signature struct {
-	Signature   []byte
+// RawSignature contains the signature content as an opaque bytestring and an
+// ID for the public key that can verify the signature. The ID does not by
+// itself verify the signature. It is merely a key lookup hint.
+type RawSignature struct {
 	PublicKeyId string
+	Signature   string
 }
 
 // ParseNoteReference extracts the project ID and the note ID from the NoteReference.

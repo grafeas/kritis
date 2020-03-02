@@ -88,8 +88,8 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64(sig), successFpr, ""),
-			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr, ""),
+			makeRawAttestationPgp(encodeB64(sig), successFpr),
+			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at least one good key", auth: validAuthWithOneGoodOneBadKeys, expected: []attestation.ValidatedAttestation{
 			{
@@ -97,8 +97,8 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64(sig), successFpr, ""),
-			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr, ""),
+			makeRawAttestationPgp(encodeB64(sig), successFpr),
+			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at two good keys", auth: validAuthWithTwoGoodKeys, expected: []attestation.ValidatedAttestation{
 			{
@@ -106,24 +106,24 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64(sig), successFpr, ""),
-			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr, ""),
+			makeRawAttestationPgp(encodeB64(sig), successFpr),
+			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "no valid sig", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr, ""),
+			makeRawAttestationPgp(encodeB64("invalid-sig"), successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "sig not base64 encoded", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(sig, successFpr, ""),
+			makeRawAttestationPgp(sig, successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "invalid secret", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64("invalid-sig"), "invalid-fpr", ""),
+			makeRawAttestationPgp(encodeB64("invalid-sig"), "invalid-fpr"),
 		}, errorExpected: false, attError: nil},
 		{name: "valid sig over another host", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64(anotherSig), successFpr, ""),
+			makeRawAttestationPgp(encodeB64(anotherSig), successFpr),
 		}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodKey, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
 		{name: "invalid attestation authority error", auth: invalidAuthWithOneBadKey, expected: nil, attestations: []metadata.RawAttestation{
-			makeRawAttestationPgp(encodeB64(sig), successFpr, ""),
+			makeRawAttestationPgp(encodeB64(sig), successFpr),
 		}, errorExpected: true, attError: nil},
 	}
 
