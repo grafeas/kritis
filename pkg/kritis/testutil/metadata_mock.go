@@ -50,15 +50,14 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurrence(n *grafeas.Note, image string,
-	s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurrence(n string, image string, s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
-	m.Occ[fmt.Sprintf("%s-%s", image, n.Name)] = s.SecretName
+	m.Occ[fmt.Sprintf("%s-%s", image, n)] = s.SecretName
 	return nil, nil
 }
 

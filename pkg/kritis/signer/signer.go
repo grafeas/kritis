@@ -91,7 +91,7 @@ func (s Signer) addAttestation(image string) error {
 	}
 
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n, image, sec, s.config.Project)
+	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, s.config.Project)
 	return err
 }
 

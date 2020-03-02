@@ -30,9 +30,8 @@ type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
-	CreateAttestationOccurrence(note *grafeasv1beta1.Note,
-		containerImage string, pgpSigningKey *secrets.PGPSigningSecret,
-		proj string) (*grafeasv1beta1.Occurrence, error)
+	CreateAttestationOccurrence(noteName string,
+		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
