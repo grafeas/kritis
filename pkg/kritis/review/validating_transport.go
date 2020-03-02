@@ -80,7 +80,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 				continue
 			}
 			keyId := rawSig.PublicKeyId
-			if err = host.VerifyAttestationSignature(keys[keyId], string(decodedSig)); err != nil {
+			if err = host.VerifyPgpSignature(keys[keyId], string(decodedSig)); err != nil {
 				glog.Infof("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 				continue
 			}
