@@ -16,13 +16,12 @@ steps:
     - 'gcr.io/projectgut-215417/binauthz-test'
     id: push
   # Wait for vulnerability scanning reaults
-  # NOTE currently commented out
-  # - name: gcr.io/projectgut-215417/python-builder
-  # args:
-  # - ./wait_for_vulns.py
-  # - https://gcr.io/projectgut-215417/binauthz-test
-  # - projectgut-215417
-  # id: vulnpoll
+  - name: gcr.io/projectgut-215417/python-builder
+    args:
+    - ./wait_for_vulns.py
+    - https://gcr.io/projectgut-215417/binauthz-test
+    - projectgut-215417
+    id: vulnpoll
   #
   # This step should fail because the image has fixes
   # for vulnerabilities
