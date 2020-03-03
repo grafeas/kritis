@@ -40,7 +40,7 @@ func TestVCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{Vulnz: vClient},
 		vuln:   map[string][]metadata.Vulnerability{"image-hit": vCache},
-		att:    nil,
+		atts:   nil,
 		notes:  nil,
 	}
 	tcs := []struct {
@@ -70,7 +70,7 @@ func TestACache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{RawAttestations: aClient},
 		vuln:   nil,
-		att:    map[string][]metadata.RawAttestation{"image-hit": aCache},
+		atts:   map[string][]metadata.RawAttestation{"image-hit": aCache},
 		notes:  nil,
 	}
 	tcs := []struct {
@@ -115,7 +115,7 @@ func TestNCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{},
 		vuln:   nil,
-		att:    nil,
+		atts:   nil,
 		notes:  map[*v1beta1.AttestationAuthority]*grafeas.Note{aaHit: nCache},
 	}
 	tcs := []struct {
