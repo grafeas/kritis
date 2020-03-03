@@ -32,7 +32,6 @@ steps:
     - '-alsologtostderr'
     - '-image=gcr.io/projectgut-215417/binauthz-test'
     - '-credentials=kritis-service-account.json'
-    - '-public_key=gpg.pub'
     - '-private_key=gpg.priv'
     - '-policy=policy.yaml'
     waitFor: vulnpoll
