@@ -16,7 +16,6 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -120,7 +119,6 @@ func TestGetRawAttestationFromOccurrence(t *testing.T) {
 					Attestation: &attestation.Details{Attestation: &tc.att},
 				},
 			}
-			fmt.Printf("About to parse occ: %v\n", occ)
 			actualRawAtt := GetRawAttestationFromOccurrence(occ)
 			if !reflect.DeepEqual(*actualRawAtt, tc.expectedRawAtt) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedRawAtt, *actualRawAtt)
@@ -238,7 +236,6 @@ func makeRawAttestationGeneric(sigs, ids []string, payload string) metadata.RawA
 		}
 		signatures = append(signatures, newSig)
 	}
-	fmt.Printf("Expect payload: %v", payload)
 	return metadata.RawAttestation{
 		SignatureType:     metadata.GenericSignatureType,
 		SerializedPayload: []byte(payload),
@@ -255,7 +252,6 @@ func makeGenericAttestation(sigs, ids []string, payload string) attestation.Atte
 		}
 		signatures = append(signatures, newSig)
 	}
-	fmt.Printf("Received payload: %v", payload)
 	return attestation.Attestation{
 		Signature: &attestation.Attestation_GenericSignedAttestation{
 			GenericSignedAttestation: &attestation.GenericSignedAttestation{
