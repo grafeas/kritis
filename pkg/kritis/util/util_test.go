@@ -101,13 +101,13 @@ func TestGetRawAttestationFromOccurrence(t *testing.T) {
 		{
 			"generic attestation",
 			"CVE-2",
-			makeGenericAttestation([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
+			makeOccAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
 			makeRawAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
 		},
 		{
 			"generic attestation multiple signatures",
 			"CVE-3",
-			makeGenericAttestation([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
+			makeOccAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
 			makeRawAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
 		},
 	}
@@ -119,7 +119,10 @@ func TestGetRawAttestationFromOccurrence(t *testing.T) {
 					Attestation: &attestation.Details{Attestation: &tc.att},
 				},
 			}
-			actualRawAtt := GetRawAttestationFromOccurrence(occ)
+			actualRawAtt, err := GetRawAttestationFromOccurrence(occ)
+			if err != nil {
+				t.Fatalf("Error while parsing RawAttestation from Occurrence: %v", err)
+			}
 			if !reflect.DeepEqual(*actualRawAtt, tc.expectedRawAtt) {
 				t.Fatalf("Expected \n%v\nGot \n%v", tc.expectedRawAtt, *actualRawAtt)
 			}
@@ -243,7 +246,7 @@ func makeRawAttestationGeneric(sigs, ids []string, payload string) metadata.RawA
 	}
 }
 
-func makeGenericAttestation(sigs, ids []string, payload string) attestation.Attestation {
+func makeOccAttestationGeneric(sigs, ids []string, payload string) attestation.Attestation {
 	signatures := []*common.Signature{}
 	for i, sig := range sigs {
 		newSig := &common.Signature{

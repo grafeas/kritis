@@ -660,3 +660,19 @@ func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
 		},
 	}
 }
+
+func makeRawAttestationGeneric(sigs, ids []string, payload string) metadata.RawAttestation {
+	signatures := []metadata.RawSignature{}
+	for i, sig := range sigs {
+		newSig := metadata.RawSignature{
+			PublicKeyId: ids[i],
+			Signature:   sig,
+		}
+		signatures = append(signatures, newSig)
+	}
+	return metadata.RawAttestation{
+		SignatureType:     metadata.GenericSignatureType,
+		SerializedPayload: []byte(payload),
+		Signatures:        signatures,
+	}
+}

@@ -63,7 +63,7 @@ func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) *metadata.RawAttestation {
+func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) (*metadata.RawAttestation, error) {
 	signatureType := metadata.UnknownSignatureType
 	var signatures []metadata.RawSignature
 	var serializedPayload []byte
@@ -89,12 +89,15 @@ func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) *metadata.RawAttes
 			}
 			signatures = append(signatures, newSig)
 		}
+	default:
+		return nil, fmt.Errorf("Unknown signature type for attestation %v", att)
 	}
+
 	return &metadata.RawAttestation{
 		SignatureType:     signatureType,
 		Signatures:        signatures,
 		SerializedPayload: serializedPayload,
-	}
+	}, nil
 }
 
 func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
