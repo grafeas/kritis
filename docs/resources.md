@@ -20,7 +20,7 @@ To view webhook, run
 kubectl describe ValidatingWebhookConfiguration kritis-validation-hook
 ```
 
-The cron job validates and reconcile policies on an hourly basis, and ads labels and annotations to pods out of policy. You may force it to run via:
+The cron job validates and reconcile policies on an hourly basis, and adds labels and annotations to pods out of policy. You may force it to run via:
 
 ```shell
 kubectl exec -l label=kritis-validation-hook -- /kritis/kritis-server --run-cron

@@ -71,8 +71,8 @@
     "ptypes/empty",
     "ptypes/timestamp"
   ]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
 
 [[projects]]
   branch = "master"
@@ -378,6 +378,7 @@
     "googleapis/devtools/containeranalysis/v1beta1/attestation",
     "googleapis/devtools/containeranalysis/v1beta1/build",
     "googleapis/devtools/containeranalysis/v1beta1/common",
+    "googleapis/devtools/containeranalysis/v1beta1/cvss",
     "googleapis/devtools/containeranalysis/v1beta1/deployment",
     "googleapis/devtools/containeranalysis/v1beta1/discovery",
     "googleapis/devtools/containeranalysis/v1beta1/grafeas",
@@ -389,9 +390,10 @@
     "googleapis/iam/v1",
     "googleapis/pubsub/v1",
     "googleapis/rpc/status",
+    "googleapis/type/expr",
     "protobuf/field_mask"
   ]
-  revision = "11092d34479b07829b72e10713b159248caf5dad"
+  revision = "f3c370f40bfba3cb25c5c2f823a1a8031b5ad724"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -650,6 +652,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e1781657363fcc06c0d6d98a7920521b85e9c28d66ce024452cbba89a3995e94"
+  inputs-digest = "97811ae6ef7fc2964aaace8d7ec070caadb1dfb763c1f764e4a3c20a8be6e1da"
   solver-name = "gps-cdcl"
   solver-version = 1
