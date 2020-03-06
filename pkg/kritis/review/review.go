@@ -62,6 +62,7 @@ func generateGapAllowlist(gaps []v1beta1.GenericAttestationPolicy) []string {
 }
 
 // reviewImageWithGAP reviews single image against a single generic attestation policy
+//
 func (r Reviewer) reviewImageWithGAP(image string, gap v1beta1.GenericAttestationPolicy, c metadata.ReadOnlyClient) (bool, []string, error) {
 	glog.Infof("Validating against GenericAttestationPolicy %s", gap.Name)
 

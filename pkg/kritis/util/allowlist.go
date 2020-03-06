@@ -71,7 +71,7 @@ func imageRefMatch(image string, pattern string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// Make sure c
+	// Make sure both resolve to same URL
 	if reflect.DeepEqual(allowRef.Context(), imageRef.Context()) {
 		return true, nil
 	}

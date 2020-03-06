@@ -37,6 +37,7 @@ func encodeB64(in string) string {
 
 func TestValidatingTransport(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
+	// second public key for the second attestor
 	_, pub2 := testutil.CreateSecret(t, "test-success-2")
 	successFpr := successSec.PgpKey.Fingerprint()
 	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)
@@ -53,6 +54,7 @@ func TestValidatingTransport(t *testing.T) {
 			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}
+	// for testing any key logic in validating attestation
 	validAuthWithTwoGoodKeys := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
@@ -108,7 +110,7 @@ func TestValidatingTransport(t *testing.T) {
 				Signature: encodeB64("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
-		{name: "auth with at two good keys", auth: validAuthWithTwoGoodKeys, expected: []attestation.ValidatedAttestation{
+		{name: "auth with two good keys", auth: validAuthWithTwoGoodKeys, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,

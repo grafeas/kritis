@@ -35,7 +35,9 @@ kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ## GenericAttestationPolicy CRD
 
 GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
-The policy expects ALL attestation authorities to be satisfied before allowing the container image to be admitted.
+The policy expects either 1) ALL attestation authorities to be satisfied,
+or 2) the image url matches one of the allow-listed name patterns,
+before allowing the container image to be admitted.
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 
@@ -103,7 +105,7 @@ exact match, or to any images matching a pattern using the wildcard symbol
 (`*`). The wildcards may only be present in the end, and not anywhere
  else in the pattern, e.g., `gcr.io/n*x` is not allowed,
 but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
-e.g.,, `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+e.g., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
 but it does not match `gcr.io/nginx/image`.
 The name pattern matching rule is compatible with that of Binary Authorization, 
 see more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns.

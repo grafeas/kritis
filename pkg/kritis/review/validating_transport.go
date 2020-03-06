@@ -45,10 +45,10 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 	for _, keyData := range avt.Attestor.Spec.PublicKeyList {
 		key, fingerprint, err := secrets.KeyAndFingerprint(keyData)
 		if err != nil {
-			glog.Warningf("Error parsing key for %q: %v", avt.Attestor.Name, err)
+			glog.Errorf("Error parsing key for %q: %v", avt.Attestor.Name, err)
 		} else {
 			if _, ok := keys[fingerprint]; ok {
-				glog.Warningf("Duplicate keys with fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
+				glog.Errorf("Duplicate keys with fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
 			}
 			keys[fingerprint] = key
 		}
