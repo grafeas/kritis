@@ -28,9 +28,9 @@ steps:
     - '-v=10'
     - '-alsologtostderr'
     - '-image=gcr.io/projectgut-215417/binauthz-test'
-    - '-credentials=kritis-service-account.json'
-    - '-private_key=gpg.priv'
-    - '-policy=policy.yaml'
+    - '-credentials=/workspace/kritis-service-account.json'
+    - '-private_key=/workspace/ec256.priv'
+    - '-policy=/workspace/policy.yaml'
     waitFor: vulnpoll
     id: vulnsign
 images: ['gcr.io/projectgut-215417/binauthz-test']

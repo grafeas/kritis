@@ -1,5 +1,4 @@
 #!/usr/bin//python
-# Lint as: python3
 """
 Polls container analysis api until named container has been scanned for vulnerabilities or timeout
 """
@@ -58,6 +57,7 @@ def poll_discovery_finished(resource_url, timeout_seconds, project_id):
     discovery_occurrence = None
     while discovery_occurrence is None:
         time.sleep(1)
+        sys.stdout.write(".")
         resource_url = get_resource_url(resource_url)
         filter_str = 'resourceUrl="{}" \
                       AND noteProjectId="goog-analysis" \
@@ -75,17 +75,20 @@ def poll_discovery_finished(resource_url, timeout_seconds, project_id):
             and status != DiscoveryOccurrence.AnalysisStatus.FINISHED_FAILED \
             and status != DiscoveryOccurrence.AnalysisStatus.FINISHED_SUCCESS:
         time.sleep(1)
+        sys.stdout.write(".")
         updated = grafeas_client.get_occurrence(discovery_occurrence.name)
         status = updated.discovery.analysis_status
         if time.time() > deadline:
             raise RuntimeError('timeout while waiting for terminal state')
+    print("")
     return discovery_occurrence
 
 def main(argv):
   if len(argv) > 4:
     raise app.UsageError('Too many command-line arguments.')
+  print "Waiting for vulnerability scanning to finish for {}".format(argv[1])
   result = poll_discovery_finished(resource_url=argv[1], timeout_seconds=120, project_id=argv[2])
-  print "Vulnerability scanning finished on {}".format(resource_url)
+  print "Vulnerability scanning finished on {}".format(argv[1])
   print result
 
 
