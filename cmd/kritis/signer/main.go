@@ -102,7 +102,7 @@ func main() {
 	// Create pgp key
 	pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
 	if err != nil {
-		flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
+		glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\npublic key:\n%s\n", err, string(signerKey), string(pubKey))
 	}
 	// Create AA
 	// Create an AttestaionAuthority to help create noteOcurrences.
