@@ -7,12 +7,13 @@ steps:
     - build
     - '-t'
     - 'gcr.io/projectgut-215417/binauthz-test'
+    - '-f'
     - './Dockerfile.good'
+    - '.'
     id: build
   - name: gcr.io/cloud-builders/docker
     args:
     - push
-    - '-t'
     - 'gcr.io/projectgut-215417/binauthz-test'
     id: push
   # Wait for vulnerability scanning reaults

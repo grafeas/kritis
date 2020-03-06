@@ -84,7 +84,9 @@ def poll_discovery_finished(resource_url, timeout_seconds, project_id):
 def main(argv):
   if len(argv) > 4:
     raise app.UsageError('Too many command-line arguments.')
-  print poll_discovery_finished(resource_url=argv[1], timeout_seconds=120, project_id=argv[2])
+  result = poll_discovery_finished(resource_url=argv[1], timeout_seconds=120, project_id=argv[2])
+  print "Vulnerability scanning finished on {}".format(resource_url)
+  print result
 
 
 if __name__ == '__main__':
