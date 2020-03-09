@@ -3,18 +3,20 @@
 steps:
   # Build a 'good' image
   - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
     args:
-    - build
-    - '-t'
-    - 'gcr.io/projectgut-215417/binauthz-test'
-    - '-f'
-    - './Dockerfile.good'
-    - '.'
+      - -c
+      - |
+        docker build -t gcr.io/projectgut-215417/binauthz-test:latest -f ./Dockerfile.good .
     id: build
   - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
     args:
-    - push
-    - 'gcr.io/projectgut-215417/binauthz-test'
+    - -c
+    - |
+      docker push gcr.io/projectgut-215417/binauthz-test:latest &&
+      docker image inspect gcr.io/projectgut-215417/binauthz-test:latest --format '{{ .ID }}' > image-digest.txt &&
+      cat image-digest.txt
     id: push
   # Wait for vulnerability scanning reaults
   - name: gcr.io/projectgut-215417/python-builder
@@ -27,10 +29,11 @@ steps:
     args:
     - '-v=10'
     - '-alsologtostderr'
-    - '-image=gcr.io/projectgut-215417/binauthz-test'
-    - '-credentials=/workspace/kritis-service-account.json'
-    - '-private_key=/workspace/ec256.priv'
-    - '-policy=/workspace/policy.yaml'
+    - '-image=gcr.io/projectgut-215417/binauthz-test@$(cat image-digest.txt)'
+    - '-credentials=kritis-service-account.json'
+    - '-private_key=gpg.priv'
+    - '-public_key=gpg.pub'
+    - '-policy=policy.yaml'
     waitFor: vulnpoll
     id: vulnsign
-images: ['gcr.io/projectgut-215417/binauthz-test']
+images: ['gcr.io/projectgut-215417/binauthz-test:latest']
