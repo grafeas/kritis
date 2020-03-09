@@ -126,12 +126,12 @@ func TestValidatingTransport(t *testing.T) {
 			makeRawAttestationPgp(encodeB64(sig), successFpr),
 		}, errorExpected: true, attError: nil},
 		{name: "auth with generic signature type", auth: validAuthWithOneGoodKey, expected: nil, attestations: []metadata.RawAttestation{
-			makeRawAttestationGeneric([]string{"test-sig"}, []string{"test-id"}, "generic-address"),
+			makeRawAttestationGeneric("test-sig", "test-id", "generic-address"),
 		}, errorExpected: true, attError: nil},
 		{name: "auth with unknown signature type", auth: validAuthWithOneGoodKey, expected: nil, attestations: []metadata.RawAttestation{
 			{
 				SignatureType: metadata.UnknownSignatureType,
-				Signatures:    nil,
+				Signature:     metadata.RawSignature{},
 			},
 		}, errorExpected: true, attError: nil},
 	}

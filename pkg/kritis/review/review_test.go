@@ -652,27 +652,20 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
 	return metadata.RawAttestation{
 		SignatureType: metadata.PgpSignatureType,
-		Signatures: []metadata.RawSignature{
-			{
-				Signature:   signature,
-				PublicKeyId: id,
-			},
+		Signature: metadata.RawSignature{
+			Signature:   signature,
+			PublicKeyId: id,
 		},
 	}
 }
 
-func makeRawAttestationGeneric(sigs, ids []string, payload string) metadata.RawAttestation {
-	signatures := []metadata.RawSignature{}
-	for i, sig := range sigs {
-		newSig := metadata.RawSignature{
-			PublicKeyId: ids[i],
-			Signature:   sig,
-		}
-		signatures = append(signatures, newSig)
-	}
+func makeRawAttestationGeneric(sig, id string, payload string) metadata.RawAttestation {
 	return metadata.RawAttestation{
 		SignatureType:     metadata.GenericSignatureType,
 		SerializedPayload: []byte(payload),
-		Signatures:        signatures,
+		Signature: metadata.RawSignature{
+			PublicKeyId: id,
+			Signature:   sig,
+		},
 	}
 }

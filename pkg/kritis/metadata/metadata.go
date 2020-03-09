@@ -71,18 +71,18 @@ type Vulnerability struct {
 	CVE             string
 }
 
-// RawAttestation is an internal wrapper for PgpAttestations and
-// GenericAttestations. It contains signatures, which are verified by
-// public keys held by the AttestationAuthority.
+// RawAttestation represents an unauthenticated attestation, stripped any
+// information specific to the wire format. RawAttestation may only be
+// trusted after successfully verifying its Signature.
 type RawAttestation struct {
 	SignatureType     SignatureType
-	Signatures        []RawSignature
+	Signature         RawSignature
 	SerializedPayload []byte
 }
 
-// RawSignature contains the signature content as an opaque bytestring and an
-// ID for the public key that can verify the signature. The ID does not by
-// itself verify the signature. It is merely a key lookup hint.
+// RawSignature contains the signature content and an ID for the public key
+// that can verify the signature. The ID does not by itself verify the
+// signature. It is merely a key lookup hint.
 type RawSignature struct {
 	PublicKeyId string
 	Signature   string

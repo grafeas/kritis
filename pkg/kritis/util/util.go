@@ -63,41 +63,39 @@ func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func GetRawAttestationFromOccurrence(occ *grafeas.Occurrence) (*metadata.RawAttestation, error) {
-	signatureType := metadata.UnknownSignatureType
-	var signatures []metadata.RawSignature
-	var serializedPayload []byte
-
+func GetRawAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]metadata.RawAttestation, error) {
+	ras := []metadata.RawAttestation{}
 	att := occ.GetAttestation().GetAttestation()
 	switch att.Signature.(type) {
 	case *attestationpb.Attestation_PgpSignedAttestation:
 		psa := att.GetPgpSignedAttestation()
-		signatureType = metadata.PgpSignatureType
-		sig := metadata.RawSignature{
-			PublicKeyId: psa.GetPgpKeyId(),
-			Signature:   psa.GetSignature(),
+		ra := metadata.RawAttestation{
+			SignatureType: metadata.PgpSignatureType,
+			Signature: metadata.RawSignature{
+				PublicKeyId: psa.GetPgpKeyId(),
+				Signature:   psa.GetSignature(),
+			},
+			SerializedPayload: []byte{},
 		}
-		signatures = append(signatures, sig)
+		ras = append(ras, ra)
 	case *attestationpb.Attestation_GenericSignedAttestation:
 		gsa := att.GetGenericSignedAttestation()
-		signatureType = metadata.GenericSignatureType
-		serializedPayload = gsa.GetSerializedPayload()
 		for _, sig := range gsa.GetSignatures() {
 			newSig := metadata.RawSignature{
 				PublicKeyId: sig.PublicKeyId,
 				Signature:   string(sig.Signature),
 			}
-			signatures = append(signatures, newSig)
+			ra := metadata.RawAttestation{
+				SignatureType:     metadata.GenericSignatureType,
+				Signature:         newSig,
+				SerializedPayload: gsa.GetSerializedPayload(),
+			}
+			ras = append(ras, ra)
 		}
 	default:
 		return nil, fmt.Errorf("Unknown signature type for attestation %v", att)
 	}
-
-	return &metadata.RawAttestation{
-		SignatureType:     signatureType,
-		Signatures:        signatures,
-		SerializedPayload: serializedPayload,
-	}, nil
+	return ras, nil
 }
 
 func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
