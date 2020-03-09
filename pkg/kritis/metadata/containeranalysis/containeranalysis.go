@@ -86,7 +86,7 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 	}
 	vulnz := []metadata.Vulnerability{}
 	for _, occ := range occs {
-		if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
+		if v := metadata.GetVulnerabilityFromOccurrence(occ); v != nil {
 			vulnz = append(vulnz, *v)
 		}
 	}
@@ -107,7 +107,7 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 		return nil, err
 	}
 	for _, occ := range occs {
-		ra, err := util.GetRawAttestationsFromOccurrence(occ)
+		ra, err := metadata.GetRawAttestationsFromOccurrence(occ)
 		if err != nil {
 			return nil, err
 		}

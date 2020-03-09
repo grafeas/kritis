@@ -22,7 +22,11 @@ import (
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
+	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
 type SignatureType int
@@ -95,4 +99,63 @@ func ParseNoteReference(ref string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>")
 	}
 	return parts[1], parts[3], nil
+}
+
+func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
+	for _, pi := range pis {
+		if pi.GetFixedLocation() == nil || pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
+			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
+			return false
+		}
+	}
+	return true
+}
+
+func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *Vulnerability {
+	vulnDetails := occ.GetVulnerability()
+	if vulnDetails == nil {
+		return nil
+	}
+	hasFixAvailable := IsFixAvailable(vulnDetails.GetPackageIssue())
+	vulnerability := Vulnerability{
+		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
+		HasFixAvailable: hasFixAvailable,
+		CVE:             occ.GetNoteName(),
+	}
+	return &vulnerability
+}
+
+func GetRawAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]RawAttestation, error) {
+	ras := []RawAttestation{}
+	att := occ.GetAttestation().GetAttestation()
+	switch att.Signature.(type) {
+	case *attestationpb.Attestation_PgpSignedAttestation:
+		psa := att.GetPgpSignedAttestation()
+		ra := RawAttestation{
+			SignatureType: PgpSignatureType,
+			Signature: RawSignature{
+				PublicKeyId: psa.GetPgpKeyId(),
+				Signature:   psa.GetSignature(),
+			},
+			SerializedPayload: []byte{},
+		}
+		ras = append(ras, ra)
+	case *attestationpb.Attestation_GenericSignedAttestation:
+		gsa := att.GetGenericSignedAttestation()
+		for _, sig := range gsa.GetSignatures() {
+			newSig := RawSignature{
+				PublicKeyId: sig.PublicKeyId,
+				Signature:   string(sig.Signature),
+			}
+			ra := RawAttestation{
+				SignatureType:     GenericSignatureType,
+				Signature:         newSig,
+				SerializedPayload: gsa.GetSerializedPayload(),
+			}
+			ras = append(ras, ra)
+		}
+	default:
+		return nil, fmt.Errorf("Unknown signature type for attestation %v", att)
+	}
+	return ras, nil
 }
