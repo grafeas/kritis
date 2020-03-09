@@ -23,9 +23,10 @@ import (
 
 func Test_RemoveGloballyAllowedImages(t *testing.T) {
 	tests := []struct {
-		name     string
-		images   []string
-		expected []string
+		name           string
+		images         []string
+		notAllowlisted []string
+		allowlisted    []string
 	}{
 		{
 			name: "images in allowlist",
@@ -33,7 +34,11 @@ func Test_RemoveGloballyAllowedImages(t *testing.T) {
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			},
-			expected: []string{},
+			notAllowlisted: []string{},
+			allowlisted: []string{
+				"gcr.io/kritis-project/kritis-server:tag",
+				"gcr.io/kritis-project/kritis-server@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			},
 		},
 		{
 			name: "some images not allowlisted",
@@ -41,13 +46,54 @@ func Test_RemoveGloballyAllowedImages(t *testing.T) {
 				"gcr.io/kritis-project/kritis-server:tag",
 				"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
 			},
-			expected: []string{"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+			notAllowlisted: []string{"gcr.io/some/image@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+			allowlisted:    []string{"gcr.io/kritis-project/kritis-server:tag"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := RemoveGloballyAllowedImages(test.images)
-			testutil.DeepEqual(t, test.expected, actual)
+			images, removed := RemoveGloballyAllowedImages(test.images)
+			testutil.DeepEqual(t, test.notAllowlisted, images)
+			testutil.DeepEqual(t, test.allowlisted, removed)
+		})
+	}
+}
+
+func Test_RemoveGapAllowedImages(t *testing.T) {
+	allowlist := []string{
+		"gcr.io/1-my-image*",
+	}
+	tests := []struct {
+		name           string
+		images         []string
+		notAllowlisted []string
+		allowlisted    []string
+	}{
+		{
+			name: "remove gap allowed images",
+			images: []string{
+				"gcr.io/1-my-image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+				"gcr.io/1-my-image:tag",
+				"gcr.io/2-my-image:latest",
+				"gcr.io/1-my-image2:latest",
+				"gcr.io/1-my-image/a:latest",
+			},
+			notAllowlisted: []string{
+				"gcr.io/2-my-image:latest",
+				"gcr.io/1-my-image/a:latest",
+			},
+			allowlisted: []string{
+				"gcr.io/1-my-image@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+				"gcr.io/1-my-image:tag",
+				"gcr.io/1-my-image2:latest",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			images, removed := RemoveGapAllowedImages(test.images, allowlist)
+			testutil.DeepEqual(t, test.notAllowlisted, images)
+			testutil.DeepEqual(t, test.allowlisted, removed)
 		})
 	}
 }

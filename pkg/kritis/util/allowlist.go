@@ -26,34 +26,44 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// RemoveGloballyAllowedImages returns all images that aren't in a global allowlist
-func RemoveGloballyAllowedImages(images []string) []string {
-	notAllowlisted := []string{}
+// RemoveGloballyAllowedImages returns:
+// -- list of all images that aren't in a global allowlist
+// -- list of images that are removed
+func RemoveGloballyAllowedImages(images []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInGlobalAllowlist(image)
+		isAllowlisted, err := imageInGlobalAllowlist(image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global allowlist: %v", image, err)
 		}
-		if !allowlisted {
-			notAllowlisted = append(notAllowlisted, image)
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
 	}
-	return notAllowlisted
+	return notAllowlistedImages, removedImages
 }
 
-// RemoveGloballyAllowedImages returns all images that aren't in gap allowlists
-func RemoveGapAllowedImages(images []string, allowlist []string) []string {
-	notAllowlisted := []string{}
+// RemoveGloballyAllowedImages returns:
+// -- list of all images that aren't in gap allowlists
+// -- list of images that are removed
+func RemoveGapAllowedImages(images []string, allowlist []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInGapAllowlist(image, allowlist)
+		isAllowlisted, err := imageInGapAllowlist(image, allowlist)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in gap allowlist: %v", image, err)
 		}
-		if !allowlisted {
-			notAllowlisted = append(notAllowlisted, image)
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
 	}
-	return notAllowlisted
+	return notAllowlistedImages, removedImages
 }
 
 // Do an image match based on reference.

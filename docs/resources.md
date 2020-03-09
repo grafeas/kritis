@@ -36,7 +36,7 @@ kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 
 GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
 The policy expects either 1) ALL attestation authorities to be satisfied,
-or 2) the image url matches one of the allow-listed name patterns,
+or 2) the image url matches one of the allow-listed name patterns (see exact matching behavior at pattern spec sec below),
 before allowing the container image to be admitted.
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
@@ -167,8 +167,8 @@ Image Security Policy Spec description:
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 |imageAllowlist | | List of images that are allowlisted and are not inspected by Admission Controller.|
-|attestationAuthorityName | | Attestation authority name for verifying attestation.|
-|privateKeySecretname | | Private secret key name for adding attestation.|
+|attestationAuthorityName | "" | Attestation authority name for verifying attestation.|
+|privateKeySecretname | "" | Private secret key name for adding attestation.|
 |packageVulnerabilityPolicy.allowlistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
@@ -193,6 +193,7 @@ An Image Security Policy will evaluate an image based on vulnerability policy sp
 
 If the `attestationAuthorityName` field is specified in ISP with a non-empty value, ISP decision based on `packageVulnerabilityPolicy`
 will create an attestation for the specified attestation authority. The attestation will serve as a cache for fast decision next time.
+Such caching is also useful to ensure that admitted images continue to be admitted on pod restarts, even if new vulnerabilities are found.
 
 ## AttestationAuthority CRD
 
