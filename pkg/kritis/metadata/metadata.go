@@ -25,7 +25,7 @@ import (
 	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
-	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
+	gcspkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
@@ -75,9 +75,15 @@ type Vulnerability struct {
 	CVE             string
 }
 
-// RawAttestation represents an unauthenticated attestation, stripped any
+// RawAttestation represents an unauthenticated attestation, stripped of any
 // information specific to the wire format. RawAttestation may only be
-// trusted after successfully verifying its Signature.
+// trusted after successfully verifying its Signature. Each RawAttestation
+// contains one signature.
+//
+// RawAttestations are parsed from either PgpSignedAttestation or
+// GenericSignedAttestation Occurrences. PgpSignedAttestation has one
+// signature, and is parsed into one RawAttestation. GenericSignedAttestation
+// has multiple signatures, and is parsed into multiple RawAttestations.
 type RawAttestation struct {
 	SignatureType     SignatureType
 	Signature         RawSignature
@@ -103,7 +109,7 @@ func ParseNoteReference(ref string) (string, string, error) {
 
 func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
 	for _, pi := range pis {
-		if pi.GetFixedLocation() == nil || pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
+		if pi.GetFixedLocation() == nil || pi.GetFixedLocation().GetVersion().Kind == gcspkg.Version_MAXIMUM {
 			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
 			return false
 		}
@@ -158,4 +164,16 @@ func GetRawAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]RawAttestation
 		return nil, fmt.Errorf("Unknown signature type for attestation %v", att)
 	}
 	return ras, nil
+}
+
+// For testing purposes. Should not be used as part of metadata external API.
+func MakeRawAttestation(sigType SignatureType, sig, id, payload string) RawAttestation {
+	return RawAttestation{
+		SignatureType: sigType,
+		Signature: RawSignature{
+			Signature:   sig,
+			PublicKeyId: id,
+		},
+		SerializedPayload: []byte(payload),
+	}
 }

@@ -29,6 +29,10 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
 
+var (
+	attestationNoteName = "projects/test-project/notes/test-note"
+)
+
 func TestGetVulnerabilityFromOccurence(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -88,40 +92,36 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 func TestGetRawAttestationsFromOccurrence(t *testing.T) {
 	tests := []struct {
 		name            string
-		noteName        string
 		att             attestation.Attestation
 		expectedRawAtts []RawAttestation
 	}{
 		{
 			"pgp attestation",
-			"CVE-1",
 			makeOccAttestationPgp("sig-1", "id-1"),
 			[]RawAttestation{
-				makeRawAttestationPgp("sig-1", "id-1"),
+				MakeRawAttestation(PgpSignatureType, "sig-1", "id-1", ""),
 			},
 		},
 		{
 			"generic attestation",
-			"CVE-2",
 			makeOccAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
 			[]RawAttestation{
-				makeRawAttestationGeneric("sig-1", "id-1", "generic-address"),
+				MakeRawAttestation(GenericSignatureType, "sig-1", "id-1", "generic-address"),
 			},
 		},
 		{
 			"generic attestation multiple signatures",
-			"CVE-3",
 			makeOccAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
 			[]RawAttestation{
-				makeRawAttestationGeneric("sig-1", "id-1", "generic-address"),
-				makeRawAttestationGeneric("sig-2", "id-2", "generic-address"),
+				MakeRawAttestation(GenericSignatureType, "sig-1", "id-1", "generic-address"),
+				MakeRawAttestation(GenericSignatureType, "sig-2", "id-2", "generic-address"),
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			occ := &grafeas.Occurrence{
-				NoteName: tc.noteName,
+				NoteName: attestationNoteName,
 				Details: &grafeas.Occurrence_Attestation{
 					Attestation: &attestation.Details{Attestation: &tc.att},
 				},
@@ -130,7 +130,9 @@ func TestGetRawAttestationsFromOccurrence(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error while parsing RawAttestation from Occurrence: %v", err)
 			}
-			if !cmp.Equal(actualRawAtts, tc.expectedRawAtts, cmpopts.SortSlices(attCompare)) {
+			if !cmp.Equal(actualRawAtts, tc.expectedRawAtts, cmpopts.SortSlices(func(rawAtt1, rawAtt2 RawAttestation) bool {
+				return rawAtt1.Signature.PublicKeyId > rawAtt2.Signature.PublicKeyId
+			})) {
 				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedRawAtts, actualRawAtts)
 			}
 		})
@@ -206,17 +208,6 @@ func TestIsFixable(t *testing.T) {
 	}
 }
 
-func makeRawAttestationPgp(signature, id string) RawAttestation {
-	return RawAttestation{
-		SignatureType: PgpSignatureType,
-		Signature: RawSignature{
-			Signature:   signature,
-			PublicKeyId: id,
-		},
-		SerializedPayload: []byte{},
-	}
-}
-
 func makeOccAttestationPgp(signature, id string) attestation.Attestation {
 	return attestation.Attestation{
 		Signature: &attestation.Attestation_PgpSignedAttestation{
@@ -226,17 +217,6 @@ func makeOccAttestationPgp(signature, id string) attestation.Attestation {
 					PgpKeyId: id,
 				},
 			},
-		},
-	}
-}
-
-func makeRawAttestationGeneric(sig, id string, payload string) RawAttestation {
-	return RawAttestation{
-		SignatureType:     GenericSignatureType,
-		SerializedPayload: []byte(payload),
-		Signature: RawSignature{
-			PublicKeyId: id,
-			Signature:   sig,
 		},
 	}
 }
@@ -258,8 +238,4 @@ func makeOccAttestationGeneric(sigs, ids []string, payload string) attestation.A
 			},
 		},
 	}
-}
-
-func attCompare(ra1, ra2 RawAttestation) bool {
-	return ra1.Signature.PublicKeyId > ra2.Signature.PublicKeyId
 }
