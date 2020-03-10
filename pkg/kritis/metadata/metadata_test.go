@@ -130,7 +130,7 @@ func TestGetRawAttestationsFromOccurrence(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error while parsing RawAttestation from Occurrence: %v", err)
 			}
-			if !cmp.Equal(actualRawAtts, tc.expectedRawAtts, cmpopts.SortMaps(strCompare)) {
+			if !cmp.Equal(actualRawAtts, tc.expectedRawAtts, cmpopts.SortSlices(attCompare)) {
 				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedRawAtts, actualRawAtts)
 			}
 		})
@@ -260,4 +260,6 @@ func makeOccAttestationGeneric(sigs, ids []string, payload string) attestation.A
 	}
 }
 
-func strCompare(a, b string) bool { return a > b }
+func attCompare(ra1, ra2 RawAttestation) bool {
+	return ra1.Signature.PublicKeyId > ra2.Signature.PublicKeyId
+}
