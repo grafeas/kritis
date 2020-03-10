@@ -99,16 +99,17 @@ func (r Reviewer) checkGAPs(gaps []v1beta1.GenericAttestationPolicy) error {
 	return nil
 }
 
-// Helper function to generate a summary of missing attestations.
-func generateMissingAttestationSummary(badImages []string, missingAttestations map[string]map[string][]string) string {
-	errMsg := "Some images are not attested by all authorities in any GAP policy:\n"
+// Helper function to generate an error with a comprehensive message on
+// which images are rejected and what attestations they are missing.
+func generateRejectedReviewErr(badImages []string, missingAttestations map[string]map[string][]string) error {
+	errMsg := fmt.Sprintf("%d images are not attested by all authorities in any GAP policy:\n", len(badImages))
 	for _, image := range badImages {
 		errMsg = errMsg + fmt.Sprintf("- image %s is not attested by\n", image)
 		for gapName, authNames := range missingAttestations[image] {
 			errMsg = errMsg + fmt.Sprintf("  - %+q in gap %s\n", authNames, gapName)
 		}
 	}
-	return errMsg
+	return fmt.Errorf(errMsg)
 }
 
 // ReviewGAP reviews images against generic attestation policies
@@ -131,6 +132,9 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 	images, removed = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
 	glog.Infof("%d images are further gap allowed: %+q\n", len(removed), removed)
 
+	// For logging purpose only.
+	// we store missing attestations info in the following format:
+	// missingAttestations[image][gap] = a list of not attested auth names
 	missingAttestations := map[string]map[string][]string{}
 	var badImages []string
 	for _, image := range images {
@@ -144,6 +148,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			}
 			if isAttested {
 				imgAttestedByAnyGap = true
+				break
 			}
 			missingAttestations[image][gap.Name] = notAttestedAuthNames
 		}
@@ -156,8 +161,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		}
 	}
 	if len(badImages) != 0 {
-		errMsg := generateMissingAttestationSummary(badImages, missingAttestations)
-		return fmt.Errorf(errMsg)
+		return generateRejectedReviewErr(badImages, missingAttestations)
 	}
 
 	if len(images) == 0 {
@@ -184,17 +188,18 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 
 	for _, isp := range isps {
 		glog.Infof("Validating against ImageSecurityPolicy %s", isp.Name)
-		// Get the attestationauthority in this policy.
+		// Get the Attestationauthority in this policy.
 		auth, err := r.getAttestationAuthorityForISP(isp)
 		if err != nil {
 			return err
 		}
+		// auth will be nil if empty auth name or user does not provide auth name
+		authProvided := auth != nil
 
 		for _, image := range images {
 			glog.Infof("Check if %s has valid Attestations.", image)
 			imgAttested := false
-			// empty auth name or if user does not provide auth name
-			if auth != nil {
+			if authProvided {
 				imgAttested = r.isAttestedBy(image, *auth, c)
 			}
 
@@ -215,8 +220,7 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 			if len(violations) != 0 {
 				return r.handleViolations(image, pod, violations)
 			}
-			// if auth name is provided
-			if r.config.IsWebhook && auth != nil {
+			if r.config.IsWebhook && authProvided {
 				if err := r.addAttestation(image, isp, *auth, c); err != nil {
 					glog.Errorf("error adding attestations %s", err)
 				}
