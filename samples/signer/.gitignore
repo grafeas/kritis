@@ -1,3 +1,6 @@
+env.sh
+note_payload.json
+binauthz-policy.yaml
 *-service-account.json
 *.pub
 *.priv
