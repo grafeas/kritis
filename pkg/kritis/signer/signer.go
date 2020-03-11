@@ -62,7 +62,11 @@ var (
 // Returns an error if image does not pass or creating an attestation fails.
 func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.VulnzSigningPolicy) error {
 	glog.Infof("Validating %q against VulnzSigningPolicy %q", imageVulnz.ImageRef, vps.Name)
-	if violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities); err != nil {
+	violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities)
+	if err != nil {
+		return fmt.Errorf("error when evaluating image %q against policy %q", imageVulnz.ImageRef, vps.Name)
+	}
+	if violations != nil {
 		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
 	} else {
 		glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
