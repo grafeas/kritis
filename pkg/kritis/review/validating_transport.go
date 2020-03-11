@@ -63,19 +63,24 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		glog.Error(err)
 		return nil, err
 	}
-	attestations, err := avt.Client.Attestations(image, &avt.Attestor)
+	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		glog.Error(err)
 		return nil, err
 	}
-	for _, a := range attestations {
-		decoded_sig, err := base64.StdEncoding.DecodeString(a.Signature)
+
+	for _, rawAtt := range rawAtts {
+		if rawAtt.SignatureType != metadata.PgpSignatureType {
+			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
+		}
+		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
 		if err != nil {
-			glog.Infof("Cannot base64 decode signature: %v", err)
+			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
 			continue
 		}
-		if err = host.VerifyAttestationSignature(keys[a.KeyID], string(decoded_sig)); err != nil {
-			glog.Infof("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
+		keyId := rawAtt.Signature.PublicKeyId
+		if err = host.VerifyPgpSignature(keys[keyId], string(decodedSig)); err != nil {
+			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 			continue
 		}
 		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
