@@ -6,7 +6,7 @@ spec:
   project: projectgut-215417
   noteReference: projects/projectgut-215417/notes/test-attestor-1
   packageVulnerabilityRequirements:
-    maximumSeverity: HIGH
+    maximumSeverity: MEDIUM
     maximumFixUnavailableSeverity: ALLOW_ALL
     allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082

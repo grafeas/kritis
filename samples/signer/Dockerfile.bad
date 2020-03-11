@@ -1,1 +1,3 @@
-FROM gcr.io/google-appengine/debian10@sha256:18c1a945ff7d83ee8a5f3a2351e6c8e0d86c22af35f8102b042c1916decea7ae
+FROM gcr.io/google-appengine/debian10@sha256:7ceb3b263e1725db7f54c469b70ce3a188e19bba44f8b2bb6fd9af69d6d49751
+
+RUN apt-get update && apt-get -y install uuid-runtime && uuidgen > /IAMUNIQUE

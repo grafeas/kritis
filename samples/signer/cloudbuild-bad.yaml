@@ -1,38 +1,43 @@
 # Cloudbuild pipeline for a build with an image
-# that FAILS the vuln policy
+# that passes the vuln policy
 steps:
   # Build a 'bad' image
   - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
     args:
-    - build
-    - '-t'
-    - 'gcr.io/projectgut-215417/binauthz-test'
-    - './Dockerfile.bad'
+      - -c
+      - |
+        docker build -t gcr.io/$PROJECT_ID/binauthz-test:latest -f ./Dockerfile.bad .
     id: build
   - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
     args:
-    - push
-    - '-t'
-    - 'gcr.io/projectgut-215417/binauthz-test'
+    - -c
+    - |
+      docker push gcr.io/$PROJECT_ID/binauthz-test:latest &&
+      docker image inspect gcr.io/$PROJECT_ID/binauthz-test:latest --format '{{ .ID }}' > image-digest.txt &&
+      cat image-digest.txt
     id: push
   # Wait for vulnerability scanning reaults
-  - name: gcr.io/projectgut-215417/python-builder
+  - name: gcr.io/$PROJECT_ID/python-builder
     args:
-    - ./wait_for_vulns.py
-    - https://gcr.io/projectgut-215417/binauthz-test
-    - projectgut-215417
+    - ./wait-for-analysis.py 
+    - gcr.io/$PROJECT_ID/binauthz-test 
+    - $PROJECT_ID
     id: vulnpoll
-  #
-  # This step should fail because the image has fixes
-  # for vulnerabilities
-  - name: gcr.io/projectgut-215417/kritis-signer
+  - name: gcr.io/$PROJECT_ID/kritis-signer
+    entrypoint: /bin/bash
     args:
-    - '-v=10'
-    - '-alsologtostderr'
-    - '-image=gcr.io/projectgut-215417/binauthz-test'
-    - '-credentials=kritis-service-account.json'
-    - '-private_key=gpg.priv'
-    - '-policy=policy.yaml'
+    - -c
+    - |
+      /kritis/signer \
+      -v=10 \
+      -alsologtostderr \
+      -image=gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt) \
+      -credentials=kritis-service-account.json \
+      -private_key=gpg.priv \
+      -public_key=gpg.pub \
+      -policy=policy.yaml
     waitFor: vulnpoll
     id: vulnsign
-images: ['gcr.io/projectgut-215417/binauthz-test']
+images: ['gcr.io/$PROJECT_ID/binauthz-test:latest']

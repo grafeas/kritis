@@ -19,7 +19,7 @@ WORKDIR /go/src/github.com/grafeas/kritis
 COPY . .
 RUN make out/signer
 
-FROM gcr.io/distroless/base:latest
+FROM gcr.io/google-appengine/debian10:latest
 COPY --from=0 /go/src/github.com/grafeas/kritis/out/signer /kritis/signer
 ENV HOME /root
 ENV USER /root
