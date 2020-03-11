@@ -79,8 +79,8 @@ binauthz_project_setup () {
   set +x; echo "Generating keys.  When asked, please provide an empty passphrase.."; set -x
   GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
   KEY_FINGERPRINT="$(set +x; echo; set -x $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
-  gpg --armor --export $KEY_FINGERPRINT > $DIR/gpg.pub
-  gpg --armor --export-secret-keys $KEY_FINGERPRINT > $DIR/gpg.priv
+  #gpg --armor --export $KEY_FINGERPRINT > $DIR/gpg.pub
+  #gpg --armor --export-secret-keys $KEY_FINGERPRINT > $DIR/gpg.priv
   set +x; echo
 
   set +x; echo "Creating attestors.."; set -x
@@ -88,7 +88,7 @@ binauthz_project_setup () {
   NOTE_ID=kritis-attestor-note
   cat > ${DIR}/note_payload.json << EOM
 {
-  "name": "projects/${PROJECT_ID}/notes/${NOTE_ID}",
+  "name": "projects/${BINAUTHZ_PROJECT}/notes/${NOTE_ID}",
   "attestation": {
     "hint": {
       "human_readable_name": "Kritis Signer Attestor Note"
@@ -100,13 +100,13 @@ EOM
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $(gcloud auth print-access-token)"  \
     --data-binary @${DIR}/note_payload.json  \
-    "https://containeranalysis.googleapis.com/v1/projects/${PROJECT_ID}/notes/?noteId=${NOTE_ID}"
+    "https://containeranalysis.googleapis.com/v1/projects/${BINAUTHZ_PROJECT}/notes/?noteId=${NOTE_ID}"
   gcloud container binauthz attestors create ${ATTESTOR} \
     --attestation-authority-note=${NOTE_ID} \
-    --attestation-authority-note-project=${PROJECT_ID}
+    --attestation-authority-note-project=${BINAUTHZ_PROJECT}
   openssl ecparam -genkey -name prime256v1 -noout -out ec256.priv
   openssl ec -in ec256.priv -pubout -out ec256.pub
-  gcloud --project="${PROJECT_ID}" \
+  gcloud --project="${BINAUTHZ_PROJECT}" \
     beta container binauthz attestors public-keys add \
     --attestor="${ATTESTOR}" \
     --pkix-public-key-file=ec256.pub \
@@ -122,10 +122,10 @@ EOM
       evaluationMode: REQUIRE_ATTESTATION
       enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
       requireAttestationsBy:
-        - projects/${PROJECT_ID}/attestors/${ATTESTOR}
-    name: projects/${PROJECT_ID}/policy
+        - projects/${BINAUTHZ_PROJECT}/attestors/${ATTESTOR}
+    name: projects/${BINAUTHZ_PROJECT}/policy
 EOM
-  gcloud container binauthz policy import ${DIR}/binauthzpolicy.yaml
+  gcloud container binauthz policy import ${DIR}/binauthz-policy.yaml
 
   set +x; echo
   set +x
