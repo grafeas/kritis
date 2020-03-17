@@ -74,9 +74,10 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 			if err != nil {
 				return err
 			}
-			_, attestedByAny := r.findUnsatisfiedAuths(image, auths, c)
+			attestedByAny := r.hasSatisfiedAuth(image, auths, c)
 			if attestedByAny {
 				imgAttested = true
+				break
 			}
 		}
 		if err := r.config.Strategy.HandleAttestation(image, pod, imgAttested); err != nil {
@@ -157,6 +158,22 @@ func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.Attestation
 		}
 	}
 	return notAttestedBy, attestedByAny
+}
+
+func (r Reviewer) hasSatisfiedAuth(image string, auths []v1beta1.AttestationAuthority, c metadata.ReadOnlyClient) bool {
+	attestedByAny := false
+	for _, auth := range auths {
+		transport := AttestorValidatingTransport{Client: c, Attestor: auth}
+		attestations, err := transport.GetValidatedAttestations(image)
+		if err != nil {
+			glog.Errorf("Error fetching validated attestations for %s: %v", image, err)
+		}
+		if len(attestations) > 0 {
+			attestedByAny = true
+			break
+		}
+	}
+	return attestedByAny
 }
 
 func (r Reviewer) handleViolations(image string, pod *v1.Pod, violations []policy.Violation) error {
