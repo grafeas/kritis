@@ -219,3 +219,39 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("unable to write payload: %v", err)
 	}
 }
+
+func Test_getPodSummary(t *testing.T) {
+	type args struct {
+		p *v1.Pod
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "pod is nil",
+			args: args{},
+			want: "<nil>",
+		},
+		{
+			name: "normal pod",
+			args: args{
+				p: &v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-name",
+						Namespace: "pod-namespace",
+					},
+				},
+			},
+			want: `<Pod pod-name>`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getPodSummary(tt.args.p); got != tt.want {
+				t.Errorf("getPodSummary() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
