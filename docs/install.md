@@ -176,7 +176,7 @@ For more information, please see the resolve-tags [documentation](cmd/kritis/kub
 Install kritis to your cluster:
 
 ```shell
-helm install https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.1.0.tgz
+helm install https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.2.2.tgz
 ```
 
 You may use the --set flag, to override the installation defaults:
