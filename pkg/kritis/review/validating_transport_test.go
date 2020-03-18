@@ -37,6 +37,8 @@ func encodeB64(in string) string {
 
 func TestValidatingTransport(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
+	// second public key for the second attestor
+	_, pub2 := testutil.CreateSecret(t, "test-success-2")
 	successFpr := successSec.PgpKey.Fingerprint()
 	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)
 	if err != nil {
@@ -46,18 +48,32 @@ func TestValidatingTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	validAuth := v1beta1.AttestationAuthority{
+	validAuthWithOneGoodKey := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PrivateKeySecretName: "test-success",
-			PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 		},
 	}
-	invalidAuth := v1beta1.AttestationAuthority{
+	// for testing any key logic in validating attestation
+	validAuthWithTwoGoodKeys := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
-			PrivateKeySecretName: "test-success",
-			PublicKeyData:        "bad-key",
+			PublicKeyList: []string{
+				base64.StdEncoding.EncodeToString([]byte(pub)),
+				base64.StdEncoding.EncodeToString([]byte(pub2)),
+			},
+		},
+	}
+	validAuthWithOneGoodOneBadKeys := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PublicKeyList: []string{"bad-key", base64.StdEncoding.EncodeToString([]byte(pub))},
+		},
+	}
+	invalidAuthWithOneBadKey := v1beta1.AttestationAuthority{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
+		Spec: v1beta1.AttestationAuthoritySpec{
+			PublicKeyList: []string{"bad-key"},
 		},
 	}
 	tcs := []struct {
@@ -68,7 +84,7 @@ func TestValidatingTransport(t *testing.T) {
 		errorExpected bool
 		attError      error
 	}{
-		{name: "at least one valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{
+		{name: "at least one valid sig", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
@@ -81,28 +97,54 @@ func TestValidatingTransport(t *testing.T) {
 				Signature: encodeB64("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
-		{name: "no valid sig", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+		{name: "auth with at least one good key", auth: validAuthWithOneGoodOneBadKeys, expected: []attestation.ValidatedAttestation{
+			{
+				AttestorName: "test-attestor",
+				Image:        testutil.QualifiedImage,
+			},
+		}, attestations: []metadata.PGPAttestation{
+			{
+				Signature: encodeB64(sig),
+				KeyID:     successFpr,
+			}, {
+				Signature: encodeB64("invalid-sig"),
+				KeyID:     successFpr,
+			}}, errorExpected: false, attError: nil},
+		{name: "auth with two good keys", auth: validAuthWithTwoGoodKeys, expected: []attestation.ValidatedAttestation{
+			{
+				AttestorName: "test-attestor",
+				Image:        testutil.QualifiedImage,
+			},
+		}, attestations: []metadata.PGPAttestation{
+			{
+				Signature: encodeB64(sig),
+				KeyID:     successFpr,
+			}, {
+				Signature: encodeB64("invalid-sig"),
+				KeyID:     successFpr,
+			}}, errorExpected: false, attError: nil},
+		{name: "no valid sig", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: encodeB64("invalid-sig"),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
-		{name: "sig not base64 encoded", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+		{name: "sig not base64 encoded", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: sig,
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
-		{name: "invalid secret", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+		{name: "invalid secret", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: encodeB64("invalid-sig"),
 				KeyID:     "invalid-fpr",
 			}}, errorExpected: false, attError: nil},
-		{name: "valid sig over another host", auth: validAuth, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
+		{name: "valid sig over another host", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
 			{
 				Signature: encodeB64(anotherSig),
 				KeyID:     successFpr,
 			}}, errorExpected: false, attError: nil},
-		{name: "attestation fetch error", auth: validAuth, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
-		{name: "invalid attestation authority error", auth: invalidAuth, expected: nil, attestations: []metadata.PGPAttestation{
+		{name: "attestation fetch error", auth: validAuthWithOneGoodKey, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
+		{name: "invalid attestation authority error", auth: invalidAuthWithOneBadKey, expected: nil, attestations: []metadata.PGPAttestation{
 			{
 				Signature: encodeB64(sig),
 				KeyID:     successFpr,

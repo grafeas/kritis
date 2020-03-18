@@ -31,9 +31,14 @@ type GenericAttestationPolicy struct {
 	Spec GenericAttestationPolicySpec `json:"spec"`
 }
 
+type AdmissionAllowlistPatternSpec struct {
+	NamePattern string `json:"namePattern"`
+}
+
 // GenericAttestationPolicySpec is the spec for a GenericAttestationPolicy resource
 type GenericAttestationPolicySpec struct {
-	AttestationAuthorityNames []string `json:"attestationAuthorityNames"`
+	AdmissionAllowlistPatterns []AdmissionAllowlistPatternSpec `json:"admissionAllowlistPatterns"`
+	AttestationAuthorityNames  []string                        `json:"attestationAuthorityNames"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

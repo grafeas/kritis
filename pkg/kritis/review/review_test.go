@@ -34,19 +34,33 @@ import (
 
 func TestReviewGAP(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "sec")
-	_, pub2 := testutil.CreateSecret(t, "sec2")
-	secFpr := sec.PgpKey.Fingerprint()
+	sec2, pub2 := testutil.CreateSecret(t, "sec2")
+	secFpr, secFpr2 := sec.PgpKey.Fingerprint(), sec2.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
 	// An attestation for 'img' verifiable by 'pub'.
 	sig, err := util.CreateAttestationSignature(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-
-	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
-		return sec, nil
+	sig2, err := util.CreateAttestationSignature(img, sec2)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
 	}
-	validAtts := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+
+	sMock := func(_, name string) (*secrets.PGPSigningSecret, error) {
+		if name == "sec" {
+			return sec, nil
+		}
+		if name == "sec2" {
+			return sec2, nil
+		}
+		return nil, fmt.Errorf("no such secret for %s", name)
+	}
+	oneValidAtt := []metadata.PGPAttestation{{Signature: encodeB64(sig), KeyID: secFpr}}
+	twoValidAtts := []metadata.PGPAttestation{
+		{Signature: encodeB64(sig), KeyID: secFpr},
+		{Signature: encodeB64(sig2), KeyID: secFpr2},
+	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
@@ -61,20 +75,16 @@ func TestReviewGAP(t *testing.T) {
 				Namespace: "foo",
 			},
 			Spec: v1beta1.GenericAttestationPolicySpec{
+				AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
+					{NamePattern: "allowed_image_name"},
+				},
 				AttestationAuthorityNames: []string{"test"},
 			},
 		}}
 	// One policy with a single attestor 'test'.  This attestor can verify 'img'.
 	// Another policy with a single attestor 'test2'.  This attestor cannot verify any images.
 	twoGAPs := []v1beta1.GenericAttestationPolicy{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "foo",
-			},
-			Spec: v1beta1.GenericAttestationPolicySpec{
-				AttestationAuthorityNames: []string{"test"},
-			},
-		},
+		oneGAP[0],
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "bar",
@@ -84,9 +94,7 @@ func TestReviewGAP(t *testing.T) {
 			},
 		},
 	}
-	// One policy with two attestors:
-	// 'test' -- satisfies QualifiedImage
-	// 'test2' -- does not satisfy any image in this test
+	// One policy with two attestors.
 	gapWithTwoAAs := []v1beta1.GenericAttestationPolicy{{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
@@ -95,22 +103,32 @@ func TestReviewGAP(t *testing.T) {
 			AttestationAuthorityNames: []string{"test", "test2"},
 		},
 	}}
+	// One policy without attestor.
+	gapWithoutAA := []v1beta1.GenericAttestationPolicy{{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foo",
+		},
+		Spec: v1beta1.GenericAttestationPolicySpec{
+			AdmissionAllowlistPatterns: []v1beta1.AdmissionAllowlistPatternSpec{
+				{NamePattern: "allowed_image_name"},
+			},
+			AttestationAuthorityNames: []string{},
+		},
+	}}
 	// Two attestors: 'test', 'test2'.
 	authMock := func(_ string, name string) (*v1beta1.AttestationAuthority, error) {
 		authMap := map[string]v1beta1.AttestationAuthority{
 			"test": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "provider/test",
-					PrivateKeySecretName: "test",
-					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+					NoteReference: "projects/test-1/notes/note-1",
+					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 				}},
 			"test2": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference:        "provider/test2",
-					PrivateKeySecretName: "test2",
-					PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub2)),
+					NoteReference: "projects/test-1/notes/note-2",
+					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub2))},
 				}}}
 		auth, exists := authMap[name]
 		if !exists {
@@ -123,68 +141,108 @@ func TestReviewGAP(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		image        string
-		policies     []v1beta1.GenericAttestationPolicy
-		attestations []metadata.PGPAttestation
-		isAttested   bool
-		shouldErr    bool
+		name            string
+		image           string
+		policies        []v1beta1.GenericAttestationPolicy
+		attestations    []metadata.PGPAttestation
+		hasRequiredAtts bool
+		shouldErr       bool
 	}{
 		{
-			name:         "valid image with attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: validAtts,
-			isAttested:   true,
-			shouldErr:    false,
+			name:            "valid image with attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 		{
-			name:         "image without attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
-			shouldErr:    true,
+			name:            "image without attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "image without policies",
-			image:        img,
-			policies:     []v1beta1.GenericAttestationPolicy{},
-			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
-			shouldErr:    false,
+			name:            "gap without attestor should error",
+			image:           img,
+			policies:        gapWithoutAA,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "image with invalid attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: invalidAtts,
-			isAttested:   false,
-			shouldErr:    true,
+			name:            "gap without attestor should error on allowlisted image",
+			image:           "allowed_image_name",
+			policies:        gapWithoutAA,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "image complies with one policy out of two",
-			image:        img,
-			policies:     twoGAPs,
-			attestations: validAtts,
-			isAttested:   true,
-			shouldErr:    false,
+			name:            "allowlisted image",
+			image:           "allowed_image_name",
+			policies:        oneGAP,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image in global allowlist",
-			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
-			policies:     twoGAPs,
-			attestations: []metadata.PGPAttestation{},
-			isAttested:   false,
-			shouldErr:    false,
+			name:            "image allowlisted in 1 policy",
+			image:           "allowed_image_name",
+			policies:        twoGAPs,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image attested by one attestor out of two",
-			image:        img,
-			policies:     gapWithTwoAAs,
-			attestations: validAtts,
-			isAttested:   true,
-			shouldErr:    false,
+			name:            "image without policies",
+			image:           img,
+			policies:        []v1beta1.GenericAttestationPolicy{},
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
+		},
+		{
+			name:            "image with invalid attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    invalidAtts,
+			hasRequiredAtts: false,
+			shouldErr:       true,
+		},
+		{
+			name:            "image complies with one policy out of two",
+			image:           img,
+			policies:        twoGAPs,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: true,
+			shouldErr:       false,
+		},
+		{
+			name:            "image in global allowlist",
+			image:           "us.gcr.io/grafeas/grafeas-server:0.1.0",
+			policies:        twoGAPs,
+			attestations:    []metadata.PGPAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
+		},
+		{
+			name:            "image attested by one attestor out of two",
+			image:           img,
+			policies:        gapWithTwoAAs,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: false,
+			shouldErr:       true,
+		},
+		{
+			name:            "image attested by two attestors out of two",
+			image:           img,
+			policies:        gapWithTwoAAs,
+			attestations:    twoValidAtts,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 	}
 	for _, tc := range tests {
@@ -206,8 +264,8 @@ func TestReviewGAP(t *testing.T) {
 			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if th.Attestations[tc.image] != tc.isAttested {
-				t.Errorf("expected to get image attested: %t. Got %t", tc.isAttested, th.Attestations[tc.image])
+			if th.Attestations[tc.image] != tc.hasRequiredAtts {
+				t.Errorf("expected to have all required attestations for the image: %t. Got %t", tc.hasRequiredAtts, th.Attestations[tc.image])
 			}
 		})
 	}
@@ -238,7 +296,8 @@ func TestReviewISP(t *testing.T) {
 				Namespace: "foo",
 			},
 			Spec: v1beta1.ImageSecurityPolicySpec{
-				AttestationAuthorityNames: []string{"test"},
+				AttestationAuthorityName: "test",
+				PrivateKeySecretName:     "test",
 			},
 		},
 	}
@@ -246,9 +305,8 @@ func TestReviewISP(t *testing.T) {
 		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        base64.StdEncoding.EncodeToString([]byte(pub)),
+				NoteReference: "projects/test-1/notes/note-1",
+				PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 			}}, nil
 	}
 	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.ReadWriteClient) ([]policy.Violation, error) {
@@ -458,16 +516,14 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "projects/test-1/notes/note-1",
+				PublicKeyList: []string{"testdata"},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "projects/test-1/notes/note-1",
+				PublicKeyList: []string{"testdata"},
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
@@ -528,16 +584,14 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "projects/test-1/notes/note-1",
+				PublicKeyList: []string{"testdata"},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference:        "provider/test",
-				PrivateKeySecretName: "test",
-				PublicKeyData:        "testdata",
+				NoteReference: "projects/test-1/notes/note-1",
+				PublicKeyList: []string{"testdata"},
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
@@ -553,26 +607,27 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 	})
 	tcs := []struct {
 		name        string
-		aList       []string
+		aName       string
 		shouldErr   bool
-		expectedLen int
+		returnAuths bool
 	}{
 		{
-			name:        "correct authorities list",
-			aList:       []string{"a1", "a2"},
+			name:        "correct authority",
+			aName:       "a1",
 			shouldErr:   false,
-			expectedLen: 2,
+			returnAuths: true,
 		},
 		{
-			name:      "one incorrect authority in the list",
-			aList:     []string{"a1", "err"},
-			shouldErr: true,
+			name:        "incorrect authority",
+			aName:       "err",
+			shouldErr:   true,
+			returnAuths: false,
 		},
 		{
-			name:        "empty list should return nothing",
-			aList:       []string{},
+			name:        "empty name should return nil",
+			aName:       "",
 			shouldErr:   false,
-			expectedLen: 0,
+			returnAuths: false,
 		},
 	}
 
@@ -580,15 +635,16 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			isp := v1beta1.ImageSecurityPolicy{
 				Spec: v1beta1.ImageSecurityPolicySpec{
-					AttestationAuthorityNames: tc.aList,
+					AttestationAuthorityName: tc.aName,
+					PrivateKeySecretName:     "test",
 				},
 			}
-			auths, err := r.getAttestationAuthoritiesForISP(isp)
+			a, err := r.getAttestationAuthorityForISP(isp)
 			if (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if len(auths) != tc.expectedLen {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+			if (a != nil) != tc.returnAuths {
+				t.Errorf("expected review to return auths %t, actual return auths %t", tc.returnAuths, a != nil)
 			}
 		})
 	}
