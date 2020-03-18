@@ -160,6 +160,7 @@ func (r Reviewer) findUnsatisfiedAuths(image string, auths []v1beta1.Attestation
 	return notAttestedBy, attestedByAny
 }
 
+// Returns whether there is any auth satisfies image.
 func (r Reviewer) hasSatisfiedAuth(image string, auths []v1beta1.AttestationAuthority, c metadata.ReadOnlyClient) bool {
 	attestedByAny := false
 	for _, auth := range auths {
