@@ -21,7 +21,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
-func Test_RemoveGloballyAllowedImages(t *testing.T) {
+func Test_SplitGloballyAllowedImages(t *testing.T) {
 	tests := []struct {
 		name           string
 		images         []string
@@ -52,14 +52,14 @@ func Test_RemoveGloballyAllowedImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			images, removed := RemoveGloballyAllowedImages(test.images)
+			images, removed := SplitGloballyAllowedImages(test.images)
 			testutil.DeepEqual(t, test.notAllowlisted, images)
 			testutil.DeepEqual(t, test.allowlisted, removed)
 		})
 	}
 }
 
-func Test_RemoveGapAllowedImages(t *testing.T) {
+func Test_SplitGapAllowedImages(t *testing.T) {
 	allowlist := []string{
 		"gcr.io/1-my-image*",
 	}
@@ -91,7 +91,7 @@ func Test_RemoveGapAllowedImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			images, removed := RemoveGapAllowedImages(test.images, allowlist)
+			images, removed := SplitGapAllowedImages(test.images, allowlist)
 			testutil.DeepEqual(t, test.notAllowlisted, images)
 			testutil.DeepEqual(t, test.allowlisted, removed)
 		})

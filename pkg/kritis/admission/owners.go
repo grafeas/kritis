@@ -83,7 +83,7 @@ func retrieveOwnersImages(ns string, or metav1.OwnerReference) ([]string, error)
 }
 
 func imagesAreValid(dependentImages, ownerImages []string) bool {
-	dependentImages, _ = util.RemoveGloballyAllowedImages(dependentImages)
+	dependentImages, _ = util.SplitGloballyAllowedImages(dependentImages)
 	for _, d := range dependentImages {
 		if !resolve.FullyQualifiedImage(d) {
 			return false

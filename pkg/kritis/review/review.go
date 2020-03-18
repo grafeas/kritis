@@ -126,11 +126,11 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		return err
 	}
 
-	images, removed := util.RemoveGloballyAllowedImages(images)
+	images, removed := util.SplitGloballyAllowedImages(images)
 	glog.Infof("%d images are globally allowed: %+q\n", len(removed), removed)
 
-	images, removed = util.RemoveGapAllowedImages(images, generateGapAllowlist(gaps))
-	glog.Infof("%d images are further gap allowed: %+q\n", len(removed), removed)
+	images, removed = util.SplitGapAllowedImages(images, generateGapAllowlist(gaps))
+	glog.Infof("%d images are gap allowed: %+q\n", len(removed), removed)
 
 	// For logging purpose only.
 	// we store missing attestations info in the following format:
@@ -169,7 +169,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 		return nil
 	}
 
-	glog.Infof("%d images are further attested: %+q\n", len(images), images)
+	glog.Infof("%d images are attested: %+q\n", len(images), images)
 	glog.Infof("All images are either allowed or attested.")
 	return nil
 }
@@ -177,7 +177,7 @@ func (r Reviewer) ReviewGAP(images []string, gaps []v1beta1.GenericAttestationPo
 // ReviewISP reviews images against image security policies
 // Returns error if violations are found and handles them per violation strategy
 func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy, pod *v1.Pod, c metadata.ReadWriteClient) error {
-	images, _ = util.RemoveGloballyAllowedImages(images)
+	images, _ = util.SplitGloballyAllowedImages(images)
 	if len(images) == 0 {
 		glog.Infof("images are all globally allowed, returning successful status: %s", images)
 		return nil

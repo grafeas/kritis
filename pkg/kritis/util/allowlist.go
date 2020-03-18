@@ -26,10 +26,10 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// RemoveGloballyAllowedImages returns:
+// SplitGloballyAllowedImages returns:
 // -- list of all images that aren't in a global allowlist
-// -- list of images that are removed
-func RemoveGloballyAllowedImages(images []string) ([]string, []string) {
+// -- list of images that are in a global allowlist
+func SplitGloballyAllowedImages(images []string) ([]string, []string) {
 	notAllowlistedImages := []string{}
 	removedImages := []string{}
 	for _, image := range images {
@@ -46,10 +46,10 @@ func RemoveGloballyAllowedImages(images []string) ([]string, []string) {
 	return notAllowlistedImages, removedImages
 }
 
-// RemoveGloballyAllowedImages returns:
+// SplitGapAllowedImages returns:
 // -- list of all images that aren't in gap allowlists
-// -- list of images that are removed
-func RemoveGapAllowedImages(images []string, allowlist []string) ([]string, []string) {
+// -- list of images that are in gap allowlists
+func SplitGapAllowedImages(images []string, allowlist []string) ([]string, []string) {
 	notAllowlistedImages := []string{}
 	removedImages := []string{}
 	for _, image := range images {
