@@ -220,7 +220,7 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Test_getPodSummary(t *testing.T) {
+func Test_getPodName(t *testing.T) {
 	type args struct {
 		p *v1.Pod
 	}
@@ -232,7 +232,7 @@ func Test_getPodSummary(t *testing.T) {
 		{
 			name: "pod is nil",
 			args: args{},
-			want: "<nil>",
+			want: "nil",
 		},
 		{
 			name: "normal pod",
@@ -244,13 +244,13 @@ func Test_getPodSummary(t *testing.T) {
 					},
 				},
 			},
-			want: `<Pod pod-name>`,
+			want: `pod-name`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getPodSummary(tt.args.p); got != tt.want {
-				t.Errorf("getPodSummary() = %v, want %v", got, tt.want)
+			if got := getPodName(tt.args.p); got != tt.want {
+				t.Errorf("getPodName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

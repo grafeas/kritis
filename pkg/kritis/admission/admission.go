@@ -255,7 +255,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
-	glog.Infof("Reviewing images for %s in namespace %s: %s", getPodSummary(pod), ns, images)
+	glog.Infof("Reviewing images for %s in namespace %s: %s", getPodName(pod), ns, images)
 	gaps, err := admissionConfig.fetchGenericAttestationPolicies(ns)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting generic attestation policies: %v", err)
@@ -297,7 +297,7 @@ func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1be
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewISP(images, isps, pod, client); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", getPodSummary(pod), ns, err)
+		glog.Infof("Denying %s in namespace %s: %v", getPodName(pod), ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
@@ -314,7 +314,7 @@ func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar 
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewGAP(images, gaps, pod, client); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", getPodSummary(pod), ns, err)
+		glog.Infof("Denying %s in namespace %s: %v", getPodName(pod), ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
@@ -382,11 +382,11 @@ func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.Admission
 	return &deployment, ar, nil
 }
 
-func getPodSummary(p *v1.Pod) string {
+func getPodName(p *v1.Pod) string {
 	if p == nil {
-		return "<nil>"
+		return "nil"
 	}
-	return fmt.Sprintf("<Pod %s>", p.Name)
+	return p.Name
 }
 
 func checkBreakglass(meta *metav1.ObjectMeta) bool {
