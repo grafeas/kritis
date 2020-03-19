@@ -115,7 +115,7 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 	return attestation.CreateMessageAttestation(pgpSigningKey.PgpKey, hostStr)
 }
 
-func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig string) error {
+func (acs *AtomicContainerSig) VerifyPgpSignature(publicKey string, sig string) error {
 	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
 	if err != nil {
 		return errors.Wrap(err, "error verifying signature")

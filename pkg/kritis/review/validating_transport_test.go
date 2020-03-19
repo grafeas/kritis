@@ -80,7 +80,7 @@ func TestValidatingTransport(t *testing.T) {
 		name          string
 		auth          v1beta1.AttestationAuthority
 		expected      []attestation.ValidatedAttestation
-		attestations  []metadata.PGPAttestation
+		attestations  []metadata.RawAttestation
 		errorExpected bool
 		attError      error
 	}{
@@ -89,72 +89,56 @@ func TestValidatingTransport(t *testing.T) {
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64(sig),
-				KeyID:     successFpr,
-			}, {
-				Signature: encodeB64("invalid-sig"),
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
+		}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, errorExpected: false, attError: nil},
 		{name: "auth with at least one good key", auth: validAuthWithOneGoodOneBadKeys, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64(sig),
-				KeyID:     successFpr,
-			}, {
-				Signature: encodeB64("invalid-sig"),
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
+		}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, errorExpected: false, attError: nil},
 		{name: "auth with two good keys", auth: validAuthWithTwoGoodKeys, expected: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64(sig),
-				KeyID:     successFpr,
-			}, {
-				Signature: encodeB64("invalid-sig"),
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
-		{name: "no valid sig", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64("invalid-sig"),
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
-		{name: "sig not base64 encoded", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: sig,
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
-		{name: "invalid secret", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64("invalid-sig"),
-				KeyID:     "invalid-fpr",
-			}}, errorExpected: false, attError: nil},
-		{name: "valid sig over another host", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64(anotherSig),
-				KeyID:     successFpr,
-			}}, errorExpected: false, attError: nil},
+		}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, errorExpected: false, attError: nil},
+		{name: "no valid sig", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, errorExpected: false, attError: nil},
+		{name: "sig not base64 encoded", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, successFpr, ""),
+		}, errorExpected: false, attError: nil},
+		{name: "invalid secret", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), "invalid-fpr", ""),
+		}, errorExpected: false, attError: nil},
+		{name: "valid sig over another host", auth: validAuthWithOneGoodKey, expected: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(anotherSig), successFpr, ""),
+		}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodKey, expected: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
-		{name: "invalid attestation authority error", auth: invalidAuthWithOneBadKey, expected: nil, attestations: []metadata.PGPAttestation{
-			{
-				Signature: encodeB64(sig),
-				KeyID:     successFpr,
-			}}, errorExpected: true, attError: nil},
+		{name: "invalid attestation authority error", auth: invalidAuthWithOneBadKey, expected: nil, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
+		}, errorExpected: true, attError: nil},
+		{name: "auth with generic signature type", auth: validAuthWithOneGoodKey, expected: nil, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.GenericSignatureType, "test-sig", "test-id", "generic-address"),
+		}, errorExpected: true, attError: nil},
+		{name: "auth with unknown signature type", auth: validAuthWithOneGoodKey, expected: nil, attestations: []metadata.RawAttestation{
+			metadata.MakeRawAttestation(metadata.UnknownSignatureType, encodeB64(sig), successFpr, ""),
+		}, errorExpected: true, attError: nil},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
-				PGPAttestations: tc.attestations,
+				RawAttestations: tc.attestations,
 			}
 			if tc.attError != nil {
 				cMock.SetError(tc.attError)
