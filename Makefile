@@ -181,7 +181,7 @@ gcb-signer-push-image: gcb-signer-image
 # Fully setup local integration testing: only needs to run just once
 # TODO: move entire setup into bash script
 .PHONY: setup-integration-local
-setup-integration-local: setup-integration-local
+setup-integration-local:
 	gcloud --project=$(GCP_PROJECT) services enable container.googleapis.com
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
 		|| gcloud --project=$(GCP_PROJECT) container clusters create $(GCP_CLUSTER) \
@@ -231,6 +231,8 @@ clean-integration-local:
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
 		&& gcloud --project=$(GCP_PROJECT) container clusters delete $(GCP_CLUSTER)
 
+# Just run the integration tests, assuming setup is done and test image is updated.
+# make -e GCP_PROJECT=${PROJECT} just-the-integration-test
 .PHONY: just-the-integration-test
 just-the-integration-test:
 	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"

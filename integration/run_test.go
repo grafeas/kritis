@@ -32,6 +32,7 @@ import (
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	testutil "github.com/grafeas/kritis/pkg/kritis/testutil"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -285,7 +286,14 @@ func setUpKritisInNS(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(*t
 // Complete setUp for an ISP test. Returns a tearDown function.
 func setUpISP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testing.T)) {
 	cs, ns, instInNsCleanup := setUpKritisInNS(t)
-	createAttestationAuthority(t, *gcpProject, ns.Name)
+
+	// Generate a key value pair
+	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
+	// Create key secret in k8s cluster
+	createKeySecret(t, aaSecret, ns.Name, pubKey, privKey)
+	// Create AA in k8s cluster
+	createAA(t, *gcpProject, ns.Name, pubKey)
+
 	isp, err := processTemplate("image-security-policy/my-isp.yaml", ns.Name)
 	if err != nil {
 		t.Fatalf("failed to process isp template: %v", err)
@@ -366,12 +374,10 @@ func TestKritisGAPLogic(t *testing.T) {
 		{
 			// Policy under test has two attestation authorities,
 			// but the image deployed only has an attestation by
-			// one of those auths (assuming the one-time setup was
-			// done correctly).  So this test case exercises the
-			// needs-only-one (disjunctive) semantics of GAP.
+			// one of these auths.
 			"nginx/nginx-digest.yaml",
-			[]string{"nginx-digest"},
-			"",
+			[]string{},
+			"not attested",
 		},
 		{
 			// Image deployed has no required attestations.
