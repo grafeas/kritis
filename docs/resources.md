@@ -20,7 +20,7 @@ To view webhook, run
 kubectl describe ValidatingWebhookConfiguration kritis-validation-hook
 ```
 
-The cron job validates and reconcile policies on an hourly basis, and ads labels and annotations to pods out of policy. You may force it to run via:
+The cron job validates and reconcile policies on an hourly basis, and adds labels and annotations to pods out of policy. You may force it to run via:
 
 ```shell
 kubectl exec -l label=kritis-validation-hook -- /kritis/kritis-server --run-cron
@@ -35,7 +35,9 @@ kubetl get pods -l kritis.grafeas.io/invalidImageSecPolicy=invalidImageSecPolicy
 ## GenericAttestationPolicy CRD
 
 GenericAttestationPolicy (GAP) is a Custom Resource Definition which enforces policies based on pre-existing attestations.
-The policy expects ALL attestation authorities to be satisfied before allowing the container image to be admitted.
+The policy expects either 1) ALL attestation authorities to be satisfied,
+or 2) the image url matches one of the allow-listed name patterns (see exact matching behavior at the [pattern spec](#admission-allowlist-pattern-spec-description) section below),
+before allowing the container image to be admitted.
 As opposed to [ISPs](#imagesecuritypolicy-crd) the GAP does not create new attestations.
 The general use case for GAPs are to have a policy that enforces attestations that have come from your CI pipeline, or other places in your release pipeline.
 
@@ -83,7 +85,7 @@ To view the active Generic Attestation Policy:
 kubectl describe GenericAttestationPolicy my-gap
 ```
 
-Generic Attestation Policy Spec description:
+#### Generic Attestation Policy Spec description
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
@@ -92,18 +94,18 @@ Generic Attestation Policy Spec description:
 
 Note that the list of [Attestation Authorities](#attestationauthority-crd) must be non-empty. If the list is empty, an error will be thrown for malformed policy, and no image will be admitted, including allowlisted images.
 
-Admission Allowlist Pattern Spec description
+#### Admission Allowlist Pattern Spec description
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
-| namePattern | | A name pattern that specifies which images are not inspected by Admission Controller.|
+| namePattern | | A name pattern that specifies which images are allowed to pass through.|
 
 A pattern is a path to a single image by
 exact match, or to any images matching a pattern using the wildcard symbol
 (`*`). The wildcards may only be present in the end, and not anywhere
  else in the pattern, e.g., `gcr.io/n*x` is not allowed,
 but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
-e.g.,, `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+e.g., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
 but it does not match `gcr.io/nginx/image`.
 The name pattern matching rule is compatible with that of Binary Authorization, 
 see more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns.
@@ -160,13 +162,13 @@ To view the active ImageSecurityPolicy:
 kubectl describe ImageSecurityPolicy my-isp
 ```
 
-Image Security Policy Spec description:
+#### Image Security Policy Spec description
 
 | Field     | Default (if applicable)   | Description |
 |-----------|---------------------------|-------------|
 |imageAllowlist | | List of images that are allowlisted and are not inspected by Admission Controller.|
-|attestationAuthorityName | | Attestation authority name for verifying attestation.|
-|privateKeySecretname | | Private secret key name for adding attestation.|
+|attestationAuthorityName | "" | Attestation authority name for verifying attestation.|
+|privateKeySecretname | "" | Private secret key name for adding attestation.|
 |packageVulnerabilityPolicy.allowlistCVEs |  | List of CVEs which will be ignored.|
 |packageVulnerabilityPolicy.maximumSeverity| ALLOW_ALL | Tolerance level for vulnerabilities found in the container image.|
 |packageVulnerabilityPolicy.maximumFixUnavailableSeverity |  ALLOW_ALL | The tolerance level for vulnerabilities found that have no fix available.|
@@ -191,6 +193,7 @@ An Image Security Policy will evaluate an image based on vulnerability policy sp
 
 If the `attestationAuthorityName` field is specified in ISP with a non-empty value, ISP decision based on `packageVulnerabilityPolicy`
 will create an attestation for the specified attestation authority. The attestation will serve as a cache for fast decision next time.
+Such caching is also useful to ensure that admitted images continue to be admitted on pod restarts, even if new vulnerabilities are found.
 
 ## AttestationAuthority CRD
 

@@ -54,7 +54,7 @@ func TestReviewGAP(t *testing.T) {
 		if name == "sec2" {
 			return sec2, nil
 		}
-		return nil, fmt.Errorf("Not such secret for %s", name)
+		return nil, fmt.Errorf("no such secret for %s", name)
 	}
 	oneValidAtt := []metadata.RawAttestation{
 		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), secFpr, ""),
@@ -125,13 +125,13 @@ func TestReviewGAP(t *testing.T) {
 			"test": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference: "provider/test",
+					NoteReference: "projects/test-1/notes/note-1",
 					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 				}},
 			"test2": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
 				Spec: v1beta1.AttestationAuthoritySpec{
-					NoteReference: "provider/test2",
+					NoteReference: "projects/test-1/notes/note-2",
 					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub2))},
 				}}}
 		auth, exists := authMap[name]
@@ -145,108 +145,108 @@ func TestReviewGAP(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		image        string
-		policies     []v1beta1.GenericAttestationPolicy
-		attestations []metadata.RawAttestation
-		isAdmitted   bool
-		shouldErr    bool
+		name            string
+		image           string
+		policies        []v1beta1.GenericAttestationPolicy
+		attestations    []metadata.RawAttestation
+		hasRequiredAtts bool
+		shouldErr       bool
 	}{
 		{
-			name:         "valid image with attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: oneValidAtt,
-			isAdmitted:   true,
-			shouldErr:    false,
+			name:            "valid image with attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 		{
-			name:         "image without attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    true,
+			name:            "image without attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "gap without attestor should error",
-			image:        img,
-			policies:     gapWithoutAA,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    true,
+			name:            "gap without attestor should error",
+			image:           img,
+			policies:        gapWithoutAA,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "gap without attestor should error on allowlisted image",
-			image:        "allowed_image_name",
-			policies:     gapWithoutAA,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    true,
+			name:            "gap without attestor should error on allowlisted image",
+			image:           "allowed_image_name",
+			policies:        gapWithoutAA,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "allowlisted image",
-			image:        "allowed_image_name",
-			policies:     oneGAP,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    false,
+			name:            "allowlisted image",
+			image:           "allowed_image_name",
+			policies:        oneGAP,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image allowlisted in 1 policy",
-			image:        "allowed_image_name",
-			policies:     twoGAPs,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    false,
+			name:            "image allowlisted in 1 policy",
+			image:           "allowed_image_name",
+			policies:        twoGAPs,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image without policies",
-			image:        img,
-			policies:     []v1beta1.GenericAttestationPolicy{},
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    false,
+			name:            "image without policies",
+			image:           img,
+			policies:        []v1beta1.GenericAttestationPolicy{},
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image with invalid attestation",
-			image:        img,
-			policies:     oneGAP,
-			attestations: invalidAtts,
-			isAdmitted:   false,
-			shouldErr:    true,
+			name:            "image with invalid attestation",
+			image:           img,
+			policies:        oneGAP,
+			attestations:    invalidAtts,
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "image complies with one policy out of two",
-			image:        img,
-			policies:     twoGAPs,
-			attestations: oneValidAtt,
-			isAdmitted:   true,
-			shouldErr:    false,
+			name:            "image complies with one policy out of two",
+			image:           img,
+			policies:        twoGAPs,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 		{
-			name:         "image in global allowlist",
-			image:        "us.gcr.io/grafeas/grafeas-server:0.1.0",
-			policies:     twoGAPs,
-			attestations: []metadata.RawAttestation{},
-			isAdmitted:   false,
-			shouldErr:    false,
+			name:            "image in global allowlist",
+			image:           "us.gcr.io/grafeas/grafeas-server:0.1.0",
+			policies:        twoGAPs,
+			attestations:    []metadata.RawAttestation{},
+			hasRequiredAtts: false,
+			shouldErr:       false,
 		},
 		{
-			name:         "image attested by one attestor out of two",
-			image:        img,
-			policies:     gapWithTwoAAs,
-			attestations: oneValidAtt,
-			isAdmitted:   false,
-			shouldErr:    true,
+			name:            "image attested by one attestor out of two",
+			image:           img,
+			policies:        gapWithTwoAAs,
+			attestations:    oneValidAtt,
+			hasRequiredAtts: false,
+			shouldErr:       true,
 		},
 		{
-			name:         "image attested by two attestors out of two",
-			image:        img,
-			policies:     gapWithTwoAAs,
-			attestations: twoValidAtts,
-			isAdmitted:   true,
-			shouldErr:    false,
+			name:            "image attested by two attestors out of two",
+			image:           img,
+			policies:        gapWithTwoAAs,
+			attestations:    twoValidAtts,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 	}
 	for _, tc := range tests {
@@ -268,8 +268,8 @@ func TestReviewGAP(t *testing.T) {
 			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil, cMock); (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if th.Attestations[tc.image] != tc.isAdmitted {
-				t.Errorf("expected to get image attested: %t. Got %t", tc.isAdmitted, th.Attestations[tc.image])
+			if th.Attestations[tc.image] != tc.hasRequiredAtts {
+				t.Errorf("expected to have all required attestations for the image: %t. Got %t", tc.hasRequiredAtts, th.Attestations[tc.image])
 			}
 		})
 	}
@@ -314,7 +314,7 @@ func TestReviewISP(t *testing.T) {
 		return &v1beta1.AttestationAuthority{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
 			}}, nil
 	}
@@ -515,13 +515,13 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeyList: []string{"testdata"},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeyList: []string{"testdata"},
 			}},
 	}
@@ -583,13 +583,13 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		"a1": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeyList: []string{"testdata"},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: "provider/test",
+				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeyList: []string{"testdata"},
 			}},
 	}
@@ -605,28 +605,28 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 		Auths: authMock,
 	})
 	tcs := []struct {
-		name      string
-		aName     string
-		shouldErr bool
-		returnNil bool
+		name        string
+		aName       string
+		shouldErr   bool
+		returnAuths bool
 	}{
 		{
-			name:      "correct authority",
-			aName:     "a1",
-			shouldErr: false,
-			returnNil: false,
+			name:        "correct authority",
+			aName:       "a1",
+			shouldErr:   false,
+			returnAuths: true,
 		},
 		{
-			name:      "incorrect authority",
-			aName:     "err",
-			shouldErr: true,
-			returnNil: true,
+			name:        "incorrect authority",
+			aName:       "err",
+			shouldErr:   true,
+			returnAuths: false,
 		},
 		{
-			name:      "empty name should return nil",
-			aName:     "",
-			shouldErr: false,
-			returnNil: true,
+			name:        "empty name should return nil",
+			aName:       "",
+			shouldErr:   false,
+			returnAuths: false,
 		},
 	}
 
@@ -642,8 +642,8 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 			if (err != nil) != tc.shouldErr {
 				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
 			}
-			if (a == nil) != tc.returnNil {
-				t.Errorf("expected review to return nil %t, actual return nil %t", tc.returnNil, a == nil)
+			if (a != nil) != tc.returnAuths {
+				t.Errorf("expected review to return auths %t, actual return auths %t", tc.returnAuths, a != nil)
 			}
 		})
 	}

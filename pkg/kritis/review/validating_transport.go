@@ -42,19 +42,21 @@ type AttestorValidatingTransport struct {
 
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
 	keys := map[string]string{}
-	for _, keyData := range avt.Attestor.Spec.PublicKeyList {
+	numKeys := len(avt.Attestor.Spec.PublicKeyList)
+	for i, keyData := range avt.Attestor.Spec.PublicKeyList {
 		key, fingerprint, err := secrets.KeyAndFingerprint(keyData)
 		if err != nil {
-			glog.Warningf("Error parsing key for %q: %v", avt.Attestor.Name, err)
+			// warning level because single key failure is something tolerable
+			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
 		} else {
 			if _, ok := keys[fingerprint]; ok {
-				glog.Warningf("Duplicate keys with fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
+				glog.Warningf("Overwriting key with same fingerprint %s for %q.", fingerprint, avt.Attestor.Name)
 			}
 			keys[fingerprint] = key
 		}
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
+		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
 	}
 
 	out := []attestation.ValidatedAttestation{}
