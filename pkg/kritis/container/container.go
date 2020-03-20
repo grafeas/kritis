@@ -120,7 +120,7 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 func (acs *AtomicContainerSig) VerifySignature(publicKey v1beta1.PublicKey, sig string) error {
 	switch publicKey.KeyType {
 	case v1beta1.PgpKeyType:
-		decodedKey, err := base64.StdEncoding.DecodeString(publicKey.PgpPublicKey)
+		decodedKey, err := base64.StdEncoding.DecodeString(publicKey.AsciiArmoredPgpPublicKey)
 		if err != nil {
 			return err
 		}

@@ -88,7 +88,7 @@
             publicKeys: 
             - keyType: PGP_KEY
               keyId: $KEY_FINGERPRINT
-              pgpPublicKey: $PUBLIC_KEY
+              asciiArmoredPgpPublicKey: $PUBLIC_KEY
         EOF
         ```
 

@@ -109,8 +109,8 @@ func TestValidateAndSign(t *testing.T) {
 					NoteReference: "auth1_note",
 					PublicKeys: []v1beta1.PublicKey{
 						{
-							KeyType:      "PGP_KEY",
-							PgpPublicKey: pub1,
+							KeyType:                  "PGP_KEY",
+							AsciiArmoredPgpPublicKey: pub1,
 						},
 					},
 				},
@@ -124,8 +124,8 @@ func TestValidateAndSign(t *testing.T) {
 					NoteReference: "auth2_note",
 					PublicKeys: []v1beta1.PublicKey{
 						{
-							KeyType:      "PGP_KEY",
-							PgpPublicKey: pub2,
+							KeyType:                  "PGP_KEY",
+							AsciiArmoredPgpPublicKey: pub2,
 						},
 					},
 				},
@@ -139,8 +139,8 @@ func TestValidateAndSign(t *testing.T) {
 					NoteReference: "auth3_note",
 					PublicKeys: []v1beta1.PublicKey{
 						{
-							KeyType:      "PGP_KEY",
-							PgpPublicKey: pub3,
+							KeyType:                  "PGP_KEY",
+							AsciiArmoredPgpPublicKey: pub3,
 						},
 					},
 				},

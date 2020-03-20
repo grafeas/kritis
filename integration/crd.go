@@ -39,8 +39,8 @@ spec:
   noteReference: projects/%s/notes/test-attestor
   publicKeys:
   - keyType: PGP_KEY
-	keyId: %s
-	pgpPublicKey: %s
+    keyId: %s
+    asciiArmoredPgpPublicKey: %s
 `
 )
 

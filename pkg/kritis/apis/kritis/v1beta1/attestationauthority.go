@@ -46,14 +46,18 @@ type AttestationAuthoritySpec struct {
 
 // PublicKey stores key data used to verify Attestations.
 type PublicKey struct {
-	// KeyId is the ID of this public key. This is a required field for all keys.
+	// KeyId is the ID of this public key (required for PKIX keys). For PKIX
+	// keys, please use a RFC3986 conformant URI. For PGP keys, this field
+	// should be the OpenPGP RFC4880 V4 fingerprint of the key or be left
+	// blank.
 	KeyId string `json:"keyId"`
 	// KeyType is the type of this public key. It should be one of "PGP_KEY" or
 	// "PKIX_KEY".
 	KeyType string `json:"keyType`
-	// PgpPublicKey is the base64-encoded payload for a PGP public key. Provide
+	// AsciiArmoredPgpPublicKey is the base64-encoded payload for a PGP public key. Provide
 	// this directly as a string.
-	PgpPublicKey string `json:"pgpPublicKey,omitemtpy"`
+	AsciiArmoredPgpPublicKey string `json:"asciiArmoredPgpPublicKey,omitemtpy"`
+	// DO NOT USE THIS FIELD: it is currently unsupported.
 	// PkixPublicKey stores data for a PKIX public key.
 	PkixPublicKey PkixPublicKey `json:"pkixPublicKey,omitempty"`
 }
@@ -61,6 +65,8 @@ type PublicKey struct {
 type PkixPublicKey struct {
 	// PublicKey is the payload for a PKIX public key. Provide this as a string.
 	PublicKey string `json:"publicKey"`
+	// TODO(acamadeo): After implementing PKIX key verification, provide the
+	// supported algorithm options here.
 	// SignatureAlgorithm is the type of algorithm that was used to generate
 	// the signature.
 	SignatureAlgorithm string `json:"signatureAlgorithm"`

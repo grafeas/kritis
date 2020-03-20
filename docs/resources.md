@@ -232,7 +232,7 @@ spec:
     publicKeys:
     - keyType: PGP_KEY
       keyId: ...
-      pgpPublicKey: ...
+      asciiArmoredPgpPublicKey: ...
     - keyType: PKIX_KEY
       keyId: ...
       pkixPublicKey:
@@ -254,12 +254,12 @@ An image is attested if it has an attestation verifiable by ANY of the public ke
 
 
 Two types of public keys are supported: PGP keys and PKIX keys.
-All public keys should specify their `keyType` (either `PGP_KEY` or `PKIX_KEY`). All public keys should also specify a`keyId`.
-For PGP keys, `keyId` should be the OpenPGP RFC4880 V4 fingerprint of the key payload.
-For PKIX keys, `keyId` can be any valid RFC3986 URI.
+All public keys should specify their `keyType` (either `PGP_KEY` or `PKIX_KEY`). 
+PKIX keys MUST specify a valid RFC3986 `keyId`. For PGP keys, `keyId` should either be the OpenPGP RFC4880 V4 fingerprint of the 
+key payload or be left blank. 
 
-For PGP keys, provide the base64-encoded PEM public key under `pgpPublicKey`.
+For PGP keys, please provide the base64-encoded PEM public key under `asciiArmoredPgpPublicKey`.
 PKIX key data should be provided under `pkixPublicKey`. It should include the `signatureAlgorithm` used to generate the key,
 and the `publicKey` payload.
 
-Note that keys should contain only one of `pgpPublicKey` or `pkixPublicKey`. Keys that specify both fields are disregarded.
+Note that keys should contain either `asciiArmoredPgpPublicKey` or `pkixPublicKey`. Keys that specify both fields are disregarded.

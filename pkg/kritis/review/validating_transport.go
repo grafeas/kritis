@@ -41,7 +41,7 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-func (avt *AttestorValidatingTransport) ValidatePublicKey(pubKey v1beta1.PublicKey) error {
+func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicKey) error {
 	if err := validatePublicKeyType(pubKey); err != nil {
 		return err
 	}
@@ -57,12 +57,9 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {
 			return fmt.Errorf("Invalid PGP key: %v. PkixPublicKey field should not be set", pubKey)
 		}
-		if pubKey.PgpPublicKey == "" {
-			return fmt.Errorf("Invalid PGP key: %v. PgpPublicKey field should be set", pubKey)
-		}
 	case v1beta1.PkixKeyType:
-		if pubKey.PgpPublicKey != "" {
-			return fmt.Errorf("Invalid PKIX key: %v. PgpPublicKey field should not be set", pubKey)
+		if pubKey.AsciiArmoredPgpPublicKey != "" {
+			return fmt.Errorf("Invalid PKIX key: %v. AsciiArmoredPgpPublicKey field should not be set", pubKey)
 		}
 		if pubKey.PkixPublicKey == (v1beta1.PkixPublicKey{}) {
 			return fmt.Errorf("Invalid PKIX key: %v. PkixPublicKey field should be set", pubKey)
@@ -76,13 +73,16 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:
-		_, keyId, err := secrets.KeyAndFingerprint(pubKey.PgpPublicKey)
+		_, keyId, err := secrets.KeyAndFingerprint(pubKey.AsciiArmoredPgpPublicKey)
 		if err != nil {
 			return fmt.Errorf("Error parsing PGP key for %q: %v", avt.Attestor.Name, err)
 		}
-		if keyId != pubKey.KeyId {
-			return fmt.Errorf("PGP key with id %s was skipped. KeyId should be the RFC4880 V4 fingerprint of the public key", pubKey.KeyId)
+		if pubKey.KeyId == "" {
+			glog.Warningf("No PGP key id was provided. Will use the following keyId: %s", keyId)
+		} else if pubKey.KeyId != keyId {
+			glog.Warningf("The provided PGP keyId does not match the RFC4880 V4 fingerprint of the public key. Will use fingerprint as keyId.\nProvided keyId: %s\nFingerprint: %s\n", pubKey.KeyId, keyId)
 		}
+		return nil
 	case v1beta1.PkixKeyType:
 		if _, err := url.Parse(pubKey.KeyId); err != nil {
 			return fmt.Errorf("PKIX key with id %s was skipped. KeyId should be a valid RFC3986 URI", pubKey.KeyId)
@@ -97,7 +97,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 	keys := map[string]v1beta1.PublicKey{}
 	numKeys := len(avt.Attestor.Spec.PublicKeys)
 	for i, pubKey := range avt.Attestor.Spec.PublicKeys {
-		if err := avt.ValidatePublicKey(pubKey); err != nil {
+		if err := avt.validatePublicKey(pubKey); err != nil {
 			// warning level because single key failure is something tolerable
 			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
 			continue

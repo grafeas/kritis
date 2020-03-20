@@ -293,7 +293,8 @@ func setUpISP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 	// Create key secret in k8s cluster
 	createKeySecret(t, aaSecret, ns.Name, pubKey, privKey)
 
-	if pgpKey, err := secrets.NewPgpKey(privKey, "", pubKey); err != nil {
+	pgpKey, err := secrets.NewPgpKey(privKey, "", pubKey)
+	if err != nil {
 		t.Fatalf("unexpected error creating PGP key: %v", err)
 	}
 	// Create AA in k8s cluster
