@@ -95,18 +95,20 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
 	keys := map[string]v1beta1.PublicKey{}
-	for _, pubKey := range avt.Attestor.Spec.PublicKeys {
+	numKeys := len(avt.Attestor.Spec.PublicKeys)
+	for i, pubKey := range avt.Attestor.Spec.PublicKeys {
 		if err := avt.ValidatePublicKey(pubKey); err != nil {
-			glog.Errorf("%v", err)
+			// warning level because single key failure is something tolerable
+			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
 			continue
 		}
 		if _, ok := keys[pubKey.KeyId]; ok {
-			glog.Warningf("Duplicate keys with keyId %s for %q.", pubKey.KeyId, avt.Attestor.Name)
+			glog.Warningf("Overwriting key with same fingerprint %s for %q.", pubKey.KeyId, avt.Attestor.Name)
 		}
 		keys[pubKey.KeyId] = pubKey
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("Unable to find any valid key for %q", avt.Attestor.Name)
+		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
 	}
 
 	out := []attestation.ValidatedAttestation{}

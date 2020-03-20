@@ -287,14 +287,13 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, isps []kritis.ImageSecurityPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataClient(config)
-	defer client.Close()
-
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	defer client.Close()
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewISP(images, isps, pod, client); err != nil {
@@ -305,14 +304,13 @@ func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1be
 
 func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, gaps []kritis.GenericAttestationPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataReadOnlyClient(config)
-	defer client.Close()
-
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	defer client.Close()
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewGAP(images, gaps, pod, client); err != nil {

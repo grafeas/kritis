@@ -38,6 +38,7 @@ func encodeB64(in string) string {
 
 func TestValidatingTransport(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
+	// second public key for the second attestor
 	successSec2, pub2 := testutil.CreateSecret(t, "test-success-2")
 	successFpr, successFpr2 := successSec.PgpKey.Fingerprint(), successSec2.PgpKey.Fingerprint()
 	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)

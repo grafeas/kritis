@@ -44,8 +44,8 @@ spec:
 `
 )
 
-// Secret name for test-attestor, which matches integration/testdata/image-security-policy/my-isp.yaml
-var aaSecret = "test-attestor"
+// Secret name in integration/testdata/image-security-policy/my-isp.yaml
+var aaSecret = "test-secret"
 
 // CRDs is a map of CRD type to names of the expected CRDs to create.
 var crdNames = map[string]string{

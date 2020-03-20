@@ -379,7 +379,7 @@ func TestKritisGAPLogic(t *testing.T) {
 		{
 			// Policy under test has two attestation authorities,
 			// but the image deployed only has an attestation by
-			// one of those auths.
+			// one of these auths.
 			"nginx/nginx-digest.yaml",
 			[]string{},
 			"not attested",

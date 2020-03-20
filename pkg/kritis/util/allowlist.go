@@ -26,34 +26,44 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// RemoveGloballyAllowedImages returns all images that aren't in a global allowlist
-func RemoveGloballyAllowedImages(images []string) []string {
-	notAllowlisted := []string{}
+// SplitGloballyAllowedImages returns:
+// -- list of all images that aren't in a global allowlist
+// -- list of images that are in a global allowlist
+func SplitGloballyAllowedImages(images []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInGlobalAllowlist(image)
+		isAllowlisted, err := imageInGlobalAllowlist(image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global allowlist: %v", image, err)
 		}
-		if !allowlisted {
-			notAllowlisted = append(notAllowlisted, image)
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
 	}
-	return notAllowlisted
+	return notAllowlistedImages, removedImages
 }
 
-// RemoveGloballyAllowedImages returns all images that aren't in gap allowlists
-func RemoveGapAllowedImages(images []string, allowlist []string) []string {
-	notAllowlisted := []string{}
+// SplitGapAllowedImages returns:
+// -- list of all images that aren't in gap allowlists
+// -- list of images that are in gap allowlists
+func SplitGapAllowedImages(images []string, allowlist []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInGapAllowlist(image, allowlist)
+		isAllowlisted, err := imageInGapAllowlist(image, allowlist)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in gap allowlist: %v", image, err)
 		}
-		if !allowlisted {
-			notAllowlisted = append(notAllowlisted, image)
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
 	}
-	return notAllowlisted
+	return notAllowlistedImages, removedImages
 }
 
 // Do an image match based on reference.
@@ -71,7 +81,7 @@ func imageRefMatch(image string, pattern string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// Make sure c
+	// Make sure both resolve to same URL
 	if reflect.DeepEqual(allowRef.Context(), imageRef.Context()) {
 		return true, nil
 	}
