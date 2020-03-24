@@ -86,7 +86,7 @@
         spec:
             noteReference: projects/$PROJECT/notes/my-attestor
             publicKeys: 
-            - keyType: PGP_KEY
+            - keyType: PGP
               keyId: $KEY_FINGERPRINT
               asciiArmoredPgpPublicKey: $PUBLIC_KEY
         EOF

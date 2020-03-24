@@ -54,7 +54,7 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    successFpr,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 				},
@@ -66,12 +66,12 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    successFpr,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 				},
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    successFpr2,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub2)),
 				},
@@ -83,11 +83,11 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					AsciiArmoredPgpPublicKey: "bad-key",
 				},
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    successFpr,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 				},
@@ -99,7 +99,7 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					AsciiArmoredPgpPublicKey: "bad-key",
 				},
 			},
@@ -110,7 +110,7 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    "bad-key-id",
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 				},
@@ -122,12 +122,12 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType: "PKIX_KEY",
+					KeyType: "PKIX",
 					KeyId:   "good-key-id",
 					// TODO(acamadeo): After implementing PKIX key verification
 					// replace this with a valid PKIX public key.
 					PkixPublicKey: v1beta1.PkixPublicKey{
-						PublicKey: "good-key",
+						PublicKeyPem: "good-key",
 					},
 				},
 			},
@@ -138,12 +138,12 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType: "PKIX_KEY",
+					KeyType: "PKIX",
 					KeyId:   "bad_key_id:foo",
 					// TODO(acamadeo): After implementing PKIX key verification
 					// replace this with a valid PKIX public key.
 					PkixPublicKey: v1beta1.PkixPublicKey{
-						PublicKey: "good-key",
+						PublicKeyPem: "good-key",
 					},
 				},
 			},
@@ -154,13 +154,13 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PGP_KEY",
+					KeyType:                  "PGP",
 					KeyId:                    successFpr,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 					// TODO(acamadeo): After implementing PKIX key verification
 					// replace this with a valid PKIX public key.
 					PkixPublicKey: v1beta1.PkixPublicKey{
-						PublicKey: "good-key",
+						PublicKeyPem: "good-key",
 					},
 				},
 			},
@@ -171,11 +171,11 @@ func TestValidatingTransport(t *testing.T) {
 		Spec: v1beta1.AttestationAuthoritySpec{
 			PublicKeys: []v1beta1.PublicKey{
 				{
-					KeyType:                  "PKIX_KEY",
+					KeyType:                  "PKIX",
 					KeyId:                    successFpr,
 					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 					PkixPublicKey: v1beta1.PkixPublicKey{
-						PublicKey: "good-key",
+						PublicKeyPem: "good-key",
 					},
 				},
 			},

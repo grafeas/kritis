@@ -135,6 +135,8 @@ spec:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
 ```
+Note that the Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private 
+and public key, respectively.
 
 To view the CRD:
 
@@ -230,13 +232,14 @@ metadata:
 spec:
     noteReference: projects/image-attestor/notes/qa-note
     publicKeys:
-    - keyType: PGP_KEY
+    - keyType: PGP
       keyId: ...
       asciiArmoredPgpPublicKey: ...
-    - keyType: PKIX_KEY
+    # Note that PKIX keys are currently not supported
+    - keyType: PKIX
       keyId: ...
       pkixPublicKey:
-        publicKey: ...
+        publicKeyPem: ...
         signatureAlgorithm: ...
     - ...
     - ...
@@ -246,20 +249,36 @@ where “image-attestor” is the project for creating AttestationAuthority Note
 
 In order to create notes, the service account `gac-ca-admin` must have `containeranalysis.notes.attacher role` on this project.
 
-The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
-
-
-`publicKeys` is a list of public keys for the Kubernetes secret. Key rotation is supported by listing multiple keys.
+`publicKeys` is a list of public keys for the AttestationAuthority. Key rotation is supported by listing multiple keys.
 An image is attested if it has an attestation verifiable by ANY of the public keys.
 
 
-Two types of public keys are supported: PGP keys and PKIX keys.
-All public keys should specify their `keyType` (either `PGP_KEY` or `PKIX_KEY`). 
-PKIX keys MUST specify a valid RFC3986 `keyId`. For PGP keys, `keyId` should either be the OpenPGP RFC4880 V4 fingerprint of the 
-key payload or be left blank. 
+Each public key contains an ID. Signatures verified by BinAuthz must include the ID of the public key that can be used to 
+verify them, and that ID must match the contents of this field exactly. Additional restrictions on this field can be 
+imposed based on which public key type is encapsulated. See the documentation on publicKey cases below for details.
 
-For PGP keys, please provide the base64-encoded PEM public key under `asciiArmoredPgpPublicKey`.
-PKIX key data should be provided under `pkixPublicKey`. It should include the `signatureAlgorithm` used to generate the key,
-and the `publicKey` payload.
+There are two types of public keys: PGP keys and PKIX keys. These keys are defined like Binauthz 
+[AttestorPublicKeys](https://cloud.google.com/binary-authorization/docs/reference/rest/v1/projects.attestors#attestorpublickey), with
+an additional `keyType` field.
+
+### PGP Public Keys
+
+| Field    | Type    | Value   |
+|----------|----------|---------------|
+| `keyType`  | string   | "PGP"| 
+| `keyId`  | string   | Optional: either OpenPGP RFC4880 V4 fingerprint of the key payload or blank. If left blank, the `keyId` will be computed as the key's OpenPGP fingerprint.| 
+| `asciiArmoredPgpPublicKey`  | string | A base64-encoded ASCII-armored representation of a PGP public key, as the entire output by the command `gpg --export --armor foo@example.com | base64` (either LF or CRLF line endings). |
+| `pkixPublicKey` | PkixPublicKey object | empty|
+
+### PKIX Public Keys
+
+**Note that currently PKIX keys are not supported in Kritis!**
+
+| Field    | Type    | Value   |
+|----------|----------|---------------|
+| `keyType`  | string   | "PKIX"| 
+| `keyId`  | string   | a valid RFC3986 URI| 
+| `asciiArmoredPgpPublicKey`  | string | empty |
+| `pkixPublicKey` | PkixPublicKey object | `publicKeyPem` should be a PEM-encoded public key, as described in [https://tools.ietf.org/html/rfc7468#section-13](https://tools.ietf.org/html/rfc7468#section-13). `signatureAlgorithm` should contain the signature algorithm used to verify a message against a signature using this key. These signature algorithm must match the structure and any object identifiers encoded in publicKeyPem (i.e. this algorithm must match that of the public key). |
 
 Note that keys should contain either `asciiArmoredPgpPublicKey` or `pkixPublicKey`. Keys that specify both fields are disregarded.

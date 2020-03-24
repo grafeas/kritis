@@ -41,8 +41,10 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
+// validatePublicKey makes sure that a PublicKey is specified correctly given
+// its KeyType.
 func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicKey) error {
-	if err := validatePublicKeyType(pubKey); err != nil {
+	if err := validatePublicKeyFields(pubKey); err != nil {
 		return err
 	}
 	if err := avt.validatePublicKeyId(pubKey); err != nil {
@@ -51,11 +53,16 @@ func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicK
 	return nil
 }
 
-func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
+// validatePublicKeyFields ensures that the appropriate fields of a PublicKey
+// are set given its KeyType.
+func validatePublicKeyFields(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:
 		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {
 			return fmt.Errorf("Invalid PGP key: %v. PkixPublicKey field should not be set", pubKey)
+		}
+		if pubKey.AsciiArmoredPgpPublicKey == "" {
+			return fmt.Errorf("Invalid PGP key: %v. AsciiArmoredPgpPublicKey field should be set", pubKey)
 		}
 	case v1beta1.PkixKeyType:
 		if pubKey.AsciiArmoredPgpPublicKey != "" {
@@ -70,6 +77,8 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	return nil
 }
 
+// validatePublicKeyId ensures that a PublicKey's KeyId field is valid given
+// its KeyType.
 func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:

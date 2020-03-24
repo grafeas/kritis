@@ -130,7 +130,7 @@ func TestReviewGAP(t *testing.T) {
 					NoteReference: "projects/test-1/notes/note-1",
 					PublicKeys: []v1beta1.PublicKey{
 						{
-							KeyType:                  "PGP_KEY",
+							KeyType:                  "PGP",
 							KeyId:                    secFpr,
 							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 						},
@@ -142,7 +142,7 @@ func TestReviewGAP(t *testing.T) {
 					NoteReference: "projects/test-1/notes/note-2",
 					PublicKeys: []v1beta1.PublicKey{
 						{
-							KeyType:                  "PGP_KEY",
+							KeyType:                  "PGP",
 							KeyId:                    secFpr2,
 							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub2)),
 						},
@@ -331,7 +331,7 @@ func TestReviewISP(t *testing.T) {
 				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeys: []v1beta1.PublicKey{
 					{
-						KeyType:                  "PGP_KEY",
+						KeyType:                  "PGP",
 						KeyId:                    secFpr,
 						AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 					},
@@ -538,7 +538,7 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeys: []v1beta1.PublicKey{
 					{
-						KeyType:                  "PGP_KEY",
+						KeyType:                  "PGP",
 						AsciiArmoredPgpPublicKey: "testdata",
 					},
 				},
@@ -549,7 +549,7 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeys: []v1beta1.PublicKey{
 					{
-						KeyType:                  "PGP_KEY",
+						KeyType:                  "PGP",
 						AsciiArmoredPgpPublicKey: "testdata",
 					},
 				},
@@ -616,7 +616,7 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeys: []v1beta1.PublicKey{
 					{
-						KeyType:                  "PGP_KEY",
+						KeyType:                  "PGP",
 						AsciiArmoredPgpPublicKey: "testdata",
 					},
 				},
@@ -627,7 +627,7 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 				NoteReference: "projects/test-1/notes/note-1",
 				PublicKeys: []v1beta1.PublicKey{
 					{
-						KeyType:                  "PGP_KEY",
+						KeyType:                  "PGP",
 						AsciiArmoredPgpPublicKey: "testdata",
 					},
 				},

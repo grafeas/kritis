@@ -38,7 +38,7 @@ metadata:
 spec:
   noteReference: projects/%s/notes/test-attestor
   publicKeys:
-  - keyType: PGP_KEY
+  - keyType: PGP
     keyId: %s
     asciiArmoredPgpPublicKey: %s
 `
