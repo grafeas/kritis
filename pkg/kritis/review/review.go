@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -233,7 +234,12 @@ func (r Reviewer) ReviewISP(images []string, isps []v1beta1.ImageSecurityPolicy,
 
 // Check if an image is attested by a given attestation authority.
 func (r Reviewer) isAttestedBy(image string, auth v1beta1.AttestationAuthority, c metadata.ReadOnlyClient) bool {
-	transport := AttestorValidatingTransport{Client: c, Attestor: auth}
+	host, err := container.NewAtomicContainerSig(image, map[string]string{})
+	if err != nil {
+		glog.Error(err)
+		return false
+	}
+	transport := AttestorValidatingTransport{Client: c, Attestor: auth, ContainerHost: host}
 	attestations, err := transport.GetValidatedAttestations(image)
 	if err != nil {
 		glog.Errorf("Error fetching validated attestations for %s: %v", image, err)

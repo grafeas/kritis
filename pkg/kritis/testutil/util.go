@@ -99,7 +99,7 @@ func CreateSecret(t *testing.T, name string) (*secrets.PGPSigningSecret, string)
 }
 
 func Base64PublicTestKey(t *testing.T) string {
-	b, err := base64.StdEncoding.DecodeString(PublicTestKey)
+	b, err := base64.StdEncoding.DecodeString(PublicPgpTestKey.AsciiArmoredPgpPublicKey)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}

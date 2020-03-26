@@ -34,6 +34,14 @@ var (
 	hType = constants.AtomicContainerSigType
 )
 
+// AtomicContainerSigInterface defines an AtomicContainerSig struct -- useful for mocking in tests
+type AtomicContainerSigInterface interface {
+	Equals(*AtomicContainerSig) bool
+	JSON() (string, error)
+	CreateAttestationSignature(*secrets.PGPSigningSecret) (string, error)
+	VerifySignature(v1beta1.PublicKey, string) error
+}
+
 // AtomicContainerSig represents Red Hat’s Atomic Host attestation signature format
 // defined here https://github.com/aweiteka/image/blob/e5a20d98fe698732df2b142846d007b45873627f/docs/signature.md
 type AtomicContainerSig struct {
@@ -124,15 +132,15 @@ func (acs *AtomicContainerSig) VerifySignature(publicKey v1beta1.PublicKey, sig 
 		if err != nil {
 			return err
 		}
-		return acs.VerifyPgpSignature(string(decodedKey), sig)
+		return acs.verifyPgpSignature(string(decodedKey), sig)
 	case v1beta1.PkixKeyType:
+		return fmt.Errorf("PKIX keys are not yet supported")
 	default:
 		return fmt.Errorf("Unsupported key type: %s", publicKey.KeyType)
 	}
-	return nil
 }
 
-func (acs *AtomicContainerSig) VerifyPgpSignature(publicKey string, sig string) error {
+func (acs *AtomicContainerSig) verifyPgpSignature(publicKey string, sig string) error {
 	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
 	if err != nil {
 		return errors.Wrap(err, "error verifying signature")

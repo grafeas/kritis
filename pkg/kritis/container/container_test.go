@@ -16,10 +16,12 @@ limitations under the License.
 package container
 
 import (
+	"encoding/base64"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
@@ -105,38 +107,63 @@ func TestCreateAttestationSignature(t *testing.T) {
 	}
 }
 
-func TestValidateAttestationSignature(t *testing.T) {
-	secret, pub := testutil.CreateSecret(t, "test")
+func TestVerifySignature(t *testing.T) {
+	sec, pub := testutil.CreateSecret(t, "test")
+	secFpr := sec.PgpKey.Fingerprint()
+
+	pgpPubKey := v1beta1.PublicKey{KeyType: "PGP_KEY", KeyId: secFpr, AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub))}
+	pgpPubKeyUnencoded := v1beta1.PublicKey{KeyType: "PGP_KEY", KeyId: secFpr, AsciiArmoredPgpPublicKey: pub}
+	pkixPubKey := v1beta1.PublicKey{KeyType: "PKIX_KEY"}
+	unknownPubKey := v1beta1.PublicKey{KeyType: "UNKNOWN"}
+
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	inputSig, err := container.CreateAttestationSignature(secret)
+	inputSig, err := container.CreateAttestationSignature(sec)
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
 
-	tests := []struct {
+	tcs := []struct {
 		name      string
 		shouldErr bool
-		publickey string
+		pubKey    v1beta1.PublicKey
 	}{
+		// TODO(acamadeo): After PKIX verification, write a similar test for PKIX keys
 		{
-			name:      "verify using same public key",
+			name:      "verify using same PGP public key",
 			shouldErr: false,
-			publickey: pub,
+			pubKey:    pgpPubKey,
+		},
+		// TODO(acamadeo): After PKIX verification, write a similar test for PKIX keys
+		{
+			name:      "verify using another PGP public key",
+			shouldErr: true,
+			pubKey:    testutil.PublicPgpTestKey,
 		},
 		{
-			name:      "verify using another public key",
+			name:      "error if PGP key not base64-encoded",
 			shouldErr: true,
-			publickey: testutil.PublicTestKey,
+			pubKey:    pgpPubKeyUnencoded,
+		},
+		// TODO(acamadeo): After PKIX verification, `shouldErr` should be false
+		{
+			name:      "error if PKIX key",
+			shouldErr: true,
+			pubKey:    pkixPubKey,
+		},
+		{
+			name:      "error if unknown key type",
+			shouldErr: true,
+			pubKey:    unknownPubKey,
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			verificationErr := container.VerifyPgpSignature(test.publickey, inputSig)
-			testutil.CheckError(t, test.shouldErr, verificationErr)
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			verificationErr := container.VerifySignature(tc.pubKey, inputSig)
+			testutil.CheckError(t, tc.shouldErr, verificationErr)
 		})
 	}
 }
@@ -146,7 +173,7 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyPgpSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
+	if err := container.verifyPgpSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }

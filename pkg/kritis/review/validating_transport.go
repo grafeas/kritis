@@ -29,6 +29,11 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 )
 
+// Testing mock functions
+var (
+	validatePublicKey = ValidatePublicKey
+)
+
 // ValidatingTransport allows the caller to obtain validated attestations for a given container image.
 // Implementations should return trusted and verified attestations.
 type ValidatingTransport interface {
@@ -37,15 +42,16 @@ type ValidatingTransport interface {
 
 // Implements ValidatingTransport.
 type AttestorValidatingTransport struct {
-	Client   metadata.ReadOnlyClient
-	Attestor v1beta1.AttestationAuthority
+	Client        metadata.ReadOnlyClient
+	Attestor      v1beta1.AttestationAuthority
+	ContainerHost container.AtomicContainerSigInterface
 }
 
-func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicKey) error {
+func ValidatePublicKey(pubKey v1beta1.PublicKey) error {
 	if err := validatePublicKeyType(pubKey); err != nil {
 		return err
 	}
-	if err := avt.validatePublicKeyId(pubKey); err != nil {
+	if err := validatePublicKeyId(pubKey); err != nil {
 		return err
 	}
 	return nil
@@ -56,6 +62,9 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	case v1beta1.PgpKeyType:
 		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {
 			return fmt.Errorf("Invalid PGP key: %v. PkixPublicKey field should not be set", pubKey)
+		}
+		if pubKey.AsciiArmoredPgpPublicKey == "" {
+			return fmt.Errorf("Invalid PGP key: %v. AsciiArmoredPgpPublicKey field should be set", pubKey)
 		}
 	case v1beta1.PkixKeyType:
 		if pubKey.AsciiArmoredPgpPublicKey != "" {
@@ -70,12 +79,12 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	return nil
 }
 
-func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.PublicKey) error {
+func validatePublicKeyId(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:
 		_, keyId, err := secrets.KeyAndFingerprint(pubKey.AsciiArmoredPgpPublicKey)
 		if err != nil {
-			return fmt.Errorf("Error parsing PGP key for %q: %v", avt.Attestor.Name, err)
+			return fmt.Errorf("Error parsing PGP key with ID %s: %v", pubKey.KeyId, err)
 		}
 		if pubKey.KeyId == "" {
 			glog.Warningf("No PGP key id was provided. Will use the following keyId: %s", keyId)
@@ -97,7 +106,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 	keys := map[string]v1beta1.PublicKey{}
 	numKeys := len(avt.Attestor.Spec.PublicKeys)
 	for i, pubKey := range avt.Attestor.Spec.PublicKeys {
-		if err := avt.validatePublicKey(pubKey); err != nil {
+		if err := validatePublicKey(pubKey); err != nil {
 			// warning level because single key failure is something tolerable
 			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
 			continue
@@ -111,12 +120,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
 	}
 
-	out := []attestation.ValidatedAttestation{}
-	host, err := container.NewAtomicContainerSig(image, map[string]string{})
-	if err != nil {
-		glog.Error(err)
-		return nil, err
-	}
+	validAtts := []attestation.ValidatedAttestation{}
 	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		glog.Error(err)
@@ -133,11 +137,11 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 			continue
 		}
 		keyId := rawAtt.Signature.PublicKeyId
-		if err = host.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
+		if err = avt.ContainerHost.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
 			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 			continue
 		}
-		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+		validAtts = append(validAtts, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
 	}
-	return out, nil
+	return validAtts, nil
 }
