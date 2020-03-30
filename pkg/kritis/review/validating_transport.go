@@ -41,10 +41,9 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-// validatePublicKey makes sure that a PublicKey is specified correctly given
-// its KeyType.
+// validatePublicKey makes sure that a PublicKey is specified correctly.
 func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicKey) error {
-	if err := validatePublicKeyFields(pubKey); err != nil {
+	if err := validatePublicKeyType(pubKey); err != nil {
 		return err
 	}
 	if err := avt.validatePublicKeyId(pubKey); err != nil {
@@ -53,9 +52,9 @@ func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicK
 	return nil
 }
 
-// validatePublicKeyFields ensures that the appropriate fields of a PublicKey
+// validatePublicKeyType ensures that the appropriate fields of a PublicKey
 // are set given its KeyType.
-func validatePublicKeyFields(pubKey v1beta1.PublicKey) error {
+func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:
 		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {

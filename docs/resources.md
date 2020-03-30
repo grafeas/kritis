@@ -253,7 +253,7 @@ In order to create notes, the service account `gac-ca-admin` must have `containe
 An image is attested if it has an attestation verifiable by ANY of the public keys.
 
 
-Each public key contains an ID. Signatures verified by BinAuthz must include the ID of the public key that can be used to 
+Each public key contains an ID. Attestations must include the ID of the public key that can be used to 
 verify them, and that ID must match the contents of this field exactly. Additional restrictions on this field can be 
 imposed based on which public key type is encapsulated. See the documentation on publicKey cases below for details.
 
@@ -272,13 +272,4 @@ an additional `keyType` field.
 
 ### PKIX Public Keys
 
-**Note that currently PKIX keys are not supported in Kritis!**
-
-| Field    | Type    | Value   |
-|----------|----------|---------------|
-| `keyType`  | string   | "PKIX"| 
-| `keyId`  | string   | a valid RFC3986 URI| 
-| `asciiArmoredPgpPublicKey`  | string | empty |
-| `pkixPublicKey` | PkixPublicKey object | `publicKeyPem` should be a PEM-encoded public key, as described in [https://tools.ietf.org/html/rfc7468#section-13](https://tools.ietf.org/html/rfc7468#section-13). `signatureAlgorithm` should contain the signature algorithm used to verify a message against a signature using this key. These signature algorithm must match the structure and any object identifiers encoded in publicKeyPem (i.e. this algorithm must match that of the public key). |
-
-Note that keys should contain either `asciiArmoredPgpPublicKey` or `pkixPublicKey`. Keys that specify both fields are disregarded.
+PKIX key support has not yet been implemented.
