@@ -84,13 +84,17 @@ func cleanupTemplate(t *testing.T, path, ns string) error {
 		return nil
 	}
 	t.Logf("Cleaning up after %s ...", path)
-	cmd := exec.Command("kubectl", "delete", "-f", path, "--namespace", ns)
-	output, err := integration_util.RunCmdOut(cmd)
-	if err != nil {
-		return fmt.Errorf("kubectl delete failed: %s %v", output, err)
-	}
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("remove failed: %v", err)
+	}
+	cmd := exec.Command("kubectl", "delete", "-f", path, "--namespace", ns)
+	out, err := integration_util.RunCmdOut(cmd)
+	if err != nil {
+		return fmt.Errorf("kubectl delete failed: %s %v", out, err)
+	}
+	cmd = exec.Command("kubectl", "wait", "--for=delete")
+	if out, err := integration_util.RunCmdOut(cmd); err != nil {
+		t.Fatalf("testing error: %v\nout: %s", err, out)
 	}
 	return nil
 }
