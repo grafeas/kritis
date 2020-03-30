@@ -135,6 +135,8 @@ spec:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
 ```
+Note that the Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private 
+and public key, respectively.
 
 To view the CRD:
 
@@ -229,17 +231,45 @@ metadata:
     namespace: qa
 spec:
     noteReference: projects/image-attestor/notes/qa-note
-    publicKeyList:
+    publicKeys:
+    - keyType: PGP
+      keyId: ...
+      asciiArmoredPgpPublicKey: ...
+    # Note that PKIX keys are currently not supported
+    - keyType: PKIX
+      keyId: ...
+      pkixPublicKey:
+        publicKeyPem: ...
+        signatureAlgorithm: ...
     - ...
     - ...
 ```
 
-Where “image-attestor” is the project for creating AttestationAuthority Notes.
+where “image-attestor” is the project for creating AttestationAuthority Notes.
 
 In order to create notes, the service account `gac-ca-admin` must have `containeranalysis.notes.attacher role` on this project.
 
-The Kubernetes secret `foo` must have data fields `private` and `public` which contain the gpg private and public key respectively.
-
-`publicKeyList` is a list of base64 encoded PEM public keys for the gpg secret.
-The list is used to support key rotations. 
+`publicKeys` is a list of public keys for the AttestationAuthority. Key rotation is supported by listing multiple keys.
 An image is attested if it has an attestation verifiable by ANY of the public keys.
+
+
+Each public key contains an ID. Attestations must include the ID of the public key that can be used to 
+verify them, and that ID must match the contents of this field exactly. Additional restrictions on this field can be 
+imposed based on which public key type is encapsulated. See the documentation on publicKey cases below for details.
+
+There are two types of public keys: PGP keys and PKIX keys. These keys are defined like Binauthz 
+[AttestorPublicKeys](https://cloud.google.com/binary-authorization/docs/reference/rest/v1/projects.attestors#attestorpublickey), with
+an additional `keyType` field.
+
+### PGP Public Keys
+
+| Field    | Type    | Value   |
+|----------|----------|---------------|
+| `keyType`  | string   | "PGP"| 
+| `keyId`  | string   | Optional: either OpenPGP RFC4880 V4 fingerprint of the key payload or blank. If left blank, the `keyId` will be computed as the key's OpenPGP fingerprint.| 
+| `asciiArmoredPgpPublicKey`  | string | A base64-encoded ASCII-armored representation of a PGP public key, as the entire output by the command `gpg --export --armor foo@example.com | base64` (either LF or CRLF line endings). |
+| `pkixPublicKey` | PkixPublicKey object | empty|
+
+### PKIX Public Keys
+
+PKIX key support has not yet been implemented.
