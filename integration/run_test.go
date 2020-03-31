@@ -78,7 +78,7 @@ func processTemplate(path, ns string) (string, error) {
 }
 
 // cleanupTemplate resources referenced by an expanded text template
-func cleanupTemplate(t *testing.T, path, ns string) error {
+func cleanupTemplate(t *testing.T, path, ns string, waitMin int) error {
 	if !*cleanup {
 		t.Logf("Skipping cleanup of %s because --cleanup=false", path)
 		return nil
@@ -91,10 +91,11 @@ func cleanupTemplate(t *testing.T, path, ns string) error {
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		return fmt.Errorf("kubectl delete failed: %v\nout: %s", err, out)
 	}
-
-	cmd = exec.Command("kubectl", "wait", "--for=delete", "--timeout=3m")
-	if out, err := integration_util.RunCmdOut(cmd); err != nil {
-		t.Fatalf("kubectl wait failed: %v\nout: %s", err, out)
+	if waitMin > 0 {
+		cmd = exec.Command("kubectl", "wait", "--for=delete", fmt.Sprintf("--timeout=%dm", waitMin))
+		if out, err := integration_util.RunCmdOut(cmd); err != nil {
+			t.Fatalf("kubectl wait failed: %v\nout: %s", err, out)
+		}
 	}
 	return nil
 }
@@ -321,7 +322,7 @@ func setUpISP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 	waitForCRDExamples(t, ns, map[string]string{"imagesecuritypolicies.kritis.grafeas.io": "my-isp"})
 
 	return cs, ns, func(t *testing.T) {
-		cleanupTemplate(t, isp, ns.Name)
+		cleanupTemplate(t, isp, ns.Name, 0)
 		instInNsCleanup(t)
 		t.Logf("tearDown complete, have a wonderful day!")
 	}
@@ -366,7 +367,7 @@ func setUpGAP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 	waitForCRDExamples(t, ns, map[string]string{"genericattestationpolicies.kritis.grafeas.io": "my-gap"})
 
 	return cs, ns, func(t *testing.T) {
-		cleanupTemplate(t, gap, ns.Name)
+		cleanupTemplate(t, gap, ns.Name, 0)
 		instInNsCleanup(t)
 		t.Logf("tearDown complete, have a wonderful day!")
 	}
@@ -399,7 +400,7 @@ func TestKritisGAPLogic(t *testing.T) {
 
 	for _, tc := range testCases {
 		path, err := processTemplate(tc.template, ns.Name)
-		defer cleanupTemplate(t, path, ns.Name)
+		defer cleanupTemplate(t, path, ns.Name, 0)
 		if err != nil {
 			t.Fatalf("failed to process template: %v", err)
 		}
@@ -527,7 +528,7 @@ func TestKritisISPLogic(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.template, func(t *testing.T) {
 			path, err := processTemplate(tc.template, ns.Name)
-			defer cleanupTemplate(t, path, ns.Name)
+			defer cleanupTemplate(t, path, ns.Name, 0)
 			if err != nil {
 				t.Fatalf("failed to process template: %v", err)
 			}
@@ -601,7 +602,7 @@ func TestKritisCron(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.template, func(t *testing.T) {
 			path, err := processTemplate(tc.template, ns.Name)
-			defer cleanupTemplate(t, path, ns.Name)
+			defer cleanupTemplate(t, path, ns.Name, 3)
 			if err != nil {
 				t.Fatalf("failed to process template: %v", err)
 			}
