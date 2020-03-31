@@ -111,9 +111,9 @@ func TestVerifySignature(t *testing.T) {
 	sec, pub := testutil.CreateSecret(t, "test")
 	secFpr := sec.PgpKey.Fingerprint()
 
-	pgpPubKey := v1beta1.PublicKey{KeyType: "PGP_KEY", KeyId: secFpr, AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub))}
-	pgpPubKeyUnencoded := v1beta1.PublicKey{KeyType: "PGP_KEY", KeyId: secFpr, AsciiArmoredPgpPublicKey: pub}
-	pkixPubKey := v1beta1.PublicKey{KeyType: "PKIX_KEY"}
+	pgpPubKey := v1beta1.PublicKey{KeyType: "PGP", KeyId: secFpr, AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub))}
+	pgpPubKeyUnencoded := v1beta1.PublicKey{KeyType: "PGP", KeyId: secFpr, AsciiArmoredPgpPublicKey: pub}
+	pkixPubKey := v1beta1.PublicKey{KeyType: "PKIX"}
 	unknownPubKey := v1beta1.PublicKey{KeyType: "UNKNOWN"}
 
 	container, err := NewAtomicContainerSig(goodImage, map[string]string{})

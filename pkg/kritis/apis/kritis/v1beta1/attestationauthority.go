@@ -22,8 +22,8 @@ import (
 
 const (
 	// Key Types
-	PgpKeyType  = "PGP_KEY"
-	PkixKeyType = "PKIX_KEY"
+	PgpKeyType  = "PGP"
+	PkixKeyType = "PKIX"
 )
 
 // +genclient
@@ -49,10 +49,11 @@ type PublicKey struct {
 	// KeyId is the ID of this public key (required for PKIX keys). For PKIX
 	// keys, please use a RFC3986 conformant URI. For PGP keys, this field
 	// should be the OpenPGP RFC4880 V4 fingerprint of the key or be left
-	// blank.
+	// blank. If left blank, KeyId will be computed as the key's OpenPGP
+	// fingerprint.
 	KeyId string `json:"keyId"`
-	// KeyType is the type of this public key. It should be one of "PGP_KEY" or
-	// "PKIX_KEY".
+	// KeyType is the type of this public key. It should be one of "PGP" or
+	// "PKIX".
 	KeyType string `json:"keyType`
 	// AsciiArmoredPgpPublicKey is the base64-encoded payload for a PGP public key. Provide
 	// this directly as a string.
@@ -63,8 +64,8 @@ type PublicKey struct {
 }
 
 type PkixPublicKey struct {
-	// PublicKey is the payload for a PKIX public key. Provide this as a string.
-	PublicKey string `json:"publicKey"`
+	// PublicKeyPem is the payload for a PKIX public key. Provide this as a string.
+	PublicKeyPem string `json:"publicKeyPem"`
 	// TODO(acamadeo): After implementing PKIX key verification, provide the
 	// supported algorithm options here.
 	// SignatureAlgorithm is the type of algorithm that was used to generate

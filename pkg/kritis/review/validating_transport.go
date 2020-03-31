@@ -47,6 +47,7 @@ type AttestorValidatingTransport struct {
 	ContainerHost container.AtomicContainerSigInterface
 }
 
+// ValidatePublicKey makes sure that a PublicKey is specified correctly.
 func ValidatePublicKey(pubKey v1beta1.PublicKey) error {
 	if err := validatePublicKeyType(pubKey); err != nil {
 		return err
@@ -57,6 +58,8 @@ func ValidatePublicKey(pubKey v1beta1.PublicKey) error {
 	return nil
 }
 
+// validatePublicKeyType ensures that the appropriate fields of a PublicKey
+// are set given its KeyType.
 func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:
@@ -79,6 +82,8 @@ func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
 	return nil
 }
 
+// validatePublicKeyId ensures that a PublicKey's KeyId field is valid given
+// its KeyType.
 func validatePublicKeyId(pubKey v1beta1.PublicKey) error {
 	switch pubKey.KeyType {
 	case v1beta1.PgpKeyType:

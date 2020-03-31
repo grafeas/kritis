@@ -49,7 +49,7 @@ metadata:
 spec:
   noteReference: v1beta1/projects/standalone
   publicKeys:
-  - keyType: PGP_KEY 
+  - keyType: PGP 
     keyId: $KEY_FINGERPRINT
     asciiArmoredPgpPublicKey: $PUBLIC_KEY
 

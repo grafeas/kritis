@@ -38,67 +38,67 @@ func TestValidatePublicKey(t *testing.T) {
 	secFpr := sec.PgpKey.Fingerprint()
 	validPgpKeyWithFingerprintId := v1beta1.PublicKey{
 		KeyId:                    secFpr,
-		KeyType:                  "PGP_KEY",
+		KeyType:                  "PGP",
 		AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 	}
 	validPgpKeyWithEmptyId := v1beta1.PublicKey{
 		KeyId:                    "",
-		KeyType:                  "PGP_KEY",
+		KeyType:                  "PGP",
 		AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 	}
 	// This specification is allowed but discouraged
 	validPgpKeyWithNonFingerprintId := v1beta1.PublicKey{
 		KeyId:                    "foobar",
-		KeyType:                  "PGP_KEY",
+		KeyType:                  "PGP",
 		AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 	}
 	invalidPgpKeyWithPkixPayload := v1beta1.PublicKey{
 		KeyId:                    secFpr,
-		KeyType:                  "PGP_KEY",
+		KeyType:                  "PGP",
 		AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 		// TODO(acamadeo): After implementing PKIX key verification replace
 		// this with a valid PKIX public key.
 		PkixPublicKey: v1beta1.PkixPublicKey{
-			PublicKey: "good-key",
+			PublicKeyPem: "good-key",
 		},
 	}
 	invalidPgpKeyWithoutPgpPayload := v1beta1.PublicKey{
 		KeyId:   secFpr,
-		KeyType: "PGP_KEY",
+		KeyType: "PGP",
 	}
 	validPkixKeyWithValidId := v1beta1.PublicKey{
 		// Notice the ID is RFC3986 conformant
 		KeyId:   "good-key-id",
-		KeyType: "PKIX_KEY",
+		KeyType: "PKIX",
 		// TODO(acamadeo): After implementing PKIX key verification replace
 		// this with a valid PKIX public key.
 		PkixPublicKey: v1beta1.PkixPublicKey{
-			PublicKey: "good-key",
+			PublicKeyPem: "good-key",
 		},
 	}
 	invalidPkixKeyWithInvalidId := v1beta1.PublicKey{
 		// Notice the ID is not RFC3986 conformant
 		KeyId:   "bad_key_id:foo",
-		KeyType: "PKIX_KEY",
+		KeyType: "PKIX",
 		// TODO(acamadeo): After implementing PKIX key verification replace
 		// this with a valid PKIX public key.
 		PkixPublicKey: v1beta1.PkixPublicKey{
-			PublicKey: "good-key",
+			PublicKeyPem: "good-key",
 		},
 	}
 	invalidPkixKeyWithPgpPayload := v1beta1.PublicKey{
 		KeyId:   "good-key-id",
-		KeyType: "PKIX_KEY",
+		KeyType: "PKIX",
 		// TODO(acamadeo): After implementing PKIX key verification replace
 		// this with a valid PKIX public key.
 		PkixPublicKey: v1beta1.PkixPublicKey{
-			PublicKey: "good-key",
+			PublicKeyPem: "good-key",
 		},
 		AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 	}
 	invalidPkixKeyWithoutPkixPayload := v1beta1.PublicKey{
 		KeyId:   "good-key-id",
-		KeyType: "PKIX_KEY",
+		KeyType: "PKIX",
 	}
 	invalidPublicKeyWithUnsupportedType := v1beta1.PublicKey{
 		KeyId:                    secFpr,
