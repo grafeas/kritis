@@ -91,6 +91,7 @@ func cleanupTemplate(t *testing.T, path, ns string) error {
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		return fmt.Errorf("kubectl delete failed: %v\nout: %s", err, out)
 	}
+
 	cmd = exec.Command("kubectl", "wait", "--for=delete")
 	if out, err := integration_util.RunCmdOut(cmd); err != nil {
 		t.Fatalf("kubectl wait failed: %v\nout: %s", err, out)
