@@ -92,6 +92,7 @@ func cleanupTemplate(t *testing.T, path, ns string) error {
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("remove failed: %v", err)
 	}
+	// test travis
 	return nil
 }
 
