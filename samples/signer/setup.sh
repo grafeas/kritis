@@ -8,7 +8,7 @@ environment () {
   echo "Setting up the environment..."
   export BINAUTHZ_PROJECT=$(gcloud config get-value project)
   export BINAUTHZ_PROJECTNUM=$(gcloud projects list --filter="${BINAUTHZ_PROJECT}" --format="value(PROJECT_NUMBER)")
-  export BINAUTHZ_ZONE=us-central1a
+  export BINAUTHZ_ZONE=us-central1-a
 
   [[ -f "${DIR}/env.sh" ]] && echo "Importing environment from ${DIR}/env.sh..." && . ${DIR}/env.sh
   echo "Writing ${DIR}/env.sh..."
