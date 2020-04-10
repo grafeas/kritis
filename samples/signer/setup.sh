@@ -90,11 +90,27 @@ binauthz_project_setup () {
   docker push gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
   set +x; echo
 
-  set +x; echo "Generating keys.  When asked, please provide an empty passphrase.."; set -x
-  GPG_OUTPUT="$(gpg --quick-generate-key --yes attestor@example.com)"
+  set +x; echo "Generating attestor keys.."; set -x
+  cat >gpg.cfg << EOF
+%echo Generating a basic OpenPGP key
+Key-Type: default
+Key-Length: default
+Subkey-Type: default
+Subkey-Length: default
+Name-Real: Kritis Signer
+Name-Comment:Kritis vuln scanning attestation key
+Name-Email: kritis-attestor@example.com
+Expire-Date: 0
+%no-ask-passphrase
+%no-protection
+# Do a commit here, so that we can later print "done" :-)
+%commit
+%echo done
+EOF
+  GPG_OUTPUT="$(gpg --batch --generate-key --yes gpg.cfg)"
   KEY_FINGERPRINT="$(set +x; echo; set -x $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
-  #gpg --armor --export $KEY_FINGERPRINT > $DIR/gpg.pub
-  #gpg --armor --export-secret-keys $KEY_FINGERPRINT > $DIR/gpg.priv
+  gpg --armor --export $KEY_FINGERPRINT > $DIR/gpg.pub
+  gpg --armor --export-secret-keys $KEY_FINGERPRINT > $DIR/gpg.priv
   set +x; echo
 
   set +x; echo "Creating attestors.."; set -x
