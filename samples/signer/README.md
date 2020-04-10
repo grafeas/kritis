@@ -15,4 +15,4 @@ gcloud builds submit --config=cloudbuild-good.yaml .
 And to exercise a negative case run:
 gcloud builds submit --config=cloudbuild-bad.yaml
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fdonmccasland%2Fkritis.git&cloudshell_git_branch=signer-cli&cloudshell_working_dir=gopath%2Fsrc%2Fgithub.com%2Fgrafeas%2Fkritis)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fdonmccasland%2Fkritis.git&cloudshell_git_branch=signer-cli&cloudshell_working_dir=kritis)
