@@ -1,21 +1,28 @@
 #!/bin/bash
 
-
 environment () {
   if [ "${GOPATH}" == "" ]; then
     echo "You must have golang installed and $GOPATH set to the top of your go src tree to compile this code."
     exit 1
   fi
+  
   # Set values that will be overwritten if env.sh exists
   echo "Setting up the environment..."
   export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-  export TOPDIR="$( cd "$( dirname "${BASH_SOURCE[0]}/../.." )" >/dev/null 2>&1 && pwd )"
-  export GODIR=${GOPATH}/src/github.com/grafeas/kritis
+  export TOPDIR="$( cd "$( dirname "${BASH_SOURCE[0]}")/../.." >/dev/null 2>&1 && pwd )"
+  export GODIR=$( echo "${GOPATH//:/$'\n'}" | head -1)/src/github.com/grafeas/kritis
+  
+  # When we build the signer-image below, the script needs this tree to
+  # live in a proper $GOPATH.  We'll build a link tree to serve
+  if [ ! -d "${GODIR}" ]; then
+    mkdir -p $(dirname ${GODIR})
+    cp -rl ${TOPDIR} ${GODIR}
+  fi
   
   export BINAUTHZ_PROJECT=$(gcloud config get-value project)
   export BINAUTHZ_PROJECTNUM=$(gcloud projects list --filter="${BINAUTHZ_PROJECT}" --format="value(PROJECT_NUMBER)")
   export BINAUTHZ_ZONE=us-central1-a
-
+  
   [[ -f "${DIR}/env.sh" ]] && echo "Importing environment from ${DIR}/env.sh..." && . ${DIR}/env.sh
   echo "Writing ${DIR}/env.sh..."
   cat > ${DIR}/env.sh << EOF
@@ -26,13 +33,6 @@ EOF
 }
 
 binauthz_project_setup () {
-  # When we build the signer-image below, the script needs this tree to
-  # live in a proper $GOPATH.  We'll build a link tree to serve
-  if [ ! -d "${GODIR}" ]; then
-    mkdir -p $(dirname ${GODIR})
-    lndir ${TOPDIR} ${GODIR}
-  fi
-  
   set +x; echo "Setting up project for Binary Authorization Sample..."
   set -x
   gcloud config set project ${BINAUTHZ_PROJECT}
