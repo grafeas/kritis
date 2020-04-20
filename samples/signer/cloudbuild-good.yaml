@@ -22,7 +22,7 @@ steps:
   - name: gcr.io/$PROJECT_ID/python-builder
     args:
     - ./wait-for-analysis.py 
-    - gcr.io/$PROJECT_ID/binauthz-test 
+    - gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt)
     - $PROJECT_ID
     id: vulnpoll
   - name: gcr.io/$PROJECT_ID/kritis-signer
