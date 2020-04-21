@@ -112,7 +112,12 @@ func main() {
 		ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
 		Spec: v1beta1.AttestationAuthoritySpec{
 			NoteReference: policy.Spec.NoteReference,
-			PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pubKey))},
+			PublicKeys: []v1beta1.PublicKey{
+				{
+					KeyType:                  "PGP",
+					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pubKey)),
+				},
+			},
 		},
 	}
 

@@ -29,7 +29,7 @@ import (
 type Cache struct {
 	client metadata.ReadWriteClient
 	vuln   map[string][]metadata.Vulnerability
-	att    map[string][]metadata.PGPAttestation
+	atts   map[string][]metadata.RawAttestation
 	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
 }
 
@@ -42,7 +42,7 @@ func NewCache(opts ...option.ClientOption) (*Cache, error) {
 	return &Cache{
 		client: c,
 		vuln:   map[string][]metadata.Vulnerability{},
-		att:    map[string][]metadata.PGPAttestation{},
+		atts:   map[string][]metadata.RawAttestation{},
 		notes:  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note{},
 	}, nil
 }
@@ -65,13 +65,13 @@ func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority from cache or from client.
-func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
-	if a, ok := c.att[image]; ok {
+func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
+	if a, ok := c.atts[image]; ok {
 		return a, nil
 	}
 	a, err := c.client.Attestations(image, aa)
 	if err != nil {
-		c.att[image] = a
+		c.atts[image] = a
 	}
 	return a, err
 }

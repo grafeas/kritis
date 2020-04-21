@@ -32,6 +32,7 @@ import (
 	"github.com/grafeas/kritis/cmd/kritis/version"
 	integration_util "github.com/grafeas/kritis/pkg/kritis/integration_util"
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
+	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	testutil "github.com/grafeas/kritis/pkg/kritis/testutil"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -291,8 +292,13 @@ func setUpISP(t *testing.T) (kubernetes.Interface, *v1.Namespace, func(t *testin
 	pubKey, privKey := testutil.CreateKeyPair(t, aaSecret)
 	// Create key secret in k8s cluster
 	createKeySecret(t, aaSecret, ns.Name, pubKey, privKey)
+
+	pgpKey, err := secrets.NewPgpKey(privKey, "", pubKey)
+	if err != nil {
+		t.Fatalf("unexpected error creating PGP key: %v", err)
+	}
 	// Create AA in k8s cluster
-	createAA(t, *gcpProject, ns.Name, pubKey)
+	createAA(t, *gcpProject, ns.Name, pubKey, pgpKey.Fingerprint())
 
 	isp, err := processTemplate("image-security-policy/my-isp.yaml", ns.Name)
 	if err != nil {
@@ -374,7 +380,7 @@ func TestKritisGAPLogic(t *testing.T) {
 		{
 			// Policy under test has two attestation authorities,
 			// but the image deployed only has an attestation by
-			// one of those auths.
+			// one of these auths.
 			"nginx/nginx-digest.yaml",
 			[]string{},
 			"not attested",

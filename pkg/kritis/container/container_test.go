@@ -135,7 +135,7 @@ func TestValidateAttestationSignature(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			verificationErr := container.VerifyAttestationSignature(test.publickey, inputSig)
+			verificationErr := container.VerifyPgpSignature(test.publickey, inputSig)
 			testutil.CheckError(t, test.shouldErr, verificationErr)
 		})
 	}
@@ -146,7 +146,7 @@ func TestGPGArmorSignVerifyIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	if err := container.VerifyAttestationSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
+	if err := container.VerifyPgpSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
 }
