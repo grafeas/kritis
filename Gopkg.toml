@@ -55,3 +55,7 @@ ignored = ["cloud.google.com/go/devtools/*"]
 [[constraint]]
   name = "gopkg.in/d4l3k/messagediff.v1"
   revision = "b9e99b2f9263a86c71c1ca4507f34502448c58a4"
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  version = "0.4.0"

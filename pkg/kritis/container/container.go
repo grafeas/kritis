@@ -17,10 +17,12 @@ limitations under the License.
 package container
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
@@ -115,7 +117,22 @@ func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets
 	return attestation.CreateMessageAttestation(pgpSigningKey.PgpKey, hostStr)
 }
 
-func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig string) error {
+func (acs *AtomicContainerSig) VerifySignature(publicKey v1beta1.PublicKey, sig string) error {
+	switch publicKey.KeyType {
+	case v1beta1.PgpKeyType:
+		decodedKey, err := base64.StdEncoding.DecodeString(publicKey.AsciiArmoredPgpPublicKey)
+		if err != nil {
+			return err
+		}
+		return acs.VerifyPgpSignature(string(decodedKey), sig)
+	case v1beta1.PkixKeyType:
+	default:
+		return fmt.Errorf("Unsupported key type: %s", publicKey.KeyType)
+	}
+	return nil
+}
+
+func (acs *AtomicContainerSig) VerifyPgpSignature(publicKey string, sig string) error {
 	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
 	if err != nil {
 		return errors.Wrap(err, "error verifying signature")

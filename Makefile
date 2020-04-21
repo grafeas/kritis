@@ -243,23 +243,13 @@ clean-integration-local:
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
 		&& gcloud --project=$(GCP_PROJECT) container clusters delete $(GCP_CLUSTER)
 
+# Just run the integration tests, assuming setup is done and test image is updated.
+# make -e GCP_PROJECT=${PROJECT} just-the-integration-test
 .PHONY: just-the-integration-test
 just-the-integration-test:
 	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"
 	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
 		$(REPOPATH)/integration \
-		-timeout 30m \
-		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
-		-gcp-project=$(GCP_PROJECT) \
-		-gke-zone=$(GCP_ZONE) \
-		-gke-cluster-name=$(GCP_CLUSTER) $(EXTRA_TEST_FLAGS)
-
-.PHONY: single-integration-test-suite
-single-integration-test-suite:
-	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"
-	go test -ldflags "$(GO_LDFLAGS)" -v -tags integration \
-		$(REPOPATH)/integration \
-		-run $(TESTSUITE) \
 		-timeout 30m \
 		-gac-credentials=$(GAC_CREDENTIALS_PATH) \
 		-gcp-project=$(GCP_PROJECT) \

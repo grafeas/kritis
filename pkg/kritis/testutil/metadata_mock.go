@@ -28,7 +28,7 @@ import (
 // Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
-	PGPAttestations []metadata.PGPAttestation
+	RawAttestations []metadata.RawAttestation
 	AAs             []kritisv1beta1.AttestationAuthority
 	Occ             map[string]string
 	Err             error
@@ -82,18 +82,18 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
-	return m.PGPAttestations, nil
+	return m.RawAttestations, nil
 }
 
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
+			RawAttestations: []metadata.RawAttestation{},
 			AAs:             []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
@@ -103,7 +103,7 @@ func NilReadOnlyClient() func() (metadata.ReadOnlyClient, error) {
 	return func() (metadata.ReadOnlyClient, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
+			RawAttestations: []metadata.RawAttestation{},
 			AAs:             []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
