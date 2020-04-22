@@ -32,6 +32,18 @@ type Attestation struct {
 	SerializedPayload []byte
 }
 
-func extractKeyMode(signature []byte) keyMode {
+type keyMode int
+
+// Enumeration of keyMode
+const (
+	UnknownKeyMode keyMode = iota
+	Pgp
+	Pkix
+	Jwt
+)
+
+// TODO: Provide an implementation that determines the key mode from the
+// Attestation's signature.
+func (att *Attestation) extractKeyMode() keyMode {
 	return UnknownKeyMode
 }

@@ -24,47 +24,69 @@ type Signer interface {
 	// signing the given payload with the private key. For PGP and PKIX, `payload`
 	// should be the raw payload data. For JWT, `payload` should be a serialized
 	// but unsigned token.
-	CreateAttestation(payload []byte, alg SignatureAlgorithm) (*Attestation, error)
+	CreateAttestation(payload []byte) (*Attestation, error)
 }
 
-type signer struct {
+type pkixSigner struct {
+	PrivateKey         []byte
+	PublicKeyID        string
+	SignatureAlgorithm SignatureAlgorithm
+}
+
+type pgpSigner struct {
 	PrivateKey  []byte
 	PublicKeyID string
 }
 
-// NewSigner creates a Signer interface. `privateKey` contains the key data for
-// the private key that signs attestations. `publicKeyID` is the ID of the
-// public key that can verify those signatures.
-func NewSigner(privateKey []byte, publicKeyID string) Signer {
-	return &signer{
+type jwtSigner struct {
+	PrivateKey         []byte
+	PublicKeyID        string
+	SignatureAlgorithm SignatureAlgorithm
+}
+
+// NewPkixSigner creates a Signer interface for PKIX Attestations. `privateKey`
+// contains the PEM-encoded private key. `publicKeyID` is the ID of the public
+// key that can verify the Attestation signature.
+func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) Signer {
+	return &pkixSigner{
+		PrivateKey:         privateKey,
+		PublicKeyID:        publicKeyID,
+		SignatureAlgorithm: alg,
+	}
+}
+
+// NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
+// contains the ASCII-armored private key. `publicKeyID` is the ID of the
+// public key that can verify the Attestation signature.
+func NewPgpSigner(privateKey []byte, publicKeyID string) Signer {
+	return &pgpSigner{
 		PrivateKey:  privateKey,
 		PublicKeyID: publicKeyID,
 	}
 }
 
-// CreateAttestation creates a signed Attestation. See Signer for more details.
-func (s *signer) CreateAttestation(payload []byte, alg SignatureAlgorithm) (*Attestation, error) {
-	switch alg.keyMode() {
-	case Pkix:
-		return createPkixAttestation(payload, alg)
-	case Pgp:
-		return createPgpAttestation(payload, alg)
-	case Jwt:
-		return createJwtAttestation(payload, alg)
-	default:
-		return nil, errors.New("invalid key mode")
+// NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
+// is the ID of the public key that can verify the Attestation signature.
+// TODO: Explain formatting of JWT private keys.
+func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) Signer {
+	return &jwtSigner{
+		PrivateKey:         privateKey,
+		PublicKeyID:        publicKeyID,
+		SignatureAlgorithm: alg,
 	}
 }
 
-// Unimplemented functions
-func createPkixAttestation(payload []byte, alg SignatureAlgorithm) (*Attestation, error) {
-	return nil, errors.New("attestation type not implemented")
+// CreateAttestation creates a signed PKIX Attestation. See Signer for more details.
+func (s *pkixSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+	return nil, errors.New("pkix attestations not implemented")
 }
 
-func createPgpAttestation(payload []byte, alg SignatureAlgorithm) (*Attestation, error) {
-	return nil, errors.New("attestation type not implemented")
+// CreateAttestation creates a signed PGP Attestation. See Signer for more details.
+func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+	return nil, errors.New("pgp attestations not implemented")
 }
 
-func createJwtAttestation(payload []byte, alg SignatureAlgorithm) (*Attestation, error) {
-	return nil, errors.New("attestation type not implemented")
+// CreateAttestation creates a signed JWT Attestation. See Signer for more details.
+func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+	return nil, errors.New("jwt attestations not implemented")
 }
