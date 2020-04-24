@@ -38,13 +38,13 @@ type PublicKey struct {
 
 type verifier struct{}
 
-// NewVerifier creates a Verifier interface.
+// NewVerifier creates a Verifier interface for verifying Attestations.
 func NewVerifier() Verifier {
 	return &verifier{}
 }
 
 // VerifyAttestation verifies an Attestation. See Verifier for more details.
-func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey, image string) error {
+func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey, imageDigest string) error {
 	var (
 		err     error
 		payload []byte
@@ -55,7 +55,7 @@ func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey,
 	// TODO: Replace no-op with correct implementation.
 	publicKey := publicKeySet[0]
 
-	switch extractKeyMode(att.Signature) {
+	switch att.extractKeyMode() {
 	case Pkix:
 		err = verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
 		payload = att.SerializedPayload
@@ -70,30 +70,41 @@ func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey,
 		return err
 	}
 
-	expected := Metadata{image}
-	actual := extractMetadata(payload)
-	return checkMetadata(actual, expected)
+	// Extract the payload into an AuthenticatedAttestation, whose contents we
+	// can trust.
+	actual := formAuthenticatedAttestation(payload)
+	return checkAuthenticatedAttestation(actual, imageDigest)
 }
 
 func verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
-	return errors.New("verify not implemented")
+	return errors.New("verify pkix not implemented")
 }
 
 func verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
-	return []byte{}, errors.New("verify not implemented")
+	return []byte{}, errors.New("verify jwt not implemented")
 }
 
-// Metadata stores the most important information from the payload of an
-// attestation. After an attestation is verified, this information is extracted
-// and compared against the expected metadata for that image.
-type Metadata struct {
-	Image string
+// AuthenticatedAttestation contains data that is extracted from an Attestation
+// only after its signature has been verified. The contents of an Attestation
+// payload should never be analyzed directly, as it may or may not be verified.
+// Instead, these should be extracted into an AuthenticatedAttestation and
+// analyzed from there.
+// NOTE: The concept and usefulness of an AuthenticatedAttestation are still
+// under discussion and is subject to change.
+type AuthenticatedAttestation struct {
+	ImageDigest string
 }
 
-func extractMetadata(payload []byte) Metadata {
-	return Metadata{}
+func formAuthenticatedAttestation(payload []byte) AuthenticatedAttestation {
+	return AuthenticatedAttestation{}
 }
 
-func checkMetadata(actual Metadata, expected Metadata) error {
-	return errors.New("check metadata not implemented")
+// Check that the data within the Attestation payload matches what we expect.
+// NOTE: This is a simple comparison for plain attestations, but it would be
+// more complex for rich attestations.
+func checkAuthenticatedAttestation(actual AuthenticatedAttestation, imageDigest string) error {
+	if actual.ImageDigest != imageDigest {
+		return errors.New("invalid payload for authenticated attestation")
+	}
+	return nil
 }
