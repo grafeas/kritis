@@ -34,8 +34,7 @@ type pkixSigner struct {
 }
 
 type pgpSigner struct {
-	PrivateKey  []byte
-	PublicKeyID string
+	PrivateKey []byte
 }
 
 type jwtSigner struct {
@@ -47,33 +46,31 @@ type jwtSigner struct {
 // NewPkixSigner creates a Signer interface for PKIX Attestations. `privateKey`
 // contains the PEM-encoded private key. `publicKeyID` is the ID of the public
 // key that can verify the Attestation signature.
-func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) Signer {
+func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) (Signer, error) {
 	return &pkixSigner{
 		PrivateKey:         privateKey,
 		PublicKeyID:        publicKeyID,
 		SignatureAlgorithm: alg,
-	}
+	}, nil
 }
 
 // NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
-// contains the ASCII-armored private key. `publicKeyID` is the ID of the
-// public key that can verify the Attestation signature.
-func NewPgpSigner(privateKey []byte, publicKeyID string) Signer {
+// contains the ASCII-armored private key.
+func NewPgpSigner(privateKey []byte) (Signer, error) {
 	return &pgpSigner{
-		PrivateKey:  privateKey,
-		PublicKeyID: publicKeyID,
-	}
+		PrivateKey: privateKey,
+	}, nil
 }
 
 // NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
 // is the ID of the public key that can verify the Attestation signature.
 // TODO: Explain formatting of JWT private keys.
-func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) Signer {
+func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) (Signer, error) {
 	return &jwtSigner{
 		PrivateKey:         privateKey,
 		PublicKeyID:        publicKeyID,
 		SignatureAlgorithm: alg,
-	}
+	}, nil
 }
 
 // CreateAttestation creates a signed PKIX Attestation. See Signer for more details.
@@ -81,7 +78,9 @@ func (s *pkixSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	return nil, errors.New("pkix attestations not implemented")
 }
 
-// CreateAttestation creates a signed PGP Attestation. See Signer for more details.
+// CreateAttestation creates a signed PGP Attestation. The Attestation's
+// PublicKeyID will be derived from the private key. See Signer for more
+// details.
 func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	return nil, errors.New("pgp attestations not implemented")
 }

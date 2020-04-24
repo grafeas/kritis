@@ -43,7 +43,8 @@ const (
 )
 
 // TODO: Provide an implementation that determines the key mode from the
-// Attestation's signature.
+// Attestation's structure. Return Pkix if SerializedPayload is nonempty. If
+// att.Signature is a serialized JWT, return Jwt. Otherwise return Pgp.
 func (att *Attestation) extractKeyMode() keyMode {
 	return UnknownKeyMode
 }

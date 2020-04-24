@@ -36,6 +36,14 @@ type PublicKey struct {
 	ID string
 }
 
+// NewPublicKey creates a new PublicKey.
+func NewPublicKey(keyData []byte, keyID string) PublicKey {
+	return PublicKey{
+		KeyData: keyData,
+		ID:      keyID,
+	}
+}
+
 type verifier struct{}
 
 // NewVerifier creates a Verifier interface for verifying Attestations.
@@ -88,25 +96,25 @@ func verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
 	return []byte{}, errors.New("verify jwt not implemented")
 }
 
-// AuthenticatedAttestation contains data that is extracted from an Attestation
+// authenticatedAttestation contains data that is extracted from an Attestation
 // only after its signature has been verified. The contents of an Attestation
 // payload should never be analyzed directly, as it may or may not be verified.
 // Instead, these should be extracted into an AuthenticatedAttestation and
 // analyzed from there.
 // NOTE: The concept and usefulness of an AuthenticatedAttestation are still
 // under discussion and is subject to change.
-type AuthenticatedAttestation struct {
+type authenticatedAttestation struct {
 	ImageDigest string
 }
 
-func formAuthenticatedAttestation(payload []byte) AuthenticatedAttestation {
-	return AuthenticatedAttestation{}
+func formAuthenticatedAttestation(payload []byte) authenticatedAttestation {
+	return authenticatedAttestation{}
 }
 
 // Check that the data within the Attestation payload matches what we expect.
 // NOTE: This is a simple comparison for plain attestations, but it would be
 // more complex for rich attestations.
-func checkAuthenticatedAttestation(actual AuthenticatedAttestation, imageDigest string) error {
+func checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
 	if actual.ImageDigest != imageDigest {
 		return errors.New("invalid payload for authenticated attestation")
 	}
