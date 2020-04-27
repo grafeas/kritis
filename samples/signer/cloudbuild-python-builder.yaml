@@ -1,0 +1,16 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+    - build
+    - '-f'
+    - './Dockerfile.python-builder'
+    - '-t'
+    - 'gcr.io/projectgut-215417/python-builder'
+    - '.'
+    id: build
+  - name: gcr.io/cloud-builders/docker
+    args:
+    - push
+    - 'gcr.io/projectgut-215417/python-builder'
+    id: push
+images: ['gcr.io/projectgut-215417/python-builder']
