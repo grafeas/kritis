@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# This script provides a one-button setup of an entire pipeline to demonstrate
+# binary authorization signing and enforcement:
+# - local environment
+# - binauthz project setup
+# - cloud build steps to do image signing
+# - a GKE cluster with binauthz configured
+# After running this script, a user can do image signing & deployement with a
+# single command line, as follows:
+# gcloud builds submit --config=cloudbuild-good.yaml
+
 environment () {
   if [ "${GOPATH}" == "" ]; then
     echo "You must have golang installed and $GOPATH set to the top of your go src tree to compile this code."
