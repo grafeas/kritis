@@ -33,39 +33,31 @@ func TestVerifyPgp(t *testing.T) {
 		name           string
 		signature      []byte
 		publicKey      []byte
-		payload        []byte
 		validSignature bool
-		validPayload   bool
 	}{
 		{
-			name:           "valid gpg key pair",
+			name:           "valid signature and public key",
 			signature:      readFile(t, "signature.gpg"),
 			publicKey:      readFile(t, "publicKey.gpg"),
-			payload:        readFile(t, "payload.txt"),
 			validSignature: true,
-			validPayload:   true,
 		},
 		{
 			name:           "invalid signature",
 			signature:      []byte("invalid-sig"),
 			publicKey:      readFile(t, "publicKey.gpg"),
-			payload:        readFile(t, "payload.txt"),
 			validSignature: false,
-			validPayload:   false,
 		},
 		{
-			name:           "invalid payload",
+			name:           "invalid public key",
 			signature:      readFile(t, "signature.gpg"),
-			publicKey:      readFile(t, "publicKey.gpg"),
-			payload:        []byte("invalid-payload"),
-			validSignature: true,
-			validPayload:   false,
+			publicKey:      []byte("invalid-public-key"),
+			validSignature: false,
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			payload, err := verifyPgp(tc.signature, tc.publicKey)
+			actualPayload, err := verifyPgp(tc.signature, tc.publicKey)
 			testutil.CheckError(t, !tc.validSignature, err)
 
 			// Skip payload check if signature verification failed
@@ -73,11 +65,9 @@ func TestVerifyPgp(t *testing.T) {
 				return
 			}
 
-			if tc.validPayload && string(payload) != string(tc.payload) {
-				t.Fatalf("Expected valid payload: got: %s, want: %s", string(payload), string(tc.payload))
-			}
-			if !tc.validPayload && string(payload) == string(tc.payload) {
-				t.Fatalf("Expected invalid payload: got: %s, want: %s", string(payload), string(tc.payload))
+			expectedPayload := readFile(t, "payload.txt")
+			if string(actualPayload) != string(expectedPayload) {
+				t.Fatalf("Incorrect payload extracted: got: %s, want: %s", string(actualPayload), string(expectedPayload))
 			}
 		})
 	}
