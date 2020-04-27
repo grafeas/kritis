@@ -45,23 +45,39 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 
 	maxSev := vsp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
 	if maxSev == "" {
-		maxSev = "CRITICAL"
+		maxSev = constants.Critical
 	}
 
 	maxNoFixSev := vsp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
 	if maxNoFixSev == "" {
-		maxNoFixSev = "ALLOW_ALL"
+		maxNoFixSev = constants.AllowAll
 	}
 
-	for _, v := range vulnz {
-		// First, check if the vulnerability is in allowlist
-		if cveInAllowlist(vsp, v.CVE) {
-			continue
-		}
+	if len(vulnz) > 0 {
+		cveAllowlistMap := makeCVEAllowlistMap(vsp)
+		for _, v := range vulnz {
+			// First, check if the vulnerability is in allowlist
+			if cveAllowlistMap[v.CVE] {
+				continue
+			}
 
-		// Allow operators to set a higher threshold for CVE's that have no fix available.
-		if !v.HasFixAvailable {
-			ok, err := severityWithinThreshold(maxNoFixSev, v.Severity)
+			// Allow operators to set a higher threshold for CVE's that have no fix available.
+			if !v.HasFixAvailable {
+				ok, err := severityWithinThreshold(maxNoFixSev, v.Severity)
+				if err != nil {
+					return violations, err
+				}
+				if ok {
+					continue
+				}
+				violations = append(violations, Violation{
+					vulnerability: v,
+					vType:         policy.FixUnavailableViolation,
+					reason:        FixUnavailableReason(image, v, vsp),
+				})
+				continue
+			}
+			ok, err := severityWithinThreshold(maxSev, v.Severity)
 			if err != nil {
 				return violations, err
 			}
@@ -70,34 +86,20 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 			}
 			violations = append(violations, Violation{
 				vulnerability: v,
-				vType:         policy.FixUnavailableViolation,
-				reason:        FixUnavailableReason(image, v, vsp),
+				vType:         policy.SeverityViolation,
+				reason:        SeverityReason(image, v, vsp),
 			})
-			continue
 		}
-		ok, err := severityWithinThreshold(maxSev, v.Severity)
-		if err != nil {
-			return violations, err
-		}
-		if ok {
-			continue
-		}
-		violations = append(violations, Violation{
-			vulnerability: v,
-			vType:         policy.SeverityViolation,
-			reason:        SeverityReason(image, v, vsp),
-		})
 	}
 	return violations, nil
 }
 
-func cveInAllowlist(isp v1beta1.VulnzSigningPolicy, cve string) bool {
-	for _, w := range isp.Spec.PackageVulnerabilityRequirements.AllowlistCVEs {
-		if w == cve {
-			return true
-		}
+func makeCVEAllowlistMap(vsp v1beta1.VulnzSigningPolicy) map[string]bool {
+	cveAllowlistMap := make(map[string]bool)
+	for _, w := range vsp.Spec.PackageVulnerabilityRequirements.AllowlistCVEs {
+		cveAllowlistMap[w] = true
 	}
-	return false
+	return cveAllowlistMap
 }
 
 func severityWithinThreshold(maxSeverity string, severity string) (bool, error) {

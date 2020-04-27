@@ -53,7 +53,7 @@ func (v Violation) Type() policy.ViolationType {
 	return v.vType
 }
 
-// Details returns the detailed violtation
+// Details returns the detailed violation
 func (v Violation) Details() interface{} {
 	return v.vulnerability
 }

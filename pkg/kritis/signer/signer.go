@@ -28,11 +28,13 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
+// A signer is used for creating attestations for an image.
 type Signer struct {
 	config *Config
 	client metadata.ReadWriteClient
 }
 
+// A signer config that includes necessary data and handler for signing.
 type Config struct {
 	Validate  vulnzsigningpolicy.ValidateFunc
 	PgpKey    *secrets.PgpKey
@@ -40,6 +42,7 @@ type Config struct {
 	Project   string
 }
 
+// Creating a new signer object.
 func New(client metadata.ReadWriteClient, c *Config) Signer {
 	return Signer{
 		client: client,
@@ -47,6 +50,7 @@ func New(client metadata.ReadWriteClient, c *Config) Signer {
 	}
 }
 
+// ImageVulnerabilities is an input for running vulnerability policy validation.
 type ImageVulnerabilities struct {
 	ImageRef        string
 	Vulnerabilities []metadata.Vulnerability
@@ -66,23 +70,26 @@ func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.Vul
 	if err != nil {
 		return fmt.Errorf("error when evaluating image %q against policy %q", imageVulnz.ImageRef, vps.Name)
 	}
-	if violations != nil {
+	if violations != nil && len(violations) != 0 {
 		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
-	} else {
-		glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
-		existed, _ := s.isAttestationAlreadyExist(imageVulnz.ImageRef)
-		if existed {
-			glog.Warningf("Attestation for image %q has not already been created.", imageVulnz.ImageRef)
-			return nil
-		}
-		glog.Infof("Creating attestations for image %q.", imageVulnz.ImageRef)
-		if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
-			return err
-		}
+	}
+
+	glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
+	existed, _ := s.isAttestationAlreadyExist(imageVulnz.ImageRef)
+	if existed {
+		glog.Warningf("Attestation for image %q has already been created.", imageVulnz.ImageRef)
 		return nil
 	}
+	glog.Infof("Creating attestations for image %q.", imageVulnz.ImageRef)
+	if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
+		return err
+	}
+	return nil
 }
 
+// Creating an attestation if not already exist under the same note.
+// The method will create a note if it does not already exist.
+// Returns error if creation failed, e.g., if an attestation already exists.
 func (s Signer) addAttestation(image string) error {
 	n, err := util.GetOrCreateAttestationNote(s.client, &s.config.Authority)
 	if err != nil {
