@@ -168,11 +168,11 @@ EOM
 EOM
   gcloud container binauthz policy import ${DIR}/binauthz-policy.yaml
 
-	cat policy_template.yaml \
-		| sed -e "s?<ATTESTATION_PROJECT>?${BINAUTHZ_PROJECT}?g" \
-		| sed -e "s?<NOTE_PROJECT>?${BINAUTHZ_PROJECT}?g" \
-		| sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
-		> policy.yaml
+  cat policy_template.yaml \
+    | sed -e "s?<ATTESTATION_PROJECT>?${BINAUTHZ_PROJECT}?g" \
+    | sed -e "s?<NOTE_PROJECT>?${BINAUTHZ_PROJECT}?g" \
+    | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
+    > policy.yaml
 
   set +x; echo
   set +x
