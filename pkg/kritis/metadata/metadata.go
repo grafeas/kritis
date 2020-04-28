@@ -46,9 +46,8 @@ type ReadWriteClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
-	CreateAttestationOccurrence(note *grafeasv1beta1.Note,
-		containerImage string, pgpSigningKey *secrets.PGPSigningSecret,
-		proj string) (*grafeasv1beta1.Occurrence, error)
+	CreateAttestationOccurrence(noteName string,
+		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
@@ -102,7 +101,7 @@ type RawSignature struct {
 func ParseNoteReference(ref string) (string, string, error) {
 	parts := strings.Split(ref, "/")
 	if len(parts) != 4 || parts[0] != "projects" || parts[2] != "notes" {
-		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>")
+		return "", "", fmt.Errorf("invalid Note Reference, should be in format projects/<project_id>/notes/<note_id>, actual: %s", ref)
 	}
 	return parts[1], parts[3], nil
 }

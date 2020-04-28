@@ -48,6 +48,10 @@ func (c *FakeKritisV1beta1) KritisConfigs() v1beta1.KritisConfigInterface {
 	return &FakeKritisConfigs{c}
 }
 
+func (c *FakeKritisV1beta1) VulnzSigningPolicies(namespace string) v1beta1.VulnzSigningPolicyInterface {
+	return &FakeVulnzSigningPolicies{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKritisV1beta1) RESTClient() rest.Interface {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Ignore these paths in the following tests.
-ignore="vendor\|out\|testdata\|samples"
-BOILERPLATEDIR=./hack/boilerplate
-# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
-set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
-set -e
-if [[ ! -z ${files} ]]; then
-	echo "Boilerplate missing in:"
-    echo "${files}"
-	exit 1
-fi
+./signer -v 10 \
+-alsologtostderr \
+-image=gcr.io/pqf-kritis-integration/java-with-vulnz@sha256:358687cfd3ec8e1dfeb2bf51b5110e4e16f6df71f64fba01986f720b2fcba68a \
+-credentials=key.json \
+-public_key=public.key \
+-private_key=private.key \
+-policy=policy.yaml

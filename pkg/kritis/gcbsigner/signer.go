@@ -89,6 +89,6 @@ func (s Signer) addAttestation(image string, ns string, authority string, keySec
 		return err
 	}
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n, image, sec, grafeas.DefaultProject)
+	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, grafeas.DefaultProject)
 	return err
 }

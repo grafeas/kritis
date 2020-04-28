@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Copyright 2018 Google LLC
+# Copyright 2018 Google, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Ignore these paths in the following tests.
-ignore="vendor\|out\|testdata\|samples"
-BOILERPLATEDIR=./hack/boilerplate
-# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
-set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
-set -e
-if [[ ! -z ${files} ]]; then
-	echo "Boilerplate missing in:"
-    echo "${files}"
-	exit 1
-fi
+# Builds the static Go image for Admission validation controller.
+
+FROM golang:1.13
+WORKDIR /go/src/github.com/grafeas/kritis
+COPY . .
+RUN make out/signer
+
+FROM gcr.io/google-appengine/debian10:latest
+COPY --from=0 /go/src/github.com/grafeas/kritis/out/signer /kritis/signer
+ENV HOME /root
+ENV USER /root
+ENV PATH /usr/local/bin:/kritis
+ENTRYPOINT ["/kritis/signer"]
