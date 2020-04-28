@@ -20,10 +20,11 @@ steps:
     id: push
   # Wait for vulnerability scanning reaults
   - name: gcr.io/$PROJECT_ID/python-builder
+    entrypoint: /bin/bash
     args:
-    - ./wait-for-analysis.py 
-    - gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt)
-    - $PROJECT_ID
+    - -c
+    - |
+      ./wait-for-analysis.py gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt) $PROJECT_ID
     id: vulnpoll
   - name: gcr.io/$PROJECT_ID/kritis-signer
     entrypoint: /bin/bash

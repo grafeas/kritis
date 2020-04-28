@@ -54,6 +54,7 @@ binauthz_project_setup () {
   gcloud services enable container.googleapis.com
   gcloud services enable containerregistry.googleapis.com
   gcloud services enable containeranalysis.googleapis.com
+  gcloud services enable containerscanning.googleapis.com
   gcloud services enable binaryauthorization.googleapis.com
   set +x; echo; set -x
 
@@ -94,7 +95,7 @@ binauthz_project_setup () {
 
 
   set +x; echo "Building custom kritis signer cloud builder.."; set -x
-  $(cd ${GODIR}; make signer-image)
+  $(cd ${GODIR}; make -e REGISTRY=gcr.io/${BINAUTHZ_PROJECT} signer-image)
   KRITIS_DIGEST=$(docker images gcr.io/${BINAUTHZ_PROJECT}/kritis-signer | grep gcr.io | head -1 | awk -e ' { print $2 } ')
   docker tag gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:$KRITIS_DIGEST gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
   docker push gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
@@ -166,6 +167,12 @@ EOM
     name: projects/${BINAUTHZ_PROJECT}/policy
 EOM
   gcloud container binauthz policy import ${DIR}/binauthz-policy.yaml
+
+	cat policy_template.yaml \
+		| sed -e "s?<ATTESTATION_PROJECT>?${BINAUTHZ_PROJECT}?g" \
+		| sed -e "s?<NOTE_PROJECT>?${BINAUTHZ_PROJECT}?g" \
+		| sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
+		> policy.yaml
 
   set +x; echo
   set +x
