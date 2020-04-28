@@ -284,7 +284,7 @@ func (r Reviewer) addAttestation(image string, isp v1beta1.ImageSecurityPolicy, 
 		return fmt.Errorf("error getting secret when adding attestation: %s", err)
 	}
 	// Create Attestation Signature
-	if _, err := c.CreateAttestationOccurrence(n, image, s, grafeas.DefaultProject); err != nil {
+	if _, err := c.CreateAttestationOccurrence(n.GetName(), image, s, grafeas.DefaultProject); err != nil {
 		return fmt.Errorf("error creating occurrence when adding attestation: %s", err)
 	}
 
