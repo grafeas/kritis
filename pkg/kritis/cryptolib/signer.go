@@ -34,7 +34,8 @@ type pkixSigner struct {
 }
 
 type pgpSigner struct {
-	PrivateKey []byte
+	PrivateKey  []byte
+	PublicKeyID string
 }
 
 type jwtSigner struct {
@@ -57,8 +58,12 @@ func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm
 // NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
 // contains the ASCII-armored private key.
 func NewPgpSigner(privateKey []byte) (Signer, error) {
+	// TODO: Generate publicKeyID deterministically from privateKey
+	var publicKeyID string
+
 	return &pgpSigner{
-		PrivateKey: privateKey,
+		PrivateKey:  privateKey,
+		PublicKeyID: publicKeyID,
 	}, nil
 }
 

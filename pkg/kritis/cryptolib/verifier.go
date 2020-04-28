@@ -24,11 +24,23 @@ type Verifier interface {
 	// of the public keys under an image. This function finds the public key
 	// whose ID matches the attestation's PublicKeyID, and uses this key to
 	// verify the signature.
-	VerifyAttestation(att *Attestation, publicKeySet []PublicKey, image string) error
+	VerifyAttestation(att *Attestation) error
 }
+
+type KeyType int
+
+// Enumeration of KeyType
+const (
+	UnknownKeyMode KeyType = iota
+	Pgp
+	Pkix
+	Jwt
+)
 
 // PublicKey stores public key material for all key types.
 type PublicKey struct {
+	// KeyType stores the type of the public key, one of Pgp, Pkix, or Jwt.
+	KeyType KeyType
 	// KeyData holds the raw key material which can verify a signature.
 	KeyData []byte
 	// ID uniquely identifies this public key. For PGP, this should be the
@@ -36,23 +48,37 @@ type PublicKey struct {
 	ID string
 }
 
-// NewPublicKey creates a new PublicKey.
-func NewPublicKey(keyData []byte, keyID string) PublicKey {
+// NewPublicKey creates a new PublicKey. `keyType` contains the type of the
+// public key, one of Pgp, Pkix or Jwt. `keyData` contains the raw key
+// material. `keyID` contains a unique identifier for the public key. For PGP,
+// this should be the OpenPGP RFC4880 V4 fingerprint of the key.
+func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
 	return PublicKey{
+		KeyType: keyType,
 		KeyData: keyData,
 		ID:      keyID,
 	}
 }
 
-type verifier struct{}
+type verifier struct {
+	ImageDigest  string
+	PublicKeySet []PublicKey
+}
 
 // NewVerifier creates a Verifier interface for verifying Attestations.
-func NewVerifier() Verifier {
-	return &verifier{}
+// `imageDigest` contains the digest of the image that was signed over. This
+// should be provided directly by the policy evaluator, NOT by the Attestation.
+// `publicKeySet` contains a list of PublicKeys that the Verifier will use to
+// try to verify an Attestation.
+func NewVerifier(imageDigest string, publicKeySet []PublicKey) (Verifier, error) {
+	return &verifier{
+		ImageDigest:  imageDigest,
+		PublicKeySet: publicKeySet,
+	}, nil
 }
 
 // VerifyAttestation verifies an Attestation. See Verifier for more details.
-func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey, imageDigest string) error {
+func (v *verifier) VerifyAttestation(att *Attestation) error {
 	var (
 		err     error
 		payload []byte
@@ -61,9 +87,9 @@ func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey,
 	// Extract the public key from `publicKeySet` whose ID matches the one in
 	// `att`.
 	// TODO: Replace no-op with correct implementation.
-	publicKey := publicKeySet[0]
+	publicKey := v.PublicKeySet[0]
 
-	switch att.extractKeyMode() {
+	switch publicKey.KeyType {
 	case Pkix:
 		err = verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
 		payload = att.SerializedPayload
@@ -81,7 +107,7 @@ func (v *verifier) VerifyAttestation(att *Attestation, publicKeySet []PublicKey,
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
 	actual := formAuthenticatedAttestation(payload)
-	return checkAuthenticatedAttestation(actual, imageDigest)
+	return checkAuthenticatedAttestation(actual, v.ImageDigest)
 }
 
 func verifyPkix(signature []byte, payload []byte, publicKey []byte) error {

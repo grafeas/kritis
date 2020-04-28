@@ -31,20 +31,3 @@ type Attestation struct {
 	// signed. This field is only used for PKIX Attestations.
 	SerializedPayload []byte
 }
-
-type keyMode int
-
-// Enumeration of keyMode
-const (
-	UnknownKeyMode keyMode = iota
-	Pgp
-	Pkix
-	Jwt
-)
-
-// TODO: Provide an implementation that determines the key mode from the
-// Attestation's structure. Return Pkix if SerializedPayload is nonempty. If
-// att.Signature is a serialized JWT, return Jwt. Otherwise return Pgp.
-func (att *Attestation) extractKeyMode() keyMode {
-	return UnknownKeyMode
-}
