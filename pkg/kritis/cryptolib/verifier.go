@@ -104,10 +104,6 @@ func verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
 	return errors.New("verify pkix not implemented")
 }
 
-func verifyPgp(signature []byte, publicKey []byte) ([]byte, error) {
-	return []byte{}, errors.New("verify pgp not implemented")
-}
-
 func verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
 	return []byte{}, errors.New("verify jwt not implemented")
 }
