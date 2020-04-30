@@ -48,3 +48,14 @@ const (
 	// ECDSA on the NIST P-521 curve with a SHA512 digest.
 	EcdsaP521Sha512
 )
+
+// KeyType is the type of a public key
+type KeyType int
+
+// Enumeration of KeyType
+const (
+	UnknownKeyType KeyType = iota
+	Pgp
+	Pkix
+	Jwt
+)

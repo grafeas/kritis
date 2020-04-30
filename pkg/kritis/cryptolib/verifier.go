@@ -27,16 +27,6 @@ type Verifier interface {
 	VerifyAttestation(att *Attestation) error
 }
 
-type KeyType int
-
-// Enumeration of KeyType
-const (
-	UnknownKeyMode KeyType = iota
-	Pgp
-	Pkix
-	Jwt
-)
-
 // PublicKey stores public key material for all key types.
 type PublicKey struct {
 	// KeyType stores the type of the public key, one of Pgp, Pkix, or Jwt.
