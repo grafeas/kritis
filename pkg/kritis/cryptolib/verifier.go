@@ -16,7 +16,18 @@ limitations under the License.
 
 package cryptolib
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// TODO: Remove function stubs once implemented
+// For testing
+var (
+	pkixVerify                      = verifyPkix
+	jwtVerify                       = verifyJwt
+	authenticatedAttestationChecker = checkAuthenticatedAttestation
+)
 
 // Verifier contains methods to validate an Attestation.
 type Verifier interface {
@@ -70,23 +81,32 @@ func NewVerifier(imageDigest string, publicKeySet []PublicKey) (Verifier, error)
 // VerifyAttestation verifies an Attestation. See Verifier for more details.
 func (v *verifier) VerifyAttestation(att *Attestation) error {
 	var (
-		err     error
-		payload []byte
+		err       error
+		payload   []byte
+		publicKey PublicKey
 	)
 
 	// Extract the public key from `publicKeySet` whose ID matches the one in
 	// `att`.
-	// TODO: Replace no-op with correct implementation.
-	publicKey := v.PublicKeySet[0]
+	foundKey := false
+	for _, key := range v.PublicKeySet {
+		if key.ID == att.PublicKeyID {
+			publicKey, foundKey = key, true
+			break
+		}
+	}
+	if !foundKey {
+		return fmt.Errorf("Verifier doesn't contain matching public key with ID %s", att.PublicKeyID)
+	}
 
 	switch publicKey.KeyType {
 	case Pkix:
-		err = verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
+		err = pkixVerify(att.Signature, att.SerializedPayload, publicKey.KeyData)
 		payload = att.SerializedPayload
 	case Pgp:
 		payload, err = verifyPgp(att.Signature, publicKey.KeyData)
 	case Jwt:
-		payload, err = verifyJwt(att.Signature, publicKey.KeyData)
+		payload, err = jwtVerify(att.Signature, publicKey.KeyData)
 	default:
 		return errors.New("signature uses an unsupported key mode")
 	}
@@ -97,7 +117,7 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
 	actual := formAuthenticatedAttestation(payload)
-	return checkAuthenticatedAttestation(actual, v.ImageDigest)
+	return authenticatedAttestationChecker(actual, v.ImageDigest)
 }
 
 func verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
