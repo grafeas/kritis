@@ -237,29 +237,35 @@ func TestValidatingTransport(t *testing.T) {
 		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), "invalid-fpr", ""),
 		}, errorExpected: false, attError: nil},
-		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+		// TODO(acamadeo): After payload check is implemented in cryptolib,
+		// `wantAtts` should be an empty list.
+		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{
+			{
+				AttestorName: "test-attestor",
+				Image:        testutil.QualifiedImage,
+			},
+		}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(anotherSig), successFpr, ""),
 		}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
 		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
 		}, errorExpected: true, attError: nil},
-		{name: "auth with generic signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
+		{name: "auth with generic signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "test-sig", "test-id", "generic-address"),
-		}, errorExpected: true, attError: nil},
-		{name: "auth with unknown signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
+		}, errorExpected: false, attError: nil},
+		{name: "auth with unknown signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.UnknownSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: true, attError: nil},
+		}, errorExpected: false, attError: nil},
 		{name: "valid auth with invalid PGP key id", auth: invalidAuthWithOneInvalidPgpKeyId, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
 		}, errorExpected: false, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
-		// ValidatedAttestations. `errorExpected` should also be false, but
-		// currently attestations with GenericSignatureType throw an error.
-		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []metadata.RawAttestation{
+		// ValidatedAttestations.
+		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
-		}, errorExpected: true, attError: nil},
+		}, errorExpected: false, attError: nil},
 		{name: "auth with invalid PKIX key id", auth: invalidAuthWithOneInvalidPkixKeyId, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
 		}, errorExpected: true, attError: nil},

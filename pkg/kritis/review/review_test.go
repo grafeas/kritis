@@ -222,13 +222,15 @@ func TestReviewGAP(t *testing.T) {
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
+		// TODO: After payload check implemented in cryptolib,
+		// `hasRequiredAtts` should be false, and `shouldErr` should be true.
 		{
 			name:            "image with invalid attestation",
 			image:           img,
 			policies:        oneGAP,
 			attestations:    invalidAtts,
-			hasRequiredAtts: false,
-			shouldErr:       true,
+			hasRequiredAtts: true,
+			shouldErr:       false,
 		},
 		{
 			name:            "image complies with one policy out of two",
@@ -280,7 +282,7 @@ func TestReviewGAP(t *testing.T) {
 				Strategy:  &th,
 			})
 			if err := r.ReviewGAP([]string{tc.image}, tc.policies, nil, cMock); (err != nil) != tc.shouldErr {
-				t.Errorf("expected review to return error %t, actual error %s", tc.shouldErr, err)
+				t.Errorf("expected review to return error %t, actual error %v", tc.shouldErr, err)
 			}
 			if th.Attestations[tc.image] != tc.hasRequiredAtts {
 				t.Errorf("expected to have all required attestations for the image: %t. Got %t", tc.hasRequiredAtts, th.Attestations[tc.image])

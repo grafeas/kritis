@@ -22,11 +22,13 @@ import (
 	"net/url"
 
 	"github.com/golang/glog"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/container"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/pkg/errors"
 )
 
 // ValidatingTransport allows the caller to obtain validated attestations for a given container image.
@@ -101,51 +103,74 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 	return nil
 }
 
+// NOTE: I am considering changing this function signature to:
+// func (avt *AttestorValidatingTransport) CheckValidatedAttestation(image string) error
+// The function would propagate the error (or success) of the
+// verifier.VerifyAttestation call. It currently returns ValdiatedAttestations,
+// which contain unused and not particularly meaningful information.
+// This is not a trivial change, and would be done in a follow-up PR.
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	keys := map[string]v1beta1.PublicKey{}
+	publicKeys := []cryptolib.PublicKey{}
 	numKeys := len(avt.Attestor.Spec.PublicKeys)
-	for i, pubKey := range avt.Attestor.Spec.PublicKeys {
-		if err := avt.validatePublicKey(pubKey); err != nil {
+	validatedAtts := []attestation.ValidatedAttestation{}
+
+	for i, attestorKey := range avt.Attestor.Spec.PublicKeys {
+		if err := avt.validatePublicKey(attestorKey); err != nil {
 			// warning level because single key failure is something tolerable
 			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
 			continue
 		}
-		if _, ok := keys[pubKey.KeyId]; ok {
-			glog.Warningf("Overwriting key with same fingerprint %s for %q.", pubKey.KeyId, avt.Attestor.Name)
+		// Base64 decode the attestor's key
+		decodedKey, err := base64.StdEncoding.DecodeString(attestorKey.AsciiArmoredPgpPublicKey)
+		if err != nil {
+			glog.Infof("Cannot base64 decode public key: %v", err)
+			continue
 		}
-		keys[pubKey.KeyId] = pubKey
+		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
+		publicKeys = append(publicKeys, publicKey)
 	}
-	if len(keys) == 0 {
+	if len(publicKeys) == 0 {
 		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
 	}
 
-	out := []attestation.ValidatedAttestation{}
-	host, err := container.NewAtomicContainerSig(image, map[string]string{})
+	// Check for properly formatted image digest
+	digest, err := name.NewDigest(image, name.StrictValidation)
 	if err != nil {
-		glog.Error(err)
-		return nil, err
-	}
-	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
-	if err != nil {
-		glog.Error(err)
-		return nil, err
+		return nil, errors.Wrap(err, "error extracting image digest")
 	}
 
+	verifier, err := cryptolib.NewVerifier(digest.DigestStr(), publicKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating verifier")
+	}
+
+	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
+	}
 	for _, rawAtt := range rawAtts {
-		if rawAtt.SignatureType != metadata.PgpSignatureType {
-			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
+		if rawAtt.SignatureType != metadata.PgpSignatureType && rawAtt.SignatureType != metadata.GenericSignatureType {
+			glog.Warningf("Skipping attestation with unsupported signature type %s", rawAtt.SignatureType.String())
+			continue
 		}
 		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
 		if err != nil {
 			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
 			continue
 		}
-		keyId := rawAtt.Signature.PublicKeyId
-		if err = host.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
-			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
+		// TODO: Remove this after cryptolib.Attestation is used throughout
+		// Kritis.
+		att := &cryptolib.Attestation{
+			PublicKeyID:       rawAtt.Signature.PublicKeyId,
+			Signature:         decodedSig,
+			SerializedPayload: rawAtt.SerializedPayload,
+		}
+
+		if err := verifier.VerifyAttestation(att); err != nil {
+			glog.Warningf("error verifying attestation: %v", err)
 			continue
 		}
-		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+		validatedAtts = append(validatedAtts, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
 	}
-	return out, nil
+	return validatedAtts, nil
 }
