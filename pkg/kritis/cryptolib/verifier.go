@@ -19,14 +19,8 @@ package cryptolib
 import (
 	"errors"
 	"fmt"
-)
 
-// TODO: Remove function stubs once implemented
-// For testing
-var (
-	pkixVerify                      = verifyPkix
-	jwtVerify                       = verifyJwt
-	authenticatedAttestationChecker = checkAuthenticatedAttestation
+	"github.com/golang/glog"
 )
 
 // Verifier contains methods to validate an Attestation.
@@ -61,9 +55,32 @@ func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
 	}
 }
 
+type pkixVerifier interface {
+	verifyPkix(signature []byte, payload []byte, publicKey []byte) error
+}
+
+type pgpVerifier interface {
+	verifyPgp(signature, publicKey []byte) ([]byte, error)
+}
+
+type jwtVerifier interface {
+	verifyJwt(signature []byte, publicKey []byte) ([]byte, error)
+}
+
+type authenticatedAuthChecker interface {
+	checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error
+}
+
 type verifier struct {
-	ImageDigest  string
-	PublicKeySet []PublicKey
+	ImageDigest string
+	// PublicKeys is an index of public keys by their ID.
+	PublicKeys map[string]PublicKey
+
+	// Interfaces for testing
+	pkixVerifier
+	pgpVerifier
+	jwtVerifier
+	authenticatedAuthChecker
 }
 
 // NewVerifier creates a Verifier interface for verifying Attestations.
@@ -72,41 +89,42 @@ type verifier struct {
 // `publicKeySet` contains a list of PublicKeys that the Verifier will use to
 // try to verify an Attestation.
 func NewVerifier(imageDigest string, publicKeySet []PublicKey) (Verifier, error) {
+	keyMap := map[string]PublicKey{}
+	for _, publicKey := range publicKeySet {
+		if _, found := keyMap[publicKey.ID]; found {
+			glog.Warningf("Key with ID %s already exists in publicKeySet. Overwriting previous key.", publicKey.ID)
+		}
+		keyMap[publicKey.ID] = publicKey
+	}
 	return &verifier{
-		ImageDigest:  imageDigest,
-		PublicKeySet: publicKeySet,
+		ImageDigest:              imageDigest,
+		PublicKeys:               keyMap,
+		pkixVerifier:             actualPkixVerifier{},
+		pgpVerifier:              actualPgpVerifier{},
+		jwtVerifier:              actualJwtVerifier{},
+		authenticatedAuthChecker: attAuthChecker{},
 	}, nil
 }
 
 // VerifyAttestation verifies an Attestation. See Verifier for more details.
 func (v *verifier) VerifyAttestation(att *Attestation) error {
-	var (
-		err       error
-		payload   []byte
-		publicKey PublicKey
-	)
-
 	// Extract the public key from `publicKeySet` whose ID matches the one in
 	// `att`.
-	foundKey := false
-	for _, key := range v.PublicKeySet {
-		if key.ID == att.PublicKeyID {
-			publicKey, foundKey = key, true
-			break
-		}
-	}
-	if !foundKey {
-		return fmt.Errorf("Verifier doesn't contain matching public key with ID %s", att.PublicKeyID)
+	publicKey, found := v.PublicKeys[att.PublicKeyID]
+	if !found {
+		return fmt.Errorf("no public key with ID %s found", att.PublicKeyID)
 	}
 
+	var err error
+	payload := []byte{}
 	switch publicKey.KeyType {
 	case Pkix:
-		err = pkixVerify(att.Signature, att.SerializedPayload, publicKey.KeyData)
+		err = v.verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
 		payload = att.SerializedPayload
 	case Pgp:
-		payload, err = verifyPgp(att.Signature, publicKey.KeyData)
+		payload, err = v.verifyPgp(att.Signature, publicKey.KeyData)
 	case Jwt:
-		payload, err = jwtVerify(att.Signature, publicKey.KeyData)
+		payload, err = v.verifyJwt(att.Signature, publicKey.KeyData)
 	default:
 		return errors.New("signature uses an unsupported key mode")
 	}
@@ -117,14 +135,18 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
 	actual := formAuthenticatedAttestation(payload)
-	return authenticatedAttestationChecker(actual, v.ImageDigest)
+	return v.checkAuthenticatedAttestation(actual, v.ImageDigest)
 }
 
-func verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
+type actualPkixVerifier struct{}
+
+func (v actualPkixVerifier) verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
 	return errors.New("verify pkix not implemented")
 }
 
-func verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
+type actualJwtVerifier struct{}
+
+func (v actualJwtVerifier) verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
 	return []byte{}, errors.New("verify jwt not implemented")
 }
 
@@ -143,10 +165,12 @@ func formAuthenticatedAttestation(payload []byte) authenticatedAttestation {
 	return authenticatedAttestation{}
 }
 
+type attAuthChecker struct{}
+
 // Check that the data within the Attestation payload matches what we expect.
 // NOTE: This is a simple comparison for plain attestations, but it would be
 // more complex for rich attestations.
-func checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
+func (c attAuthChecker) checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
 	if actual.ImageDigest != imageDigest {
 		return errors.New("invalid payload for authenticated attestation")
 	}
