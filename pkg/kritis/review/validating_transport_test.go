@@ -237,14 +237,7 @@ func TestValidatingTransport(t *testing.T) {
 		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), "invalid-fpr", ""),
 		}, errorExpected: false, attError: nil},
-		// TODO(acamadeo): After payload check is implemented in cryptolib,
-		// `wantAtts` should be an empty list.
-		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{
-			{
-				AttestorName: "test-attestor",
-				Image:        testutil.QualifiedImage,
-			},
-		}, attestations: []metadata.RawAttestation{
+		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(anotherSig), successFpr, ""),
 		}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
