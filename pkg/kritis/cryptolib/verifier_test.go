@@ -33,61 +33,56 @@ func TestVerifyAttestation(t *testing.T) {
 	nonmatchingKey := NewPublicKey(Pkix, []byte("key-data-other"), "key-id-other")
 
 	tcs := []struct {
-		name         string
-		att          *Attestation
-		publicKeys   []PublicKey
-		pkixVerifier pkixVerifier
-		expectedErr  bool
+		name        string
+		att         *Attestation
+		publicKeys  []PublicKey
+		verifyErr   bool
+		expectedErr bool
 	}{
 		{
-			name:         "single key match",
-			att:          att,
-			publicKeys:   []PublicKey{matchingKey},
-			pkixVerifier: testVerifierPass{},
-			expectedErr:  false,
+			name:        "single key match",
+			att:         att,
+			publicKeys:  []PublicKey{matchingKey},
+			verifyErr:   false,
+			expectedErr: false,
 		},
 		{
-			name:         "matching and nonmatching keys",
-			att:          att,
-			publicKeys:   []PublicKey{nonmatchingKey, matchingKey},
-			pkixVerifier: testVerifierPass{},
-			expectedErr:  false,
+			name:        "matching and nonmatching keys",
+			att:         att,
+			publicKeys:  []PublicKey{nonmatchingKey, matchingKey},
+			verifyErr:   false,
+			expectedErr: false,
 		},
 		{
 			// This is a possibility with user-provided IDs
-			name:         "different keys with same ID",
-			att:          att,
-			publicKeys:   []PublicKey{matchingKey, otherMatchingKey},
-			pkixVerifier: testVerifierPass{},
-			expectedErr:  false,
+			name:        "different keys with same ID",
+			att:         att,
+			publicKeys:  []PublicKey{matchingKey, otherMatchingKey},
+			verifyErr:   false,
+			expectedErr: false,
 		},
 		{
-			name:         "key not found",
-			att:          att,
-			publicKeys:   []PublicKey{nonmatchingKey},
-			pkixVerifier: testVerifierPass{},
-			expectedErr:  true,
+			name:        "key not found",
+			att:         att,
+			publicKeys:  []PublicKey{nonmatchingKey},
+			verifyErr:   false,
+			expectedErr: true,
 		},
 		{
-			name:         "error in verification",
-			att:          att,
-			publicKeys:   []PublicKey{matchingKey},
-			pkixVerifier: testVerifierFail{},
-			expectedErr:  true,
+			name:        "error in verification",
+			att:         att,
+			publicKeys:  []PublicKey{matchingKey},
+			verifyErr:   true,
+			expectedErr: true,
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			v, err := NewVerifier("test-image-digest", tc.publicKeys)
-			internalVerifier := v.(*verifier)
-			internalVerifier.pkixVerifier = tc.pkixVerifier
-			internalVerifier.authenticatedAuthChecker = testAuthAttChecker{}
+			v := verifier{ImageDigest: "test-image-digest", PublicKeys: indexPublicKeysByID(tc.publicKeys)}
+			v.pkixVerifier = mockPkixVerifier{shouldErr: tc.verifyErr}
+			v.authenticatedAuthChecker = testAuthAttChecker{}
 
-			if err != nil {
-				t.Fatalf("Error creating Verifier: %v", err)
-			}
-
-			err = v.VerifyAttestation(tc.att)
+			err := v.VerifyAttestation(tc.att)
 			if tc.expectedErr != (err != nil) {
 				t.Errorf("VerifyAttestation(_) got %v, wanted error? = %v", err, tc.expectedErr)
 			}
@@ -95,14 +90,15 @@ func TestVerifyAttestation(t *testing.T) {
 	}
 }
 
-type testVerifierPass struct{}
+type mockPkixVerifier struct {
+	shouldErr bool
+}
 
-func (v testVerifierPass) verifyPkix([]byte, []byte, []byte) error { return nil }
-
-type testVerifierFail struct{}
-
-func (v testVerifierFail) verifyPkix([]byte, []byte, []byte) error {
-	return errors.New("error verifying PKIX")
+func (v mockPkixVerifier) verifyPkix([]byte, []byte, []byte) error {
+	if v.shouldErr {
+		return errors.New("error verifying PKIX")
+	}
+	return nil
 }
 
 type testAuthAttChecker struct{}
