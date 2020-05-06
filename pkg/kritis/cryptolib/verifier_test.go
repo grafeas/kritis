@@ -19,6 +19,8 @@ package cryptolib
 import (
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/testutil"
+
 	"github.com/pkg/errors"
 )
 
@@ -78,9 +80,10 @@ func TestVerifyAttestation(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			v, err := NewVerifier("test-image-digest", tc.publicKeys)
+			v, err := NewVerifier(testutil.QualifiedImage, tc.publicKeys)
 			internalVerifier := v.(*verifier)
 			internalVerifier.pkixVerifier = tc.pkixVerifier
+			internalVerifier.authenticatedAttFormer = testAuthAttFormer{}
 			internalVerifier.authenticatedAuthChecker = testAuthAttChecker{}
 
 			if err != nil {
@@ -105,8 +108,14 @@ func (v testVerifierFail) verifyPkix([]byte, []byte, []byte) error {
 	return errors.New("error verifying PKIX")
 }
 
+type testAuthAttFormer struct{}
+
+func (f testAuthAttFormer) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
+	return nil, nil
+}
+
 type testAuthAttChecker struct{}
 
-func (c testAuthAttChecker) checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
+func (c testAuthAttChecker) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
 	return nil
 }

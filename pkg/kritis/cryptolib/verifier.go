@@ -17,10 +17,11 @@ limitations under the License.
 package cryptolib
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/pkg/errors"
 )
 
 // Verifier contains methods to validate an Attestation.
@@ -67,11 +68,16 @@ type jwtVerifier interface {
 	verifyJwt(signature []byte, publicKey []byte) ([]byte, error)
 }
 
+type authenticatedAttFormer interface {
+	formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error)
+}
+
 type authenticatedAuthChecker interface {
-	checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error
+	checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error
 }
 
 type verifier struct {
+	ImageName   string
 	ImageDigest string
 	// PublicKeys is an index of public keys by their ID.
 	PublicKeys map[string]PublicKey
@@ -80,15 +86,22 @@ type verifier struct {
 	pkixVerifier
 	pgpVerifier
 	jwtVerifier
+	authenticatedAttFormer
 	authenticatedAuthChecker
 }
 
 // NewVerifier creates a Verifier interface for verifying Attestations.
-// `imageDigest` contains the digest of the image that was signed over. This
-// should be provided directly by the policy evaluator, NOT by the Attestation.
+// `image` contains the untruncated image name <image_name@digest> of the image
+// that was signed. This should be provided directly by the policy evaluator,
+// NOT by the Attestation.
 // `publicKeySet` contains a list of PublicKeys that the Verifier will use to
 // try to verify an Attestation.
-func NewVerifier(imageDigest string, publicKeySet []PublicKey) (Verifier, error) {
+func NewVerifier(image string, publicKeySet []PublicKey) (Verifier, error) {
+	digest, err := name.NewDigest(image, name.StrictValidation)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid image name")
+	}
+
 	keyMap := map[string]PublicKey{}
 	for _, publicKey := range publicKeySet {
 		if _, found := keyMap[publicKey.ID]; found {
@@ -96,12 +109,15 @@ func NewVerifier(imageDigest string, publicKeySet []PublicKey) (Verifier, error)
 		}
 		keyMap[publicKey.ID] = publicKey
 	}
+
 	return &verifier{
-		ImageDigest:              imageDigest,
+		ImageName:                digest.Repository.Name(),
+		ImageDigest:              digest.DigestStr(),
 		PublicKeys:               keyMap,
 		pkixVerifier:             actualPkixVerifier{},
 		pgpVerifier:              actualPgpVerifier{},
 		jwtVerifier:              actualJwtVerifier{},
+		authenticatedAttFormer:   attAuthFormer{},
 		authenticatedAuthChecker: attAuthChecker{},
 	}, nil
 }
@@ -134,8 +150,11 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
-	actual := formAuthenticatedAttestation(payload)
-	return v.checkAuthenticatedAttestation(actual, v.ImageDigest)
+	authenticatedAtt, err := v.formAuthenticatedAttestation(payload)
+	if err != nil {
+		return err
+	}
+	return v.checkAuthenticatedAttestation(authenticatedAtt, v.ImageName, v.ImageDigest)
 }
 
 type actualPkixVerifier struct{}
@@ -148,31 +167,4 @@ type actualJwtVerifier struct{}
 
 func (v actualJwtVerifier) verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
 	return []byte{}, errors.New("verify jwt not implemented")
-}
-
-// authenticatedAttestation contains data that is extracted from an Attestation
-// only after its signature has been verified. The contents of an Attestation
-// payload should never be analyzed directly, as it may or may not be verified.
-// Instead, these should be extracted into an AuthenticatedAttestation and
-// analyzed from there.
-// NOTE: The concept and usefulness of an AuthenticatedAttestation are still
-// under discussion and is subject to change.
-type authenticatedAttestation struct {
-	ImageDigest string
-}
-
-func formAuthenticatedAttestation(payload []byte) authenticatedAttestation {
-	return authenticatedAttestation{}
-}
-
-type attAuthChecker struct{}
-
-// Check that the data within the Attestation payload matches what we expect.
-// NOTE: This is a simple comparison for plain attestations, but it would be
-// more complex for rich attestations.
-func (c attAuthChecker) checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
-	if actual.ImageDigest != imageDigest {
-		return errors.New("invalid payload for authenticated attestation")
-	}
-	return nil
 }
