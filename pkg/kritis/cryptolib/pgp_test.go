@@ -116,9 +116,10 @@ func TestVerifyPgp(t *testing.T) {
 		},
 	}
 
+	v := pgpVerifierImpl{}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actualPayload, err := verifyPgp(tc.signature, tc.publicKey)
+			actualPayload, err := v.verifyPgp(tc.signature, tc.publicKey)
 			if tc.expectedErr {
 				if err == nil {
 					t.Fatalf("Expected error, but returned none")
