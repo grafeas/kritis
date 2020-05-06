@@ -102,33 +102,37 @@ func NewVerifier(image string, publicKeySet []PublicKey) (Verifier, error) {
 		return nil, errors.Wrap(err, "invalid image name")
 	}
 
-	keyMap := map[string]PublicKey{}
-	for _, publicKey := range publicKeySet {
-		if _, found := keyMap[publicKey.ID]; found {
-			glog.Warningf("Key with ID %s already exists in publicKeySet. Overwriting previous key.", publicKey.ID)
-		}
-		keyMap[publicKey.ID] = publicKey
-	}
-
+	keyMap := indexPublicKeysByID(publicKeySet)
 	return &verifier{
 		ImageName:                digest.Repository.Name(),
 		ImageDigest:              digest.DigestStr(),
 		PublicKeys:               keyMap,
-		pkixVerifier:             actualPkixVerifier{},
-		pgpVerifier:              actualPgpVerifier{},
-		jwtVerifier:              actualJwtVerifier{},
+		pkixVerifier:             pkixVerifierImpl{},
+		pgpVerifier:              pgpVerifierImpl{},
+		jwtVerifier:              jwtVerifierImpl{},
 		authenticatedAttFormer:   attAuthFormer{},
 		authenticatedAuthChecker: attAuthChecker{},
 	}, nil
+}
+
+func indexPublicKeysByID(publicKeyset []PublicKey) map[string]PublicKey {
+	keyMap := map[string]PublicKey{}
+	for _, publicKey := range publicKeyset {
+		if _, ok := keyMap[publicKey.ID]; ok {
+			glog.Warningf("Key with ID %q already exists in publicKeySet. Overwriting previous key.", publicKey.ID)
+		}
+		keyMap[publicKey.ID] = publicKey
+	}
+	return keyMap
 }
 
 // VerifyAttestation verifies an Attestation. See Verifier for more details.
 func (v *verifier) VerifyAttestation(att *Attestation) error {
 	// Extract the public key from `publicKeySet` whose ID matches the one in
 	// `att`.
-	publicKey, found := v.PublicKeys[att.PublicKeyID]
-	if !found {
-		return fmt.Errorf("no public key with ID %s found", att.PublicKeyID)
+	publicKey, ok := v.PublicKeys[att.PublicKeyID]
+	if !ok {
+		return fmt.Errorf("no public key with ID %q found", att.PublicKeyID)
 	}
 
 	var err error
@@ -157,14 +161,14 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	return v.checkAuthenticatedAttestation(authenticatedAtt, v.ImageName, v.ImageDigest)
 }
 
-type actualPkixVerifier struct{}
+type pkixVerifierImpl struct{}
 
-func (v actualPkixVerifier) verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
+func (v pkixVerifierImpl) verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
 	return errors.New("verify pkix not implemented")
 }
 
-type actualJwtVerifier struct{}
+type jwtVerifierImpl struct{}
 
-func (v actualJwtVerifier) verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
+func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
 	return []byte{}, errors.New("verify jwt not implemented")
 }
