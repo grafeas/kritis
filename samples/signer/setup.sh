@@ -150,8 +150,7 @@ EOM
   gcloud --project="${BINAUTHZ_PROJECT}" \
     beta container binauthz attestors public-keys add \
     --attestor="${ATTESTOR}" \
-    --pkix-public-key-file=ec256.pub \
-    --pkix-public-key-algorithm=ecdsa-p256-sha256
+    --pgp-public-key-file=${DIR}/gpg.pub
   cat > ${DIR}/binauthz-policy.yaml << EOM
     admissionWhitelistPatterns:
     - namePattern: gcr.io/google_containers/*

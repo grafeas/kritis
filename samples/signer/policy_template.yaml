@@ -7,7 +7,7 @@ spec:
   noteReference: projects/<NOTE_PROJECT>/notes/<NOTE_ID>
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
-    maximumFixUnavailableSeverity: ALLOW_ALL
+    maximumFixNotAvailableSeverity: ALLOW_ALL
     allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081
