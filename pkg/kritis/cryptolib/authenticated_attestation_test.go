@@ -32,7 +32,7 @@ const validPayload = `{
 
 const invalidPayload = `{ invalid-json }`
 
-func TestFormAuthenticatedAttestation(t *testing.T) {
+func TestConvertAuthenticatedAttestation(t *testing.T) {
 	tcs := []struct {
 		name        string
 		payload     []byte
@@ -54,20 +54,19 @@ func TestFormAuthenticatedAttestation(t *testing.T) {
 			expectedErr: true,
 		},
 	}
-	f := authenticatedAttFormerImpl{}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := f.formAuthenticatedAttestation(tc.payload)
+			actual, err := convertAuthenticatedAttestation(tc.payload)
 			if tc.expectedErr {
 				if err == nil {
-					t.Fatalf("formAuthenticatedAttestation(%v) should have failed, but didn't", tc.payload)
+					t.Fatalf("convertAuthenticatedAttestation(%v) should have failed, but didn't", tc.payload)
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("formAuthenticatedAttestation(%v) failed with error %v", tc.payload, err)
+					t.Fatalf("convertAuthenticatedAttestation(%v) failed with error %v", tc.payload, err)
 				}
 				if actual == nil || *actual != tc.expected {
-					t.Errorf("formAuthenticatedAttestation(%v) = %v, want %v", tc.payload, actual, &tc.expected)
+					t.Errorf("convertAuthenticatedAttestation(%v) = %v, want %v", tc.payload, actual, &tc.expected)
 				}
 			}
 		})
@@ -106,13 +105,22 @@ func TestCheckAuthenticatedAttestation(t *testing.T) {
 			expectedErr: true,
 		},
 	}
-	c := authenticatedAuthCheckerImpl{}
+	c := authenticatedAttCheckerImpl{}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			err := c.checkAuthenticatedAttestation(&tc.authAtt, tc.imageName, tc.imageDigest)
+			mockConverter := mockConvertAuthAtt{tc.authAtt}
+			err := c.checkAuthenticatedAttestation([]byte("test-payload"), tc.imageName, tc.imageDigest, mockConverter.mockConvertAuthenticatedAttestation)
 			if tc.expectedErr != (err != nil) {
 				t.Errorf("checkAuthenticatedAttestation(_) got %v, wanted error? = %v", err, tc.expectedErr)
 			}
 		})
 	}
+}
+
+type mockConvertAuthAtt struct {
+	authAtt authenticatedAttestation
+}
+
+func (m mockConvertAuthAtt) mockConvertAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
+	return &m.authAtt, nil
 }

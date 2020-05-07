@@ -68,12 +68,10 @@ type jwtVerifier interface {
 	verifyJwt(signature []byte, publicKey []byte) ([]byte, error)
 }
 
-type authenticatedAttFormer interface {
-	formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error)
-}
+type convertFunc func(payload []byte) (*authenticatedAttestation, error)
 
-type authenticatedAuthChecker interface {
-	checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error
+type authenticatedAttChecker interface {
+	checkAuthenticatedAttestation(payload []byte, imageName string, imageDigest string, convert convertFunc) error
 }
 
 type verifier struct {
@@ -86,8 +84,7 @@ type verifier struct {
 	pkixVerifier
 	pgpVerifier
 	jwtVerifier
-	authenticatedAttFormer
-	authenticatedAuthChecker
+	authenticatedAttChecker
 }
 
 // NewVerifier creates a Verifier interface for verifying Attestations.
@@ -97,6 +94,8 @@ type verifier struct {
 // `publicKeySet` contains a list of PublicKeys that the Verifier will use to
 // try to verify an Attestation.
 func NewVerifier(image string, publicKeySet []PublicKey) (Verifier, error) {
+	// TODO(https://github.com/grafeas/kritis/issues/503): Move this check to
+	// the call where the user supplies the image name.
 	digest, err := name.NewDigest(image, name.StrictValidation)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid image name")
@@ -104,14 +103,13 @@ func NewVerifier(image string, publicKeySet []PublicKey) (Verifier, error) {
 
 	keyMap := indexPublicKeysByID(publicKeySet)
 	return &verifier{
-		ImageName:                digest.Repository.Name(),
-		ImageDigest:              digest.DigestStr(),
-		PublicKeys:               keyMap,
-		pkixVerifier:             pkixVerifierImpl{},
-		pgpVerifier:              pgpVerifierImpl{},
-		jwtVerifier:              jwtVerifierImpl{},
-		authenticatedAttFormer:   authenticatedAttFormerImpl{},
-		authenticatedAuthChecker: authenticatedAuthCheckerImpl{},
+		ImageName:               digest.Repository.Name(),
+		ImageDigest:             digest.DigestStr(),
+		PublicKeys:              keyMap,
+		pkixVerifier:            pkixVerifierImpl{},
+		pgpVerifier:             pgpVerifierImpl{},
+		jwtVerifier:             jwtVerifierImpl{},
+		authenticatedAttChecker: authenticatedAttCheckerImpl{},
 	}, nil
 }
 
@@ -157,11 +155,7 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	// determine an API for checking the payload.
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
-	authenticatedAtt, err := v.formAuthenticatedAttestation(payload)
-	if err != nil {
-		return err
-	}
-	return v.checkAuthenticatedAttestation(authenticatedAtt, v.ImageName, v.ImageDigest)
+	return v.checkAuthenticatedAttestation(payload, v.ImageName, v.ImageDigest, convertAuthenticatedAttestation)
 }
 
 type pkixVerifierImpl struct{}

@@ -56,9 +56,25 @@ type authenticatedAttestation struct {
 	ImageDigest string
 }
 
-type authenticatedAttFormerImpl struct{}
+type authenticatedAttCheckerImpl struct{}
 
-func (f authenticatedAttFormerImpl) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
+// Check that the data within the Attestation payload matches what we expect.
+// NOTE: This is a simple comparison for plain attestations, but it is more
+// complex for rich attestations.
+func (c authenticatedAttCheckerImpl) checkAuthenticatedAttestation(payload []byte, imageName string, imageDigest string, convert convertFunc) error {
+	authAtt, err := convert(payload)
+	if err != nil {
+		return err
+	}
+	if authAtt.ImageName != imageName {
+		return errors.New("incorrect image name in Attestation payload")
+	}
+	if authAtt.ImageDigest != imageDigest {
+		return errors.New("incorrect image digest in Attestation payload")
+	}
+	return nil
+}
+func convertAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
 	atomicSig := &atomicContainerSig{}
 	if err := json.Unmarshal(payload, atomicSig); err != nil {
 		return nil, errors.Wrap(err, "error parsing attestation payload")
@@ -68,19 +84,4 @@ func (f authenticatedAttFormerImpl) formAuthenticatedAttestation(payload []byte)
 		ImageName:   atomicSig.Critical.Identity.DockerRef,
 		ImageDigest: atomicSig.Critical.Image.Digest,
 	}, nil
-}
-
-type authenticatedAuthCheckerImpl struct{}
-
-// Check that the data within the Attestation payload matches what we expect.
-// NOTE: This is a simple comparison for plain attestations, but it is more
-// complex for rich attestations.
-func (c authenticatedAuthCheckerImpl) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
-	if authAtt.ImageName != imageName {
-		return errors.New("incorrect image name in Attestation payload")
-	}
-	if authAtt.ImageDigest != imageDigest {
-		return errors.New("incorrect image digest in Attestation payload")
-	}
-	return nil
 }

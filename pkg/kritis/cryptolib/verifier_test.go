@@ -19,10 +19,10 @@ package cryptolib
 import (
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
-
 	"github.com/pkg/errors"
 )
+
+const qualifiedImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
 
 func TestVerifyAttestation(t *testing.T) {
 	att := &Attestation{
@@ -80,10 +80,9 @@ func TestVerifyAttestation(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			v := verifier{ImageDigest: testutil.QualifiedImage, PublicKeys: indexPublicKeysByID(tc.publicKeys)}
+			v := verifier{ImageDigest: qualifiedImage, PublicKeys: indexPublicKeysByID(tc.publicKeys)}
 			v.pkixVerifier = mockPkixVerifier{shouldErr: tc.verifyErr}
-			v.authenticatedAttFormer = mockAuthAttFormer{}
-			v.authenticatedAuthChecker = mockAuthAttChecker{}
+			v.authenticatedAttChecker = mockAuthAttChecker{}
 
 			err := v.VerifyAttestation(tc.att)
 			if tc.expectedErr != (err != nil) {
@@ -104,17 +103,8 @@ func (v mockPkixVerifier) verifyPkix([]byte, []byte, []byte) error {
 	return nil
 }
 
-type mockAuthAttFormer struct{}
-
-func (f mockAuthAttFormer) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
-	return &authenticatedAttestation{
-		ImageName:   "test-image",
-		ImageDigest: "test-digest",
-	}, nil
-}
-
 type mockAuthAttChecker struct{}
 
-func (c mockAuthAttChecker) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
+func (c mockAuthAttChecker) checkAuthenticatedAttestation(payload []byte, imageName string, imageDigest string, convert convertFunc) error {
 	return nil
 }
