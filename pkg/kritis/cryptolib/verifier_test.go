@@ -82,8 +82,8 @@ func TestVerifyAttestation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			v := verifier{ImageDigest: testutil.QualifiedImage, PublicKeys: indexPublicKeysByID(tc.publicKeys)}
 			v.pkixVerifier = mockPkixVerifier{shouldErr: tc.verifyErr}
-			v.authenticatedAttFormer = testAuthAttFormer{}
-			v.authenticatedAuthChecker = testAuthAttChecker{}
+			v.authenticatedAttFormer = mockAuthAttFormer{}
+			v.authenticatedAuthChecker = mockAuthAttChecker{}
 
 			err := v.VerifyAttestation(tc.att)
 			if tc.expectedErr != (err != nil) {
@@ -104,14 +104,17 @@ func (v mockPkixVerifier) verifyPkix([]byte, []byte, []byte) error {
 	return nil
 }
 
-type testAuthAttFormer struct{}
+type mockAuthAttFormer struct{}
 
-func (f testAuthAttFormer) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
-	return nil, nil
+func (f mockAuthAttFormer) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
+	return &authenticatedAttestation{
+		ImageName:   "test-image",
+		ImageDigest: "test-digest",
+	}, nil
 }
 
-type testAuthAttChecker struct{}
+type mockAuthAttChecker struct{}
 
-func (c testAuthAttChecker) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
+func (c mockAuthAttChecker) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
 	return nil
 }

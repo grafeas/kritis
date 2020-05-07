@@ -110,8 +110,8 @@ func NewVerifier(image string, publicKeySet []PublicKey) (Verifier, error) {
 		pkixVerifier:             pkixVerifierImpl{},
 		pgpVerifier:              pgpVerifierImpl{},
 		jwtVerifier:              jwtVerifierImpl{},
-		authenticatedAttFormer:   attAuthFormer{},
-		authenticatedAuthChecker: attAuthChecker{},
+		authenticatedAttFormer:   authenticatedAttFormerImpl{},
+		authenticatedAuthChecker: authenticatedAuthCheckerImpl{},
 	}, nil
 }
 
@@ -152,6 +152,9 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 		return err
 	}
 
+	// TODO(https://github.com/grafeas/kritis/issues/503): Determine whose
+	// responsibility it is to check the payload. If cryptolib is responsible
+	// determine an API for checking the payload.
 	// Extract the payload into an AuthenticatedAttestation, whose contents we
 	// can trust.
 	authenticatedAtt, err := v.formAuthenticatedAttestation(payload)

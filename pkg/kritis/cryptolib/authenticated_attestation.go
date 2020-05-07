@@ -44,21 +44,21 @@ type image struct {
 	Digest string `json:"docker-manifest-digest"`
 }
 
+// TODO(https://github.com/grafeas/kritis/issues/503): Decide whether
+// AuthenticatedAttestation is a useful abstraction.
 // AuthenticatedAttestation contains data that is extracted from an Attestation
 // only after its signature has been verified. The contents of an Attestation
 // payload should never be analyzed directly, as it may or may not be verified.
 // Instead, these should be extracted into an AuthenticatedAttestation and
 // analyzed from there.
-// NOTE: The concept and usefulness of an AuthenticatedAttestation are still
-// under discussion and is subject to change.
 type authenticatedAttestation struct {
 	ImageName   string
 	ImageDigest string
 }
 
-type attAuthFormer struct{}
+type authenticatedAttFormerImpl struct{}
 
-func (f attAuthFormer) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
+func (f authenticatedAttFormerImpl) formAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
 	atomicSig := &atomicContainerSig{}
 	if err := json.Unmarshal(payload, atomicSig); err != nil {
 		return nil, errors.Wrap(err, "error parsing attestation payload")
@@ -70,12 +70,12 @@ func (f attAuthFormer) formAuthenticatedAttestation(payload []byte) (*authentica
 	}, nil
 }
 
-type attAuthChecker struct{}
+type authenticatedAuthCheckerImpl struct{}
 
 // Check that the data within the Attestation payload matches what we expect.
-// NOTE: This is a simple comparison for plain attestations, but it would be
-// more complex for rich attestations.
-func (c attAuthChecker) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
+// NOTE: This is a simple comparison for plain attestations, but it is more
+// complex for rich attestations.
+func (c authenticatedAuthCheckerImpl) checkAuthenticatedAttestation(authAtt *authenticatedAttestation, imageName string, imageDigest string) error {
 	if authAtt.ImageName != imageName {
 		return errors.New("incorrect image name in Attestation payload")
 	}

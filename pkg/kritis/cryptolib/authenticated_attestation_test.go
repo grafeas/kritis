@@ -54,16 +54,20 @@ func TestFormAuthenticatedAttestation(t *testing.T) {
 			expectedErr: true,
 		},
 	}
+	f := authenticatedAttFormerImpl{}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			f := attAuthFormer{}
 			actual, err := f.formAuthenticatedAttestation(tc.payload)
-			if tc.expectedErr != (err != nil) {
-				t.Fatalf("formAuthenticatedAttestation(_) got %v, wanted error? = %v", err, tc.expectedErr)
-			}
-			if !tc.expectedErr {
+			if tc.expectedErr {
+				if err == nil {
+					t.Fatalf("formAuthenticatedAttestation(%v) should have failed, but didn't", tc.payload)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("formAuthenticatedAttestation(%v) failed with error %v", tc.payload, err)
+				}
 				if actual == nil || *actual != tc.expected {
-					t.Errorf("formAuthenticatedAttestation(_) got %v, wanted %v", actual, &tc.expected)
+					t.Errorf("formAuthenticatedAttestation(%v) = %v, want %v", tc.payload, actual, &tc.expected)
 				}
 			}
 		})
@@ -102,9 +106,9 @@ func TestCheckAuthenticatedAttestation(t *testing.T) {
 			expectedErr: true,
 		},
 	}
+	c := authenticatedAuthCheckerImpl{}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			c := attAuthChecker{}
 			err := c.checkAuthenticatedAttestation(&tc.authAtt, tc.imageName, tc.imageDigest)
 			if tc.expectedErr != (err != nil) {
 				t.Errorf("checkAuthenticatedAttestation(_) got %v, wanted error? = %v", err, tc.expectedErr)
