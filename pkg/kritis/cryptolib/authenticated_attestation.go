@@ -74,12 +74,12 @@ func (c authenticatedAttCheckerImpl) checkAuthenticatedAttestation(payload []byt
 	}
 	return nil
 }
+
 func convertAuthenticatedAttestation(payload []byte) (*authenticatedAttestation, error) {
 	atomicSig := &atomicContainerSig{}
 	if err := json.Unmarshal(payload, atomicSig); err != nil {
 		return nil, errors.Wrap(err, "error parsing attestation payload")
 	}
-
 	return &authenticatedAttestation{
 		ImageName:   atomicSig.Critical.Identity.DockerRef,
 		ImageDigest: atomicSig.Critical.Image.Digest,
