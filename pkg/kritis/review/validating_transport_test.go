@@ -244,21 +244,21 @@ func TestValidatingTransport(t *testing.T) {
 		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
 		}, errorExpected: true, attError: nil},
-		{name: "auth with generic signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+		{name: "auth with generic signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "test-sig", "test-id", "generic-address"),
-		}, errorExpected: false, attError: nil},
-		{name: "auth with unknown signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+		}, errorExpected: true, attError: nil},
+		{name: "auth with unknown signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.UnknownSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: false, attError: nil},
+		}, errorExpected: true, attError: nil},
 		{name: "valid auth with invalid PGP key id", auth: invalidAuthWithOneInvalidPgpKeyId, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
 		}, errorExpected: false, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
 		// ValidatedAttestations.
-		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
+		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
-		}, errorExpected: false, attError: nil},
+		}, errorExpected: true, attError: nil},
 		{name: "auth with invalid PKIX key id", auth: invalidAuthWithOneInvalidPkixKeyId, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
 		}, errorExpected: true, attError: nil},

@@ -102,26 +102,34 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 	return nil
 }
 
-func (avt *AttestorValidatingTransport) parsePublicKeys() []cryptolib.PublicKey {
+// ParsePublicKeys fetches public keys from the Attestor spec. It returns the
+// valid PublicKeys and the keyID's for keys that could not be parsed.
+func (avt *AttestorValidatingTransport) parsePublicKeys() ([]cryptolib.PublicKey, []string) {
 	attestorKeys := avt.Attestor.Spec.PublicKeys
 	numKeys := len(attestorKeys)
-	publicKeys := []cryptolib.PublicKey{}
+	publicKeys, invalidKeys := []cryptolib.PublicKey{}, []string{}
 
 	for i, attestorKey := range attestorKeys {
+		if attestorKey.KeyType != "PGP" {
+			glog.Warningf("Skipping key %q with unsupported type %q", attestorKey.KeyId, attestorKey.KeyType)
+			continue
+		}
 		if err := avt.validatePublicKey(attestorKey); err != nil {
-			// warning level because single key failure is something tolerable
+			// Warning level because single key failure is something tolerable
 			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
 			continue
 		}
 		decodedKey, err := base64.StdEncoding.DecodeString(attestorKey.AsciiArmoredPgpPublicKey)
 		if err != nil {
-			glog.Infof("Cannot base64 decode public key: %v", err)
+			glog.Warningf("Cannot base64 decode public key: %v", err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
 			continue
 		}
 		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
 		publicKeys = append(publicKeys, publicKey)
 	}
-	return publicKeys
+	return publicKeys, invalidKeys
 }
 
 func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryptolib.Attestation, error) {
@@ -133,8 +141,7 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 
 	for _, rawAtt := range rawAtts {
 		if rawAtt.SignatureType != metadata.PgpSignatureType {
-			glog.Warningf("Skipping attestation with unsupported signature type %s", rawAtt.SignatureType.String())
-			continue
+			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
 		}
 		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
 		if err != nil {
@@ -154,9 +161,9 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 }
 
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	publicKeys := avt.parsePublicKeys()
+	publicKeys, invalidKeys := avt.parsePublicKeys()
 	if len(publicKeys) == 0 {
-		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
+		return nil, fmt.Errorf("Unable to find any valid keys for %q. Unparseable keys: %v", avt.Attestor.Name, invalidKeys)
 	}
 
 	verifier, err := cryptolib.NewVerifier(image, publicKeys)
