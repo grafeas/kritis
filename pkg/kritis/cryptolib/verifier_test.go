@@ -22,6 +22,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const qualifiedImage = "gcr.io/image/digest@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
 func TestVerifyAttestation(t *testing.T) {
 	att := &Attestation{
 		PublicKeyID:       "key-id",
@@ -78,9 +80,9 @@ func TestVerifyAttestation(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			v := verifier{ImageDigest: "test-image-digest", PublicKeys: indexPublicKeysByID(tc.publicKeys)}
+			v := verifier{ImageDigest: qualifiedImage, PublicKeys: indexPublicKeysByID(tc.publicKeys)}
 			v.pkixVerifier = mockPkixVerifier{shouldErr: tc.verifyErr}
-			v.authenticatedAuthChecker = testAuthAttChecker{}
+			v.authenticatedAttChecker = mockAuthAttChecker{}
 
 			err := v.VerifyAttestation(tc.att)
 			if tc.expectedErr != (err != nil) {
@@ -101,8 +103,8 @@ func (v mockPkixVerifier) verifyPkix([]byte, []byte, []byte) error {
 	return nil
 }
 
-type testAuthAttChecker struct{}
+type mockAuthAttChecker struct{}
 
-func (c testAuthAttChecker) checkAuthenticatedAttestation(actual authenticatedAttestation, imageDigest string) error {
+func (c mockAuthAttChecker) checkAuthenticatedAttestation(payload []byte, imageName string, imageDigest string, convert convertFunc) error {
 	return nil
 }
