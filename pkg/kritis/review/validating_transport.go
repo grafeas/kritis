@@ -102,10 +102,10 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 	return nil
 }
 
-// ParsePublicKeys fetches public keys from the Attestor spec. It returns the
-// valid PublicKeys and the keyID's for keys that could not be parsed.
-func (avt *AttestorValidatingTransport) parsePublicKeys() ([]cryptolib.PublicKey, []string) {
-	attestorKeys := avt.Attestor.Spec.PublicKeys
+// ParsePublicKeys parses the attestor's keys as cryptolib PublicKeys. It
+// returns the valid PublicKeys and the keyID's for keys that could not be
+// parsed.
+func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.PublicKey) ([]cryptolib.PublicKey, []string) {
 	numKeys := len(attestorKeys)
 	publicKeys, invalidKeys := []cryptolib.PublicKey{}, []string{}
 
@@ -161,7 +161,7 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 }
 
 func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	publicKeys, invalidKeys := avt.parsePublicKeys()
+	publicKeys, invalidKeys := avt.parsePublicKeys(avt.Attestor.Spec.PublicKeys)
 	if len(publicKeys) == 0 {
 		return nil, fmt.Errorf("Unable to find any valid keys for %q. Unparseable keys: %v", avt.Attestor.Name, invalidKeys)
 	}

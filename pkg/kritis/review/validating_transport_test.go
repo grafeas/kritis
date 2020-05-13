@@ -255,7 +255,8 @@ func TestValidatingTransport(t *testing.T) {
 		}, errorExpected: false, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
-		// ValidatedAttestations.
+		// ValidatedAttestations. `errorExpected` should also be false, but
+		// currently attestations with GenericSignatureType throw an error.
 		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []metadata.RawAttestation{
 			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
 		}, errorExpected: true, attError: nil},
