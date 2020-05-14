@@ -4,8 +4,8 @@ metadata:
   name: my-isp
   namespace: default
 spec:
-  attestationAuthorityNames:
-  - kritis-authority
+  attestationAuthorityName: kritis-authority
+  privateKeySecretName: kritis-authority-key
   imageAllowlist:
   - gcr.io/my/image
   packageVulnerabilityRequirements:

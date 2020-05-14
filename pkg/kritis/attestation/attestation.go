@@ -68,9 +68,9 @@ func VerifyMessageAttestation(pubKey string, sig string, message string) error {
 func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read armored key ring")
 	}
-	buf := bytes.NewBuffer([]byte(sig))
+	buf := bytes.NewBufferString(sig)
 	armorBlock, err := armor.Decode(buf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode armor signature")
@@ -87,8 +87,11 @@ func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
 		return nil, errors.Wrap(err, "could not verify armor signature")
 	}
 	// Make sure after reading the UnverifiedBody above, there is no signature error.
-	if md.SignatureError != nil || md.Signature == nil {
-		return nil, fmt.Errorf("bad signature found: %s or no signature found for given key", md.SignatureError)
+	if md.SignatureError != nil {
+		return nil, fmt.Errorf("bad signature found: %s", md.SignatureError)
+	}
+	if md.Signature == nil {
+		return nil, fmt.Errorf("no signature found for given key")
 	}
 
 	return plaintext, nil

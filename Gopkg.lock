@@ -71,14 +71,27 @@
     "ptypes/empty",
     "ptypes/timestamp"
   ]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/google/btree"
   packages = ["."]
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
+
+[[projects]]
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/cmpopts",
+    "cmp/internal/diff",
+    "cmp/internal/flags",
+    "cmp/internal/function",
+    "cmp/internal/value"
+  ]
+  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
+  version = "v0.4.0"
 
 [[projects]]
   branch = "master"
@@ -335,6 +348,15 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal"
+  ]
+  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
+
+[[projects]]
+  branch = "master"
   name = "google.golang.org/api"
   packages = [
     "googleapi",
@@ -378,6 +400,7 @@
     "googleapis/devtools/containeranalysis/v1beta1/attestation",
     "googleapis/devtools/containeranalysis/v1beta1/build",
     "googleapis/devtools/containeranalysis/v1beta1/common",
+    "googleapis/devtools/containeranalysis/v1beta1/cvss",
     "googleapis/devtools/containeranalysis/v1beta1/deployment",
     "googleapis/devtools/containeranalysis/v1beta1/discovery",
     "googleapis/devtools/containeranalysis/v1beta1/grafeas",
@@ -389,9 +412,10 @@
     "googleapis/iam/v1",
     "googleapis/pubsub/v1",
     "googleapis/rpc/status",
+    "googleapis/type/expr",
     "protobuf/field_mask"
   ]
-  revision = "11092d34479b07829b72e10713b159248caf5dad"
+  revision = "f3c370f40bfba3cb25c5c2f823a1a8031b5ad724"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -650,6 +674,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e1781657363fcc06c0d6d98a7920521b85e9c28d66ce024452cbba89a3995e94"
+  inputs-digest = "b0cac9147af1b830fdeabddc65a7f8c4834d141770f17f18b47e189f47d29392"
   solver-name = "gps-cdcl"
   solver-version = 1

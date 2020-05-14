@@ -31,7 +31,6 @@ import (
 
 var (
 	TestNoteName = "test-aa-note"
-	API          = "testv1"
 	Project      = "kritis-int-test"
 )
 
@@ -41,7 +40,7 @@ func TestVCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{Vulnz: vClient},
 		vuln:   map[string][]metadata.Vulnerability{"image-hit": vCache},
-		att:    nil,
+		atts:   nil,
 		notes:  nil,
 	}
 	tcs := []struct {
@@ -66,18 +65,18 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []metadata.PGPAttestation{{OccID: "occc-1"}}
-	aClient := []metadata.PGPAttestation{{OccID: "occc-miss"}}
+	aCache := []metadata.RawAttestation{makeRawAttestationPgp("sig-cache", "key-cache")}
+	aClient := []metadata.RawAttestation{makeRawAttestationPgp("sig-client", "key-client")}
 	c := Cache{
-		client: &testutil.MockMetadataClient{PGPAttestations: aClient},
+		client: &testutil.MockMetadataClient{RawAttestations: aClient},
 		vuln:   nil,
-		att:    map[string][]metadata.PGPAttestation{"image-hit": aCache},
+		atts:   map[string][]metadata.RawAttestation{"image-hit": aCache},
 		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
-		expected []metadata.PGPAttestation
+		expected []metadata.RawAttestation
 	}{
 		{"hit", "image-hit", aCache},
 		{"miss", "image-miss", aClient},
@@ -86,7 +85,7 @@ func TestACache(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			aa := &kritisv1beta1.AttestationAuthority{
 				Spec: kritisv1beta1.AttestationAuthoritySpec{
-					NoteReference: fmt.Sprintf("%s/projects/%s", API, Project),
+					NoteReference: fmt.Sprintf("projects/%s/notes/%s", Project, TestNoteName),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: TestNoteName,
@@ -116,7 +115,7 @@ func TestNCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{},
 		vuln:   nil,
-		att:    nil,
+		atts:   nil,
 		notes:  map[*v1beta1.AttestationAuthority]*grafeas.Note{aaHit: nCache},
 	}
 	tcs := []struct {
@@ -137,5 +136,15 @@ func TestNCache(t *testing.T) {
 				t.Errorf("Expected %v, Got %v", tc.expected, actual)
 			}
 		})
+	}
+}
+
+func makeRawAttestationPgp(signature, id string) metadata.RawAttestation {
+	return metadata.RawAttestation{
+		SignatureType: metadata.PgpSignatureType,
+		Signature: metadata.RawSignature{
+			Signature:   signature,
+			PublicKeyId: id,
+		},
 	}
 }

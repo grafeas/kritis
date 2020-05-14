@@ -26,33 +26,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
-	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
-	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
 )
-
-func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *metadata.Vulnerability {
-	vulnDetails := occ.GetVulnerability()
-	if vulnDetails == nil {
-		return nil
-	}
-	hasFixAvailable := IsFixAvailable(vulnDetails.GetPackageIssue())
-	vulnerability := metadata.Vulnerability{
-		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
-		HasFixAvailable: hasFixAvailable,
-		CVE:             occ.GetNoteName(),
-	}
-	return &vulnerability
-}
-
-func IsFixAvailable(pis []*vulnerability.PackageIssue) bool {
-	for _, pi := range pis {
-		if pi.GetFixedLocation().GetVersion().Kind == pkg.Version_MAXIMUM {
-			// If FixedLocation.Version.Kind = MAXIMUM then no fix is available. Return false
-			return false
-		}
-	}
-	return true
-}
 
 func GetResourceURL(containerImage string) string {
 	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)
@@ -60,15 +34,6 @@ func GetResourceURL(containerImage string) string {
 
 func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
-}
-
-func GetPgpAttestationFromOccurrence(occ *grafeas.Occurrence) metadata.PGPAttestation {
-	pgp := occ.GetAttestation().GetAttestation().GetPgpSignedAttestation()
-	return metadata.PGPAttestation{
-		Signature: pgp.GetSignature(),
-		KeyID:     pgp.GetPgpKeyId(),
-		OccID:     occ.GetName(),
-	}
 }
 
 func CreateAttestationSignature(image string, pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
@@ -88,7 +53,7 @@ func GetAttestationKeyFingerprint(pgpSigningKey *secrets.PGPSigningSecret) strin
 }
 
 // GetOrCreateAttestationNote returns a note if exists and creates one if it does not exist.
-func GetOrCreateAttestationNote(c metadata.Fetcher, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
+func GetOrCreateAttestationNote(c metadata.ReadWriteClient, a *v1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	n, err := c.AttestationNote(a)
 	if err == nil {
 		return n, nil

@@ -45,7 +45,7 @@ type podLister func(string) ([]corev1.Pod, error)
 
 type Config struct {
 	PodLister            podLister
-	Client               metadata.Fetcher
+	Client               metadata.ReadWriteClient
 	ReviewConfig         *review.Config
 	SecurityPolicyLister func(namespace string) ([]v1beta1.ImageSecurityPolicy, error)
 }
@@ -54,7 +54,7 @@ var (
 	defaultViolationStrategy = &violation.AnnotationStrategy{}
 )
 
-func NewCronConfig(cs *kubernetes.Clientset, client metadata.Fetcher) *Config {
+func NewCronConfig(cs *kubernetes.Clientset, client metadata.ReadWriteClient) *Config {
 
 	cfg := Config{
 		PodLister: pods.Pods,
@@ -96,15 +96,15 @@ func Start(ctx context.Context, cfg Config, checkInterval time.Duration) {
 
 // CheckPods checks all running pods against defined policies.
 func CheckPods(cfg Config, isps []v1beta1.ImageSecurityPolicy) error {
-	r := review.New(cfg.Client, cfg.ReviewConfig)
+	r := review.New(cfg.ReviewConfig)
 	for _, isp := range isps {
 		ps, err := cfg.PodLister(isp.Namespace)
 		if err != nil {
 			return err
 		}
 		for _, p := range ps {
-			glog.Infof("Checking po %s", p.Name)
-			if err := r.ReviewISP(admission.PodImages(p), isps, &p); err != nil {
+			glog.Infof("Checking pod %s", p.Name)
+			if err := r.ReviewISP(admission.PodImages(p), isps, &p, cfg.Client); err != nil {
 				glog.Error(err)
 			}
 		}

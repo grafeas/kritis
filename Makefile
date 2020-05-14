@@ -17,7 +17,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
 COMMIT ?= $(shell git rev-parse HEAD)
-VERSION ?= v0.2.0
+VERSION ?= v0.2.2
 IMAGE_TAG ?= $(COMMIT)
 
 # Used for integration testing. example:
@@ -90,6 +90,7 @@ REGISTRY?=gcr.io/kritis-project
 TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
+SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/signer
 
 
 out/kritis-server: $(GO_FILES)
@@ -97,6 +98,9 @@ out/kritis-server: $(GO_FILES)
 
 out/gcb-signer: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCB_SIGNER_PACKAGE)
+
+out/signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -106,6 +110,14 @@ build-image: out/kritis-server
 .PHONY: build-test-image
 build-test-image: out/kritis-server
 	docker build -t $(TEST_REGISTRY)/kritis-server:$(IMAGE_TAG) -f deploy/Dockerfile .
+
+.PHONY: signer-image
+signer-image: out/signer
+	docker build -t $(REGISTRY)/kritis-signer:$(IMAGE_TAG) -f deploy/kritis-signer/Dockerfile .
+
+.PHONY: signer-push-image
+signer-push-image: signer-image
+	docker push $(REGISTRY)/kritis-signer:$(IMAGE_TAG)
 
 HELM_HOOKS = preinstall postinstall predelete
 
@@ -179,8 +191,10 @@ gcb-signer-push-image: gcb-signer-image
 	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
 
 # Fully setup local integration testing: only needs to run just once
+# TODO: move entire setup into bash script
 .PHONY: setup-integration-local
-setup-integration-local: setup-integration-local
+setup-integration-local:
+	gcloud --project=$(GCP_PROJECT) services enable container.googleapis.com
 	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
 		|| gcloud --project=$(GCP_PROJECT) container clusters create $(GCP_CLUSTER) \
 		--num-nodes=2 --zone=$(GCP_ZONE)
@@ -194,6 +208,9 @@ setup-integration-local: setup-integration-local
 		  --clusterrole=cluster-admin \
 		    --serviceaccount=kube-system:tiller
 	helm init --wait --service-account tiller
+	gcloud --project=$(GCP_PROJECT) services enable containerregistry.googleapis.com
+	gcloud --project=$(GCP_PROJECT) services enable containeranalysis.googleapis.com
+	gcloud --project=$(GCP_PROJECT) services enable containerscanning.googleapis.com
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/acceptable-vulnz@sha256:2a81797428f5cab4592ac423dc3049050b28ffbaa3dd11000da942320f9979b6 \
 		gcr.io/$(GCP_PROJECT)/acceptable-vulnz:latest
@@ -209,7 +226,25 @@ setup-integration-local: setup-integration-local
 	gcloud -q container images add-tag \
 		gcr.io/kritis-tutorial/nginx-no-digest:latest \
 		gcr.io/$(GCP_PROJECT)/nginx-no-digest:latest
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.notes.occurrences.viewer
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.occurrences.viewer
+	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
+		--member=serviceAccount:kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com \
+		--role=roles/containeranalysis.occurrences.editor
+	./hack/setup-containeranalysis-resources.sh --project $(GCP_PROJECT)
 
+# Fully clean-up local integration testing resources
+.PHONY: clean-integration-local
+clean-integration-local:
+	gcloud --project=$(GCP_PROJECT) container clusters describe $(GCP_CLUSTER) >/dev/null \
+		&& gcloud --project=$(GCP_PROJECT) container clusters delete $(GCP_CLUSTER)
+
+# Just run the integration tests, assuming setup is done and test image is updated.
+# make -e GCP_PROJECT=${PROJECT} just-the-integration-test
 .PHONY: just-the-integration-test
 just-the-integration-test:
 	echo "Test cluster: $(GCP_CLUSTER) Test project: $(GCP_PROJECT)"

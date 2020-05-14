@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Ignore these paths in the following tests.
-ignore="vendor\|out\|testdata"
+ignore="vendor\|out\|testdata\|samples"
 BOILERPLATEDIR=./hack/boilerplate
 # Grep returns a non-zero exit code if we don't match anything, which is good in this case.
 set +e

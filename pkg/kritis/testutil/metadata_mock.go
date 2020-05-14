@@ -25,9 +25,10 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
+// Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
 	Vulnz           []metadata.Vulnerability
-	PGPAttestations []metadata.PGPAttestation
+	RawAttestations []metadata.RawAttestation
 	AAs             []kritisv1beta1.AttestationAuthority
 	Occ             map[string]string
 	Err             error
@@ -49,15 +50,14 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurrence(n *grafeas.Note, image string,
-	s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurrence(noteName string, image string, s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
-	m.Occ[fmt.Sprintf("%s-%s", image, n.Name)] = s.SecretName
+	m.Occ[fmt.Sprintf("%s-%s", image, noteName)] = s.SecretName
 	return nil, nil
 }
 
@@ -82,18 +82,28 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
-	return m.PGPAttestations, nil
+	return m.RawAttestations, nil
 }
 
-func NilFetcher() func() (metadata.Fetcher, error) {
-	return func() (metadata.Fetcher, error) {
+func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
+	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
 			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
+			RawAttestations: []metadata.RawAttestation{},
+			AAs:             []kritisv1beta1.AttestationAuthority{},
+		}, nil
+	}
+}
+
+func NilReadOnlyClient() func() (metadata.ReadOnlyClient, error) {
+	return func() (metadata.ReadOnlyClient, error) {
+		return &MockMetadataClient{
+			Vulnz:           []metadata.Vulnerability{},
+			RawAttestations: []metadata.RawAttestation{},
 			AAs:             []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}

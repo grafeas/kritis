@@ -33,7 +33,7 @@ func podLogs(pod string, ns *v1.Namespace) string {
 }
 
 func kritisLogs(ns *v1.Namespace) string {
-	cmd := exec.Command("kubectl", "logs", "-l", "label=kritis-validation-hook", "-n", ns.Name)
+	cmd := exec.Command("kubectl", "logs", "-l", "label=kritis-validation-hook", "-n", ns.Name, "--tail=100")
 	out, err := integration_util.RunCmdOut(cmd)
 	if err != nil {
 		return fmt.Sprintf("failed to get kritis-validation-hook logs: %v", err)

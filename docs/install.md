@@ -53,7 +53,13 @@ Enable the Container Registry API:
 gcloud services enable containerregistry.googleapis.com
 ```
 
-Wait for the above API's to be fully enabled, then ensure [vulnerability scanning is enabled](https://console.cloud.google.com/gcr/settings).
+Enable the Vulnerability Scanning API:
+
+```shell
+gcloud services enable containerscanning.googleapis.com
+```
+
+Wait for the above API's to be fully enabled, and verify that [vulnerability scanning is indeed enabled](https://console.cloud.google.com/gcr/settings). The blue button on the page should display as "Disable Vulnerability Scanning".
 
 For more documentation, see [Container Analysis Overview](https://cloud.google.com/container-registry/docs/container-analysis).
 
@@ -170,7 +176,7 @@ For more information, please see the resolve-tags [documentation](cmd/kritis/kub
 Install kritis to your cluster:
 
 ```shell
-helm install https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.1.0.tgz
+helm install https://storage.googleapis.com/kritis-charts/repository/kritis-charts-0.2.2.tgz
 ```
 
 You may use the --set flag, to override the installation defaults:
