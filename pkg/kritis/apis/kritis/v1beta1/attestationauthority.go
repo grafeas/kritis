@@ -36,7 +36,6 @@ type AttestationAuthoritySpec struct {
 	NoteReference        string `json:"noteReference"`
 	PrivateKeySecretName string `json:"privateKeySecretName"`
 	PublicKeyData        string `json:"publicKeyData"`
-	PolicyType           string `json:"policyType"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
