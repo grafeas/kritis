@@ -119,6 +119,8 @@ func TestReviewGAP(t *testing.T) {
 			AttestationAuthorityNames: []string{},
 		},
 	}}
+	// TODO(acamadeo): After PKIX key verification implementation, add
+	// AttestationAuthorities with PKIX keys.
 	// Two attestors: 'test', 'test2'.
 	authMock := func(_ string, name string) (*v1beta1.AttestationAuthority, error) {
 		authMap := map[string]v1beta1.AttestationAuthority{
@@ -126,13 +128,25 @@ func TestReviewGAP(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test"},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "projects/test-1/notes/note-1",
-					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
+					PublicKeys: []v1beta1.PublicKey{
+						{
+							KeyType:                  "PGP",
+							KeyId:                    secFpr,
+							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+						},
+					},
 				}},
 			"test2": {
 				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
 				Spec: v1beta1.AttestationAuthoritySpec{
 					NoteReference: "projects/test-1/notes/note-2",
-					PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub2))},
+					PublicKeys: []v1beta1.PublicKey{
+						{
+							KeyType:                  "PGP",
+							KeyId:                    secFpr2,
+							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub2)),
+						},
+					},
 				}}}
 		auth, exists := authMap[name]
 		if !exists {
@@ -315,7 +329,13 @@ func TestReviewISP(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference: "projects/test-1/notes/note-1",
-				PublicKeyList: []string{base64.StdEncoding.EncodeToString([]byte(pub))},
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						KeyId:                    secFpr,
+						AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					},
+				},
 			}}, nil
 	}
 	mockValidate := func(_ v1beta1.ImageSecurityPolicy, image string, _ metadata.ReadWriteClient) ([]policy.Violation, error) {
@@ -516,13 +536,23 @@ func TestGetAttestationAuthoritiesForGAP(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference: "projects/test-1/notes/note-1",
-				PublicKeyList: []string{"testdata"},
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						AsciiArmoredPgpPublicKey: "testdata",
+					},
+				},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference: "projects/test-1/notes/note-1",
-				PublicKeyList: []string{"testdata"},
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						AsciiArmoredPgpPublicKey: "testdata",
+					},
+				},
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {
@@ -584,13 +614,23 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "a1"},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference: "projects/test-1/notes/note-1",
-				PublicKeyList: []string{"testdata"},
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						AsciiArmoredPgpPublicKey: "testdata",
+					},
+				},
 			}},
 		"a2": {
 			ObjectMeta: metav1.ObjectMeta{Name: "a2"},
 			Spec: v1beta1.AttestationAuthoritySpec{
 				NoteReference: "projects/test-1/notes/note-1",
-				PublicKeyList: []string{"testdata"},
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						AsciiArmoredPgpPublicKey: "testdata",
+					},
+				},
 			}},
 	}
 	authMock := func(ns string, name string) (*v1beta1.AttestationAuthority, error) {

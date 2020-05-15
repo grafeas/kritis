@@ -1,0 +1,5 @@
+FROM gcr.io/google-appengine/debian10:latest
+
+RUN apt-get update && apt-get -y install python2.7 python-pip && pip install google-cloud-containeranalysis
+
+ENTRYPOINT ["python2.7"]

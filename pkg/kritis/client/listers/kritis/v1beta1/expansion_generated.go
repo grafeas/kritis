@@ -53,3 +53,11 @@ type ImageSecurityPolicyNamespaceListerExpansion interface{}
 // KritisConfigListerExpansion allows custom methods to be added to
 // KritisConfigLister.
 type KritisConfigListerExpansion interface{}
+
+// VulnzSigningPolicyListerExpansion allows custom methods to be added to
+// VulnzSigningPolicyLister.
+type VulnzSigningPolicyListerExpansion interface{}
+
+// VulnzSigningPolicyNamespaceListerExpansion allows custom methods to be added to
+// VulnzSigningPolicyNamespaceLister.
+type VulnzSigningPolicyNamespaceListerExpansion interface{}

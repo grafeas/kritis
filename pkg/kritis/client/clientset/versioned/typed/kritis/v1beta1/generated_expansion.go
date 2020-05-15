@@ -27,3 +27,5 @@ type GenericAttestationPolicyExpansion interface{}
 type ImageSecurityPolicyExpansion interface{}
 
 type KritisConfigExpansion interface{}
+
+type VulnzSigningPolicyExpansion interface{}
