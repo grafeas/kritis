@@ -20,6 +20,7 @@ import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
@@ -33,8 +34,8 @@ type Cache struct {
 }
 
 // NewCache Create a new Cache for container analysis client.
-func NewCache() (*Cache, error) {
-	c, err := New()
+func NewCache(opts ...option.ClientOption) (*Cache, error) {
+	c, err := New(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +94,6 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas
 }
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
-func (c Cache) CreateAttestationOccurrence(n *grafeas.Note, image string, p *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
-	return c.client.CreateAttestationOccurrence(n, image, p, proj)
+func (c Cache) CreateAttestationOccurrence(noteName string, image string, p *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+	return c.client.CreateAttestationOccurrence(noteName, image, p, proj)
 }

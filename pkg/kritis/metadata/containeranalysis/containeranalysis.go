@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	"encoding/base64"
 	"fmt"
+	"google.golang.org/api/option"
 	"strings"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
@@ -61,9 +62,9 @@ func defaultListOccurrencesRequest(containerImage, kind string) *grafeas.ListOcc
 }
 
 // TODO: separate constructor methods for r/w and r/o clients
-func New() (*Client, error) {
+func New(opts ...option.ClientOption) (*Client, error) {
 	ctx := context.Background()
-	client, err := ca.NewGrafeasV1Beta1Client(ctx)
+	client, err := ca.NewGrafeasV1Beta1Client(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -224,9 +225,7 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 }
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
-func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
-	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
@@ -255,7 +254,7 @@ func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	}
 	occ := &grafeas.Occurrence{
 		Resource: util.GetResource(containerImage),
-		NoteName: note.GetName(),
+		NoteName: noteName,
 		Details:  attestationDetails,
 	}
 	// Create the AttestationAuthrity Occurrence.

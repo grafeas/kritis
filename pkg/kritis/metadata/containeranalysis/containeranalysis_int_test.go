@@ -105,7 +105,7 @@ func TestCreateAttestationNoteAndOccurrence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to extract project ID %v", err)
 	}
-	occ, err := client.CreateAttestationOccurrence(note, testutil.IntTestImage, secret, proj)
+	occ, err := client.CreateAttestationOccurrence(note.GetName(), testutil.IntTestImage, secret, proj)
 	if err != nil {
 		t.Fatalf("Unexpected error while creating Occurence %v", err)
 	}
