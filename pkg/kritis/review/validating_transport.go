@@ -17,7 +17,6 @@ limitations under the License.
 package review
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/url"
 
@@ -135,13 +134,8 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		if rawAtt.SignatureType != metadata.PgpSignatureType {
 			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
 		}
-		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
-		if err != nil {
-			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
-			continue
-		}
 		keyId := rawAtt.Signature.PublicKeyId
-		if err = host.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
+		if err = host.VerifySignature(keys[keyId], rawAtt.Signature.Signature); err != nil {
 			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
 			continue
 		}
