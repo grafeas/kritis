@@ -145,8 +145,6 @@ EOM
   gcloud container binauthz attestors create ${ATTESTOR} \
     --attestation-authority-note=${NOTE_ID} \
     --attestation-authority-note-project=${BINAUTHZ_PROJECT}
-  openssl ecparam -genkey -name prime256v1 -noout -out ec256.priv
-  openssl ec -in ec256.priv -pubout -out ec256.pub
   gcloud --project="${BINAUTHZ_PROJECT}" \
     beta container binauthz attestors public-keys add \
     --attestor="${ATTESTOR}" \
