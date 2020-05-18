@@ -24,9 +24,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/container"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/pkg/errors"
 )
 
 // ValidatingTransport allows the caller to obtain validated attestations for a given container image.
@@ -101,34 +102,41 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 	return nil
 }
 
-func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	keys := map[string]v1beta1.PublicKey{}
-	numKeys := len(avt.Attestor.Spec.PublicKeys)
-	for i, pubKey := range avt.Attestor.Spec.PublicKeys {
-		if err := avt.validatePublicKey(pubKey); err != nil {
-			// warning level because single key failure is something tolerable
-			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
+// ParsePublicKeys parses the attestor's keys as cryptolib PublicKeys. It
+// returns the valid PublicKeys and the keyID's for keys that could not be
+// parsed.
+func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.PublicKey) ([]cryptolib.PublicKey, []string) {
+	numKeys := len(attestorKeys)
+	publicKeys, invalidKeys := []cryptolib.PublicKey{}, []string{}
+
+	for i, attestorKey := range attestorKeys {
+		if attestorKey.KeyType != "PGP" {
+			glog.Warningf("Skipping key %q with unsupported type %q", attestorKey.KeyId, attestorKey.KeyType)
 			continue
 		}
-		if _, ok := keys[pubKey.KeyId]; ok {
-			glog.Warningf("Overwriting key with same fingerprint %s for %q.", pubKey.KeyId, avt.Attestor.Name)
+		if err := avt.validatePublicKey(attestorKey); err != nil {
+			// Warning level because single key failure is something tolerable
+			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
 		}
-		keys[pubKey.KeyId] = pubKey
+		decodedKey, err := base64.StdEncoding.DecodeString(attestorKey.AsciiArmoredPgpPublicKey)
+		if err != nil {
+			glog.Warningf("Cannot base64 decode public key: %v", err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
+		}
+		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
+		publicKeys = append(publicKeys, publicKey)
 	}
-	if len(keys) == 0 {
-		return nil, fmt.Errorf("unable to find any valid key for %q", avt.Attestor.Name)
-	}
+	return publicKeys, invalidKeys
+}
 
-	out := []attestation.ValidatedAttestation{}
-	host, err := container.NewAtomicContainerSig(image, map[string]string{})
-	if err != nil {
-		glog.Error(err)
-		return nil, err
-	}
+func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryptolib.Attestation, error) {
+	atts := []*cryptolib.Attestation{}
 	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
-		glog.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
 	}
 
 	for _, rawAtt := range rawAtts {
@@ -140,12 +148,41 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
 			continue
 		}
-		keyId := rawAtt.Signature.PublicKeyId
-		if err = host.VerifySignature(keys[keyId], string(decodedSig)); err != nil {
-			glog.Warningf("Could not find or verify attestation for attestor %s: %s", keyId, err.Error())
+		// TODO(https://github.com/grafeas/kritis/issues/505): Remove this
+		// after Kritis migrates to cryptolib.Attestation.
+		att := &cryptolib.Attestation{
+			PublicKeyID:       rawAtt.Signature.PublicKeyId,
+			Signature:         decodedSig,
+			SerializedPayload: rawAtt.SerializedPayload,
+		}
+		atts = append(atts, att)
+	}
+	return atts, nil
+}
+
+func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
+	publicKeys, invalidKeys := avt.parsePublicKeys(avt.Attestor.Spec.PublicKeys)
+	if len(publicKeys) == 0 {
+		return nil, fmt.Errorf("Unable to find any valid keys for %q. Unparseable keys: %v", avt.Attestor.Name, invalidKeys)
+	}
+
+	verifier, err := cryptolib.NewVerifier(image, publicKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating verifier")
+	}
+
+	atts, err := avt.fetchAttestations(image)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
+	}
+
+	validatedAtts := []attestation.ValidatedAttestation{}
+	for _, att := range atts {
+		if err := verifier.VerifyAttestation(att); err != nil {
+			glog.Warningf("error verifying attestation: %v", err)
 			continue
 		}
-		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+		validatedAtts = append(validatedAtts, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
 	}
-	return out, nil
+	return validatedAtts, nil
 }
