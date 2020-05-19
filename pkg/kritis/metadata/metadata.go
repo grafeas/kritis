@@ -123,7 +123,7 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *Vulnerability {
 	}
 	hasFixAvailable := IsFixAvailable(vulnDetails.GetPackageIssue())
 	vulnerability := Vulnerability{
-		Severity:        vulnerability.Severity_name[int32(vulnDetails.EffectiveSeverity)],
+		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
 		HasFixAvailable: hasFixAvailable,
 		CVE:             occ.GetNoteName(),
 	}
