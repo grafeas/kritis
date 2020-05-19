@@ -23,32 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func decodeBase64(in []byte) ([]byte, error) {
-	toDecode := make([]byte, len(in))
-	switch len(in) % 4 {
-	case 0: // no padding
-		toDecode = in
-	case 2:
-		toDecode = make([]byte, len(in)+2)
-		copy(toDecode[:len(in)], in)
-		copy(toDecode[len(in):len(in)+2], []byte("==")) //two pad chars
-	case 3:
-		toDecode = make([]byte, len(in)+1)
-		copy(toDecode[:len(in)], in)
-		copy(toDecode[len(in):len(in)+1], []byte("=")) // one pad char
-	default:
-		return []byte(""), errors.New("Invalid base64 encoding")
-	}
-	decodedBytes := make([]byte, len(toDecode)/4*3)
-	if len(in)%4 == 0 {
-		decodedBytes = make([]byte, len(toDecode)*6/8)
-	}
-	n, err := base64.URLEncoding.Decode(decodedBytes, toDecode)
-	return decodedBytes[:n], err
-
-}
-
-func convertKeyTypetoKeyAlg(alg SignatureAlgorithm) string {
+func getAlgName(alg SignatureAlgorithm) string {
 	switch alg {
 	case RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256:
 		return "PS256"
@@ -65,7 +40,7 @@ func convertKeyTypetoKeyAlg(alg SignatureAlgorithm) string {
 	case EcdsaP521Sha512:
 		return "ES512"
 	default:
-		return "Key Type Not Supported"
+		return "Algorithm Not Supported"
 
 	}
 }
@@ -82,7 +57,7 @@ func checkHeader(headerIn []byte, publicKey PublicKey) error {
 	if jsonHeader.Typ != "JWT" {
 		return errors.New("type field invalid")
 	}
-	if jsonHeader.Alg != convertKeyTypetoKeyAlg(publicKey.SignatureAlgorithm) {
+	if jsonHeader.Alg != getAlgName(publicKey.SignatureAlgorithm) {
 		return errors.New("Alg field does not match the algorithm of the public key")
 	}
 	if jsonHeader.Kid != publicKey.ID {
@@ -100,7 +75,7 @@ func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byt
 	if len(parts) != 3 {
 		return []byte(""), errors.New("Invalid JWT: more than 3 parts")
 	}
-	header, err := decodeBase64(parts[0])
+	header, err := base64.RawURLEncoding.DecodeString(string(parts[0]))
 	if err != nil {
 		return []byte(""), errors.Wrap(err, "Cannot decode header")
 	}
@@ -108,7 +83,7 @@ func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byt
 	if err != nil {
 		return []byte(""), errors.Wrap(err, "Invalid header")
 	}
-	payload, err := decodeBase64(parts[1])
+	payload, err := base64.RawURLEncoding.DecodeString(string(parts[1]))
 	if err != nil {
 		return []byte(""), errors.Wrap(err, "Cannot decode payload")
 	}
