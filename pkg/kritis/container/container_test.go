@@ -214,7 +214,7 @@ func TestContainerEquals(t *testing.T) {
 	}
 }
 
-// Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt> | base64
+// Created using gpg --armor --sign -u test@kritis.org <atomic_host_json_representation.txt>
 var expectedSig = `-----BEGIN PGP MESSAGE-----
 
 owGbwMvMwMW4rjtzimCy6GLG0we0kxiik31OVislF2WWZCYn5ihZVStlpqTmlWSW

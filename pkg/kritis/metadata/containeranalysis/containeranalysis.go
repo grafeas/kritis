@@ -17,10 +17,10 @@ limitations under the License.
 package containeranalysis
 
 import (
-	"encoding/base64"
 	"fmt"
-	"google.golang.org/api/option"
 	"strings"
+
+	"google.golang.org/api/option"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
 	"github.com/golang/glog"
@@ -237,7 +237,7 @@ func (c Client) CreateAttestationOccurrence(noteName string, containerImage stri
 		return nil, err
 	}
 	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: base64.StdEncoding.EncodeToString([]byte(sig)),
+		Signature: sig,
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
 			PgpKeyId: fingerprint,
 		},
