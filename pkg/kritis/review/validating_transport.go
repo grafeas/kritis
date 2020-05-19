@@ -143,7 +143,6 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 		if rawAtt.SignatureType != metadata.PgpSignatureType {
 			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
 		}
-		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
 		if err != nil {
 			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
 			continue
@@ -152,7 +151,7 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 		// after Kritis migrates to cryptolib.Attestation.
 		att := &cryptolib.Attestation{
 			PublicKeyID:       rawAtt.Signature.PublicKeyId,
-			Signature:         decodedSig,
+			Signature:         []byte(rawAtt.Signature.Signature),
 			SerializedPayload: rawAtt.SerializedPayload,
 		}
 		atts = append(atts, att)
