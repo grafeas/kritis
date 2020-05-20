@@ -47,21 +47,24 @@ func getAlgName(alg SignatureAlgorithm) string {
 
 func checkHeader(headerIn []byte, publicKey PublicKey) error {
 	type headerTemplate struct {
-		Typ, Alg, Kid string
+		Typ, Alg, Kid, Crit string
 	}
 	var jsonHeader headerTemplate
 	err := json.Unmarshal(headerIn, &jsonHeader)
 	if err != nil {
 		return err
 	}
+	if jsonHeader.Crit != "" {
+		return errors.New("crit field not supported")
+	}
 	if jsonHeader.Typ != "JWT" {
-		return errors.New("type field invalid")
+		return errors.New("typ field invalid")
 	}
 	if jsonHeader.Alg != getAlgName(publicKey.SignatureAlgorithm) {
-		return errors.New("Alg field does not match the algorithm of the public key")
+		return errors.New("alg field does not match the algorithm of the public key")
 	}
 	if jsonHeader.Kid != publicKey.ID {
-		return errors.New("KID field does not match the public key ID")
+		return errors.New("kid field does not match the public key ID")
 	}
 
 	return nil
@@ -73,19 +76,19 @@ type jwtVerifierImpl struct{}
 func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byte, error) {
 	parts := bytes.Split(signature, []byte("."))
 	if len(parts) != 3 {
-		return []byte(""), errors.New("Invalid JWT")
+		return []byte(""), errors.New("invalid JWT")
 	}
 	header, err := base64.RawURLEncoding.DecodeString(string(parts[0]))
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "Cannot decode header")
+		return []byte(""), errors.Wrap(err, "cannot decode header")
 	}
 	err = checkHeader(header, publicKey)
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "Invalid header")
+		return []byte(""), errors.Wrap(err, "invalid header")
 	}
 	payload, err := base64.RawURLEncoding.DecodeString(string(parts[1]))
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "Cannot decode payload")
+		return []byte(""), errors.Wrap(err, "cannot decode payload")
 	}
 	verifyDetached(parts[2], publicKey.KeyData, publicKey.SignatureAlgorithm, append(parts[0], parts[1]...))
 
@@ -93,5 +96,5 @@ func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byt
 }
 
 func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgorithm, plaintext []byte) error {
-	return errors.New("VerifyDetached is not implemented yet")
+	return errors.New("verifyDetached is not implemented yet")
 }

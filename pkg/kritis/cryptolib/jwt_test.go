@@ -22,6 +22,7 @@ import (
 
 const goodJwt = "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogIkpXVCIsICJraWQiOiAibXktc2lnbmluZy1rZXkiIH0K.eyAic3ViIjogImNvbnRhaW5lcjpkaWdlc3Q6c2hhMjU2OmZha2UtZGlnZXN0IiwgImF1ZCI6ICIvL2JpbmFyeWF1dGhvcml6YXRpb24uZ29vZ2xlYXBpcy5jb20iLCAiYXR0ZXN0YXRpb25UeXBlIjogIlRCRCIsICJhdHRlc3RhdGlvbiI6ICIiIH0K.cvffj1cTnxvNP70b1iFZUEX6wUhTohNQXIOrT6PJOGV3T+WXfkxJMWw0LaavoW2QSatMJK8HZj/KOSOhu3kzwzLusWZu2xbDjGQNLoUv5JjGTTw5erM4ldMfaA0eAdZfyTt5wHgSTx+maPFN/SOau3xVM4RgB9N7TPRB4xDTNdFZxHX2JZk5uZ6sqAOcAQ9ntxefws61hq32b4lf+QSi0jZllWA3hGgESrETrac6tRzraiqHWgkxRKwQBDCIOyyYlZOc8EjKC3ODQ2shRWSJoN13P1KCteQIwb7B5yaIL5RKP/NYW2f+HVkc3ohDDYAHqLYtUgueNFwbeVvRaf+BxQ"
 const jwtWithInvalidHeaderTYP = "eyAgImFsZyI6ICJFUzI1NiIsICJ0eXAiOiAiQkFEVFlQRSIsICJraWQiOiAibXktc2lnbmluZy1rZXkiIH0K.eyAic3ViIjogImNvbnRhaW5lcjpkaWdlc3Q6c2hhMjU2OmZha2UtZGlnZXN0IiwgImF1ZCI6ICIvL2JpbmFyeWF1dGhvcml6YXRpb24uZ29vZ2xlYXBpcy5jb20iLCAiYXR0ZXN0YXRpb25UeXBlIjogIlRCRCIsICJhdHRlc3RhdGlvbiI6ICIiIH0K.cvffj1cTnxvNP70b1iFZUEX6wUhTohNQXIOrT6PJOGV3T+WXfkxJMWw0LaavoW2QSatMJK8HZj/KOSOhu3kzwzLusWZu2xbDjGQNLoUv5JjGTTw5erM4ldMfaA0eAdZfyTt5wHgSTx+maPFN/SOau3xVM4RgB9N7TPRB4xDTNdFZxHX2JZk5uZ6sqAOcAQ9ntxefws61hq32b4lf+QSi0jZllWA3hGgESrETrac6tRzraiqHWgkxRKwQBDCIOyyYlZOc8EjKC3ODQ2shRWSJoN13P1KCteQIwb7B5yaIL5RKP/NYW2f+HVkc3ohDDYAHqLYtUgueNFwbeVvRaf+BxQ"
+const jwtWithCrit = "eyJhbGciOiJFUzI1NiIsICJ0eXAiOiJKV1QiLCAia2lkIjoibXktc2lnbmluZy1rZXkiLCAiY3JpdCI6ICJsaXN0LW9mLWZpZWxkcyJ9Cg.eyAic3ViIjogImNvbnRhaW5lcjpkaWdlc3Q6c2hhMjU2OmZha2UtZGlnZXN0IiwgImF1ZCI6ICIvL2JpbmFyeWF1dGhvcml6YXRpb24uZ29vZ2xlYXBpcy5jb20iLCAiYXR0ZXN0YXRpb25UeXBlIjogIlRCRCIsICJhdHRlc3RhdGlvbiI6ICIiIH0K.cvffj1cTnxvNP70b1iFZUEX6wUhTohNQXIOrT6PJOGV3T+WXfkxJMWw0LaavoW2QSatMJK8HZj/KOSOhu3kzwzLusWZu2xbDjGQNLoUv5JjGTTw5erM4ldMfaA0eAdZfyTt5wHgSTx+maPFN/SOau3xVM4RgB9N7TPRB4xDTNdFZxHX2JZk5uZ6sqAOcAQ9ntxefws61hq32b4lf+QSi0jZllWA3hGgESrETrac6tRzraiqHWgkxRKwQBDCIOyyYlZOc8EjKC3ODQ2shRWSJoN13P1KCteQIwb7B5yaIL5RKP/NYW2f+HVkc3ohDDYAHqLYtUgueNFwbeVvRaf+BxQ"
 
 var goodPubKey = PublicKey{
 	KeyType:            Jwt,
@@ -75,6 +76,11 @@ func TestVerifyJWT(t *testing.T) {
 		}, {
 			name:          "Invalid Base64Encoding",
 			jwt:           []byte("aaaaa.aaaa.aaaa"), // header has 5 a's which should return error from DecodeBase64
+			pubkey:        goodPubKey,
+			expectedError: true,
+		}, {
+			name:          "Fails with crit field present",
+			jwt:           []byte(jwtWithCrit),
 			pubkey:        goodPubKey,
 			expectedError: true,
 		},
