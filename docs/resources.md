@@ -267,7 +267,7 @@ an additional `keyType` field.
 |----------|----------|---------------|
 | `keyType`  | string   | "PGP"| 
 | `keyId`  | string   | Optional: either OpenPGP RFC4880 V4 fingerprint of the key payload or blank. If left blank, the `keyId` will be computed as the key's OpenPGP fingerprint.| 
-| `asciiArmoredPgpPublicKey`  | string | A base64-encoded ASCII-armored representation of a PGP public key, as the entire output by the command `gpg --export --armor foo@example.com | base64` (either LF or CRLF line endings). |
+| `asciiArmoredPgpPublicKey`  | string | An ASCII-armored string representation of a PGP public key, as the entire output by the command `gpg --export --armor foo@example.com | base64` (either LF or CRLF line endings). |
 | `pkixPublicKey` | PkixPublicKey object | empty|
 
 ### PKIX Public Keys
