@@ -57,11 +57,11 @@ func TestReviewGAP(t *testing.T) {
 		return nil, fmt.Errorf("no such secret for %s", name)
 	}
 	oneValidAtt := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), secFpr, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, secFpr, ""),
 	}
 	twoValidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), secFpr, ""),
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig2), secFpr2, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, secFpr, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig2, secFpr2, ""),
 	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
@@ -69,7 +69,7 @@ func TestReviewGAP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 	invalidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(invalidSig), secFpr, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, invalidSig, secFpr, ""),
 	}
 
 	// A policy with a single attestor 'test'.
@@ -308,10 +308,10 @@ func TestReviewISP(t *testing.T) {
 		return sec, nil
 	}
 	validAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sigVuln), secFpr, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, sigVuln, secFpr, ""),
 	}
 	invalidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sigNoVuln), secFpr, ""),
+		metadata.MakeRawAttestation(metadata.PgpSignatureType, sigNoVuln, secFpr, ""),
 	}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
@@ -463,22 +463,22 @@ func TestReviewISP(t *testing.T) {
 			shouldErr:         false,
 		},
 		{
-			name:      "regression: vulnz w old non-encoded attestation should handle violations",
+			name:      "regression: vulnz w old base64-encoded attestation should handle violations",
 			image:     vulnImage,
 			isWebhook: true,
-			// Invalid because not base64-encoded.
-			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, sigVuln, secFpr, "")},
+			// Invalid because base64-encoded.
+			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, base64.StdEncoding.EncodeToString([]byte(sigVuln)), secFpr, "")},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
 			shouldErr:         true,
 		},
 		{
-			name:      "regression: no vulnz w old non-encoded attestation should create new attestation",
+			name:      "regression: no vulnz w old base64-encoded attestation should create new attestation",
 			image:     noVulnImage,
 			isWebhook: true,
-			// Invalid because not base64-encoded.
-			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, sigNoVuln, secFpr, "")},
+			// Invalid because base64-encoded.
+			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, base64.StdEncoding.EncodeToString([]byte(sigNoVuln)), secFpr, "")},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
