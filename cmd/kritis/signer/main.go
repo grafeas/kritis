@@ -19,7 +19,9 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"os"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
@@ -28,9 +30,7 @@ import (
 	"google.golang.org/api/option"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/golang/glog"
-	"gopkg.in/yaml.v2"
+	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func main() {
@@ -51,12 +51,11 @@ func main() {
 		glog.Fatalf("Fail to read signer key: %v", err)
 	}
 
-	policyFile, err := ioutil.ReadFile(policy_path)
+	policyFile, err := os.Open(policy_path)
 	if err != nil {
-		glog.Fatalf("Fail to read vulnz signing policy: %v", err)
-	} else {
-		glog.Infof("Policy file: %v\n", string(policyFile))
+		glog.Fatalf("Fail to load vulnz signing policy: %v", err)
 	}
+	defer policyFile.Close()
 
 	pubKey, err := ioutil.ReadFile(pub_key_path)
 	if err != nil {
@@ -66,11 +65,12 @@ func main() {
 	// Parse the vulnz signing policy
 	policy := v1beta1.VulnzSigningPolicy{}
 
-	err = yaml.Unmarshal(policyFile, &policy)
-	if err != nil {
+	// err = json.Unmarshal(policyFile, &policy)
+	if err := yaml.NewYAMLToJSONDecoder(policyFile).Decode(&policy); err != nil {
 		glog.Fatalf("Fail to parse policy file: %v", err)
 	} else {
 		glog.Infof("Policy noteReference: %v\n", policy.Spec.NoteReference)
+		glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
 	}
 
 	// Read the vulnz scanning events

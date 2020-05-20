@@ -25,17 +25,17 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type VulnzSigningPolicy struct {
-	metav1.TypeMeta   `yaml:",inline"`
-	metav1.ObjectMeta `yaml:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec VulnzSigningPolicySpec `yaml:"spec"`
+	Spec VulnzSigningPolicySpec `json:"spec"`
 }
 
 // v is the spec for a BuildPolicy resource
 type VulnzSigningPolicySpec struct {
-	Project                          string                           `yaml:"project"`
-	NoteReference                    string                           `yaml:"noteReference"`
-	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `yaml:"packageVulnerabilityRequirements"`
+	Project                          string                           `json:"project"`
+	NoteReference                    string                           `json:"noteReference"`
+	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
