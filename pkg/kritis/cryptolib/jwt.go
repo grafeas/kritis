@@ -73,7 +73,7 @@ type jwtVerifierImpl struct{}
 func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byte, error) {
 	parts := bytes.Split(signature, []byte("."))
 	if len(parts) != 3 {
-		return []byte(""), errors.New("Invalid JWT: more than 3 parts")
+		return []byte(""), errors.New("Invalid JWT")
 	}
 	header, err := base64.RawURLEncoding.DecodeString(string(parts[0]))
 	if err != nil {
