@@ -50,10 +50,9 @@ type PublicKey struct {
 // public key, one of Pgp, Pkix or Jwt. `keyData` contains the raw key
 // material. `keyID` contains a unique identifier for the public key. For PGP,
 // this should be the OpenPGP RFC4880 V4 fingerprint of the key.
-func NewPublicKey(keyType KeyType, signatureAlgorithm SignatureAlgorithm, keyData []byte, keyID string) PublicKey {
+func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
 	return PublicKey{
 		KeyType:            keyType,
-		SignatureAlgorithm: signatureAlgorithm,
 		KeyData:            keyData,
 		ID:                 keyID,
 	}

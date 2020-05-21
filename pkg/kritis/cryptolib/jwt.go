@@ -52,7 +52,7 @@ func checkHeader(headerIn []byte, publicKey PublicKey) error {
 	var jsonHeader headerTemplate
 	err := json.Unmarshal(headerIn, &jsonHeader)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error unmarshaling json")
 	}
 	if jsonHeader.Crit != "" {
 		return errors.New("crit field not supported")
@@ -76,23 +76,23 @@ type jwtVerifierImpl struct{}
 func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byte, error) {
 	parts := bytes.Split(signature, []byte("."))
 	if len(parts) != 3 {
-		return []byte(""), errors.New("invalid JWT")
+		return nil, errors.New("invalid JWT")
 	}
 	header, err := base64.RawURLEncoding.DecodeString(string(parts[0]))
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "cannot decode header")
+		return nil, errors.Wrap(err, "cannot decode header")
 	}
 	err = checkHeader(header, publicKey)
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "invalid header")
+		return nil, errors.Wrap(err, "invalid header")
 	}
-	payload, err := base64.RawURLEncoding.DecodeString(string(parts[1]))
+	// Decode and return payload once verifyDetached is implimented.
 	if err != nil {
-		return []byte(""), errors.Wrap(err, "cannot decode payload")
+		return nil, errors.Wrap(err, "cannot decode payload")
 	}
 	verifyDetached(parts[2], publicKey.KeyData, publicKey.SignatureAlgorithm, append(parts[0], parts[1]...))
 
-	return payload, nil
+	return nil, errors.New("unimplemented")
 }
 
 func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgorithm, plaintext []byte) error {

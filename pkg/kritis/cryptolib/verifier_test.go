@@ -30,9 +30,9 @@ func TestVerifyAttestation(t *testing.T) {
 		Signature:         []byte("signature"),
 		SerializedPayload: []byte("payload"),
 	}
-	matchingKey := NewPublicKey(Pkix, RsaSignPkcs14096Sha256, []byte("key-data"), "key-id")
-	otherMatchingKey := NewPublicKey(Pkix, RsaSignPkcs14096Sha256, []byte("key-data-other"), "key-id")
-	nonmatchingKey := NewPublicKey(Pkix, RsaSignPkcs14096Sha256, []byte("key-data-other"), "key-id-other")
+	matchingKey := NewPublicKey(Pkix, []byte("key-data"), "key-id")
+	otherMatchingKey := NewPublicKey(Pkix, []byte("key-data-other"), "key-id")
+	nonmatchingKey := NewPublicKey(Pkix, []byte("key-data-other"), "key-id-other")
 
 	tcs := []struct {
 		name        string
