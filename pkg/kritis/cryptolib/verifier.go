@@ -52,9 +52,9 @@ type PublicKey struct {
 // this should be the OpenPGP RFC4880 V4 fingerprint of the key.
 func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
 	return PublicKey{
-		KeyType:            keyType,
-		KeyData:            keyData,
-		ID:                 keyID,
+		KeyType: keyType,
+		KeyData: keyData,
+		ID:      keyID,
 	}
 }
 
