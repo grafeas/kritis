@@ -26,10 +26,6 @@ import (
 	"golang.org/x/crypto/openpgp/armor"
 )
 
-//**************
-// PGP Verifying
-//**************
-
 type pgpVerifierImpl struct{}
 
 // verifyPgp verifies a PGP signature using a public key and outputs the
@@ -65,18 +61,14 @@ func (v pgpVerifierImpl) verifyPgp(signature, publicKey []byte) ([]byte, error) 
 		return nil, errors.Wrap(messageDetails.SignatureError, "failed to validate: signature error")
 	}
 	if messageDetails.Signature == nil {
-		return nil, errors.New("failed to validate: signature missing")
+		return nil, fmt.Errorf("failed to validate: signature missing")
 	}
 	return payload, nil
 }
 
-//************
-// PGP Signing
-//************
-
 type pgpSigner struct {
-	PrivateEntity *openpgp.Entity
-	PublicKeyID   string
+	privateEntity *openpgp.Entity
+	publicKeyID   string
 }
 
 // NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
@@ -91,25 +83,25 @@ func NewPgpSigner(privateKey []byte) (Signer, error) {
 	}
 	privateEntity := keyring[0]
 	return &pgpSigner{
-		PrivateEntity: privateEntity,
-		PublicKeyID:   fmt.Sprintf("%X", privateEntity.PrimaryKey.Fingerprint),
+		privateEntity: privateEntity,
+		publicKeyID:   fmt.Sprintf("%X", privateEntity.PrimaryKey.Fingerprint),
 	}, nil
 }
 
 // CreateAttestation creates a signed PGP Attestation. The Attestation's
-// PublicKeyID will be derived from the private key. See Signer for more
+// publicKeyID will be derived from the private key. See Signer for more
 // details.
 func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	// Create a buffer to store the signature
-	signature := &bytes.Buffer{}
+	signature := bytes.Buffer{}
 
 	// Armor-encode the signature before writing to the buffer
-	armorBuffer, err := armor.Encode(signature, openpgp.SignatureType, nil)
+	armorBuffer, err := armor.Encode(&signature, openpgp.SignatureType, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating armor buffer")
 	}
 
-	armorWriter, err := openpgp.Sign(armorBuffer, s.PrivateEntity, nil, nil)
+	armorWriter, err := openpgp.Sign(armorBuffer, s.privateEntity, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error signing payload")
 	}
@@ -125,7 +117,7 @@ func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	// The CRC checksum is not written until the armor buffer is closed.
 	armorBuffer.Close()
 	return &Attestation{
-		PublicKeyID: s.PublicKeyID,
+		PublicKeyID: s.publicKeyID,
 		Signature:   signature.Bytes(),
 	}, nil
 }
