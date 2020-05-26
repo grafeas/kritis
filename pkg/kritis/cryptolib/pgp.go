@@ -18,12 +18,17 @@ package cryptolib
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 )
+
+//**************
+// PGP Verifying
+//**************
 
 type pgpVerifierImpl struct{}
 
@@ -51,15 +56,76 @@ func (v pgpVerifierImpl) verifyPgp(signature, publicKey []byte) ([]byte, error) 
 	// This will call PublicKey.VerifySignature for the keys in the keyring.
 	payload, err := ioutil.ReadAll(messageDetails.UnverifiedBody)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not verify armor signature")
+		return nil, errors.Wrap(err, "error reading message contents")
 	}
 
-	// Make sure after reading the UnverifiedBody above, there is no signature error.
+	// Make sure after reading the UnverifiedBody above that the Signature
+	// exists and there is no SignatureError.
 	if messageDetails.SignatureError != nil {
-		return nil, errors.Wrap(messageDetails.SignatureError, "bad signature found")
+		return nil, errors.Wrap(messageDetails.SignatureError, "failed to validate: signature error")
 	}
 	if messageDetails.Signature == nil {
-		return nil, errors.New("no signature found for given key")
+		return nil, errors.New("failed to validate: signature missing")
 	}
 	return payload, nil
+}
+
+//************
+// PGP Signing
+//************
+
+type pgpSigner struct {
+	PrivateEntity *openpgp.Entity
+	PublicKeyID   string
+}
+
+// NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
+// contains the ASCII-armored private key.
+func NewPgpSigner(privateKey []byte) (Signer, error) {
+	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(privateKey))
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading armored private key")
+	}
+	if len(keyring) != 1 {
+		return nil, fmt.Errorf("expected 1 key in keyring, got %d", len(keyring))
+	}
+	privateEntity := keyring[0]
+	return &pgpSigner{
+		PrivateEntity: privateEntity,
+		PublicKeyID:   fmt.Sprintf("%X", privateEntity.PrimaryKey.Fingerprint),
+	}, nil
+}
+
+// CreateAttestation creates a signed PGP Attestation. The Attestation's
+// PublicKeyID will be derived from the private key. See Signer for more
+// details.
+func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+	// Create a buffer to store the signature
+	signature := &bytes.Buffer{}
+
+	// Armor-encode the signature before writing to the buffer
+	armorBuffer, err := armor.Encode(signature, openpgp.SignatureType, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating armor buffer")
+	}
+
+	armorWriter, err := openpgp.Sign(armorBuffer, s.PrivateEntity, nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error signing payload")
+	}
+
+	_, err = armorWriter.Write(payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "error writing payload to armor writer")
+	}
+
+	// The payload is not signed until the armor writer is closed. This will
+	// call Signature.Sign to sign the payload.
+	armorWriter.Close()
+	// The CRC checksum is not written until the armor buffer is closed.
+	armorBuffer.Close()
+	return &Attestation{
+		PublicKeyID: s.PublicKeyID,
+		Signature:   signature.Bytes(),
+	}, nil
 }
