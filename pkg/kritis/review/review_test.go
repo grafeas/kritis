@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -56,20 +58,20 @@ func TestReviewGAP(t *testing.T) {
 		}
 		return nil, fmt.Errorf("no such secret for %s", name)
 	}
-	oneValidAtt := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, secFpr, ""),
+	oneValidAtt := []cryptolib.Attestation{
+		metadata.MakeAttestation(secFpr, sig, nil),
 	}
-	twoValidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, secFpr, ""),
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, sig2, secFpr2, ""),
+	twoValidAtts := []cryptolib.Attestation{
+		metadata.MakeAttestation(secFpr, sig, nil),
+		metadata.MakeAttestation(secFpr2, sig2, nil),
 	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	invalidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, invalidSig, secFpr, ""),
+	invalidAtts := []cryptolib.Attestation{
+		metadata.MakeAttestation(secFpr, invalidSig, nil),
 	}
 
 	// A policy with a single attestor 'test'.
@@ -132,7 +134,7 @@ func TestReviewGAP(t *testing.T) {
 						{
 							KeyType:                  "PGP",
 							KeyId:                    secFpr,
-							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+							AsciiArmoredPgpPublicKey: base64Encode(pub),
 						},
 					},
 				}},
@@ -144,7 +146,7 @@ func TestReviewGAP(t *testing.T) {
 						{
 							KeyType:                  "PGP",
 							KeyId:                    secFpr2,
-							AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub2)),
+							AsciiArmoredPgpPublicKey: base64Encode(pub2),
 						},
 					},
 				}}}
@@ -162,7 +164,7 @@ func TestReviewGAP(t *testing.T) {
 		name            string
 		image           string
 		policies        []v1beta1.GenericAttestationPolicy
-		attestations    []metadata.RawAttestation
+		attestations    []cryptolib.Attestation
 		hasRequiredAtts bool
 		shouldErr       bool
 	}{
@@ -178,7 +180,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image without attestation",
 			image:           img,
 			policies:        oneGAP,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -186,7 +188,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "gap without attestor should error",
 			image:           img,
 			policies:        gapWithoutAA,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -194,7 +196,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "gap without attestor should error on allowlisted image",
 			image:           "allowed_image_name",
 			policies:        gapWithoutAA,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -202,7 +204,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "allowlisted image",
 			image:           "allowed_image_name",
 			policies:        oneGAP,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -210,7 +212,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image allowlisted in 1 policy",
 			image:           "allowed_image_name",
 			policies:        twoGAPs,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -218,7 +220,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image without policies",
 			image:           img,
 			policies:        []v1beta1.GenericAttestationPolicy{},
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -242,7 +244,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image in global allowlist",
 			image:           "us.gcr.io/grafeas/grafeas-server:0.1.0",
 			policies:        twoGAPs,
-			attestations:    []metadata.RawAttestation{},
+			attestations:    []cryptolib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -270,7 +272,7 @@ func TestReviewGAP(t *testing.T) {
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
-				RawAttestations: tc.attestations,
+				Atts: tc.attestations,
 			}
 			r := New(&Config{
 				Validate:  mockValidate,
@@ -307,11 +309,11 @@ func TestReviewISP(t *testing.T) {
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
 	}
-	validAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, sigVuln, secFpr, ""),
+	validAtts := []cryptolib.Attestation{
+		metadata.MakeAttestation(secFpr, sigVuln, nil),
 	}
-	invalidAtts := []metadata.RawAttestation{
-		metadata.MakeRawAttestation(metadata.PgpSignatureType, sigNoVuln, secFpr, ""),
+	invalidAtts := []cryptolib.Attestation{
+		metadata.MakeAttestation(secFpr, sigNoVuln, nil),
 	}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
@@ -333,7 +335,7 @@ func TestReviewISP(t *testing.T) {
 					{
 						KeyType:                  "PGP",
 						KeyId:                    secFpr,
-						AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+						AsciiArmoredPgpPublicKey: base64Encode(pub),
 					},
 				},
 			}}, nil
@@ -356,7 +358,7 @@ func TestReviewISP(t *testing.T) {
 		name              string
 		image             string
 		isWebhook         bool
-		attestations      []metadata.RawAttestation
+		attestations      []cryptolib.Attestation
 		handledViolations int
 		isAttested        bool
 		shouldAttestImage bool
@@ -376,7 +378,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w/o attestation for Webhook should handle voilations",
 			image:             vulnImage,
 			isWebhook:         true,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -386,7 +388,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w/o attestation for webhook should add attestation",
 			image:             noVulnImage,
 			isWebhook:         true,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
@@ -406,7 +408,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w/o attestation for cron should handle vuln",
 			image:             vulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -416,7 +418,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w/o attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -436,7 +438,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "unqualified image for cron should fail and should not attest any image",
 			image:             "image:tag",
 			isWebhook:         false,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -446,7 +448,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "unqualified image for webhook should fail should not attest any image",
 			image:             "image:tag",
 			isWebhook:         true,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -456,7 +458,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "review image in global allowlist",
 			image:             "gcr.io/kritis-project/preinstall",
 			isWebhook:         true,
-			attestations:      []metadata.RawAttestation{},
+			attestations:      []cryptolib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -467,7 +469,7 @@ func TestReviewISP(t *testing.T) {
 			image:     vulnImage,
 			isWebhook: true,
 			// Invalid because base64-encoded.
-			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, base64.StdEncoding.EncodeToString([]byte(sigVuln)), secFpr, "")},
+			attestations:      []cryptolib.Attestation{metadata.MakeAttestation(secFpr, base64Encode(sigVuln), nil)},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -478,7 +480,7 @@ func TestReviewISP(t *testing.T) {
 			image:     noVulnImage,
 			isWebhook: true,
 			// Invalid because base64-encoded.
-			attestations:      []metadata.RawAttestation{metadata.MakeRawAttestation(metadata.PgpSignatureType, base64.StdEncoding.EncodeToString([]byte(sigNoVuln)), secFpr, "")},
+			attestations:      []cryptolib.Attestation{metadata.MakeAttestation(secFpr, base64Encode(sigNoVuln), nil)},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
@@ -492,7 +494,7 @@ func TestReviewISP(t *testing.T) {
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
-				RawAttestations: tc.attestations,
+				Atts: tc.attestations,
 			}
 			r := New(&Config{
 				Validate:  mockValidate,
@@ -687,4 +689,8 @@ func TestGetAttestationAuthoritiesForISP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func base64Encode(in string) string {
+	return base64.StdEncoding.EncodeToString([]byte(in))
 }

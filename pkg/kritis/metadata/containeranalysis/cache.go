@@ -18,6 +18,7 @@ package containeranalysis
 
 import (
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/api/option"
@@ -29,7 +30,7 @@ import (
 type Cache struct {
 	client metadata.ReadWriteClient
 	vuln   map[string][]metadata.Vulnerability
-	atts   map[string][]metadata.RawAttestation
+	atts   map[string][]cryptolib.Attestation
 	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
 }
 
@@ -42,7 +43,7 @@ func NewCache(opts ...option.ClientOption) (*Cache, error) {
 	return &Cache{
 		client: c,
 		vuln:   map[string][]metadata.Vulnerability{},
-		atts:   map[string][]metadata.RawAttestation{},
+		atts:   map[string][]cryptolib.Attestation{},
 		notes:  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note{},
 	}, nil
 }
@@ -65,7 +66,7 @@ func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority from cache or from client.
-func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
+func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	if a, ok := c.atts[image]; ok {
 		return a, nil
 	}
