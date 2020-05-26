@@ -3,11 +3,11 @@ kind: VulnzSigningPolicy
 metadata:
   name: my-vsp
 spec:
-  project: projectgut-215417
-  noteReference: projects/projectgut-215417/notes/test-attestor-1
+  project: <ATTESTATION_PROJECT>
+  noteReference: projects/<NOTE_PROJECT>/notes/<NOTE_ID>
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
-    maximumFixUnavailableSeverity: ALLOW_ALL
+    maximumFixNotAvailableSeverity: MEDIUM
     allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2017-1000082
       - providers/goog-vulnz/notes/CVE-2017-1000081

@@ -15,15 +15,16 @@ steps:
     - -c
     - |
       docker push gcr.io/$PROJECT_ID/binauthz-test:latest &&
-      docker image inspect gcr.io/$PROJECT_ID/binauthz-test:latest --format '{{ .ID }}' > image-digest.txt &&
+      docker image inspect gcr.io/$PROJECT_ID/binauthz-test:latest --format '{{index .RepoDigests 0}}' > image-digest.txt &&
       cat image-digest.txt
     id: push
   # Wait for vulnerability scanning reaults
   - name: gcr.io/$PROJECT_ID/python-builder
+    entrypoint: /bin/bash
     args:
-    - ./wait-for-analysis.py 
-    - gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt)
-    - $PROJECT_ID
+    - -c
+    - |
+      ./wait-for-analysis.py $(/bin/cat image-digest.txt) $PROJECT_ID
     id: vulnpoll
   - name: gcr.io/$PROJECT_ID/kritis-signer
     entrypoint: /bin/bash
@@ -33,7 +34,7 @@ steps:
       /kritis/signer \
       -v=10 \
       -alsologtostderr \
-      -image=gcr.io/$PROJECT_ID/binauthz-test@$(/bin/cat image-digest.txt) \
+      -image=$(/bin/cat image-digest.txt) \
       -credentials=kritis-service-account.json \
       -private_key=gpg.priv \
       -public_key=gpg.pub \
