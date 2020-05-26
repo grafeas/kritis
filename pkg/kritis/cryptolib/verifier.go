@@ -37,6 +37,8 @@ type Verifier interface {
 type PublicKey struct {
 	// KeyType stores the type of the public key, one of Pgp, Pkix, or Jwt.
 	KeyType KeyType
+	// Signature Algorithm holds the signing and padding algorithm for the signature.
+	SignatureAlgorithm SignatureAlgorithm
 	// KeyData holds the raw key material which can verify a signature.
 	KeyData []byte
 	// ID uniquely identifies this public key. For PGP, this should be the
@@ -65,7 +67,7 @@ type pgpVerifier interface {
 }
 
 type jwtVerifier interface {
-	verifyJwt(signature []byte, publicKey []byte) ([]byte, error)
+	verifyJwt(signature []byte, publicKey PublicKey) ([]byte, error)
 }
 
 type convertFunc func(payload []byte) (*authenticatedAttestation, error)
@@ -142,7 +144,7 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	case Pgp:
 		payload, err = v.verifyPgp(att.Signature, publicKey.KeyData)
 	case Jwt:
-		payload, err = v.verifyJwt(att.Signature, publicKey.KeyData)
+		payload, err = v.verifyJwt(att.Signature, publicKey)
 	default:
 		return errors.New("signature uses an unsupported key mode")
 	}
@@ -162,10 +164,4 @@ type pkixVerifierImpl struct{}
 
 func (v pkixVerifierImpl) verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
 	return errors.New("verify pkix not implemented")
-}
-
-type jwtVerifierImpl struct{}
-
-func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey []byte) ([]byte, error) {
-	return []byte{}, errors.New("verify jwt not implemented")
 }
