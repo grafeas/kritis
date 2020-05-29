@@ -67,8 +67,8 @@ func (v pgpVerifierImpl) verifyPgp(signature, publicKey []byte) ([]byte, error) 
 }
 
 type pgpSigner struct {
-	privateEntity *openpgp.Entity
-	publicKeyID   string
+	privateKey  *openpgp.Entity
+	publicKeyID string
 }
 
 // NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
@@ -81,10 +81,10 @@ func NewPgpSigner(privateKey []byte) (Signer, error) {
 	if len(keyring) != 1 {
 		return nil, fmt.Errorf("expected 1 key in keyring, got %d", len(keyring))
 	}
-	privateEntity := keyring[0]
+	key := keyring[0]
 	return &pgpSigner{
-		privateEntity: privateEntity,
-		publicKeyID:   fmt.Sprintf("%X", privateEntity.PrimaryKey.Fingerprint),
+		privateKey:  key,
+		publicKeyID: fmt.Sprintf("%X", key.PrimaryKey.Fingerprint),
 	}, nil
 }
 
@@ -93,31 +93,31 @@ func NewPgpSigner(privateKey []byte) (Signer, error) {
 // details.
 func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	// Create a buffer to store the signature
-	signature := bytes.Buffer{}
+	armoredSignature := bytes.Buffer{}
 
 	// Armor-encode the signature before writing to the buffer
-	armorBuffer, err := armor.Encode(&signature, openpgp.SignatureType, nil)
+	armorWriter, err := armor.Encode(&armoredSignature, openpgp.SignatureType, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating armor buffer")
 	}
 
-	armorWriter, err := openpgp.Sign(armorBuffer, s.privateEntity, nil, nil)
+	signatureWriter, err := openpgp.Sign(armorWriter, s.privateKey, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error signing payload")
 	}
 
-	_, err = armorWriter.Write(payload)
+	_, err = signatureWriter.Write(payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "error writing payload to armor writer")
 	}
 
 	// The payload is not signed until the armor writer is closed. This will
 	// call Signature.Sign to sign the payload.
-	armorWriter.Close()
+	signatureWriter.Close()
 	// The CRC checksum is not written until the armor buffer is closed.
-	armorBuffer.Close()
+	armorWriter.Close()
 	return &Attestation{
 		PublicKeyID: s.publicKeyID,
-		Signature:   signature.Bytes(),
+		Signature:   armoredSignature.Bytes(),
 	}, nil
 }
