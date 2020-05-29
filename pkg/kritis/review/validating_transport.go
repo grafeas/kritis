@@ -143,10 +143,6 @@ func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryp
 		if rawAtt.SignatureType != metadata.PgpSignatureType {
 			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
 		}
-		if err != nil {
-			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
-			continue
-		}
 		// TODO(https://github.com/grafeas/kritis/issues/505): Remove this
 		// after Kritis migrates to cryptolib.Attestation.
 		att := &cryptolib.Attestation{
