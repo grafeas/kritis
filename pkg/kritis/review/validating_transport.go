@@ -132,25 +132,10 @@ func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.P
 	return publicKeys, invalidKeys
 }
 
-func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryptolib.Attestation, error) {
-	atts := []*cryptolib.Attestation{}
-	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
+func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]cryptolib.Attestation, error) {
+	atts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
-	}
-
-	for _, rawAtt := range rawAtts {
-		if rawAtt.SignatureType != metadata.PgpSignatureType {
-			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
-		}
-		// TODO(https://github.com/grafeas/kritis/issues/505): Remove this
-		// after Kritis migrates to cryptolib.Attestation.
-		att := &cryptolib.Attestation{
-			PublicKeyID:       rawAtt.Signature.PublicKeyId,
-			Signature:         []byte(rawAtt.Signature.Signature),
-			SerializedPayload: rawAtt.SerializedPayload,
-		}
-		atts = append(atts, att)
 	}
 	return atts, nil
 }
@@ -173,7 +158,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 
 	validatedAtts := []attestation.ValidatedAttestation{}
 	for _, att := range atts {
-		if err := verifier.VerifyAttestation(att); err != nil {
+		if err := verifier.VerifyAttestation(&att); err != nil {
 			glog.Warningf("error verifying attestation: %v", err)
 			continue
 		}

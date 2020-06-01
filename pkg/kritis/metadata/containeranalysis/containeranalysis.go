@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	"google.golang.org/api/option"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
@@ -100,21 +102,21 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 // For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
 // For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
 // In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
-	var ras []metadata.RawAttestation
-
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
+
+	atts := []cryptolib.Attestation{}
 	for _, occ := range occs {
-		ra, err := metadata.GetRawAttestationsFromOccurrence(occ)
+		att, err := metadata.GetAttestationsFromOccurrence(occ)
 		if err != nil {
 			return nil, err
 		}
-		ras = append(ras, ra...)
+		atts = append(atts, att...)
 	}
-	return ras, nil
+	return atts, nil
 }
 
 func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {

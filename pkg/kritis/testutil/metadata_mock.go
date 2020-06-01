@@ -19,6 +19,8 @@ package testutil
 import (
 	"fmt"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
@@ -27,11 +29,11 @@ import (
 
 // Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
-	Vulnz           []metadata.Vulnerability
-	RawAttestations []metadata.RawAttestation
-	AAs             []kritisv1beta1.AttestationAuthority
-	Occ             map[string]string
-	Err             error
+	Vulnz []metadata.Vulnerability
+	Atts  []cryptolib.Attestation
+	AAs   []kritisv1beta1.AttestationAuthority
+	Occ   map[string]string
+	Err   error
 }
 
 func (m *MockMetadataClient) SetError(err error) {
@@ -82,19 +84,19 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
-	return m.RawAttestations, nil
+	return m.Atts, nil
 }
 
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
-			Vulnz:           []metadata.Vulnerability{},
-			RawAttestations: []metadata.RawAttestation{},
-			AAs:             []kritisv1beta1.AttestationAuthority{},
+			Vulnz: []metadata.Vulnerability{},
+			Atts:  []cryptolib.Attestation{},
+			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
 }
@@ -102,9 +104,9 @@ func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 func NilReadOnlyClient() func() (metadata.ReadOnlyClient, error) {
 	return func() (metadata.ReadOnlyClient, error) {
 		return &MockMetadataClient{
-			Vulnz:           []metadata.Vulnerability{},
-			RawAttestations: []metadata.RawAttestation{},
-			AAs:             []kritisv1beta1.AttestationAuthority{},
+			Vulnz: []metadata.Vulnerability{},
+			Atts:  []cryptolib.Attestation{},
+			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
 }
