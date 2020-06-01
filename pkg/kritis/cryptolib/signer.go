@@ -33,11 +33,6 @@ type pkixSigner struct {
 	SignatureAlgorithm SignatureAlgorithm
 }
 
-type pgpSigner struct {
-	PrivateKey  []byte
-	PublicKeyID string
-}
-
 type jwtSigner struct {
 	PrivateKey         []byte
 	PublicKeyID        string
@@ -55,18 +50,6 @@ func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm
 	}, nil
 }
 
-// NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
-// contains the ASCII-armored private key.
-func NewPgpSigner(privateKey []byte) (Signer, error) {
-	// TODO: Generate publicKeyID deterministically from privateKey
-	var publicKeyID string
-
-	return &pgpSigner{
-		PrivateKey:  privateKey,
-		PublicKeyID: publicKeyID,
-	}, nil
-}
-
 // NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
 // is the ID of the public key that can verify the Attestation signature.
 // TODO: Explain formatting of JWT private keys.
@@ -81,13 +64,6 @@ func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm)
 // CreateAttestation creates a signed PKIX Attestation. See Signer for more details.
 func (s *pkixSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	return nil, errors.New("pkix attestations not implemented")
-}
-
-// CreateAttestation creates a signed PGP Attestation. The Attestation's
-// PublicKeyID will be derived from the private key. See Signer for more
-// details.
-func (s *pgpSigner) CreateAttestation(payload []byte) (*Attestation, error) {
-	return nil, errors.New("pgp attestations not implemented")
 }
 
 // CreateAttestation creates a signed JWT Attestation. See Signer for more details.
