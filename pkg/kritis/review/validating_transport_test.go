@@ -28,7 +28,6 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
@@ -204,8 +203,14 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
-			metadata.MakeAttestation(successFpr, "invalid-sig", nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at least one good PGP key", auth: validAuthWithOneGoodOneBadPgpKeys, wantAtts: []attestation.ValidatedAttestation{
 			{
@@ -213,8 +218,14 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
-			metadata.MakeAttestation(successFpr, "invalid-sig", nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at two good PGP keys", auth: validAuthWithTwoGoodPgpKeys, wantAtts: []attestation.ValidatedAttestation{
 			{
@@ -222,45 +233,87 @@ func TestValidatingTransport(t *testing.T) {
 				Image:        testutil.QualifiedImage,
 			},
 		}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
-			metadata.MakeAttestation(successFpr, "invalid-sig", nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "no valid sig", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, "invalid-sig", nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "regression: sig is base64 encoded", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, base64Encode(sig), nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(base64Encode(sig)),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation("invalid-fpr", "invalid-sig", nil),
+			{
+				PublicKeyID: "invalid-fpr",
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, anotherSig, nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(anotherSig),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
 		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
 		}, errorExpected: true, attError: nil},
 		{name: "valid auth with invalid PGP key id", auth: invalidAuthWithOneInvalidPgpKeyId, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
 		}, errorExpected: false, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
 		// ValidatedAttestations and `errorExpected` should  be false.
 		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation("", "", []byte("")),
+			{
+				PublicKeyID:       "",
+				Signature:         []byte(""),
+				SerializedPayload: []byte(""),
+			},
 		}, errorExpected: true, attError: nil},
 		{name: "auth with invalid PKIX key id", auth: invalidAuthWithOneInvalidPkixKeyId, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation("", "", []byte("")),
+			{
+				PublicKeyID:       "",
+				Signature:         []byte(""),
+				SerializedPayload: []byte(""),
+			},
 		}, errorExpected: true, attError: nil},
 		{name: "invalid auth with PGP key type but PKIX key", auth: invalidAuthWithPgpTypeAndPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
 		}, errorExpected: true, attError: nil},
 		{name: "invalid auth with PKIX key type but PGP key", auth: invalidAuthWithPkixTypeAndPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation("", "", []byte("")),
+			{
+				PublicKeyID:       "",
+				Signature:         []byte(""),
+				SerializedPayload: []byte(""),
+			},
 		}, errorExpected: true, attError: nil},
 		{name: "invalid key with unknown key type", auth: invalidAuthWithUnknownKeyType, wantAtts: nil, attestations: []cryptolib.Attestation{
-			metadata.MakeAttestation(successFpr, sig, nil),
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte(sig),
+			},
 		}, errorExpected: true, attError: nil},
 		// TODO(acamadeo): Add a test case for a PKIX key with a bad key once
 		// the PKIX key verification is implemented.

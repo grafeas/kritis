@@ -101,22 +101,37 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 			"pgp attestation",
 			makeOccAttestationPgp("sig-1", "id-1"),
 			[]cryptolib.Attestation{
-				MakeAttestation("id-1", "sig-1", nil),
+				{
+					PublicKeyID: "id-1",
+					Signature:   []byte("sig-1"),
+				},
 			},
 		},
 		{
 			"generic attestation",
 			makeOccAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
 			[]cryptolib.Attestation{
-				MakeAttestation("id-1", "sig-1", []byte("generic-address")),
+				{
+					PublicKeyID:       "id-1",
+					Signature:         []byte("sig-1"),
+					SerializedPayload: []byte("generic-address"),
+				},
 			},
 		},
 		{
 			"generic attestation multiple signatures",
 			makeOccAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
 			[]cryptolib.Attestation{
-				MakeAttestation("id-1", "sig-1", []byte("generic-address")),
-				MakeAttestation("id-2", "sig-2", []byte("generic-address")),
+				{
+					PublicKeyID:       "id-1",
+					Signature:         []byte("sig-1"),
+					SerializedPayload: []byte("generic-address"),
+				},
+				{
+					PublicKeyID:       "id-2",
+					Signature:         []byte("sig-2"),
+					SerializedPayload: []byte("generic-address"),
+				},
 			},
 		},
 	}

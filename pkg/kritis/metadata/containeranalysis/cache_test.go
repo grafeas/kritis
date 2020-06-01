@@ -67,8 +67,18 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []cryptolib.Attestation{makePgpAttestation("sig-cache", "key-cache")}
-	aClient := []cryptolib.Attestation{makePgpAttestation("sig-client", "key-client")}
+	aCache := []cryptolib.Attestation{
+		{
+			PublicKeyID: "sig-cache",
+			Signature:   []byte("key-cache"),
+		},
+	}
+	aClient := []cryptolib.Attestation{
+		{
+			PublicKeyID: "sig-client",
+			Signature:   []byte("key-client"),
+		},
+	}
 	c := Cache{
 		client: &testutil.MockMetadataClient{Atts: aClient},
 		vuln:   nil,
@@ -138,13 +148,5 @@ func TestNCache(t *testing.T) {
 				t.Errorf("Expected %v, Got %v", tc.expected, actual)
 			}
 		})
-	}
-}
-
-func makePgpAttestation(signature, id string) cryptolib.Attestation {
-	return cryptolib.Attestation{
-		PublicKeyID:       id,
-		Signature:         []byte(signature),
-		SerializedPayload: nil,
 	}
 }

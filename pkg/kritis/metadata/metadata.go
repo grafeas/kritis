@@ -139,13 +139,3 @@ func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attesta
 	}
 	return atts, nil
 }
-
-// MakeAttestation is testing purposes. Should not be used as part of metadata
-// external API.
-func MakeAttestation(publicKeyID string, signature string, serializedPayload []byte) cryptolib.Attestation {
-	return cryptolib.Attestation{
-		PublicKeyID:       publicKeyID,
-		Signature:         []byte(signature),
-		SerializedPayload: serializedPayload,
-	}
-}

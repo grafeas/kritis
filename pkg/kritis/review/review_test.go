@@ -59,11 +59,20 @@ func TestReviewGAP(t *testing.T) {
 		return nil, fmt.Errorf("no such secret for %s", name)
 	}
 	oneValidAtt := []cryptolib.Attestation{
-		metadata.MakeAttestation(secFpr, sig, nil),
+		{
+			PublicKeyID: secFpr,
+			Signature:   []byte(sig),
+		},
 	}
 	twoValidAtts := []cryptolib.Attestation{
-		metadata.MakeAttestation(secFpr, sig, nil),
-		metadata.MakeAttestation(secFpr2, sig2, nil),
+		{
+			PublicKeyID: secFpr,
+			Signature:   []byte(sig),
+		},
+		{
+			PublicKeyID: secFpr2,
+			Signature:   []byte(sig2),
+		},
 	}
 
 	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
@@ -71,7 +80,10 @@ func TestReviewGAP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 	invalidAtts := []cryptolib.Attestation{
-		metadata.MakeAttestation(secFpr, invalidSig, nil),
+		{
+			PublicKeyID: secFpr,
+			Signature:   []byte(invalidSig),
+		},
 	}
 
 	// A policy with a single attestor 'test'.
@@ -310,10 +322,16 @@ func TestReviewISP(t *testing.T) {
 		return sec, nil
 	}
 	validAtts := []cryptolib.Attestation{
-		metadata.MakeAttestation(secFpr, sigVuln, nil),
+		{
+			PublicKeyID: secFpr,
+			Signature:   []byte(sigVuln),
+		},
 	}
 	invalidAtts := []cryptolib.Attestation{
-		metadata.MakeAttestation(secFpr, sigNoVuln, nil),
+		{
+			PublicKeyID: secFpr,
+			Signature:   []byte(sigNoVuln),
+		},
 	}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
@@ -469,7 +487,12 @@ func TestReviewISP(t *testing.T) {
 			image:     vulnImage,
 			isWebhook: true,
 			// Invalid because base64-encoded.
-			attestations:      []cryptolib.Attestation{metadata.MakeAttestation(secFpr, base64Encode(sigVuln), nil)},
+			attestations: []cryptolib.Attestation{
+				{
+					PublicKeyID: secFpr,
+					Signature:   []byte(base64Encode(sigVuln)),
+				},
+			},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -480,7 +503,12 @@ func TestReviewISP(t *testing.T) {
 			image:     noVulnImage,
 			isWebhook: true,
 			// Invalid because base64-encoded.
-			attestations:      []cryptolib.Attestation{metadata.MakeAttestation(secFpr, base64Encode(sigNoVuln), nil)},
+			attestations: []cryptolib.Attestation{
+				{
+					PublicKeyID: secFpr,
+					Signature:   []byte(base64Encode(sigNoVuln)),
+				},
+			},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
