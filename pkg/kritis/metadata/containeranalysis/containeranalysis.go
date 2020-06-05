@@ -19,6 +19,7 @@ package containeranalysis
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
@@ -35,6 +36,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/discovery"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
@@ -293,4 +295,75 @@ func (c Client) DeleteOccurrence(ID string) error {
 	}
 	glog.Infof("executed deletion of occurrence=%s", ID)
 	return c.client.DeleteOccurrence(c.ctx, req)
+}
+
+// Poll discovery occurrence for an image and wait until container analysis
+// finishes. Throws an error if analysis is not successful or timeouts.
+func WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	// resourceURL := fmt.Sprintf("https://gcr.io/my-project/my-image")
+	// timeout := time.Duration(5) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	client, err := ca.NewGrafeasV1Beta1Client(ctx)
+	if err != nil {
+		return fmt.Errorf("NewClient: %v", err)
+	}
+	defer client.Close()
+
+	// ticker is used to poll once per second.
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	// Find the discovery occurrence using a filter string.
+	var discoveryOccurrence *grafeas.Occurrence
+	for discoveryOccurrence == nil {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout while retrieving discovery occurrence")
+		case <-ticker.C:
+			req := &grafeas.ListOccurrencesRequest{
+				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+				// Vulnerability discovery occurrences are always associated with the
+				// PACKAGE_VULNERABILITY note in the "goog-analysis" GCP project.
+				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId="goog-analysis" AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage)),
+			}
+			it := client.ListOccurrences(ctx, req)
+			// Only one occurrence should ever be returned by ListOccurrences
+			// and the given filter.
+			result, err := it.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return fmt.Errorf("it.Next: %v", err)
+			}
+			if result.GetDiscovered() != nil {
+				discoveryOccurrence = result
+			}
+		}
+	}
+
+	// Wait for the discovery occurrence to enter a terminal state.
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout waiting for terminal state")
+		case <-ticker.C:
+			// Update the occurrence.
+			req := &grafeas.GetOccurrenceRequest{Name: discoveryOccurrence.GetName()}
+			updated, err := client.GetOccurrence(ctx, req)
+			if err != nil {
+				return fmt.Errorf("GetOccurrence: %v", err)
+			}
+			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
+			case discovery.Discovered_FINISHED_SUCCESS:
+				return nil
+			case discovery.Discovered_FINISHED_FAILED:
+				return fmt.Errorf("container analysis has finished unsuccessfully")
+			case discovery.Discovered_FINISHED_UNSUPPORTED:
+				return fmt.Errorf("container analysis resource is known not to be supported")
+			}
+		}
+	}
 }

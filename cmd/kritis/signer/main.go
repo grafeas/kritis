@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"os"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -34,9 +35,10 @@ import (
 )
 
 func main() {
-	var image, json_key_path, pri_key_path, passphrase, pub_key_path, policy_path string
+	var image, timeout_str, json_key_path, pri_key_path, passphrase, pub_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
+	flag.StringVar(&timeout_str, "timeout", "5m", "timeout for checking on image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&json_key_path, "credentials", "", "json credentials file path, e.g., ./key.json")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
@@ -76,6 +78,15 @@ func main() {
 	// Read the vulnz scanning events
 	if image == "" {
 		glog.Fatalf("Image url is empty: %s", image)
+	}
+
+	timeout, err := time.ParseDuration(timeout_str)
+	if err != nil {
+		glog.Fatalf("Fail to parse timeout %v", err)
+	}
+	err = containeranalysis.WaitForVulnzAnalysis(image, timeout)
+	if err != nil {
+		glog.Fatalf("Error waiting for vulnerability analysis %v", err)
 	}
 
 	d, err := containeranalysis.New(option.WithCredentialsFile(json_key_path))
