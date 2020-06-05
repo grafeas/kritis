@@ -2,7 +2,7 @@
 set -ex
 
 # prepare policy file
-export NOTE_ID=kritis-attestor-note
+NOTE_ID=kritis-attestor-note
 # create policy.yaml
 cat policy_template.yaml \
 | sed -e "s?<ATTESTATION_PROJECT>?${PROJECT_ID}?g" \
@@ -53,9 +53,19 @@ docker push $BAD_IMAGE_URL
 # get image url with digest format
 BAD_IMG_DIGEST_URL=$(docker image inspect $BAD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
+signing_bad_image_failed=false
 ./signer -v 10 \
 -alsologtostderr \
 -image=${BAD_IMG_DIGEST_URL} \
 -public_key=public.key \
 -private_key=private.key \
--policy=policy.yaml || exit 0
+-policy=policy.yaml || singing_bad_image_failed=true
+
+
+if [ "$signing_bad_image_failed" = true ] ; then
+	echo "Signing failed for bad image as expected."
+    exit 0
+else
+	echo "Error: signing should fail for bad image, but succeeded."
+    exit 1
+fi
