@@ -27,7 +27,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
-	"google.golang.org/api/option"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -37,7 +36,6 @@ func main() {
 	var image, json_key_path, pri_key_path, passphrase, pub_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
-	flag.StringVar(&json_key_path, "credentials", "", "json credentials file path, e.g., ./key.json")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
@@ -78,25 +76,16 @@ func main() {
 		glog.Fatalf("Image url is empty: %s", image)
 	}
 
-	d, err := containeranalysis.New(option.WithCredentialsFile(json_key_path))
+	client, err := containeranalysis.NewCache()
 	if err != nil {
 		glog.Fatalf("Could not initialize the client %v", err)
 	}
-	vulnz, err := d.Vulnerabilities(image)
+	vulnz, err := client.Vulnerabilities(image)
 	if err != nil {
 		glog.Fatalf("Found err %s", err)
 	}
 	if vulnz == nil {
 		glog.Fatalf("Expected some vulnerabilities. Nil found")
-	}
-
-	//fmt.Printf("policy noteReference %s\n", policy.Spec.NoteReference)
-	// fmt.Printf("signer_key %v\n", signerKey)
-
-	// Run the signer
-	client, err := containeranalysis.NewCache(option.WithCredentialsFile(json_key_path))
-	if err != nil {
-		glog.Fatalf("Error getting Container Analysis client: %v", err)
 	}
 
 	// Create pgp key
