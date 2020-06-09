@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	"google.golang.org/grpc/credentials"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -134,22 +136,22 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.RawAttestation, error) {
-	var ras []metadata.RawAttestation
-
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
+
+	atts := []cryptolib.Attestation{}
 	for _, occ := range occs {
-		ra, err := metadata.GetRawAttestationsFromOccurrence(occ)
+		att, err := metadata.GetAttestationsFromOccurrence(occ)
 		if err != nil {
 			return nil, err
 		}
-		ras = append(ras, ra...)
+		atts = append(atts, att...)
 	}
 
-	return ras, nil
+	return atts, nil
 }
 
 // CreateAttestationNote creates an attestation note from AttestationAuthority
