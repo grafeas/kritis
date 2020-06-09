@@ -59,3 +59,4 @@ See [DEVELOPMENT](DEVELOPMENT.md) for details on the  development and testing wo
 ## License
 
 Kritis is under the Apache 2.0 license. See the [LICENSE](LICENSE) file for details.
+
