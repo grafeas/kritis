@@ -42,7 +42,7 @@ func main() {
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
-	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, pri_key_path, policy_path)
+	glog.Infof("image: %s, s_key: %s, policy: %s", image, pri_key_path, policy_path)
 
 	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
