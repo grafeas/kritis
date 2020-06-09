@@ -33,7 +33,7 @@ import (
 )
 
 func main() {
-	var image, json_key_path, pri_key_path, passphrase, pub_key_path, policy_path string
+	var image, pri_key_path, passphrase, pub_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
@@ -42,7 +42,7 @@ func main() {
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
-	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, json_key_path, pri_key_path, policy_path)
+	glog.Infof("image: %s, json_path: %s, s_key: %s, policy: %s", image, pri_key_path, policy_path)
 
 	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
