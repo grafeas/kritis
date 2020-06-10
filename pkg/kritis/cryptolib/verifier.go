@@ -17,11 +17,14 @@ limitations under the License.
 package cryptolib
 
 import (
+	"bytes"
 	"fmt"
+	"regexp"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/openpgp"
 )
 
 // Verifier contains methods to validate an Attestation.
@@ -49,13 +52,47 @@ type PublicKey struct {
 // NewPublicKey creates a new PublicKey. `keyType` contains the type of the
 // public key, one of Pgp, Pkix or Jwt. `keyData` contains the raw key
 // material. `keyID` contains a unique identifier for the public key. For PGP,
-// this should be the OpenPGP RFC4880 V4 fingerprint of the key.
-func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
-	return PublicKey{
+// this should be the OpenPGP RFC4880 V4 fingerprint of the key. For PKIX and
+// JWT, the ID should contain valid URI characters.
+func NewPublicKey(keyType KeyType, keyData []byte, keyID string) (*PublicKey, error) {
+	switch keyType {
+	case Pgp:
+		err := validatePgpKeyID(keyData, keyID)
+		if err != nil {
+			return nil, err
+		}
+	case Pkix, Jwt:
+		// Valid URI characters (see http://tools.ietf.org/html/rfc3986#section-2)
+		reURI := regexp.MustCompile(`^[a-zA-Z0-9-._~:\/?#\[\]@!$&'\(\)*+,;=%]+$`)
+		if !reURI.MatchString(keyID) {
+			return nil, fmt.Errorf("key ID contains invalid characters")
+		}
+	case UnknownKeyType:
+		return nil, fmt.Errorf("invalid key type")
+	default:
+		return nil, fmt.Errorf("invalid key type")
+	}
+
+	return &PublicKey{
 		KeyType: keyType,
 		KeyData: keyData,
 		ID:      keyID,
+	}, nil
+}
+
+func validatePgpKeyID(keyData []byte, keyID string) error {
+	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(keyData))
+	if err != nil {
+		return fmt.Errorf("error reading armored public key: %v", err)
 	}
+	if len(keyring) != 1 {
+		return fmt.Errorf("expected 1 public key, got %d", len(keyring))
+	}
+	key := keyring[0]
+	if keyID != fmt.Sprintf("%X", key.PrimaryKey.Fingerprint) {
+		return fmt.Errorf("keyID does not match key fingerprint")
+	}
+	return nil
 }
 
 type pkixVerifier interface {
