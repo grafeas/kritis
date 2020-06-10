@@ -40,14 +40,22 @@ func TestReviewGAP(t *testing.T) {
 	secFpr, secFpr2 := sec.PgpKey.Fingerprint(), sec2.PgpKey.Fingerprint()
 	img := testutil.QualifiedImage
 	// An attestation for 'img' verifiable by 'pub'.
-	sig, err := util.CreateAttestationSignature(img, sec)
+	att1, err := util.CreateAttestation(img, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	sig2, err := util.CreateAttestationSignature(img, sec2)
+	att2, err := util.CreateAttestation(img, sec2)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
+	invalidAtt, err := util.CreateAttestation(testutil.IntTestImage, sec)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	oneValidAtt := []cryptolib.Attestation{*att1}
+	twoValidAtts := []cryptolib.Attestation{*att1, *att2}
+	invalidAtts := []cryptolib.Attestation{*invalidAtt}
 
 	sMock := func(_, name string) (*secrets.PGPSigningSecret, error) {
 		if name == "sec" {
@@ -57,33 +65,6 @@ func TestReviewGAP(t *testing.T) {
 			return sec2, nil
 		}
 		return nil, fmt.Errorf("no such secret for %s", name)
-	}
-	oneValidAtt := []cryptolib.Attestation{
-		{
-			PublicKeyID: secFpr,
-			Signature:   []byte(sig),
-		},
-	}
-	twoValidAtts := []cryptolib.Attestation{
-		{
-			PublicKeyID: secFpr,
-			Signature:   []byte(sig),
-		},
-		{
-			PublicKeyID: secFpr2,
-			Signature:   []byte(sig2),
-		},
-	}
-
-	invalidSig, err := util.CreateAttestationSignature(testutil.IntTestImage, sec)
-	if err != nil {
-		t.Fatalf("unexpected error %v", err)
-	}
-	invalidAtts := []cryptolib.Attestation{
-		{
-			PublicKeyID: secFpr,
-			Signature:   []byte(invalidSig),
-		},
 	}
 
 	// A policy with a single attestor 'test'.
@@ -308,30 +289,22 @@ func TestReviewISP(t *testing.T) {
 	secFpr := sec.PgpKey.Fingerprint()
 	vulnImage := testutil.QualifiedImage
 	unQualifiedImage := "image:tag"
-	sigVuln, err := util.CreateAttestationSignature(vulnImage, sec)
+	attVuln, err := util.CreateAttestation(vulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
 
 	noVulnImage := testutil.IntTestImage
-	sigNoVuln, err := util.CreateAttestationSignature(noVulnImage, sec)
+	attNoVuln, err := util.CreateAttestation(noVulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
+
+	validAtts := []cryptolib.Attestation{*attVuln}
+	invalidAtts := []cryptolib.Attestation{*attNoVuln}
+
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
-	}
-	validAtts := []cryptolib.Attestation{
-		{
-			PublicKeyID: secFpr,
-			Signature:   []byte(sigVuln),
-		},
-	}
-	invalidAtts := []cryptolib.Attestation{
-		{
-			PublicKeyID: secFpr,
-			Signature:   []byte(sigNoVuln),
-		},
 	}
 	isps := []v1beta1.ImageSecurityPolicy{
 		{
@@ -480,38 +453,6 @@ func TestReviewISP(t *testing.T) {
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
-			shouldErr:         false,
-		},
-		{
-			name:      "regression: vulnz w old base64-encoded attestation should handle violations",
-			image:     vulnImage,
-			isWebhook: true,
-			// Invalid because base64-encoded.
-			attestations: []cryptolib.Attestation{
-				{
-					PublicKeyID: secFpr,
-					Signature:   []byte(base64Encode(sigVuln)),
-				},
-			},
-			handledViolations: 1,
-			isAttested:        false,
-			shouldAttestImage: false,
-			shouldErr:         true,
-		},
-		{
-			name:      "regression: no vulnz w old base64-encoded attestation should create new attestation",
-			image:     noVulnImage,
-			isWebhook: true,
-			// Invalid because base64-encoded.
-			attestations: []cryptolib.Attestation{
-				{
-					PublicKeyID: secFpr,
-					Signature:   []byte(base64Encode(sigNoVuln)),
-				},
-			},
-			handledViolations: 0,
-			isAttested:        false,
-			shouldAttestImage: true,
 			shouldErr:         false,
 		},
 	}
