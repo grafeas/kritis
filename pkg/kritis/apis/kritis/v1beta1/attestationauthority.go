@@ -43,7 +43,7 @@ type AttestationAuthoritySpec struct {
 	PublicKeys    []PublicKey `json:"publicKeys"`
 }
 
-// PublicKey stores key data used to verify Attestations.
+// PublicKey stores key data used to verify  Attestations.
 type PublicKey struct {
 	// KeyId is the ID of this public key (required for PKIX keys). For PKIX
 	// keys, please use a RFC3986 conformant URI. For PGP keys, this field
