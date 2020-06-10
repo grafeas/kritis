@@ -66,7 +66,7 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			vulnDetails := &grafeas.Occurrence_Vulnerability{
 				Vulnerability: &vulnerability.Details{
-					Severity: tc.severity,
+					EffectiveSeverity: tc.severity,
 					PackageIssue: []*vulnerability.PackageIssue{
 						{
 							AffectedLocation: &vulnerability.VulnerabilityLocation{},
