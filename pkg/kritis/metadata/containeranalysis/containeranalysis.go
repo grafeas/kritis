@@ -299,41 +299,33 @@ func (c Client) DeleteOccurrence(ID string) error {
 
 // Poll discovery occurrence for an image and wait until container analysis
 // finishes. Throws an error if analysis is not successful or timeouts.
-func WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
 	// resourceURL := fmt.Sprintf("https://gcr.io/my-project/my-image")
 	// timeout := time.Duration(5) * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
-	client, err := ca.NewGrafeasV1Beta1Client(ctx)
-	if err != nil {
-		return fmt.Errorf("NewClient: %v", err)
-	}
-	defer client.Close()
-
-	// ticker is used to poll once per second.
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+	// Backoff time between tries, exponentially grows after each failure.
+	nextTryWait := 1
+	// Timeout clock.
+	timeoutTimer := time.NewTimer(timeout)
+	defer timeoutTimer.Stop()
 
 	// Find the discovery occurrence using a filter string.
 	var discoveryOccurrence *grafeas.Occurrence
-	for discoveryOccurrence == nil {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timeout while retrieving discovery occurrence")
-		case <-ticker.C:
+	for {
+		// Waiting for discovery occurrence to appear.
+		if discoveryOccurrence == nil {
 			req := &grafeas.ListOccurrencesRequest{
 				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 				// Vulnerability discovery occurrences are always associated with the
 				// PACKAGE_VULNERABILITY note in the "goog-analysis" GCP project.
 				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId="goog-analysis" AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage)),
 			}
-			it := client.ListOccurrences(ctx, req)
+			it := c.client.ListOccurrences(c.ctx, req)
 			// Only one occurrence should ever be returned by ListOccurrences
 			// and the given filter.
 			result, err := it.Next()
 			if err == iterator.Done {
-				break
+				continue
 			}
 			if err != nil {
 				return fmt.Errorf("it.Next: %v", err)
@@ -342,17 +334,12 @@ func WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
 				discoveryOccurrence = result
 			}
 		}
-	}
 
-	// Wait for the discovery occurrence to enter a terminal state.
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timeout waiting for terminal state")
-		case <-ticker.C:
+		// Update analysis status and check.
+		if discoveryOccurrence != nil {
 			// Update the occurrence.
 			req := &grafeas.GetOccurrenceRequest{Name: discoveryOccurrence.GetName()}
-			updated, err := client.GetOccurrence(ctx, req)
+			updated, err := c.client.GetOccurrence(c.ctx, req)
 			if err != nil {
 				return fmt.Errorf("GetOccurrence: %v", err)
 			}
@@ -364,6 +351,14 @@ func WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
 			case discovery.Discovered_FINISHED_UNSUPPORTED:
 				return fmt.Errorf("container analysis resource is known not to be supported")
 			}
+		}
+
+		select {
+		case <-timeoutTimer.C:
+			return fmt.Errorf("timeout while retrieving discovery occurrence")
+		case <-time.Tick(time.Duration(nextTryWait)):
+			// exponential backoff
+			nextTryWait = nextTryWait * 2
 		}
 	}
 }

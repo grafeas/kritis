@@ -34,10 +34,10 @@ import (
 )
 
 func main() {
-	var image, timeout_str, pri_key_path, passphrase, pub_key_path, policy_path string
+	var image, vulnz_timeout, pri_key_path, passphrase, pub_key_path, policy_path string
 
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
-	flag.StringVar(&timeout_str, "timeout", "5m", "timeout for checking on image vulnerability , e.g., 600s, 5m")
+	flag.StringVar(&vulnz_timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
@@ -73,24 +73,26 @@ func main() {
 		glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
 	}
 
-	// Read the vulnz scanning events
+	// Read the vulnz scanning events.
 	if image == "" {
 		glog.Fatalf("Image url is empty: %s", image)
 	}
 
-	timeout, err := time.ParseDuration(timeout_str)
+	client, err := containeranalysis.New()
 	if err != nil {
-		glog.Fatalf("Fail to parse timeout %v", err)
+		glog.Fatalf("Could not initialize the client %v", err)
 	}
-	err = containeranalysis.WaitForVulnzAnalysis(image, timeout)
+
+	timeout, err := time.ParseDuration(vulnz_timeout)
+	if err != nil {
+		glog.Fatalf("Fail to parse vulnz_timeout %v", err)
+	}
+	// Wait for vulnerability scan to finish.
+	err = client.WaitForVulnzAnalysis(image, timeout)
 	if err != nil {
 		glog.Fatalf("Error waiting for vulnerability analysis %v", err)
 	}
 
-	client, err := containeranalysis.NewCache()
-	if err != nil {
-		glog.Fatalf("Could not initialize the client %v", err)
-	}
 	vulnz, err := client.Vulnerabilities(image)
 	if err != nil {
 		glog.Fatalf("Found err %s", err)
