@@ -165,27 +165,114 @@ const e2eTestPayload = `{
     }
 }`
 
-const testImage = "gcr.io/kritis-project/kritis-server@sha256:b0be9acc0c8ca214f64fa4e0e214abc0bf342e8a4bc23b7e842ab21cfb50a6ea"
+const e2eTestImage = "gcr.io/kritis-project/kritis-server@sha256:b0be9acc0c8ca214f64fa4e0e214abc0bf342e8a4bc23b7e842ab21cfb50a6ea"
+
+const wrongPublicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+k6neB2bluySxkeSiDQ==
+=8C3P
+-----END PGP PUBLIC KEY BLOCK-----`
+
+const wrongKeyID = "A061F676A48FB00468566BCDB2CBADEEDE9B4223"
+
+const wrongTestImage = "gcr.io/kritis-project/kritis-server@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 func TestEndToEndWithAttestations(t *testing.T) {
-	signer, err := cryptolib.NewPgpSigner([]byte(e2ePrivateKey))
-	if err != nil {
-		t.Fatalf("Error initializing signer: %v", err)
+	tcs := []struct {
+		name       string
+		privateKey []byte
+		publicKey  []byte
+		keyID      string
+		payload    []byte
+		image      string
+		expectErr  bool
+	}{
+		{
+			name:       "can verify attestation",
+			privateKey: []byte(e2ePrivateKey),
+			publicKey:  []byte(e2ePublicKey),
+			keyID:      e2eKeyID,
+			payload:    []byte(e2eTestPayload),
+			image:      e2eTestImage,
+			expectErr:  false,
+		},
+		{
+			name:       "cannot verify: public/private key mismatch",
+			privateKey: []byte(e2ePrivateKey),
+			publicKey:  []byte(wrongPublicKey),
+			keyID:      wrongKeyID,
+			payload:    []byte(e2eTestPayload),
+			image:      e2eTestImage,
+			expectErr:  true,
+		},
+		{
+			name:       "cannot verify: image name does not match payload",
+			privateKey: []byte(e2ePrivateKey),
+			publicKey:  []byte(e2ePublicKey),
+			keyID:      e2eKeyID,
+			payload:    []byte(e2eTestPayload),
+			image:      wrongTestImage,
+			expectErr:  true,
+		},
 	}
+	for _, tc := range tcs {
+		signer, err := cryptolib.NewPgpSigner(tc.privateKey)
+		if err != nil {
+			t.Fatalf("Error initializing signer: %v", err)
+		}
 
-	att, err := signer.CreateAttestation([]byte(e2eTestPayload))
-	if err != nil {
-		t.Fatalf("Error creating attestation: %v", err)
-	}
+		att, err := signer.CreateAttestation(tc.payload)
+		if err != nil {
+			t.Fatalf("Error creating attestation: %v", err)
+		}
 
-	publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, []byte(e2ePublicKey), e2eKeyID)
-	verifier, err := cryptolib.NewVerifier(testImage, []cryptolib.PublicKey{publicKey})
-	if err != nil {
-		t.Fatalf("Error initializing verifier: %v", err)
-	}
+		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, tc.publicKey, tc.keyID)
+		verifier, err := cryptolib.NewVerifier(tc.image, []cryptolib.PublicKey{publicKey})
+		if err != nil {
+			t.Fatalf("Error initializing verifier: %v", err)
+		}
 
-	err = verifier.VerifyAttestation(att)
-	if err != nil {
-		t.Fatalf("Error verifying attestation: %v", err)
+		err = verifier.VerifyAttestation(att)
+		if tc.expectErr && err == nil {
+			t.Errorf("Expected error, but returned none")
+		} else if !tc.expectErr && err != nil {
+			t.Errorf("Unexpected error verifying attestation: %v", err)
+		}
 	}
 }
