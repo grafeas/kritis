@@ -289,19 +289,20 @@ func TestReviewISP(t *testing.T) {
 	secFpr := sec.PgpKey.Fingerprint()
 	vulnImage := testutil.QualifiedImage
 	unQualifiedImage := "image:tag"
-	attVuln, err := util.CreateAttestation(vulnImage, sec)
+	att, err := util.CreateAttestation(vulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
+	// An attestation that already exists for an image with a vulnerability
+	vulnAtts := []cryptolib.Attestation{*att}
 
 	noVulnImage := testutil.IntTestImage
-	attNoVuln, err := util.CreateAttestation(noVulnImage, sec)
+	att, err = util.CreateAttestation(noVulnImage, sec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-
-	validAtts := []cryptolib.Attestation{*attVuln}
-	invalidAtts := []cryptolib.Attestation{*attNoVuln}
+	// An attestation for an image without vulnerabilities
+	noVulnAtts := []cryptolib.Attestation{*att}
 
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
@@ -359,7 +360,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w attestation for Webhook should not handle violations",
 			image:             vulnImage,
 			isWebhook:         true,
-			attestations:      validAtts,
+			attestations:      vulnAtts,
 			handledViolations: 0,
 			isAttested:        true,
 			shouldAttestImage: false,
@@ -389,7 +390,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w attestation for cron should handle vuln",
 			image:             vulnImage,
 			isWebhook:         false,
-			attestations:      validAtts,
+			attestations:      vulnAtts,
 			handledViolations: 1,
 			isAttested:        true,
 			shouldAttestImage: false,
@@ -419,7 +420,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      invalidAtts,
+			attestations:      noVulnAtts,
 			handledViolations: 0,
 			isAttested:        true,
 			shouldAttestImage: false,

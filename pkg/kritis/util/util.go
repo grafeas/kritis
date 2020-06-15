@@ -19,7 +19,6 @@ package util
 import (
 	"bytes"
 	"crypto"
-	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/openpgp"
@@ -108,7 +107,7 @@ func createEntityFromKeys(pubKey *packet.PublicKey, privKey *packet.PrivateKey) 
 	currentTime := pgpConfig.Now()
 	uid := packet.NewUserId("", "", "")
 	if uid == nil {
-		return nil, errors.New("user id field contained invalid characters")
+		return nil, fmt.Errorf("got nil UserId")
 	}
 
 	e := &openpgp.Entity{

@@ -135,7 +135,7 @@ func createOccRequest(note *grafeas.Note) *grafeas.CreateOccurrenceRequest {
 		log.Fatal(err)
 		return nil
 	}
-	log.Printf("Created attestation signature: %v", string(att.Signature))
+	log.Printf("Created attestation signature: %q", att.Signature)
 
 	pgpSignedAttestation := &attestation.PgpSignedAttestation{
 		Signature: string(att.Signature),
