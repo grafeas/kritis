@@ -78,6 +78,7 @@ func TestNewPublicKey(t *testing.T) {
 		keyData     []byte
 		keyID       string
 		expectedErr bool
+		expectedID  string
 	}{
 		{
 			name:        "valid PGP key ID",
@@ -85,24 +86,27 @@ func TestNewPublicKey(t *testing.T) {
 			keyData:     []byte(verifierPublicKey),
 			keyID:       verifierPublicKeyID,
 			expectedErr: false,
+			expectedID:  verifierPublicKeyID,
 		},
 		{
-			name:        "invalid PGP key ID",
+			name:        "incorrect PGP key ID",
 			keyType:     Pgp,
 			keyData:     []byte(verifierPublicKey),
 			keyID:       "incorrect-id",
-			expectedErr: true,
+			expectedErr: false,
+			expectedID:  verifierPublicKeyID,
 		},
 		{
 			name:        "valid PKIX key ID",
 			keyType:     Pkix,
 			keyID:       "valid-key-id",
 			expectedErr: false,
+			expectedID:  "valid-key-id",
 		},
 		{
 			name:        "invalid PKIX key ID",
 			keyType:     Pkix,
-			keyID:       "^{invalid-key-id}",
+			keyID:       ":{invalid-key-id}",
 			expectedErr: true,
 		},
 		{
@@ -113,11 +117,18 @@ func TestNewPublicKey(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewPublicKey(tc.keyType, tc.keyData, tc.keyID)
-			if tc.expectedErr && err == nil {
-				t.Errorf("Expected error, but returned none")
-			} else if !tc.expectedErr && err != nil {
-				t.Errorf("Unexpected error: %v", err)
+			publicKey, err := NewPublicKey(tc.keyType, tc.keyData, tc.keyID)
+			if tc.expectedErr {
+				if err == nil {
+					t.Errorf("Got nil err, expected not-nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+				if publicKey.ID != tc.expectedID {
+					t.Errorf("Got ID: %q, want ID: %q", publicKey.ID, tc.expectedID)
+				}
 			}
 		})
 	}
