@@ -32,10 +32,12 @@ import (
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
+type SignerMode string
+
 const (
-	SignerMode_CheckAndSign  = "check-and-sign"
-	SignerMode_CheckOnly     = "check-only"
-	SignerMode_BypassAndSign = "bypass-and-sign"
+	CheckAndSign  SignerMode = "check-and-sign"
+	CheckOnly     SignerMode = "check-only"
+	BypassAndSign SignerMode = "bypass-and-sign"
 )
 
 func main() {
@@ -49,12 +51,13 @@ func main() {
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.Parse()
 
-	if mode != SignerMode_CheckAndSign && mode != SignerMode_BypassAndSign {
-		if mode == SignerMode_CheckOnly {
-			glog.Fatalf("Mode %s note supported yet.", mode)
-		} else {
-			glog.Fatalf("Unrecognized mode %s.", mode)
-		}
+	switch SignerMode(mode) {
+	case CheckAndSign, BypassAndSign:
+		glog.Infof("Signer mode: %s.", mode)
+	case CheckOnly:
+		glog.Fatalf("Mode %s note supported yet.", mode)
+	default:
+		glog.Fatalf("Unrecognized mode %s.", mode)
 	}
 
 	signerKey, err := ioutil.ReadFile(pri_key_path)
@@ -116,12 +119,12 @@ func main() {
 		Project:   policy.Spec.Project,
 	})
 
-	if mode == SignerMode_BypassAndSign {
+	if SignerMode(mode) == BypassAndSign {
 		r.SignImage(image)
 		return
 	}
 
-	if mode == SignerMode_CheckAndSign {
+	if SignerMode(mode) == CheckAndSign {
 		// Read the vulnz scanning events
 		if image == "" {
 			glog.Fatalf("Image url is empty: %s", image)
