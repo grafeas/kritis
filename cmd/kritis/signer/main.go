@@ -119,6 +119,10 @@ func main() {
 		Project:   policy.Spec.Project,
 	})
 
+	if image == "" {
+		glog.Fatalf("Image url is empty: %s", image)
+	}
+	
 	if SignerMode(mode) == BypassAndSign {
 		r.SignImage(image)
 		return
@@ -126,10 +130,6 @@ func main() {
 
 	if SignerMode(mode) == CheckAndSign {
 		// Read the vulnz scanning events
-		if image == "" {
-			glog.Fatalf("Image url is empty: %s", image)
-		}
-
 		vulnz, err := client.Vulnerabilities(image)
 		if err != nil {
 			glog.Fatalf("Found err %s", err)
