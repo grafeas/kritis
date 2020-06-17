@@ -122,7 +122,7 @@ func main() {
 	if image == "" {
 		glog.Fatalf("Image url is empty: %s", image)
 	}
-	
+
 	if SignerMode(mode) == BypassAndSign {
 		r.SignImage(image)
 		return
