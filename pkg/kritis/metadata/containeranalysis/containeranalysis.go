@@ -42,8 +42,8 @@ import (
 
 // Container Analysis Library Specific Constants.
 const (
-	PkgVulnerability     = "PACKAGE_VULNERABILITY"
-	AttestationAuthority = "ATTESTATION_AUTHORITY"
+	PkgVulnerability               = "PACKAGE_VULNERABILITY"
+	AttestationAuthority           = "ATTESTATION_AUTHORITY"
 	DEFAULT_DISCOVERY_NOTE_PROJECT = "goog-analysis"
 )
 

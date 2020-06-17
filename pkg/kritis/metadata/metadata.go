@@ -19,7 +19,6 @@ package metadata
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 

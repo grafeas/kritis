@@ -20,7 +20,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 )
 
@@ -71,83 +70,6 @@ func Test_ContainerSigCreation(t *testing.T) {
 				t.Errorf("\nExpected\n%+v\nActual\n%+v", expected.Critical, actual.Critical)
 			}
 		})
-	}
-}
-
-func TestCreateAttestationSignature(t *testing.T) {
-	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
-	secret, _ := testutil.CreateSecret(t, "test")
-	tests := []struct {
-		name          string
-		signingSecret *secrets.PGPSigningSecret
-		shouldErr     bool
-	}{
-		{
-			name:          "Good secret",
-			shouldErr:     false,
-			signingSecret: secret,
-		},
-		{
-			name:          "bad secret",
-			shouldErr:     false,
-			signingSecret: nil,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := container.CreateAttestationSignature(secret)
-			testutil.CheckError(t, test.shouldErr, err)
-		})
-	}
-}
-
-func TestValidateAttestationSignature(t *testing.T) {
-	secret, pub := testutil.CreateSecret(t, "test")
-	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
-	inputSig, err := container.CreateAttestationSignature(secret)
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
-
-	tests := []struct {
-		name      string
-		shouldErr bool
-		publickey string
-	}{
-		{
-			name:      "verify using same public key",
-			shouldErr: false,
-			publickey: pub,
-		},
-		{
-			name:      "verify using another public key",
-			shouldErr: true,
-			publickey: testutil.PublicTestKey,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			verificationErr := container.VerifyPgpSignature(test.publickey, inputSig)
-			testutil.CheckError(t, test.shouldErr, verificationErr)
-		})
-	}
-}
-
-func TestGPGArmorSignVerifyIntegration(t *testing.T) {
-	container, err := NewAtomicContainerSig(goodImage, map[string]string{})
-	if err != nil {
-		t.Fatalf("Unexpected error %s", err)
-	}
-	if err := container.VerifyPgpSignature(testutil.Base64PublicTestKey(t), expectedSig); err != nil {
-		t.Fatalf("unexpected error %s", err)
 	}
 }
 
