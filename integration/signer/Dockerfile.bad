@@ -1,0 +1,3 @@
+FROM gcr.io/google-appengine/debian9:latest
+
+RUN apt-get update && apt-get -y install uuid-runtime && uuidgen > /IAMUNIQUE

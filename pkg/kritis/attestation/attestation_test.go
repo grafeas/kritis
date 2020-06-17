@@ -16,13 +16,6 @@ limitations under the License.
 
 package attestation
 
-import (
-	"testing"
-
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	"github.com/grafeas/kritis/pkg/kritis/testutil"
-)
-
 var tcAttestations = []struct {
 	name      string
 	message   string
@@ -32,33 +25,6 @@ var tcAttestations = []struct {
 	{"test-success", "test", "", false},
 	{"test-invalid-sig", "test", invalidSig, true},
 	{"test-incorrect-sig", "test", incorrectSig, true},
-}
-
-func TestAttestations(t *testing.T) {
-	for _, tc := range tcAttestations {
-		publicKey, privateKey := testutil.CreateKeyPair(t, "test")
-		pgpKey, err := secrets.NewPgpKey(privateKey, "", publicKey)
-		if err != nil {
-			t.Fatalf("Unexpected error %s", err)
-		}
-		t.Run(tc.name, func(t *testing.T) {
-			sig, err := CreateMessageAttestation(pgpKey, tc.message)
-			if err != nil {
-				t.Fatalf("Unexpected error %s", err)
-			}
-			if tc.signature == "" {
-				tc.signature = sig
-			}
-			err = VerifyMessageAttestation(publicKey, tc.signature, tc.message)
-			testutil.CheckError(t, tc.hasErr, err)
-		})
-	}
-}
-
-func TestGPGArmorSignIntegration(t *testing.T) {
-	if err := VerifyMessageAttestation(testutil.Base64PublicTestKey(t), expectedSig, "test"); err != nil {
-		t.Fatalf("unexpected error %s", err)
-	}
 }
 
 //  signature.

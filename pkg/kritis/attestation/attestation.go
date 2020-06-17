@@ -22,8 +22,6 @@ import (
 	"bytes"
 	"crypto"
 	"fmt"
-	"io/ioutil"
-	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
@@ -47,54 +45,6 @@ var pgpConfig = packet.Config{
 		Level: packet.DefaultCompression,
 	},
 	RSABits: RSABits,
-}
-
-// VerifyMessageAttestation verifies if the image is attested using the PEM
-// encoded public key.
-func VerifyMessageAttestation(pubKey string, sig string, message string) error {
-	text, err := GetPlainMessage(pubKey, sig)
-	if err != nil {
-		return err
-	}
-	// Finally, make sure the signature is over the right message.
-	if string(text) != message {
-		return fmt.Errorf("signature could not be verified. got: %s, want: %s", text, message)
-	}
-	return nil
-}
-
-// GetPlainMessage verifies if the image is attested using the PEM
-// encoded public key and returns the plain text in bytes
-func GetPlainMessage(pubKey string, sig string) ([]byte, error) {
-	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pubKey))
-	if err != nil {
-		return nil, errors.Wrap(err, "read armored key ring")
-	}
-	buf := bytes.NewBufferString(sig)
-	armorBlock, err := armor.Decode(buf)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not decode armor signature")
-	}
-	md, err := openpgp.ReadMessage(armorBlock.Body, keyring, nil, &pgpConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not read armor signature")
-	}
-
-	// MessageDetails.UnverifiedBody signature is not verified until we read it.
-	// This will call PublicKey.VerifySignature for the keys in the keyring.
-	plaintext, err := ioutil.ReadAll(md.UnverifiedBody)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not verify armor signature")
-	}
-	// Make sure after reading the UnverifiedBody above, there is no signature error.
-	if md.SignatureError != nil {
-		return nil, fmt.Errorf("bad signature found: %s", md.SignatureError)
-	}
-	if md.Signature == nil {
-		return nil, fmt.Errorf("no signature found for given key")
-	}
-
-	return plaintext, nil
 }
 
 // CreateMessageAttestation attests the message using the given PGP key.
