@@ -39,7 +39,7 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \
--image=${$GOOD_IMAGE_URL} \
+-image=${GOOD_IMG_DIGEST_URL} \
 -public_key=public.key \
 -private_key=private.key \
 -policy=policy.yaml
