@@ -44,6 +44,7 @@ import (
 const (
 	PkgVulnerability     = "PACKAGE_VULNERABILITY"
 	AttestationAuthority = "ATTESTATION_AUTHORITY"
+	DEFAULT_DISCOVERY_NOTE_PROJECT = "goog-analysis"
 )
 
 // For testing -- injectable functions
@@ -318,7 +319,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 				// Vulnerability discovery occurrences are always associated with the
 				// PACKAGE_VULNERABILITY note in the "goog-analysis" GCP project.
-				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId="goog-analysis" AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage)),
+				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId="%q" AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DEFAULT_DISCOVERY_NOTE_PROJECT),
 			}
 			it := c.client.ListOccurrences(c.ctx, req)
 			// Only one occurrence should ever be returned by ListOccurrences
