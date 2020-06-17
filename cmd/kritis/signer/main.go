@@ -21,6 +21,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -108,7 +109,7 @@ func main() {
 		},
 	}
 
-	client, err := containeranalysis.NewCache()
+	client, err := containeranalysis.New()
 	if err != nil {
 		glog.Fatalf("Could not initialize the client %v", err)
 	}
@@ -130,6 +131,15 @@ func main() {
 	}
 
 	if SignerMode(mode) == CheckAndSign {
+		timeout, err := time.ParseDuration(vulnz_timeout)
+		if err != nil {
+			glog.Fatalf("Fail to parse timeout %v", err)
+		}
+		err = client.WaitForVulnzAnalysis(image, timeout)
+		if err != nil {
+			glog.Fatalf("Error waiting for vulnerability analysis %v", err)
+		}
+
 		// Read the vulnz scanning events
 		vulnz, err := client.Vulnerabilities(image)
 		if err != nil {
