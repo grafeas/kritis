@@ -90,6 +90,6 @@ func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byt
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot decode payload")
 	}
-
+	verifyDetached(parts[2], publicKey.KeyData, publicKey.SignatureAlgorithm, append(parts[0], parts[1]...))
 	return nil, errors.New("unimplemented")
 }
