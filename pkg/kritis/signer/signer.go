@@ -75,13 +75,19 @@ func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.Vul
 	}
 
 	glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
-	existed, _ := s.isAttestationAlreadyExist(imageVulnz.ImageRef)
+	return s.SignImage(imageVulnz.ImageRef)
+}
+
+// ValidateAndSign signs an image without doing any policy check.
+// Returns an error if image does not pass or creating an attestation fails.
+func (s Signer) SignImage(image string) error {
+	existed, _ := s.isAttestationAlreadyExist(image)
 	if existed {
-		glog.Warningf("Attestation for image %q has already been created.", imageVulnz.ImageRef)
+		glog.Warningf("Attestation for image %q has already been created.", image)
 		return nil
 	}
-	glog.Infof("Creating attestations for image %q.", imageVulnz.ImageRef)
-	if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
+	glog.Infof("Creating attestations for image %q.", image)
+	if err := s.addAttestation(image); err != nil {
 		return err
 	}
 	return nil
