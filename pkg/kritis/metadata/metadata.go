@@ -19,6 +19,7 @@ package metadata
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
@@ -57,7 +58,7 @@ type ReadWriteClient interface {
 	// Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
 	// Wait vulnerability analysis for an image to finish, or times out.
-	// WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
+	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
 	// Close closes client connections
 	Close()
 }
@@ -69,7 +70,7 @@ type ReadOnlyClient interface {
 	//Attestations get Attestation Occurrences for given image.
 	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
 	// Wait vulnerability analysis for an image to finish, or times out.
-	// WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
+	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
 	// Close closes client connections
 	Close()
 }
