@@ -1,7 +1,7 @@
 # Signer integration testing script
 set -ex
 
-# prepare policy file
+# set note id
 NOTE_ID=kritis-attestor-note
 # create policy.yaml
 cat policy_template.yaml \
@@ -10,6 +10,40 @@ cat policy_template.yaml \
 | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
 > policy.yaml
 
+#### TEST 1: bypass-and-sign mode ####
+# build a "good" example image
+TEST1_GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
+docker build -t $TEST1_GOOD_IMAGE_URL -f ./Dockerfile.good .
+delete_test1_good_image () {
+    ARG=$?
+    echo "Delete good image."
+    gcloud container images delete $TEST1_GOOD_IMAGE_URL --force-delete-tags \
+      --quiet
+    exit $ARG
+}
+trap delete_test1_good_image EXIT
+
+# push good image
+docker push $TEST1_GOOD_IMAGE_URL
+# get image url with digest format
+TEST1_GOOD_IMG_DIGEST_URL=$(docker image inspect $TEST1_GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
+
+# sign good image
+./signer -v 10 \
+-alsologtostderr \
+-mode=bypass-and-sign \
+-image=${GOOD_IMG_DIGEST_URL} \
+-public_key=public.key \
+-private_key=private.key \
+-policy=policy.yaml
+
+
+# exit early, skipping tests with policy check for now.
+# TODO: enable tests after #527 is merged.
+exit 0
+
+
+#### TEST 2: check-and-sign mode, good case ####
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
 docker build -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
@@ -36,6 +70,7 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 -policy=policy.yaml
 
 
+#### TEST 3: check-and-sign mode, bad case ####
 # build a "bad" example image
 BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID
 docker build -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
