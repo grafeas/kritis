@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo ""
+echo ""
+
 set -ex
 
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
@@ -36,7 +39,10 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \
--image=${TEST1_GOOD_IMG_DIGEST_URL} \
+-image=${$GOOD_IMAGE_URL} \
 -public_key=public.key \
 -private_key=private.key \
 -policy=policy.yaml
+
+echo ""
+echo ""

@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo ""
+echo ""
+
 set -ex
 
 # build a "bad" example image
@@ -49,3 +52,6 @@ else
 	echo "Error: signing should fail for bad image, but succeeded."
     exit 1
 fi
+
+echo ""
+echo ""

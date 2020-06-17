@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo ""
+echo ""
+
 set -ex
 
 # build a "good" example image
@@ -41,3 +44,5 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 -private_key=private.key \
 -policy=policy.yaml
 
+echo ""
+echo ""
