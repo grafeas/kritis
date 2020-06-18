@@ -305,7 +305,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
 				// Vulnerability discovery occurrences are always associated with the
 				// PACKAGE_VULNERABILITY note.
-				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId="%q" AND noteId="PACKAGE_VULNERABILITY"`, DefaultProject, util.GetResourceURL(containerImage)),
+				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId=%q AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DefaultProject),
 			}
 
 			// There should be only one discovery occurrence.
