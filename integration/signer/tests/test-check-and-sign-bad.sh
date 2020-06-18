@@ -42,7 +42,7 @@ signing_bad_image_failed=false
 -image=${BAD_IMG_DIGEST_URL} \
 -public_key=public.key \
 -private_key=private.key \
--policy=policy.yaml || singing_bad_image_failed=true
+-policy=policy.yaml || signing_bad_image_failed=true
 
 
 if [ "$signing_bad_image_failed" = true ] ; then
