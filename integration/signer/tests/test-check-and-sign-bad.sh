@@ -29,7 +29,7 @@ delete_bad_image () {
       --quiet
     exit $ARG
 }
-# trap delete_bad_image EXIT
+trap delete_bad_image EXIT
 
 # push bad image
 docker push $BAD_IMAGE_URL

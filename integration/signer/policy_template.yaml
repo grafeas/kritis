@@ -11,3 +11,4 @@ spec:
     allowlistCVEs:
       - providers/goog-vulnz/notes/CVE-2020-10543
       - providers/goog-vulnz/notes/CVE-2020-10878
+      - providers/goog-vulnz/notes/CVE-2020-14155
