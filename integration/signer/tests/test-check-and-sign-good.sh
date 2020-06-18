@@ -21,7 +21,7 @@ set -ex
 
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
-docker build -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
+docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 delete_good_image () {
     ARG=$?
     echo "Delete good image."

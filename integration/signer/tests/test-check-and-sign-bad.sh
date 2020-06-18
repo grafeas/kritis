@@ -21,7 +21,7 @@ set -ex
 
 # build a "bad" example image
 BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID
-docker build -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
+docker build --no-cache -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
 delete_bad_image () {
     ARG=$?
     echo "Delete bad image."
