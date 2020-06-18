@@ -26,8 +26,15 @@ cat policy_template.yaml \
 | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
 > policy.yaml
 
+set +x
+ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
+# TODO: debugging, remove before merge
+exit
+
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
+
+
 
 #### TEST 2: check-and-sign mode, good case ####
 ./tests/test-check-and-sign-good.sh

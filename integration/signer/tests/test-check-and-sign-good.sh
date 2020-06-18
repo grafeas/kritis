@@ -22,14 +22,15 @@ set -ex
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
 docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
-delete_good_image () {
+clean_up () {
+    set +e
     ARG=$?
     echo "Delete good image."
     gcloud container images delete $GOOD_IMAGE_URL --force-delete-tags \
       --quiet
     exit $ARG
 }
-trap delete_good_image EXIT
+trap clean_up EXIT
 
 # push good image
 docker push $GOOD_IMAGE_URL
