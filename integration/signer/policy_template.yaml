@@ -6,8 +6,8 @@ spec:
   project: <ATTESTATION_PROJECT>
   noteReference: projects/<NOTE_PROJECT>/notes/<NOTE_ID>
   packageVulnerabilityRequirements:
-    maximumSeverity: LOW
-    maximumFixNotAvailableSeverity: ALLOW_ALL
+    maximumSeverity: MEDIUM
+    maximumFixNotAvailableSeverity: MEDIUM
     allowlistCVEs:
-      - providers/goog-vulnz/notes/CVE-2017-1000082
-      - providers/goog-vulnz/notes/CVE-2017-1000081
+      - providers/goog-vulnz/notes/CVE-2020-10543
+      - providers/goog-vulnz/notes/CVE-2020-10878
