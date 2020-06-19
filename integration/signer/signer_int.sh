@@ -81,6 +81,7 @@ delete_occ() {
     exit $ARG
 }
 
+export -f urlencode
 export -f delete_image
 export -f delete_occ
 
