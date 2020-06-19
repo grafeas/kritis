@@ -19,7 +19,9 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -27,9 +29,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
-	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type SignerMode string
@@ -41,10 +42,11 @@ const (
 )
 
 func main() {
-	var image, pri_key_path, passphrase, pub_key_path, policy_path, mode string
+	var image, vulnz_timeout, pri_key_path, passphrase, pub_key_path, policy_path, mode string
 
-	flag.StringVar(&mode, "mode", "", "mode of operation, check-and-sign|check-only|bypass-and-sign")
+	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
+	flag.StringVar(&vulnz_timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
@@ -60,9 +62,14 @@ func main() {
 		glog.Fatalf("Unrecognized mode %s.", mode)
 	}
 
+	// Read the signing credentials
 	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
 		glog.Fatalf("Fail to read signer key: %v", err)
+	}
+	pubKey, err := ioutil.ReadFile(pub_key_path)
+	if err != nil {
+		glog.Fatalf("Fail to read public key: %v", err)
 	}
 
 	// Parse the vulnz signing policy
@@ -78,11 +85,6 @@ func main() {
 	} else {
 		glog.Infof("Policy noteReference: %v\n", policy.Spec.NoteReference)
 		glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
-	}
-
-	pubKey, err := ioutil.ReadFile(pub_key_path)
-	if err != nil {
-		glog.Fatalf("Fail to read public key: %v", err)
 	}
 
 	// Create pgp key
@@ -107,7 +109,7 @@ func main() {
 		},
 	}
 
-	client, err := containeranalysis.NewCache()
+	client, err := containeranalysis.New()
 	if err != nil {
 		glog.Fatalf("Could not initialize the client %v", err)
 	}
@@ -129,6 +131,15 @@ func main() {
 	}
 
 	if SignerMode(mode) == CheckAndSign {
+		timeout, err := time.ParseDuration(vulnz_timeout)
+		if err != nil {
+			glog.Fatalf("Fail to parse timeout %v", err)
+		}
+		err = client.WaitForVulnzAnalysis(image, timeout)
+		if err != nil {
+			glog.Fatalf("Error waiting for vulnerability analysis %v", err)
+		}
+
 		// Read the vulnz scanning events
 		vulnz, err := client.Vulnerabilities(image)
 		if err != nil {

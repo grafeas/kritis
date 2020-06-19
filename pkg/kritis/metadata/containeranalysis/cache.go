@@ -17,6 +17,8 @@ limitations under the License.
 package containeranalysis
 
 import (
+	"time"
+
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -97,4 +99,9 @@ func (c Cache) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
 func (c Cache) CreateAttestationOccurrence(noteName string, image string, p *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	return c.client.CreateAttestationOccurrence(noteName, image, p, proj)
+}
+
+// WaitForVulnzAnalysis Wait vulnerability analysis for an image to finish, or times out.
+func (c Cache) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	return c.client.WaitForVulnzAnalysis(containerImage, timeout)
 }
