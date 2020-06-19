@@ -65,6 +65,8 @@ func (s kmsSigner) CreateAttestation(payload []byte) (*cryptolib.Attestation, er
 		digest = sha512.New384()
 	case SHA512:
 		digest = sha512.New()
+	default:
+		return nil, fmt.Errorf("Unsupported digest algorithm %v", s.digestAlg)
 	}
 	if _, err := digest.Write(payload); err != nil {
 		return nil, err
@@ -83,6 +85,8 @@ func (s kmsSigner) CreateAttestation(payload []byte) (*cryptolib.Attestation, er
 		d.Digest = &kmspb.Digest_Sha512{
 			Sha512: digest.Sum(nil),
 		}
+	default:
+		return nil, fmt.Errorf("Unsupported digest algorithm %v", s.digestAlg)
 	}
 	req := &kmspb.AsymmetricSignRequest{
 		Name:   s.keyName,

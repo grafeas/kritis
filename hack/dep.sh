@@ -53,6 +53,7 @@ files=( $(validate_diff --name-only -- 'Gopkg.toml' 'Gopkg.lock' 'vendor/' || tr
 unset IFS
 
 if [ ${#files[@]} -gt 0 ]; then
+        install_dep
 	cd $KRITIS_DIR
 	$GOPATH/bin/dep ensure
 	diffs="$(git status --porcelain -- vendor Gopkg.toml Gopkg.lock 2>/dev/null)"
