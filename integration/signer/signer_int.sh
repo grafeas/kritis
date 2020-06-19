@@ -27,7 +27,7 @@ cat policy_template.yaml \
 > policy.yaml
 
 # install jq
-apt-get install jq
+apt-get install -y -q jq
 # Helper function for encoding url
 urlencode() {
     # urlencode <string>
