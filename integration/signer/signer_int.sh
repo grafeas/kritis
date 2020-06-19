@@ -88,8 +88,6 @@ export -f delete_occ
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
 
-exit
-
 #### TEST 2: check-and-sign mode, good case ####
 ./tests/test-check-and-sign-good.sh
 

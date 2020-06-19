@@ -22,20 +22,15 @@ set -eux
 # build a "bad" example image
 BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID
 docker build --no-cache -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
-clean_up () {
-    set +e
-    ARG=$?
-    echo "Delete bad image."
-    gcloud container images delete $BAD_IMAGE_URL --force-delete-tags \
-      --quiet
-    exit $ARG
-}
-trap clean_up EXIT
+
+trap 'delete_image $BAD_IMAGE_URL'  EXIT
 
 # push bad image
 docker push $BAD_IMAGE_URL
 # get image url with digest format
 BAD_IMG_DIGEST_URL=$(docker image inspect $BAD_IMAGE_URL --format '{{index .RepoDigests 0}}')
+
+trap 'delete_occ $BAD_IMG_DIGEST_URL'  EXIT
 
 signing_bad_image_failed=false
 ./signer -v 10 \
