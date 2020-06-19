@@ -26,6 +26,8 @@ cat policy_template.yaml \
 | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
 > policy.yaml
 
+# install jq
+apt-get install jq
 # Helper function for encoding url
 urlencode() {
     # urlencode <string>
