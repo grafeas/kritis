@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/sha512"
+	"fmt"
 	"hash"
 
 	kms "cloud.google.com/go/kms/apiv1"
