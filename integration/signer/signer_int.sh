@@ -27,12 +27,12 @@ cat policy_template.yaml \
 > policy.yaml
 
 # install jq
+# TODO: bake jq into a custom image
 apt-get install -y -q jq
 # Helper function for encoding url
 urlencode() {
     # urlencode <string>
-    old_lc_collate=$LC_COLLATE
-    LC_COLLATE=C
+    local LC_COLLATE=C
 
     local length="${#1}"
     for (( i = 0; i < length; i++ )); do
@@ -42,8 +42,6 @@ urlencode() {
             *) printf '%%%02X' "'$c" ;;
         esac
     done
-
-    LC_COLLATE=$old_lc_collate
 }
 
 export -f urlencode
