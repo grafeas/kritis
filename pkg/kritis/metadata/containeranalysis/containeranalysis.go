@@ -316,7 +316,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 		// Waiting for discovery occurrence to appear.
 		if discoveryOccurrence == nil {
 			req := &grafeas.ListOccurrencesRequest{
-				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+				Parent: fmt.Sprintf("projects/%s", util.GetProjectFromContainerImage(containerImage)),
 				// Vulnerability discovery occurrences are always associated with the
 				// PACKAGE_VULNERABILITY note in the "goog-analysis" GCP project.
 				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId=%q AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DEFAULT_DISCOVERY_NOTE_PROJECT),

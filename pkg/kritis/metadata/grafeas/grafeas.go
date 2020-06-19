@@ -276,14 +276,6 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 	return occs, nil
 }
 
-func getProjectFromContainerImage(image string) string {
-	tok := strings.Split(image, "/")
-	if len(tok) < 2 {
-		return ""
-	}
-	return tok[1]
-}
-
 // Poll discovery occurrence for an image and wait until container analysis
 // finishes. Throws an error if analysis is not successful or timeouts.
 func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
@@ -302,7 +294,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 		// Waiting for discovery occurrence to appear.
 		if discoveryOccurrence == nil {
 			req := &grafeas.ListOccurrencesRequest{
-				Parent: fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+				Parent: fmt.Sprintf("projects/%s", util.GetProjectFromContainerImage(containerImage)),
 				// Vulnerability discovery occurrences are always associated with the
 				// PACKAGE_VULNERABILITY note.
 				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId=%q AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DefaultProject),

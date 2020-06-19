@@ -17,7 +17,7 @@
 echo ""
 echo ""
 
-set -ex
+set -eux
 
 # build a "bad" example image
 BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID

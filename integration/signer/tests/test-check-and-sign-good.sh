@@ -17,7 +17,7 @@
 echo ""
 echo ""
 
-set -ex
+set -eux
 
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
