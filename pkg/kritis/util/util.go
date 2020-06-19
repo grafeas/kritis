@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
@@ -27,6 +28,14 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
+
+func GetProjectFromContainerImage(image string) string {
+	tok := strings.Split(image, "/")
+	if len(tok) < 2 {
+		return ""
+	}
+	return tok[1]
+}
 
 func GetResourceURL(containerImage string) string {
 	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)

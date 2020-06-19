@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
@@ -89,6 +90,13 @@ func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1bet
 		return nil, m.Err
 	}
 	return m.Atts, nil
+}
+
+func (m *MockMetadataClient) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	if m.Err != nil {
+		return m.Err
+	}
+	return nil
 }
 
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
