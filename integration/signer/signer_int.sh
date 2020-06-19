@@ -26,15 +26,30 @@ cat policy_template.yaml \
 | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
 > policy.yaml
 
-set +x
-ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
-# TODO: debugging, remove before merge
-exit
+# Helper function for encoding url
+urlencode() {
+    # urlencode <string>
+    old_lc_collate=$LC_COLLATE
+    LC_COLLATE=C
+
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+
+    LC_COLLATE=$old_lc_collate
+}
+
+export -f urlencode
 
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
 
-
+exit
 
 #### TEST 2: check-and-sign mode, good case ####
 ./tests/test-check-and-sign-good.sh
