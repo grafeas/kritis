@@ -5,9 +5,9 @@ metadata:
 spec:
   project: <ATTESTATION_PROJECT>
   noteReference: projects/<NOTE_PROJECT>/notes/<NOTE_ID>
-  packageVulnerabilityRequirements:
-    maximumSeverity: MEDIUM
-    maximumFixNotAvailableSeverity: MEDIUM
+  imageVulnerabilityRequirements:
+    maximumFixableSeverity: MEDIUM
+    maximumUnfixableSeverity: MEDIUM
     allowlistCVEs:
       - projects/goog-vulnz/notes/CVE-2020-10543
       - projects/goog-vulnz/notes/CVE-2020-10878

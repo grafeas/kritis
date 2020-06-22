@@ -26,8 +26,8 @@ type ViolationType int
 // TODO: Add Attestation checking violations
 const (
 	UnqualifiedImageViolation ViolationType = iota
-	FixUnavailableViolation
-	SeverityViolation
+	UnfixableSeverityViolation
+	FixableSeverityViolation
 )
 
 // Violation represents a Policy Violation.

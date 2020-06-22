@@ -33,9 +33,18 @@ type VulnzSigningPolicy struct {
 
 // v is the spec for a BuildPolicy resource
 type VulnzSigningPolicySpec struct {
-	Project                          string                           `json:"project"`
-	NoteReference                    string                           `json:"noteReference"`
-	PackageVulnerabilityRequirements PackageVulnerabilityRequirements `json:"packageVulnerabilityRequirements"`
+	Project                        string                         `json:"project"`
+	NoteReference                  string                         `json:"noteReference"`
+	ImageVulnerabilityRequirements ImageVulnerabilityRequirements `json:"imageVulnerabilityRequirements"`
+}
+
+// ImageVulnerabilityRequirements is the vulnerability requirements of an image for an VulnzSigningPolicy
+type ImageVulnerabilityRequirements struct {
+	// CVE's with fixes.
+	MaximumFixableSeverity string `json:"maximumFixableSeverity"`
+	// CVE's without fixes.
+	MaximumUnfixableSeverity string   `json:"maximumUnfixableSeverity"`
+	AllowlistCVEs            []string `json:"allowlistCVEs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

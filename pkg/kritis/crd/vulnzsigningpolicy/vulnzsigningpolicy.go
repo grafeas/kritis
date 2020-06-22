@@ -43,12 +43,12 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 		return violations, nil
 	}
 
-	maxSev := vsp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
+	maxSev := vsp.Spec.ImageVulnerabilityRequirements.MaximumFixableSeverity
 	if maxSev == "" {
 		maxSev = constants.Critical
 	}
 
-	maxNoFixSev := vsp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
+	maxNoFixSev := vsp.Spec.ImageVulnerabilityRequirements.MaximumUnfixableSeverity
 	if maxNoFixSev == "" {
 		maxNoFixSev = constants.AllowAll
 	}
@@ -72,8 +72,8 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 				}
 				violations = append(violations, Violation{
 					vulnerability: v,
-					vType:         policy.FixUnavailableViolation,
-					reason:        FixUnavailableReason(image, v, vsp),
+					vType:         policy.UnfixableSeverityViolation,
+					reason:        UnfixableSeverityViolationReason(image, v, vsp),
 				})
 				continue
 			}
@@ -86,8 +86,8 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 			}
 			violations = append(violations, Violation{
 				vulnerability: v,
-				vType:         policy.SeverityViolation,
-				reason:        SeverityReason(image, v, vsp),
+				vType:         policy.FixableSeverityViolation,
+				reason:        FixableSeverityViolationReason(image, v, vsp),
 			})
 		}
 	}
@@ -96,7 +96,7 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 
 func makeCVEAllowlistMap(vsp v1beta1.VulnzSigningPolicy) map[string]bool {
 	cveAllowlistMap := make(map[string]bool)
-	for _, w := range vsp.Spec.PackageVulnerabilityRequirements.AllowlistCVEs {
+	for _, w := range vsp.Spec.ImageVulnerabilityRequirements.AllowlistCVEs {
 		cveAllowlistMap[w] = true
 	}
 	return cveAllowlistMap

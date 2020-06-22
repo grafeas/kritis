@@ -84,7 +84,7 @@ func main() {
 		glog.Fatalf("Fail to parse policy file: %v", err)
 	} else {
 		glog.Infof("Policy noteReference: %v\n", policy.Spec.NoteReference)
-		glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
+		glog.Infof("Policy req: %v\n", policy.Spec.ImageVulnerabilityRequirements)
 	}
 
 	// Create pgp key

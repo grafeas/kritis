@@ -100,7 +100,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 			}
 			violations = append(violations, Violation{
 				vulnerability: v,
-				vType:         policy.FixUnavailableViolation,
+				vType:         policy.UnfixableSeverityViolation,
 				reason:        FixUnavailableReason(image, v, isp),
 			})
 			continue
@@ -114,7 +114,7 @@ func ValidateImageSecurityPolicy(isp v1beta1.ImageSecurityPolicy, image string, 
 		}
 		violations = append(violations, Violation{
 			vulnerability: v,
-			vType:         policy.SeverityViolation,
+			vType:         policy.FixableSeverityViolation,
 			reason:        SeverityReason(image, v, isp),
 		})
 	}
