@@ -18,13 +18,11 @@
 set -ex
 
 # set note id
-export NOTE_ID=kritis-attestor-note
+NOTE_ID=kritis-attestor-note
+export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
+
 # create policy.yaml
-cat policy_template.yaml \
-| sed -e "s?<ATTESTATION_PROJECT>?${PROJECT_ID}?g" \
-| sed -e "s?<NOTE_PROJECT>?${PROJECT_ID}?g" \
-| sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
-> policy.yaml
+cp policy_template.yaml policy.yaml
 
 # install jq
 # TODO: bake jq into a custom image
