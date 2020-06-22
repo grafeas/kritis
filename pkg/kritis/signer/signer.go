@@ -68,10 +68,10 @@ func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.Vul
 	glog.Infof("Validating %q against VulnzSigningPolicy %q", imageVulnz.ImageRef, vps.Name)
 	violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities)
 	if err != nil {
-		return fmt.Errorf("Error when evaluating image %q against policy %q", imageVulnz.ImageRef, vps.Name)
+		return fmt.Errorf("error when evaluating image %q against policy %q", imageVulnz.ImageRef, vps.Name)
 	}
 	if violations != nil && len(violations) != 0 {
-		return fmt.Errorf("Image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
+		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
 	}
 
 	glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
