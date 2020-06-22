@@ -175,7 +175,6 @@ func main() {
 
 		// Create signer
 		r := signer.New(client, &signer.Config{
-			Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
 			PgpKey:    pgpKey,
 			Authority: authority,
 			Project:   attestation_project,
