@@ -53,7 +53,7 @@ func main() {
 	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&note_name, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
-	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project stores attestation, default to image project is unspecified")
+	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
 	flag.Parse()
 
 	switch SignerMode(mode) {
