@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
@@ -27,6 +28,24 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
+
+// Check that note name is in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]
+// Throws error if not
+func CheckNoteName(note string) error {
+	tok := strings.Split(note, "/")
+	if len(tok) != 4 || tok[0] != "projects" || tok[2] != "notes" {
+		return fmt.Errorf("note name %s is not in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]", note)
+	}
+	return nil
+}
+
+func GetProjectFromContainerImage(image string) string {
+	tok := strings.Split(image, "/")
+	if len(tok) < 2 {
+		return ""
+	}
+	return tok[1]
+}
 
 func GetResourceURL(containerImage string) string {
 	return fmt.Sprintf("%s%s", constants.ResourceURLPrefix, containerImage)
