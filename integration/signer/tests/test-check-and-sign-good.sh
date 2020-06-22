@@ -38,7 +38,8 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -image=${GOOD_IMG_DIGEST_URL} \
 -public_key=public.key \
 -private_key=private.key \
--policy=policy.yaml
+-policy=policy.yaml \
+-note_name=${NOTE_NAME}
 
 echo ""
 echo ""
