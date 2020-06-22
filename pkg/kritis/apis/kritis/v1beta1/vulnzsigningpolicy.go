@@ -33,8 +33,6 @@ type VulnzSigningPolicy struct {
 
 // v is the spec for a BuildPolicy resource
 type VulnzSigningPolicySpec struct {
-	Project                        string                         `json:"project"`
-	NoteReference                  string                         `json:"noteReference"`
 	ImageVulnerabilityRequirements ImageVulnerabilityRequirements `json:"imageVulnerabilityRequirements"`
 }
 
