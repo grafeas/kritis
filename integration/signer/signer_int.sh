@@ -91,3 +91,9 @@ export -f delete_occ
 
 #### TEST 3: check-and-sign mode, bad case ####
 ./tests/test-check-and-sign-bad.sh
+
+#### TEST 4: check-only mode, good case ####
+./tests/test-check-only-good.sh
+
+#### TEST 5: check-only mode, bad case ####
+./tests/test-check-only-bad.sh
