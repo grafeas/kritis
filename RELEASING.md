@@ -5,8 +5,8 @@ We're following [semantic versioning](https://semver.org/) approach to releases 
 ## Create a release tracking issue
 
 Use the [release tracking](https://github.com/grafeas/kritis/issues/new?template=feature_request.md)
-template to create a release tracking issue. Use this issue to note any problems that come up, as well
-as to track the progress.
+template to create a release tracking issue. If any problems come up during the release process, please use
+this issue to note them. Also use this issue to track the progress of the release process.
 
 ## Create a Release PR
 Associate the PR to the tracking issue.  Modify the Kritis version values for the containers in these locations:
