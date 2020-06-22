@@ -72,7 +72,7 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 				}
 				violations = append(violations, Violation{
 					vulnerability: v,
-					vType:         policy.UnfixableSeverityViolation,
+					vType:         policy.FixUnavailableViolation,
 					reason:        UnfixableSeverityViolationReason(image, v, vsp),
 				})
 				continue
@@ -86,7 +86,7 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 			}
 			violations = append(violations, Violation{
 				vulnerability: v,
-				vType:         policy.FixableSeverityViolation,
+				vType:         policy.SeverityViolation,
 				reason:        FixableSeverityViolationReason(image, v, vsp),
 			})
 		}
