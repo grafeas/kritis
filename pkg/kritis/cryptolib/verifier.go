@@ -17,11 +17,15 @@ limitations under the License.
 package cryptolib
 
 import (
+	"bytes"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/openpgp"
 )
 
 // Verifier contains methods to validate an Attestation.
@@ -42,20 +46,65 @@ type PublicKey struct {
 	// KeyData holds the raw key material which can verify a signature.
 	KeyData []byte
 	// ID uniquely identifies this public key. For PGP, this should be the
-	// OpenPGP RFC4880 V4 fingerprint of the key.
+	// OpenPGP RFC4880 V4 fingerprint of the key. For PKIX and JWT, this should
+	// be a StringOrURI: it must either not contain ":" or be a valid URI.
 	ID string
 }
 
 // NewPublicKey creates a new PublicKey. `keyType` contains the type of the
 // public key, one of Pgp, Pkix or Jwt. `keyData` contains the raw key
 // material. `keyID` contains a unique identifier for the public key. For PGP,
-// this should be the OpenPGP RFC4880 V4 fingerprint of the key.
-func NewPublicKey(keyType KeyType, keyData []byte, keyID string) PublicKey {
-	return PublicKey{
+// this field should be left blank. The ID will be the OpenPGP RFC4880 V4
+// fingerprint of the key. For PKIX and JWT, this may be left blank, and the ID
+// will be generated based on the DER encoding of the key. If not blank, the ID
+// should be a StringOrURI: it must either not contain ":" or be a valid URI.
+func NewPublicKey(keyType KeyType, keyData []byte, keyID string) (*PublicKey, error) {
+	newKeyID := ""
+	switch keyType {
+	case Pgp:
+		id, err := extractPgpKeyID(keyData)
+		if err != nil {
+			return nil, err
+		}
+		newKeyID = id
+	case Pkix, Jwt:
+		id, err := extractPkixKeyID(keyData, keyID)
+		if err != nil {
+			return nil, err
+		}
+		newKeyID = id
+	default:
+		return nil, fmt.Errorf("invalid key type")
+	}
+
+	return &PublicKey{
 		KeyType: keyType,
 		KeyData: keyData,
-		ID:      keyID,
+		ID:      newKeyID,
+	}, nil
+}
+
+func extractPgpKeyID(keyData []byte) (string, error) {
+	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(keyData))
+	if err != nil {
+		return "", fmt.Errorf("error reading armored public key: %v", err)
 	}
+	if len(keyring) != 1 {
+		return "", fmt.Errorf("expected 1 public key, got %d", len(keyring))
+	}
+	return fmt.Sprintf("%X", keyring[0].PrimaryKey.Fingerprint), nil
+}
+
+func extractPkixKeyID(keyData []byte, keyID string) (string, error) {
+	// TODO(https://github.com/grafeas/kritis/issues/541): Generate ID based on
+	// DER encoding of key when keyID is empty string.
+	if strings.Contains(keyID, ":") {
+		_, err := url.ParseRequestURI(keyID)
+		if err != nil {
+			return "", fmt.Errorf("keyID %q not formatted as StringOrURI: must either not contain \":\" or be valid URI", keyID)
+		}
+	}
+	return keyID, nil
 }
 
 type pkixVerifier interface {
