@@ -94,7 +94,7 @@ func main() {
 		if err := yaml.NewYAMLToJSONDecoder(policyFile).Decode(&policy); err != nil {
 			glog.Fatalf("Fail to parse policy file: %v", err)
 		} else {
-			glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
+			glog.Infof("Policy req: %v\n", policy.Spec.ImageVulnerabilityRequirements)
 		}
 	}
 
