@@ -22,10 +22,12 @@ import (
 	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/kritis/util"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
+	commonpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	grafeasv1beta1 "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	gcspkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
@@ -52,8 +54,8 @@ type ReadWriteClient interface {
 	CreateAttestationOccurrence(noteName string,
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
-	//UploadAttestationOccurrence(noteName string,
-	//		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
+	UploadAttestationOccurrence(noteName string,
+			containerImage string, att *cryptolib.Attestation, proj string, sType SignatureType) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
@@ -146,4 +148,60 @@ func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attesta
 		return nil, fmt.Errorf("Unknown signature type for attestation %v", occAtt)
 	}
 	return atts, nil
+}
+
+// CreateOccurrenceFromAttestation creates an occurrence from an attestation by specified signature type.
+// The created occurrence can either be a PgpSignedAttestation occurrence or a GenericSignedAttestation occurrence.
+func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage string, noteName string, sType SignatureType) (*grafeas.Occurrence, error) {
+	attestation := &attestationpb.Attestation{}
+
+	switch sType {
+	case PgpSignatureType:
+		pgpSignedAttestation := &attestationpb.PgpSignedAttestation{
+			Signature: string(att.Signature),
+			KeyId: &attestationpb.PgpSignedAttestation_PgpKeyId{
+				PgpKeyId: att.PublicKeyID,
+			},
+			ContentType: attestationpb.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
+		}
+
+		attestation = &attestationpb.Attestation{
+			Signature: &attestationpb.Attestation_PgpSignedAttestation{
+				PgpSignedAttestation: pgpSignedAttestation,
+			},
+		}
+
+	case GenericSignatureType:
+		genericSignedAttestation := &attestationpb.GenericSignedAttestation{
+			Signatures: []*commonpb.Signature{
+				{
+					Signature:   att.Signature,
+					PublicKeyId: att.PublicKeyID,
+				},
+			},
+			SerializedPayload: att.SerializedPayload,
+			ContentType: attestationpb.GenericSignedAttestation_SIMPLE_SIGNING_JSON,
+		}
+
+		attestation = &attestationpb.Attestation{
+			Signature: &attestationpb.Attestation_GenericSignedAttestation{
+				GenericSignedAttestation: genericSignedAttestation,
+			},
+		}
+	default:
+		return nil, fmt.Errorf("unknown signature type %v", sType)
+	}
+
+	attestationDetails := &grafeas.Occurrence_Attestation{
+		Attestation: &attestationpb.Details{
+			Attestation: attestation,
+		},
+	}
+
+	occ := &grafeas.Occurrence{
+		Resource: util.GetResource(containerImage),
+		NoteName: noteName,
+		Details:  attestationDetails,
+	}
+	return occ, nil
 }

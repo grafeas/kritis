@@ -240,68 +240,28 @@ func (c Client) CreateAttestationOccurrence(noteName string, containerImage stri
 	if err != nil {
 		return nil, err
 	}
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: string(att.Signature),
-		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: att.PublicKeyID,
-		},
-		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
-	}
-
-	attestationDetails := &grafeas.Occurrence_Attestation{
-		Attestation: &attestation.Details{
-			Attestation: &attestation.Attestation{
-				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
-				}},
-		},
-	}
-	occ := &grafeas.Occurrence{
-		Resource: util.GetResource(containerImage),
-		NoteName: noteName,
-		Details:  attestationDetails,
-	}
-	// Create the AttestationAuthrity Occurrence.
-	req := &grafeas.CreateOccurrenceRequest{
-		Occurrence: occ,
-		Parent:     fmt.Sprintf("projects/%s", proj),
-	}
-	// Call create Occurrence Api
-	return c.client.CreateOccurrence(c.ctx, req)
+	// Upload attestation
+	return c.UploadAttestationOccurrence(noteName, containerImage, att, proj, metadata.PgpSignatureType)
 }
 
 // UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
-func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att cryptolib.Attestation, proj string) (*grafeas.Occurrence, error) {
+func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: string(att.Signature),
-		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: att.PublicKeyID,
-		},
-		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
+	// Create occurrence from attestation
+	occ, err := metadata.CreateOccurrenceFromAttestation(att, containerImage, noteName, sType)
+	if err != nil {
+		return nil, fmt.Errorf("creating occurrence failed: %v", err)
 	}
 
-	attestationDetails := &grafeas.Occurrence_Attestation{
-		Attestation: &attestation.Details{
-			Attestation: &attestation.Attestation{
-				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
-				}},
-		},
-	}
-	occ := &grafeas.Occurrence{
-		Resource: util.GetResource(containerImage),
-		NoteName: noteName,
-		Details:  attestationDetails,
-	}
-	// Create the AttestationAuthrity Occurrence.
+	// Create CreateOccurrenceRequest
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
 		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
+
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)
 }
