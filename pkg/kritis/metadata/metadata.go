@@ -51,6 +51,9 @@ type ReadWriteClient interface {
 	// CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
 	CreateAttestationOccurrence(noteName string,
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
+	// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
+	//UploadAttestationOccurrence(noteName string,
+	//		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
