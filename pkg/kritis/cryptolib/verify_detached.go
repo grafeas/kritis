@@ -17,6 +17,7 @@ limitations under the License.
 package cryptolib
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
@@ -29,35 +30,51 @@ import (
 	"math/big"
 )
 
-func hashPlaintext(plaintext []byte, signingAlg SignatureAlgorithm) []byte {
+func hashPayload(payload []byte, signingAlg SignatureAlgorithm) ([]byte, error) {
 	switch signingAlg {
 	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, EcdsaP256Sha256:
-		hashed_plaintext := sha256.Sum256(plaintext)
-		return hashed_plaintext[:]
+		hashedPayload := sha256.Sum256(payload)
+		return hashedPayload[:], nil
 	case EcdsaP384Sha384:
-		hashed_plaintext := sha512.Sum384(plaintext)
-		return hashed_plaintext[:]
+		hashedPayload := sha512.Sum384(payload)
+		return hashedPayload[:], nil
 	case RsaSignPkcs14096Sha512, RsaPss4096Sha512, EcdsaP521Sha512:
-		hashed_plaintext := sha512.Sum512(plaintext)
-		return hashed_plaintext[:]
+		hashedPayload := sha512.Sum512(payload)
+		return hashedPayload[:], nil
 	default:
-		return nil
+		return nil, errors.New("invalid signature algorithm")
 	}
 }
 
-func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgorithm, plaintext []byte) error {
+func getHash(signingAlg SignatureAlgorithm) (crypto.Hash, error) {
+	switch signingAlg {
+	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, EcdsaP256Sha256:
+		return crypto.SHA256, nil
+	case EcdsaP384Sha384:
+		return crypto.SHA384, nil
+	case RsaSignPkcs14096Sha512, RsaPss4096Sha512, EcdsaP521Sha512:
+		return crypto.SHA512, nil
+	default:
+		return 0, errors.New("invalid signature algorithm")
+	}
+}
+
+// This function will be used to verify pkix and Jwt signatures. PGP detached signatures are not supported by this function.
+func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgorithm, payload []byte) error {
 	// Decode public key to der and parse for key type.
 	// This is needed to create PublicKey type needed for the verify functions.
-	der, _ := pem.Decode(publicKey)
+	der, rest := pem.Decode(publicKey)
 	if der == nil {
 		return errors.New("failed to decode PEM")
+	}
+	if !bytes.Equal(rest, []byte("")) {
+		return errors.New("more than one public key given")
 	}
 	pub, err := x509.ParsePKIXPublicKey(der.Bytes)
 	if err != nil {
 		return errors.Wrap(err, "error parsing public key")
 	}
-	var hashed_plaintext []byte
-	var hash crypto.Hash
+
 	switch signingAlg {
 	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaSignPkcs14096Sha512:
 		var rsa_key *rsa.PublicKey
@@ -65,13 +82,15 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if rsa_key, ok = pub.(*rsa.PublicKey); !ok {
 			return errors.New("expected rsa key")
 		}
-		if signingAlg == RsaSignPkcs14096Sha512 {
-			hash = crypto.SHA512
-		} else {
-			hash = crypto.SHA256
+		hash, hashErr := getHash(signingAlg)
+		if hashErr != nil {
+			return errors.Wrap(hashErr, "error getting hash")
 		}
-		hashed_plaintext = hashPlaintext(plaintext, signingAlg)
-		err := rsa.VerifyPKCS1v15(rsa_key, hash, hashed_plaintext, signature)
+		hashedPayload, payloadErr := hashPayload(payload, signingAlg)
+		if payloadErr != nil {
+			return errors.Wrap(payloadErr, "error hashing payload")
+		}
+		err := rsa.VerifyPKCS1v15(rsa_key, hash, hashedPayload, signature)
 		if err != nil {
 			return errors.Wrap(err, "signature verification failed")
 		}
@@ -82,13 +101,19 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if rsa_key, ok = pub.(*rsa.PublicKey); !ok {
 			return errors.New("expected rsa key")
 		}
-		if signingAlg == RsaPss4096Sha512 {
-			hash = crypto.SHA512
-		} else {
-			hash = crypto.SHA256
+		hash, hashErr := getHash(signingAlg)
+		if hashErr != nil {
+			return errors.Wrap(hashErr, "error getting hash")
 		}
-		hashed_plaintext = hashPlaintext(plaintext, signingAlg)
-		return rsa.VerifyPSS(rsa_key, hash, hashed_plaintext, signature, nil)
+		hashedPayload, payloadErr := hashPayload(payload, signingAlg)
+		if payloadErr != nil {
+			return errors.Wrap(payloadErr, "error hashing payload")
+		}
+		err := rsa.VerifyPSS(rsa_key, hash, hashedPayload, signature, nil)
+		if err != nil {
+			return errors.Wrap(err, "signature verification failed")
+		}
+		return nil
 	case EcdsaP256Sha256, EcdsaP384Sha384, EcdsaP521Sha512:
 		var ec_key *ecdsa.PublicKey
 		var ok bool
@@ -101,19 +126,15 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if _, err := asn1.Unmarshal(signature, &sigStruct); err != nil {
 			return errors.Wrap(err, "error unmarshaling ecdsa signature")
 		}
-		if signingAlg == EcdsaP256Sha256 {
-			hash = crypto.SHA256
-		} else if signingAlg == EcdsaP384Sha384 {
-			hash = crypto.SHA384
-		} else {
-			hash = crypto.SHA512
+		hashedPayload, payloadErr := hashPayload(payload, signingAlg)
+		if payloadErr != nil {
+			return errors.Wrap(payloadErr, "error hashing payload")
 		}
-		hashed_plaintext = hashPlaintext(plaintext, signingAlg)
-		if !ecdsa.Verify(ec_key, hashed_plaintext, sigStruct.R, sigStruct.S) {
+		if !ecdsa.Verify(ec_key, hashedPayload, sigStruct.R, sigStruct.S) {
 			return errors.New("failed to verify ecdsa signature")
 		}
 		return nil
 	default:
-		return errors.New("public key type not supported")
+		return errors.New("signature algorithm not supported")
 	}
 }
