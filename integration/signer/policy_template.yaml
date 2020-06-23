@@ -3,11 +3,10 @@ kind: VulnzSigningPolicy
 metadata:
   name: my-vsp
 spec:
-  project: <ATTESTATION_PROJECT>
-  noteReference: projects/<NOTE_PROJECT>/notes/<NOTE_ID>
   packageVulnerabilityRequirements:
     maximumSeverity: MEDIUM
     maximumFixNotAvailableSeverity: MEDIUM
     allowlistCVEs:
-      - providers/goog-vulnz/notes/CVE-2017-1000082
-      - providers/goog-vulnz/notes/CVE-2017-1000081
+      - projects/goog-vulnz/notes/CVE-2020-10543
+      - projects/goog-vulnz/notes/CVE-2020-10878
+      - projects/goog-vulnz/notes/CVE-2020-14155
