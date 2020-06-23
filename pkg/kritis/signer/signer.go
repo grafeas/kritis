@@ -58,7 +58,7 @@ var (
 )
 
 // SignImage signs an image without doing any policy check.
-// Returns an error if image does not pass or creating an attestation fails.
+// Returns an error if creating an attestation fails.
 func (s Signer) SignImage(image string) error {
 	existed, _ := s.isAttestationAlreadyExist(image)
 	if existed {
