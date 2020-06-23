@@ -2,8 +2,14 @@
 
 We're following [semantic versioning](https://semver.org/) approach to releases in Kritis.
 
+## Create a release tracking issue
+
+Use the [release tracking](https://github.com/grafeas/kritis/issues/new?template=feature_request.md)
+template to create a release tracking issue. If any problems come up during the release process, please use
+this issue to note them. Also use this issue to track the progress of the release process.
+
 ## Create a Release PR
-Modify the Kritis version values for the containers in these locations:
+Associate the PR to the tracking issue.  Modify the Kritis version values for the containers in these locations:
 
 * [Makefile](Makefile#L19)
 * [Chart.yaml](kritis-charts/Chart.yaml#L5)

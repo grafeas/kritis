@@ -9,12 +9,13 @@
     "iam",
     "internal/optional",
     "internal/version",
+    "kms/apiv1",
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution"
   ]
-  revision = "c728a003b238b26cef9ab6753a5dc424b331c3ad"
-  version = "v0.27.0"
+  revision = "fcb9a2d5f791d07be64506ab54434de65989d370"
+  version = "v0.37.4"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -26,6 +27,12 @@
   ]
   revision = "1f7cd6cfe0adea687ad44a512dfe76140f804318"
   version = "v10.12.0"
+
+[[projects]]
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
+  version = "v0.3.1"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -64,7 +71,12 @@
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
+    "protoc-gen-go",
     "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/grpc",
+    "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -116,9 +128,12 @@
 
 [[projects]]
   name = "github.com/googleapis/gax-go"
-  packages = ["."]
-  revision = "317e0006254c44a0ac427cc52a0e083ff0b9622f"
-  version = "v2.0.0"
+  packages = [
+    ".",
+    "v2"
+  ]
+  revision = "bd5b16380fd03dc758d11cef74ba2e3bc8b0e8c2"
+  version = "v2.0.5"
 
 [[projects]]
   name = "github.com/googleapis/gnostic"
@@ -266,6 +281,33 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/exp"
+  packages = [
+    "apidiff",
+    "cmd/apidiff"
+  ]
+  revision = "00229845015e38294862ecd9909318241789d41c"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/lint"
+  packages = [
+    ".",
+    "golint"
+  ]
+  revision = "738671d3881b9731cc63024d5d88cf28db875626"
+
+[[projects]]
+  name = "golang.org/x/mod"
+  packages = [
+    "module",
+    "semver"
+  ]
+  revision = "859b3ef565e237f9f1a0fb6b55385c497545680d"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -340,11 +382,34 @@
   branch = "master"
   name = "golang.org/x/tools"
   packages = [
+    "cmd/goimports",
+    "go/analysis",
+    "go/analysis/passes/inspect",
     "go/ast/astutil",
+    "go/ast/inspector",
+    "go/buildutil",
+    "go/gcexportdata",
+    "go/internal/cgo",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/loader",
+    "go/packages",
+    "go/types/objectpath",
+    "go/types/typeutil",
     "imports",
-    "internal/fastwalk"
+    "internal/analysisinternal",
+    "internal/event",
+    "internal/event/core",
+    "internal/event/keys",
+    "internal/event/label",
+    "internal/fastwalk",
+    "internal/gocommand",
+    "internal/gopathwalk",
+    "internal/imports",
+    "internal/packagesinternal",
+    "internal/typesinternal"
   ]
-  revision = "e2be0f7276f6ea2d8290dea1ffd89c98f6ac0b9e"
+  revision = "a2fa627c4bf4bffae5c75d2be45ed3692bfe3dae"
 
 [[projects]]
   branch = "master"
@@ -396,6 +461,7 @@
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
+    "googleapis/cloud/kms/v1",
     "googleapis/devtools/containeranalysis/v1beta1",
     "googleapis/devtools/containeranalysis/v1beta1/attestation",
     "googleapis/devtools/containeranalysis/v1beta1/build",
@@ -466,6 +532,42 @@
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
+
+[[projects]]
+  name = "honnef.co/go/tools"
+  packages = [
+    "arg",
+    "cmd/staticcheck",
+    "code",
+    "config",
+    "deprecated",
+    "edit",
+    "facts",
+    "functions",
+    "go/types/typeutil",
+    "internal/cache",
+    "internal/passes/buildir",
+    "internal/renameio",
+    "internal/robustio",
+    "internal/sharedcheck",
+    "ir",
+    "ir/irutil",
+    "lint",
+    "lint/lintdsl",
+    "lint/lintutil",
+    "lint/lintutil/format",
+    "loader",
+    "pattern",
+    "printf",
+    "report",
+    "simple",
+    "staticcheck",
+    "stylecheck",
+    "unused",
+    "version"
+  ]
+  revision = "3c17a0d920718d58e7fdc0508f211aff0701dd6d"
+  version = "2020.1.4"
 
 [[projects]]
   name = "k8s.io/api"
@@ -674,6 +776,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b0cac9147af1b830fdeabddc65a7f8c4834d141770f17f18b47e189f47d29392"
+  inputs-digest = "b55efa9e6c6fb45fbda783ce720fb57909acbb67df23a792e06e86f873657060"
   solver-name = "gps-cdcl"
   solver-version = 1
