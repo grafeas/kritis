@@ -193,7 +193,6 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 }
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image, secret, and project.
-// TODO: refactor to reuse UploadAttestationOccurrence once #533 is merged.
 func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	// Create Attestation Signature
 	att, err := util.CreateAttestation(containerImage, pgpSigningKey)
