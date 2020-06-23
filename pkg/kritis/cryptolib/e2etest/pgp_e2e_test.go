@@ -262,8 +262,11 @@ func TestEndToEndWithAttestations(t *testing.T) {
 			t.Fatalf("Error creating attestation: %v", err)
 		}
 
-		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, tc.publicKey, tc.keyID)
-		verifier, err := cryptolib.NewVerifier(tc.image, []cryptolib.PublicKey{publicKey})
+		publicKey, err := cryptolib.NewPublicKey(cryptolib.Pgp, tc.publicKey, tc.keyID)
+		if err != nil {
+			t.Fatalf("Error creating public key: %v", err)
+		}
+		verifier, err := cryptolib.NewVerifier(tc.image, []cryptolib.PublicKey{*publicKey})
 		if err != nil {
 			t.Fatalf("Error initializing verifier: %v", err)
 		}
