@@ -19,7 +19,9 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -27,101 +29,161 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
-	"io/ioutil"
+	"github.com/grafeas/kritis/pkg/kritis/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
+)
+
+type SignerMode string
+
+const (
+	CheckAndSign  SignerMode = "check-and-sign"
+	CheckOnly     SignerMode = "check-only"
+	BypassAndSign SignerMode = "bypass-and-sign"
 )
 
 func main() {
-	var image, pri_key_path, passphrase, pub_key_path, policy_path string
+	var image, vulnz_timeout, pri_key_path, passphrase, pub_key_path, policy_path, mode, attestation_project, note_name string
 
+	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
+	flag.StringVar(&vulnz_timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
+	flag.StringVar(&note_name, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
+	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
 	flag.Parse()
 
-	glog.Infof("image: %s, s_key: %s, policy: %s", image, pri_key_path, policy_path)
+	switch SignerMode(mode) {
+	case CheckAndSign, BypassAndSign:
+		glog.Infof("Signer mode: %s.", mode)
+	case CheckOnly:
+		glog.Fatalf("Mode %s note supported yet.", mode)
+	default:
+		glog.Fatalf("Unrecognized mode %s.", mode)
+	}
 
+	// Check image url is non-empty
+	// TODO: check and format image url to
+	//  gcr.io/project-id/rest-of-image-path@sha256:[sha-value]
+	if image == "" {
+		glog.Fatalf("Image url is empty: %s", image)
+	}
+
+	// Read the signing credentials
 	signerKey, err := ioutil.ReadFile(pri_key_path)
 	if err != nil {
 		glog.Fatalf("Fail to read signer key: %v", err)
 	}
-
-	policyFile, err := os.Open(policy_path)
-	if err != nil {
-		glog.Fatalf("Fail to load vulnz signing policy: %v", err)
-	}
-	defer policyFile.Close()
-
 	pubKey, err := ioutil.ReadFile(pub_key_path)
 	if err != nil {
 		glog.Fatalf("Fail to read public key: %v", err)
 	}
 
-	// Parse the vulnz signing policy
+	// Read the vulnz signing policy only when needed
 	policy := v1beta1.VulnzSigningPolicy{}
-
-	// err = json.Unmarshal(policyFile, &policy)
-	if err := yaml.NewYAMLToJSONDecoder(policyFile).Decode(&policy); err != nil {
-		glog.Fatalf("Fail to parse policy file: %v", err)
-	} else {
-		glog.Infof("Policy noteReference: %v\n", policy.Spec.NoteReference)
-		glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
+	if SignerMode(mode) == CheckAndSign || SignerMode(mode) == CheckOnly {
+		policyFile, err := os.Open(policy_path)
+		if err != nil {
+			glog.Fatalf("Fail to load vulnz signing policy: %v", err)
+		}
+		defer policyFile.Close()
+		// err = json.Unmarshal(policyFile, &policy)
+		if err := yaml.NewYAMLToJSONDecoder(policyFile).Decode(&policy); err != nil {
+			glog.Fatalf("Fail to parse policy file: %v", err)
+		} else {
+			glog.Infof("Policy req: %v\n", policy.Spec.PackageVulnerabilityRequirements)
+		}
 	}
 
-	// Read the vulnz scanning events
-	if image == "" {
-		glog.Fatalf("Image url is empty: %s", image)
-	}
-
-	client, err := containeranalysis.NewCache()
+	// Create a client
+	client, err := containeranalysis.New()
 	if err != nil {
 		glog.Fatalf("Could not initialize the client %v", err)
 	}
-	vulnz, err := client.Vulnerabilities(image)
-	if err != nil {
-		glog.Fatalf("Found err %s", err)
-	}
-	if vulnz == nil {
-		glog.Fatalf("Expected some vulnerabilities. Nil found")
-	}
 
-	// Create pgp key
-	pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
-	if err != nil {
-		glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\npublic key:\n%s\n", err, string(signerKey), string(pubKey))
-	}
-	// Create AA
-	// Create an AttestaionAuthority to help create noteOcurrences.
-	// This is quite hacky.
-	// TODO: refactor out the authority code
-	authority := v1beta1.AttestationAuthority{
-		ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
-		Spec: v1beta1.AttestationAuthoritySpec{
-			NoteReference: policy.Spec.NoteReference,
-			PublicKeys: []v1beta1.PublicKey{
-				{
-					KeyType:                  "PGP",
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pubKey)),
+	// Load signer configurations only when signing is needed
+	r := signer.Signer{}
+	if SignerMode(mode) == CheckAndSign || SignerMode(mode) == BypassAndSign {
+		// Check note name
+		err = util.CheckNoteName(note_name)
+		if err != nil {
+			glog.Fatalf("Note name is invalid %v", err)
+		}
+
+		// Parse attestation project
+		if attestation_project == "" {
+			attestation_project = util.GetProjectFromContainerImage(image)
+			glog.Infof("Using image project as attestation project: %s\n", attestation_project)
+		} else {
+			glog.Infof("Using specified attestation project: %s\n", attestation_project)
+		}
+
+		// Create pgp key
+		pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
+		if err != nil {
+			glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\npublic key:\n%s\n", err, string(signerKey), string(pubKey))
+		}
+
+		// Create AA
+		// Create an AttestaionAuthority to help create noteOcurrences.
+		// This is quite hacky.
+		// TODO: refactor out the authority code
+		authority := v1beta1.AttestationAuthority{
+			ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
+			Spec: v1beta1.AttestationAuthoritySpec{
+				NoteReference: note_name,
+				PublicKeys: []v1beta1.PublicKey{
+					{
+						KeyType:                  "PGP",
+						AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pubKey)),
+					},
 				},
 			},
-		},
+		}
+
+		r = signer.New(client, &signer.Config{
+			Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
+			PgpKey:    pgpKey,
+			Authority: authority,
+			Project:   attestation_project,
+		})
 	}
 
-	r := signer.New(client, &signer.Config{
-		Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
-		PgpKey:    pgpKey,
-		Authority: authority,
-		Project:   policy.Spec.Project,
-	})
-	imageVulnz := signer.ImageVulnerabilities{
-		ImageRef:        image,
-		Vulnerabilities: vulnz,
+	if SignerMode(mode) == BypassAndSign {
+		r.SignImage(image)
+		return
 	}
 
-	if err := r.ValidateAndSign(imageVulnz, policy); err != nil {
-		glog.Fatalf("Error creating signature: %v", err)
+	if SignerMode(mode) == CheckAndSign {
+		timeout, err := time.ParseDuration(vulnz_timeout)
+		if err != nil {
+			glog.Fatalf("Fail to parse timeout %v", err)
+		}
+		err = client.WaitForVulnzAnalysis(image, timeout)
+		if err != nil {
+			glog.Fatalf("Error waiting for vulnerability analysis %v", err)
+		}
+
+		// Read the vulnz scanning events
+		vulnz, err := client.Vulnerabilities(image)
+		if err != nil {
+			glog.Fatalf("Found err %s", err)
+		}
+		if vulnz == nil {
+			glog.Fatalf("Expected some vulnerabilities. Nil found")
+		}
+
+		imageVulnz := signer.ImageVulnerabilities{
+			ImageRef:        image,
+			Vulnerabilities: vulnz,
+		}
+
+		if err := r.ValidateAndSign(imageVulnz, policy); err != nil {
+			glog.Fatalf("Error creating signature: %v", err)
+		}
+		return
 	}
 }
