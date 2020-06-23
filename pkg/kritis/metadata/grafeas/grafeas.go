@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/discovery"
 
 	"google.golang.org/grpc/credentials"
 
@@ -271,4 +272,69 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		}
 	}
 	return occs, nil
+}
+
+// Poll discovery occurrence for an image and wait until container analysis
+// finishes. Throws an error if analysis is not successful or timeouts.
+func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	// resourceURL := fmt.Sprintf("https://gcr.io/my-project/my-image")
+	// timeout := time.Duration(5) * time.Second
+
+	// Backoff time between tries, exponentially grows after each failure.
+	nextTryWait := 1
+	// Timeout clock.
+	timeoutTimer := time.NewTimer(timeout)
+	defer timeoutTimer.Stop()
+
+	// Find the discovery occurrence using a filter string.
+	var discoveryOccurrence *grafeas.Occurrence
+	for {
+		// Waiting for discovery occurrence to appear.
+		if discoveryOccurrence == nil {
+			req := &grafeas.ListOccurrencesRequest{
+				Parent: fmt.Sprintf("projects/%s", util.GetProjectFromContainerImage(containerImage)),
+				// Vulnerability discovery occurrences are always associated with the
+				// PACKAGE_VULNERABILITY note.
+				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId=%q AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DefaultProject),
+			}
+
+			// There should be only one discovery occurrence.
+			resp, err := c.client.ListOccurrences(c.ctx, req)
+			if err != nil {
+				return err
+			}
+			if len(resp.Occurrences) == 0 {
+				continue
+			}
+			if resp.Occurrences[0].GetDiscovered() != nil {
+				discoveryOccurrence = resp.Occurrences[0]
+			}
+		}
+
+		// Update analysis status and check.
+		if discoveryOccurrence != nil {
+			// Update the occurrence.
+			req := &grafeas.GetOccurrenceRequest{Name: discoveryOccurrence.GetName()}
+			updated, err := c.client.GetOccurrence(c.ctx, req)
+			if err != nil {
+				return fmt.Errorf("GetOccurrence: %v", err)
+			}
+			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
+			case discovery.Discovered_FINISHED_SUCCESS:
+				return nil
+			case discovery.Discovered_FINISHED_FAILED:
+				return fmt.Errorf("container analysis has finished unsuccessfully")
+			case discovery.Discovered_FINISHED_UNSUPPORTED:
+				return fmt.Errorf("container analysis resource is known not to be supported")
+			}
+		}
+
+		select {
+		case <-timeoutTimer.C:
+			return fmt.Errorf("timeout while retrieving discovery occurrence")
+		case <-time.Tick(time.Duration(nextTryWait)):
+			// exponential backoff
+			nextTryWait = nextTryWait * 2
+		}
+	}
 }

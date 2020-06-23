@@ -59,3 +59,7 @@ ignored = ["cloud.google.com/go/devtools/*"]
 [[constraint]]
   name = "github.com/google/go-cmp"
   version = "0.4.0"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.37.3"
