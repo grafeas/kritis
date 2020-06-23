@@ -73,8 +73,6 @@ func NewPublicKey(keyType KeyType, keyData []byte, keyID string) (*PublicKey, er
 			return nil, err
 		}
 		newKeyID = id
-	case UnknownKeyType:
-		return nil, fmt.Errorf("invalid key type")
 	default:
 		return nil, fmt.Errorf("invalid key type")
 	}
@@ -103,7 +101,7 @@ func extractPkixKeyID(keyData []byte, keyID string) (string, error) {
 	if strings.Contains(keyID, ":") {
 		_, err := url.ParseRequestURI(keyID)
 		if err != nil {
-			return "", fmt.Errorf("keyID not formatted as StringOrURI: must either not contain \":\" or be valid URI")
+			return "", fmt.Errorf("keyID %q not formatted as StringOrURI: must either not contain \":\" or be valid URI", keyID)
 		}
 	}
 	return keyID, nil
