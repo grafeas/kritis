@@ -49,13 +49,10 @@ binauthz_project_setup () {
   set +x; echo; set -x
 
   set +x; echo "Enabling apis..."; set -x
-  gcloud services enable compute.googleapis.com
   gcloud services enable cloudbuild.googleapis.com
-  gcloud services enable container.googleapis.com
   gcloud services enable containerregistry.googleapis.com
   gcloud services enable containeranalysis.googleapis.com
   gcloud services enable containerscanning.googleapis.com
-  gcloud services enable binaryauthorization.googleapis.com
   set +x; echo; set -x
 
   set +x; echo "Setting up service accounts and permissions.."; set -x
@@ -80,99 +77,11 @@ binauthz_project_setup () {
   gcloud auth configure-docker
   set +x; echo
 
-  set +x; echo "Creating target deployment cluster.."; set -x
-  gcloud container clusters create \
-    --enable-binauthz \
-    --zone ${BINAUTHZ_ZONE} \
-    binauthz-sample
-  set +x; echo
-
-  # The custom python builder is so we can run the vulnerability polling code
-  set +x; echo "Building custom python cloud builder.."; set -x
-  docker build -t gcr.io/${BINAUTHZ_PROJECT}/python-builder:latest -f ./Dockerfile.python-builder .
-  docker push gcr.io/${BINAUTHZ_PROJECT}/python-builder:latest
-  set +x; echo
-
 
   set +x; echo "Building custom kritis signer cloud builder.."; set -x
-  $(cd ${GODIR}; make -e REGISTRY=gcr.io/${BINAUTHZ_PROJECT} signer-image)
-  KRITIS_DIGEST=$(docker images gcr.io/${BINAUTHZ_PROJECT}/kritis-signer | grep gcr.io | head -1 | awk -e ' { print $2 } ')
-  docker tag gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:$KRITIS_DIGEST gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
-  docker push gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
+  cd ${GODIR}
+  gcloud builds submit . --config deploy/kritis-signer/cloudbuild.yaml
   set +x; echo
-
-  set +x; echo "Generating attestor keys.."; set -x
-  cat >gpg.cfg << EOF
-%echo Generating a basic OpenPGP key
-Key-Type: default
-Key-Length: default
-Subkey-Type: default
-Subkey-Length: default
-Name-Real: Kritis Signer
-Name-Comment:Kritis vuln scanning attestation key
-Name-Email: kritis-attestor@example.com
-Expire-Date: 0
-%no-ask-passphrase
-%no-protection
-# Do a commit here, so that we can later print "done" :-)
-%commit
-%echo done
-EOF
-  GPG_OUTPUT="$(gpg --batch --generate-key --yes gpg.cfg)"
-  KEY_FINGERPRINT="$(set +x; echo; set -x $GPG_OUTPUT | sed -n 's/.*\([A-Z0-9]\{40\}\).*/\1/p')"
-  gpg --armor --export $KEY_FINGERPRINT > $DIR/gpg.pub
-  gpg --armor --export-secret-keys $KEY_FINGERPRINT > $DIR/gpg.priv
-  set +x; echo
-
-  set +x; echo "Creating attestors.."; set -x
-  ATTESTOR=kritis-attestor
-  NOTE_ID=kritis-attestor-note
-  cat > ${DIR}/note_payload.json << EOM
-{
-  "name": "projects/${BINAUTHZ_PROJECT}/notes/${NOTE_ID}",
-  "attestation": {
-    "hint": {
-      "human_readable_name": "Kritis Signer Attestor Note"
-    }
-  }
-}
-EOM
-  curl -X POST \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $(gcloud auth print-access-token)"  \
-    --data-binary @${DIR}/note_payload.json  \
-    "https://containeranalysis.googleapis.com/v1/projects/${BINAUTHZ_PROJECT}/notes/?noteId=${NOTE_ID}"
-  gcloud container binauthz attestors create ${ATTESTOR} \
-    --attestation-authority-note=${NOTE_ID} \
-    --attestation-authority-note-project=${BINAUTHZ_PROJECT}
-  gcloud --project="${BINAUTHZ_PROJECT}" \
-    beta container binauthz attestors public-keys add \
-    --attestor="${ATTESTOR}" \
-    --pgp-public-key-file=${DIR}/gpg.pub
-  cat > ${DIR}/binauthz-policy.yaml << EOM
-    admissionWhitelistPatterns:
-    - namePattern: gcr.io/google_containers/*
-    - namePattern: gcr.io/google-containers/*
-    - namePattern: k8s.gcr.io/*
-    - namePattern: gke.gcr.io/*
-    - namePattern: gcr.io/stackdriver-agents/*
-    defaultAdmissionRule:
-      evaluationMode: REQUIRE_ATTESTATION
-      enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
-      requireAttestationsBy:
-        - projects/${BINAUTHZ_PROJECT}/attestors/${ATTESTOR}
-    name: projects/${BINAUTHZ_PROJECT}/policy
-EOM
-  gcloud container binauthz policy import ${DIR}/binauthz-policy.yaml
-
-  cat policy_template.yaml \
-    | sed -e "s?<ATTESTATION_PROJECT>?${BINAUTHZ_PROJECT}?g" \
-    | sed -e "s?<NOTE_PROJECT>?${BINAUTHZ_PROJECT}?g" \
-    | sed -e "s?<NOTE_ID>?${NOTE_ID}?g" \
-    > policy.yaml
-
-  set +x; echo
-  set +x
 }
 
 #Main
