@@ -3,9 +3,9 @@ kind: VulnzSigningPolicy
 metadata:
   name: my-vsp
 spec:
-  packageVulnerabilityRequirements:
-    maximumSeverity: MEDIUM
-    maximumFixNotAvailableSeverity: MEDIUM
+  imageVulnerabilityRequirements:
+    maximumFixableSeverity: MEDIUM
+    maximumUnfixableSeverity: MEDIUM
     allowlistCVEs:
       - projects/goog-vulnz/notes/CVE-2020-10543
       - projects/goog-vulnz/notes/CVE-2020-10878

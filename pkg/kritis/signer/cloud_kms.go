@@ -101,6 +101,7 @@ func (s kmsSigner) CreateAttestation(payload []byte) (*cryptolib.Attestation, er
 		return nil, err
 	}
 	att := cryptolib.Attestation{
+		PublicKeyID:       fmt.Sprintf("//cloudkms.googleapis.com/v1/%s", s.keyName),
 		Signature:         result.Signature,
 		SerializedPayload: payload,
 	}
