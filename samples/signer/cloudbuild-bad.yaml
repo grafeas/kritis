@@ -27,10 +27,8 @@ steps:
       -v=10 \
       -alsologtostderr \
       -image=$(/bin/cat image-digest.txt) \
-      -credentials=kritis-service-account.json \
-      -private_key=gpg.priv \
-      -public_key=gpg.pub \
-      -policy=policy.yaml
+      -policy=policy.yaml \
+      -mode=check-only
     waitFor: push
     id: vulnsign
 images: ['gcr.io/$PROJECT_ID/binauthz-test:latest']

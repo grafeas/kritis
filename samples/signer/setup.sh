@@ -79,10 +79,8 @@ binauthz_project_setup () {
 
 
   set +x; echo "Building custom kritis signer cloud builder.."; set -x
-  $(cd ${GODIR}; make -e REGISTRY=gcr.io/${BINAUTHZ_PROJECT} signer-image)
-  KRITIS_DIGEST=$(docker images gcr.io/${BINAUTHZ_PROJECT}/kritis-signer | grep gcr.io | head -1 | awk -e ' { print $2 } ')
-  docker tag gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:$KRITIS_DIGEST gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
-  docker push gcr.io/${BINAUTHZ_PROJECT}/kritis-signer:latest
+  cd ${GODIR}
+  gcloud builds submit . --config deploy/kritis-signer/cloudbuild.yaml
   set +x; echo
 }
 

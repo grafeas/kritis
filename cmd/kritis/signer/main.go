@@ -56,14 +56,18 @@ func main() {
 	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
 	flag.Parse()
 
+	doCheck, doSign := false, false
 	switch SignerMode(mode) {
-	case CheckAndSign, BypassAndSign:
-		glog.Infof("Signer mode: %s.", mode)
+	case CheckAndSign:
+		doCheck, doSign = true, true
+	case BypassAndSign:
+		doSign = true
 	case CheckOnly:
-		glog.Fatalf("Mode %s note supported yet.", mode)
+		doCheck = true
 	default:
 		glog.Fatalf("Unrecognized mode %s.", mode)
 	}
+	glog.Infof("Signer mode: %s.", mode)
 
 	// Check image url is non-empty
 	// TODO: check and format image url to
@@ -72,19 +76,15 @@ func main() {
 		glog.Fatalf("Image url is empty: %s", image)
 	}
 
-	// Read the signing credentials
-	signerKey, err := ioutil.ReadFile(pri_key_path)
+	// Create a client
+	client, err := containeranalysis.New()
 	if err != nil {
-		glog.Fatalf("Fail to read signer key: %v", err)
-	}
-	pubKey, err := ioutil.ReadFile(pub_key_path)
-	if err != nil {
-		glog.Fatalf("Fail to read public key: %v", err)
+		glog.Fatalf("Could not initialize the client %v", err)
 	}
 
-	// Read the vulnz signing policy only when needed
-	policy := v1beta1.VulnzSigningPolicy{}
-	if SignerMode(mode) == CheckAndSign || SignerMode(mode) == CheckOnly {
+	if doCheck {
+		// Read the vulnz signing policy
+		policy := v1beta1.VulnzSigningPolicy{}
 		policyFile, err := os.Open(policy_path)
 		if err != nil {
 			glog.Fatalf("Fail to load vulnz signing policy: %v", err)
@@ -96,17 +96,46 @@ func main() {
 		} else {
 			glog.Infof("Policy req: %v\n", policy.Spec.ImageVulnerabilityRequirements)
 		}
+
+		timeout, err := time.ParseDuration(vulnz_timeout)
+		if err != nil {
+			glog.Fatalf("Fail to parse timeout %v", err)
+		}
+		err = client.WaitForVulnzAnalysis(image, timeout)
+		if err != nil {
+			glog.Fatalf("Error waiting for vulnerability analysis %v", err)
+		}
+
+		// Read the vulnz scanning events
+		vulnz, err := client.Vulnerabilities(image)
+		if err != nil {
+			glog.Fatalf("Found err %s", err)
+		}
+		if vulnz == nil {
+			glog.Fatalf("Expected some vulnerabilities. Nil found")
+		}
+
+		violations, err := vulnzsigningpolicy.ValidateVulnzSigningPolicy(policy, image, vulnz)
+		if err != nil {
+			glog.Fatalf("Error when evaluating image %q against policy %q", image, policy.Name)
+		}
+		if violations != nil && len(violations) != 0 {
+			glog.Fatalf("Image %q does not pass VulnzSigningPolicy %q: %v", image, policy.Name, violations)
+		}
+		glog.Infof("Image %q passes VulnzSigningPolicy %s.", image, policy.Name)
 	}
 
-	// Create a client
-	client, err := containeranalysis.New()
-	if err != nil {
-		glog.Fatalf("Could not initialize the client %v", err)
-	}
+	if doSign {
+		// Read the signing credentials
+		signerKey, err := ioutil.ReadFile(pri_key_path)
+		if err != nil {
+			glog.Fatalf("Fail to read signer key: %v", err)
+		}
+		pubKey, err := ioutil.ReadFile(pub_key_path)
+		if err != nil {
+			glog.Fatalf("Fail to read public key: %v", err)
+		}
 
-	// Load signer configurations only when signing is needed
-	r := signer.Signer{}
-	if SignerMode(mode) == CheckAndSign || SignerMode(mode) == BypassAndSign {
 		// Check note name
 		err = util.CheckNoteName(note_name)
 		if err != nil {
@@ -144,46 +173,13 @@ func main() {
 			},
 		}
 
-		r = signer.New(client, &signer.Config{
-			Validate:  vulnzsigningpolicy.ValidateVulnzSigningPolicy,
+		// Create signer
+		r := signer.New(client, &signer.Config{
 			PgpKey:    pgpKey,
 			Authority: authority,
 			Project:   attestation_project,
 		})
-	}
-
-	if SignerMode(mode) == BypassAndSign {
+		// Sign image
 		r.SignImage(image)
-		return
-	}
-
-	if SignerMode(mode) == CheckAndSign {
-		timeout, err := time.ParseDuration(vulnz_timeout)
-		if err != nil {
-			glog.Fatalf("Fail to parse timeout %v", err)
-		}
-		err = client.WaitForVulnzAnalysis(image, timeout)
-		if err != nil {
-			glog.Fatalf("Error waiting for vulnerability analysis %v", err)
-		}
-
-		// Read the vulnz scanning events
-		vulnz, err := client.Vulnerabilities(image)
-		if err != nil {
-			glog.Fatalf("Found err %s", err)
-		}
-		if vulnz == nil {
-			glog.Fatalf("Expected some vulnerabilities. Nil found")
-		}
-
-		imageVulnz := signer.ImageVulnerabilities{
-			ImageRef:        image,
-			Vulnerabilities: vulnz,
-		}
-
-		if err := r.ValidateAndSign(imageVulnz, policy); err != nil {
-			glog.Fatalf("Error creating signature: %v", err)
-		}
-		return
 	}
 }
