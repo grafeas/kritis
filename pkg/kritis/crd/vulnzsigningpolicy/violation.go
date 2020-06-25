@@ -63,24 +63,24 @@ func UnqualifiedImageReason(image string) policy.Reason {
 	return policy.Reason(fmt.Sprintf("%s is not a fully qualified image. You can run 'kubectl plugin resolve-tags' to qualify all images with a digest.", image))
 }
 
-// FixUnavailabileReason returns a detailed reason if an unfixable CVE exceeds max severity
-func FixUnavailableReason(image string, v metadata.Vulnerability, vsp v1beta1.VulnzSigningPolicy) policy.Reason {
-	ms := vsp.Spec.PackageVulnerabilityRequirements.MaximumFixUnavailableSeverity
+// UnfixableSeverityViolationReason returns a detailed reason if an unfixable CVE exceeds max severity
+func UnfixableSeverityViolationReason(image string, v metadata.Vulnerability, vsp v1beta1.VulnzSigningPolicy) policy.Reason {
+	ms := vsp.Spec.ImageVulnerabilityRequirements.MaximumUnfixableSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't in allowlist, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s which isn't in allowlist, violating max unfixable severity %s",
 			v.CVE, image, ms))
 	}
-	return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found unfixable CVE %s in %s, which has severity %s exceeding max unfixable severity %s",
 		v.CVE, image, v.Severity, ms))
 }
 
-// SeverityReason returns a detailed reason if a CVE exceeds max severity
-func SeverityReason(image string, v metadata.Vulnerability, vsp v1beta1.VulnzSigningPolicy) policy.Reason {
-	ms := vsp.Spec.PackageVulnerabilityRequirements.MaximumSeverity
+// FixableSeverityViolationReason returns a detailed reason if a CVE exceeds max severity
+func FixableSeverityViolationReason(image string, v metadata.Vulnerability, vsp v1beta1.VulnzSigningPolicy) policy.Reason {
+	ms := vsp.Spec.ImageVulnerabilityRequirements.MaximumFixableSeverity
 	if ms == constants.BlockAll {
-		return policy.Reason(fmt.Sprintf("found CVE %s in %s which isn't in allowlist, violating max severity %s",
+		return policy.Reason(fmt.Sprintf("found fixable CVE %s in %s which isn't in allowlist, violating max fixable severity %s",
 			v.CVE, image, ms))
 	}
-	return policy.Reason(fmt.Sprintf("found CVE %s in %s, which has severity %s exceeding max severity %s",
+	return policy.Reason(fmt.Sprintf("found fixable CVE %s in %s, which has severity %s exceeding max fixable severity %s",
 		v.CVE, image, v.Severity, ms))
 }

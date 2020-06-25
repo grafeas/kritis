@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
@@ -64,7 +66,7 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			vulnDetails := &grafeas.Occurrence_Vulnerability{
 				Vulnerability: &vulnerability.Details{
-					Severity: tc.severity,
+					EffectiveSeverity: tc.severity,
 					PackageIssue: []*vulnerability.PackageIssue{
 						{
 							AffectedLocation: &vulnerability.VulnerabilityLocation{},
@@ -89,32 +91,47 @@ func TestGetVulnerabilityFromOccurence(t *testing.T) {
 	}
 }
 
-func TestGetRawAttestationsFromOccurrence(t *testing.T) {
+func TestGetAttestationsFromOccurrence(t *testing.T) {
 	tests := []struct {
-		name            string
-		att             attestation.Attestation
-		expectedRawAtts []RawAttestation
+		name         string
+		att          attestation.Attestation
+		expectedAtts []cryptolib.Attestation
 	}{
 		{
 			"pgp attestation",
 			makeOccAttestationPgp("sig-1", "id-1"),
-			[]RawAttestation{
-				MakeRawAttestation(PgpSignatureType, "sig-1", "id-1", ""),
+			[]cryptolib.Attestation{
+				{
+					PublicKeyID: "id-1",
+					Signature:   []byte("sig-1"),
+				},
 			},
 		},
 		{
 			"generic attestation",
 			makeOccAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
-			[]RawAttestation{
-				MakeRawAttestation(GenericSignatureType, "sig-1", "id-1", "generic-address"),
+			[]cryptolib.Attestation{
+				{
+					PublicKeyID:       "id-1",
+					Signature:         []byte("sig-1"),
+					SerializedPayload: []byte("generic-address"),
+				},
 			},
 		},
 		{
 			"generic attestation multiple signatures",
 			makeOccAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
-			[]RawAttestation{
-				MakeRawAttestation(GenericSignatureType, "sig-1", "id-1", "generic-address"),
-				MakeRawAttestation(GenericSignatureType, "sig-2", "id-2", "generic-address"),
+			[]cryptolib.Attestation{
+				{
+					PublicKeyID:       "id-1",
+					Signature:         []byte("sig-1"),
+					SerializedPayload: []byte("generic-address"),
+				},
+				{
+					PublicKeyID:       "id-2",
+					Signature:         []byte("sig-2"),
+					SerializedPayload: []byte("generic-address"),
+				},
 			},
 		},
 	}
@@ -126,14 +143,14 @@ func TestGetRawAttestationsFromOccurrence(t *testing.T) {
 					Attestation: &attestation.Details{Attestation: &tc.att},
 				},
 			}
-			actualRawAtts, err := GetRawAttestationsFromOccurrence(occ)
+			actualAtts, err := GetAttestationsFromOccurrence(occ)
 			if err != nil {
-				t.Fatalf("Error while parsing RawAttestation from Occurrence: %v", err)
+				t.Fatalf("Error while parsing Attestation from Occurrence: %v", err)
 			}
-			if !cmp.Equal(actualRawAtts, tc.expectedRawAtts, cmpopts.SortSlices(func(rawAtt1, rawAtt2 RawAttestation) bool {
-				return rawAtt1.Signature.PublicKeyId > rawAtt2.Signature.PublicKeyId
+			if !cmp.Equal(actualAtts, tc.expectedAtts, cmpopts.SortSlices(func(att1, att2 cryptolib.Attestation) bool {
+				return att1.PublicKeyID > att2.PublicKeyID
 			})) {
-				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedRawAtts, actualRawAtts)
+				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedAtts, actualAtts)
 			}
 		})
 	}

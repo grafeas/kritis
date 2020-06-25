@@ -1,0 +1,12 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: VulnzSigningPolicy
+metadata:
+  name: my-vsp
+spec:
+  imageVulnerabilityRequirements:
+    maximumFixableSeverity: MEDIUM
+    maximumUnfixableSeverity: MEDIUM
+    allowlistCVEs:
+      - projects/goog-vulnz/notes/CVE-2020-10543
+      - projects/goog-vulnz/notes/CVE-2020-10878
+      - projects/goog-vulnz/notes/CVE-2020-14155

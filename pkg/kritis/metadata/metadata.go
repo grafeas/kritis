@@ -19,6 +19,9 @@ package metadata
 import (
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
@@ -52,8 +55,10 @@ type ReadWriteClient interface {
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
-	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]RawAttestation, error)
+	// Attestations get Attestation Occurrences for given image.
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
+	// Wait vulnerability analysis for an image to finish, or times out.
+	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
 	// Close closes client connections
 	Close()
 }
@@ -63,7 +68,9 @@ type ReadOnlyClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]RawAttestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
+	// Wait vulnerability analysis for an image to finish, or times out.
+	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
 	// Close closes client connections
 	Close()
 }
@@ -72,29 +79,6 @@ type Vulnerability struct {
 	Severity        string
 	HasFixAvailable bool
 	CVE             string
-}
-
-// RawAttestation represents an unauthenticated attestation, stripped of any
-// information specific to the wire format. RawAttestation may only be
-// trusted after successfully verifying its Signature. Each RawAttestation
-// contains one signature.
-//
-// RawAttestations are parsed from either PgpSignedAttestation or
-// GenericSignedAttestation Occurrences. PgpSignedAttestation has one
-// signature, and is parsed into one RawAttestation. GenericSignedAttestation
-// has multiple signatures, and is parsed into multiple RawAttestations.
-type RawAttestation struct {
-	SignatureType     SignatureType
-	Signature         RawSignature
-	SerializedPayload []byte
-}
-
-// RawSignature contains the signature content and an ID for the public key
-// that can verify the signature. The ID does not by itself verify the
-// signature. It is merely a key lookup hint.
-type RawSignature struct {
-	PublicKeyId string
-	Signature   string
 }
 
 // ParseNoteReference extracts the project ID and the note ID from the NoteReference.
@@ -123,56 +107,40 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *Vulnerability {
 	}
 	hasFixAvailable := IsFixAvailable(vulnDetails.GetPackageIssue())
 	vulnerability := Vulnerability{
-		Severity:        vulnerability.Severity_name[int32(vulnDetails.Severity)],
+		Severity:        vulnerability.Severity_name[int32(vulnDetails.EffectiveSeverity)],
 		HasFixAvailable: hasFixAvailable,
 		CVE:             occ.GetNoteName(),
 	}
 	return &vulnerability
 }
 
-func GetRawAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]RawAttestation, error) {
-	ras := []RawAttestation{}
-	att := occ.GetAttestation().GetAttestation()
-	switch att.Signature.(type) {
+// GetAttestationsFromOccurrence parses Attestations from PgpSignedAttestation
+// and GenericSignedAttestation Occurrences. A PgpSignedAttestation has one
+// signature and is parsed into one Attestation. A GenericSignedAttestation may
+// have multiple signatures, which are parsed into multiple Attestations.
+func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attestation, error) {
+	atts := []cryptolib.Attestation{}
+	occAtt := occ.GetAttestation().GetAttestation()
+	switch occAtt.Signature.(type) {
 	case *attestationpb.Attestation_PgpSignedAttestation:
-		psa := att.GetPgpSignedAttestation()
-		ra := RawAttestation{
-			SignatureType: PgpSignatureType,
-			Signature: RawSignature{
-				PublicKeyId: psa.GetPgpKeyId(),
-				Signature:   psa.GetSignature(),
-			},
-			SerializedPayload: []byte{},
+		psa := occAtt.GetPgpSignedAttestation()
+		att := cryptolib.Attestation{
+			PublicKeyID: psa.GetPgpKeyId(),
+			Signature:   []byte(psa.GetSignature()),
 		}
-		ras = append(ras, ra)
+		atts = append(atts, att)
 	case *attestationpb.Attestation_GenericSignedAttestation:
-		gsa := att.GetGenericSignedAttestation()
+		gsa := occAtt.GetGenericSignedAttestation()
 		for _, sig := range gsa.GetSignatures() {
-			newSig := RawSignature{
-				PublicKeyId: sig.PublicKeyId,
-				Signature:   string(sig.Signature),
-			}
-			ra := RawAttestation{
-				SignatureType:     GenericSignatureType,
-				Signature:         newSig,
+			att := cryptolib.Attestation{
+				PublicKeyID:       string(sig.PublicKeyId),
+				Signature:         sig.Signature,
 				SerializedPayload: gsa.GetSerializedPayload(),
 			}
-			ras = append(ras, ra)
+			atts = append(atts, att)
 		}
 	default:
-		return nil, fmt.Errorf("Unknown signature type for attestation %v", att)
+		return nil, fmt.Errorf("Unknown signature type for attestation %v", occAtt)
 	}
-	return ras, nil
-}
-
-// For testing purposes. Should not be used as part of metadata external API.
-func MakeRawAttestation(sigType SignatureType, sig, id, payload string) RawAttestation {
-	return RawAttestation{
-		SignatureType: sigType,
-		Signature: RawSignature{
-			Signature:   sig,
-			PublicKeyId: id,
-		},
-		SerializedPayload: []byte(payload),
-	}
+	return atts, nil
 }

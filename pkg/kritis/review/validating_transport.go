@@ -126,36 +126,21 @@ func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.P
 			invalidKeys = append(invalidKeys, attestorKey.KeyId)
 			continue
 		}
-		publicKey := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
-		publicKeys = append(publicKeys, publicKey)
+		publicKey, err := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
+		if err != nil {
+			glog.Warningf("Error creating PublicKey: %v", err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
+		}
+		publicKeys = append(publicKeys, *publicKey)
 	}
 	return publicKeys, invalidKeys
 }
 
-func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]*cryptolib.Attestation, error) {
-	atts := []*cryptolib.Attestation{}
-	rawAtts, err := avt.Client.Attestations(image, &avt.Attestor)
+func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]cryptolib.Attestation, error) {
+	atts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
-	}
-
-	for _, rawAtt := range rawAtts {
-		if rawAtt.SignatureType != metadata.PgpSignatureType {
-			return nil, fmt.Errorf("Signature type %s is not supported for Attestation %v", rawAtt.SignatureType.String(), rawAtt)
-		}
-		decodedSig, err := base64.StdEncoding.DecodeString(rawAtt.Signature.Signature)
-		if err != nil {
-			glog.Warningf("Cannot base64 decode signature for attestation %v. Error: %v", rawAtt, err)
-			continue
-		}
-		// TODO(https://github.com/grafeas/kritis/issues/505): Remove this
-		// after Kritis migrates to cryptolib.Attestation.
-		att := &cryptolib.Attestation{
-			PublicKeyID:       rawAtt.Signature.PublicKeyId,
-			Signature:         decodedSig,
-			SerializedPayload: rawAtt.SerializedPayload,
-		}
-		atts = append(atts, att)
 	}
 	return atts, nil
 }
@@ -178,7 +163,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 
 	validatedAtts := []attestation.ValidatedAttestation{}
 	for _, att := range atts {
-		if err := verifier.VerifyAttestation(att); err != nil {
+		if err := verifier.VerifyAttestation(&att); err != nil {
 			glog.Warningf("error verifying attestation: %v", err)
 			continue
 		}

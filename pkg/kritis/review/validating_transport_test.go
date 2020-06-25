@@ -17,9 +17,10 @@ limitations under the License.
 package review
 
 import (
-	"encoding/base64"
 	"errors"
 	"testing"
+
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -27,25 +28,20 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
-
-func encodeB64(in string) string {
-	return base64.StdEncoding.EncodeToString([]byte(in))
-}
 
 func TestValidatingTransport(t *testing.T) {
 	successSec, pub := testutil.CreateSecret(t, "test-success")
 	// second public key for the second attestor
 	successSec2, pub2 := testutil.CreateSecret(t, "test-success-2")
 	successFpr, successFpr2 := successSec.PgpKey.Fingerprint(), successSec2.PgpKey.Fingerprint()
-	sig, err := util.CreateAttestationSignature(testutil.QualifiedImage, successSec)
+	att1, err := util.CreateAttestation(testutil.QualifiedImage, successSec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
-	anotherSig, err := util.CreateAttestationSignature(testutil.IntTestImage, successSec)
+	att2, err := util.CreateAttestation(testutil.IntTestImage, successSec)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -56,7 +52,7 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PGP",
 					KeyId:                    successFpr,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 				},
 			},
 		},
@@ -68,12 +64,12 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PGP",
 					KeyId:                    successFpr,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 				},
 				{
 					KeyType:                  "PGP",
 					KeyId:                    successFpr2,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub2)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub2),
 				},
 			},
 		},
@@ -89,7 +85,7 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PGP",
 					KeyId:                    successFpr,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 				},
 			},
 		},
@@ -101,18 +97,6 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PGP",
 					AsciiArmoredPgpPublicKey: "bad-key",
-				},
-			},
-		},
-	}
-	invalidAuthWithOneInvalidPgpKeyId := v1beta1.AttestationAuthority{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
-		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeys: []v1beta1.PublicKey{
-				{
-					KeyType:                  "PGP",
-					KeyId:                    "bad-key-id",
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
 				},
 			},
 		},
@@ -133,22 +117,6 @@ func TestValidatingTransport(t *testing.T) {
 			},
 		},
 	}
-	invalidAuthWithOneInvalidPkixKeyId := v1beta1.AttestationAuthority{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
-		Spec: v1beta1.AttestationAuthoritySpec{
-			PublicKeys: []v1beta1.PublicKey{
-				{
-					KeyType: "PKIX",
-					KeyId:   "bad_key_id:foo",
-					// TODO(acamadeo): After implementing PKIX key verification
-					// replace this with a valid PKIX public key.
-					PkixPublicKey: v1beta1.PkixPublicKey{
-						PublicKeyPem: "good-key",
-					},
-				},
-			},
-		},
-	}
 	invalidAuthWithPgpTypeAndPkixKey := v1beta1.AttestationAuthority{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-attestor"},
 		Spec: v1beta1.AttestationAuthoritySpec{
@@ -156,7 +124,7 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PGP",
 					KeyId:                    successFpr,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 					// TODO(acamadeo): After implementing PKIX key verification
 					// replace this with a valid PKIX public key.
 					PkixPublicKey: v1beta1.PkixPublicKey{
@@ -173,7 +141,7 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "PKIX",
 					KeyId:                    successFpr,
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 					PkixPublicKey: v1beta1.PkixPublicKey{
 						PublicKeyPem: "good-key",
 					},
@@ -188,7 +156,7 @@ func TestValidatingTransport(t *testing.T) {
 				{
 					KeyType:                  "INVALID_KEY",
 					KeyId:                    "good-key-id",
-					AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pub)),
+					AsciiArmoredPgpPublicKey: base64Encode(pub),
 				},
 			},
 		},
@@ -197,7 +165,7 @@ func TestValidatingTransport(t *testing.T) {
 		name          string
 		auth          v1beta1.AttestationAuthority
 		wantAtts      []attestation.ValidatedAttestation
-		attestations  []metadata.RawAttestation
+		attestations  []cryptolib.Attestation
 		errorExpected bool
 		attError      error
 	}{
@@ -206,72 +174,75 @@ func TestValidatingTransport(t *testing.T) {
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, attestations: []cryptolib.Attestation{
+			*att1,
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at least one good PGP key", auth: validAuthWithOneGoodOneBadPgpKeys, wantAtts: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, attestations: []cryptolib.Attestation{
+			*att1,
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
 		{name: "auth with at two good PGP keys", auth: validAuthWithTwoGoodPgpKeys, wantAtts: []attestation.ValidatedAttestation{
 			{
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		}, attestations: []cryptolib.Attestation{
+			*att1,
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
-		{name: "no valid sig", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), successFpr, ""),
+		{name: "no valid sig", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
+			{
+				PublicKeyID: successFpr,
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
-		{name: "sig not base64 encoded", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, sig, successFpr, ""),
+		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
+			{
+				PublicKeyID: "invalid-fpr",
+				Signature:   []byte("invalid-sig"),
+			},
 		}, errorExpected: false, attError: nil},
-		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64("invalid-sig"), "invalid-fpr", ""),
-		}, errorExpected: false, attError: nil},
-		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(anotherSig), successFpr, ""),
-		}, errorExpected: false, attError: nil},
+		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{*att2},
+			errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
-		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: true, attError: nil},
-		{name: "auth with generic signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.GenericSignatureType, "test-sig", "test-id", "generic-address"),
-		}, errorExpected: true, attError: nil},
-		{name: "auth with unknown signature type", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.UnknownSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: true, attError: nil},
-		{name: "valid auth with invalid PGP key id", auth: invalidAuthWithOneInvalidPgpKeyId, wantAtts: []attestation.ValidatedAttestation{}, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: false, attError: nil},
+		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+			errorExpected: true, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
-		// ValidatedAttestations. `errorExpected` should also be false, but
-		// currently attestations with GenericSignatureType throw an error.
-		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
+		// ValidatedAttestations and `errorExpected` should  be false.
+		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{
+			{
+				PublicKeyID:       "",
+				Signature:         []byte(""),
+				SerializedPayload: []byte(""),
+			},
 		}, errorExpected: true, attError: nil},
-		{name: "auth with invalid PKIX key id", auth: invalidAuthWithOneInvalidPkixKeyId, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
+		{name: "invalid auth with PGP key type but PKIX key", auth: invalidAuthWithPgpTypeAndPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+			errorExpected: true, attError: nil},
+		{name: "invalid auth with PKIX key type but PGP key", auth: invalidAuthWithPkixTypeAndPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{
+			{
+				PublicKeyID:       "",
+				Signature:         []byte(""),
+				SerializedPayload: []byte(""),
+			},
 		}, errorExpected: true, attError: nil},
-		{name: "invalid auth with PGP key type but PKIX key", auth: invalidAuthWithPgpTypeAndPkixKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: true, attError: nil},
-		{name: "invalid auth with PKIX key type but PGP key", auth: invalidAuthWithPkixTypeAndPgpKey, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.GenericSignatureType, "", "", ""),
-		}, errorExpected: true, attError: nil},
-		{name: "invalid key with unknown key type", auth: invalidAuthWithUnknownKeyType, wantAtts: nil, attestations: []metadata.RawAttestation{
-			metadata.MakeRawAttestation(metadata.PgpSignatureType, encodeB64(sig), successFpr, ""),
-		}, errorExpected: true, attError: nil},
+		{name: "invalid key with unknown key type", auth: invalidAuthWithUnknownKeyType, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+			errorExpected: true, attError: nil},
 		// TODO(acamadeo): Add a test case for a PKIX key with a bad key once
 		// the PKIX key verification is implemented.
 	}
@@ -279,7 +250,7 @@ func TestValidatingTransport(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			cMock := &testutil.MockMetadataClient{
-				RawAttestations: tc.attestations,
+				Atts: tc.attestations,
 			}
 			if tc.attError != nil {
 				cMock.SetError(tc.attError)

@@ -41,7 +41,6 @@ type AttestationAuthority struct {
 type AttestationAuthoritySpec struct {
 	NoteReference string      `json:"noteReference"`
 	PublicKeys    []PublicKey `json:"publicKeys"`
-	PolicyType    string      `json:"policyType"`
 }
 
 // PublicKey stores key data used to verify Attestations.

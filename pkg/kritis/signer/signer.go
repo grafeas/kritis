@@ -17,12 +17,9 @@ limitations under the License.
 package signer
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
-	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
@@ -36,7 +33,6 @@ type Signer struct {
 
 // A signer config that includes necessary data and handler for signing.
 type Config struct {
-	Validate  vulnzsigningpolicy.ValidateFunc
 	PgpKey    *secrets.PgpKey
 	Authority v1beta1.AttestationAuthority
 	Project   string
@@ -61,27 +57,16 @@ var (
 	authFetcher = authority.Authority
 )
 
-// ValidateAndSign validates image from vulnz signing policy and then creates
-// attestation for the passing image.
-// Returns an error if image does not pass or creating an attestation fails.
-func (s Signer) ValidateAndSign(imageVulnz ImageVulnerabilities, vps v1beta1.VulnzSigningPolicy) error {
-	glog.Infof("Validating %q against VulnzSigningPolicy %q", imageVulnz.ImageRef, vps.Name)
-	violations, err := s.config.Validate(vps, imageVulnz.ImageRef, imageVulnz.Vulnerabilities)
-	if err != nil {
-		return fmt.Errorf("error when evaluating image %q against policy %q", imageVulnz.ImageRef, vps.Name)
-	}
-	if violations != nil && len(violations) != 0 {
-		return fmt.Errorf("image %q does not pass VulnzSigningPolicy %q: %v", imageVulnz.ImageRef, vps.Name, violations)
-	}
-
-	glog.Infof("Image %q passes VulnzSigningPolicy %s.", imageVulnz.ImageRef, vps.Name)
-	existed, _ := s.isAttestationAlreadyExist(imageVulnz.ImageRef)
+// SignImage signs an image without doing any policy check.
+// Returns an error if creating an attestation fails.
+func (s Signer) SignImage(image string) error {
+	existed, _ := s.isAttestationAlreadyExist(image)
 	if existed {
-		glog.Warningf("Attestation for image %q has already been created.", imageVulnz.ImageRef)
+		glog.Warningf("Attestation for image %q has already been created.", image)
 		return nil
 	}
-	glog.Infof("Creating attestations for image %q.", imageVulnz.ImageRef)
-	if err := s.addAttestation(imageVulnz.ImageRef); err != nil {
+	glog.Infof("Creating attestations for image %q.", image)
+	if err := s.addAttestation(image); err != nil {
 		return err
 	}
 	return nil
