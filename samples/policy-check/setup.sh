@@ -58,21 +58,8 @@ binauthz_project_setup () {
   set +x; echo "Setting up service accounts and permissions.."; set -x
   gcloud projects add-iam-policy-binding ${BINAUTHZ_PROJECT} \
     --member serviceAccount:${BINAUTHZ_PROJECTNUM}@cloudbuild.gserviceaccount.com \
-    --role roles/container.developer
+    --role roles/containeranalysis.notes.occurrences.viewer
 
-  gcloud iam service-accounts create kritis-signer \
-    --description "For creating attestations" \
-    --display-name "kritis-signer"
-  gcloud projects add-iam-policy-binding ${BINAUTHZ_PROJECT} \
-    --member serviceAccount:kritis-signer@${BINAUTHZ_PROJECT}.iam.gserviceaccount.com \
-    --role roles/containeranalysis.ServiceAgent
-  gcloud projects add-iam-policy-binding ${BINAUTHZ_PROJECT} \
-    --member serviceAccount:kritis-signer@${BINAUTHZ_PROJECT}.iam.gserviceaccount.com \
-    --role roles/containeranalysis.notes.editor
-
-  gcloud iam service-accounts keys create ${DIR}/kritis-service-account.json \
-  --iam-account kritis-signer@${BINAUTHZ_PROJECT}.iam.gserviceaccount.com
-  
   set +x; echo "Configuring docker to Container Registry authentication.."; set -x
   gcloud auth configure-docker
   set +x; echo
