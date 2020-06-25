@@ -60,10 +60,6 @@ binauthz_project_setup () {
     --member serviceAccount:${BINAUTHZ_PROJECTNUM}@cloudbuild.gserviceaccount.com \
     --role roles/containeranalysis.notes.occurrences.viewer
 
-  gcloud projects add-iam-policy-binding ${BINAUTHZ_PROJECT} \
-    --member serviceAccount:${BINAUTHZ_PROJECTNUM}@cloudbuild.gserviceaccount.com \
-    --role roles/cloudkms.cryptoKeyDecrypter
-
   set +x; echo "Configuring docker to Container Registry authentication.."; set -x
   gcloud auth configure-docker
   set +x; echo
