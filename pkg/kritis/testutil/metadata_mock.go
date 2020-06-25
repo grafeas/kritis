@@ -18,6 +18,9 @@ package testutil
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -27,11 +30,11 @@ import (
 
 // Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
-	Vulnz           []metadata.Vulnerability
-	PGPAttestations []metadata.PGPAttestation
-	AAs             []kritisv1beta1.AttestationAuthority
-	Occ             map[string]string
-	Err             error
+	Vulnz []metadata.Vulnerability
+	Atts  []cryptolib.Attestation
+	AAs   []kritisv1beta1.AttestationAuthority
+	Occ   map[string]string
+	Err   error
 }
 
 func (m *MockMetadataClient) SetError(err error) {
@@ -50,15 +53,14 @@ func (m *MockMetadataClient) Vulnerabilities(containerImage string) ([]metadata.
 	return m.Vulnz, nil
 }
 
-func (m *MockMetadataClient) CreateAttestationOccurrence(n *grafeas.Note, image string,
-	s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+func (m *MockMetadataClient) CreateAttestationOccurrence(noteName string, image string, s *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
 	if m.Occ == nil {
 		m.Occ = map[string]string{}
 	}
-	m.Occ[fmt.Sprintf("%s-%s", image, n.Name)] = s.SecretName
+	m.Occ[fmt.Sprintf("%s-%s", image, noteName)] = s.SecretName
 	return nil, nil
 }
 
@@ -83,19 +85,26 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
-	return m.PGPAttestations, nil
+	return m.Atts, nil
+}
+
+func (m *MockMetadataClient) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	if m.Err != nil {
+		return m.Err
+	}
+	return nil
 }
 
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
-			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
-			AAs:             []kritisv1beta1.AttestationAuthority{},
+			Vulnz: []metadata.Vulnerability{},
+			Atts:  []cryptolib.Attestation{},
+			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
 }
@@ -103,9 +112,9 @@ func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 func NilReadOnlyClient() func() (metadata.ReadOnlyClient, error) {
 	return func() (metadata.ReadOnlyClient, error) {
 		return &MockMetadataClient{
-			Vulnz:           []metadata.Vulnerability{},
-			PGPAttestations: []metadata.PGPAttestation{},
-			AAs:             []kritisv1beta1.AttestationAuthority{},
+			Vulnz: []metadata.Vulnerability{},
+			Atts:  []cryptolib.Attestation{},
+			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
 }

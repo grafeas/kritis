@@ -17,10 +17,19 @@ limitations under the License.
 package constants
 
 const (
-	// AllowAll is the value used to allow all images with CVEs, except for allowlisted CVEs
+	// Vulnerability level AllowAll is the value used to allow all images with CVEs
 	AllowAll = "ALLOW_ALL"
-	// BlockAll is the value used to block all images with CVEs, except for allowlisted CVEs
+	// Vulnerability level BlockAll is the value used to block all images with CVEs,
+	// except for allowlisted CVEs
 	BlockAll = "BLOCK_ALL"
+	// Vulnerability level Critical
+	Critical = "CRITICAL"
+	// Vulnerability level High
+	High = "HIGH"
+	// Vulnerability level Medium
+	Medium = "MEDIUM"
+	// Vulnerability level Low
+	Low = "LOW"
 
 	// InvalidImageSecPolicy is the key for labels and annotations
 	InvalidImageSecPolicy           = "kritis.grafeas.io/invalidImageSecPolicy"

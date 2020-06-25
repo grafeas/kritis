@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -40,7 +42,7 @@ func TestVCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{Vulnz: vClient},
 		vuln:   map[string][]metadata.Vulnerability{"image-hit": vCache},
-		att:    nil,
+		atts:   nil,
 		notes:  nil,
 	}
 	tcs := []struct {
@@ -65,18 +67,28 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []metadata.PGPAttestation{{OccID: "occc-1"}}
-	aClient := []metadata.PGPAttestation{{OccID: "occc-miss"}}
+	aCache := []cryptolib.Attestation{
+		{
+			PublicKeyID: "sig-cache",
+			Signature:   []byte("key-cache"),
+		},
+	}
+	aClient := []cryptolib.Attestation{
+		{
+			PublicKeyID: "sig-client",
+			Signature:   []byte("key-client"),
+		},
+	}
 	c := Cache{
-		client: &testutil.MockMetadataClient{PGPAttestations: aClient},
+		client: &testutil.MockMetadataClient{Atts: aClient},
 		vuln:   nil,
-		att:    map[string][]metadata.PGPAttestation{"image-hit": aCache},
+		atts:   map[string][]cryptolib.Attestation{"image-hit": aCache},
 		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
-		expected []metadata.PGPAttestation
+		expected []cryptolib.Attestation
 	}{
 		{"hit", "image-hit", aCache},
 		{"miss", "image-miss", aClient},
@@ -115,7 +127,7 @@ func TestNCache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{},
 		vuln:   nil,
-		att:    nil,
+		atts:   nil,
 		notes:  map[*v1beta1.AttestationAuthority]*grafeas.Note{aaHit: nCache},
 	}
 	tcs := []struct {

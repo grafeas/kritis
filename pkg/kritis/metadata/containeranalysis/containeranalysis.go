@@ -17,9 +17,13 @@ limitations under the License.
 package containeranalysis
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+
+	"google.golang.org/api/option"
 
 	ca "cloud.google.com/go/containeranalysis/apiv1beta1"
 	"github.com/golang/glog"
@@ -32,13 +36,20 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
+	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/discovery"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 )
 
 // Container Analysis Library Specific Constants.
 const (
-	PkgVulnerability     = "PACKAGE_VULNERABILITY"
-	AttestationAuthority = "ATTESTATION_AUTHORITY"
+	PkgVulnerability               = "PACKAGE_VULNERABILITY"
+	AttestationAuthority           = "ATTESTATION_AUTHORITY"
+	DEFAULT_DISCOVERY_NOTE_PROJECT = "goog-analysis"
+)
+
+// For testing -- injectable functions
+var (
+	createListOccurrencesRequest = defaultListOccurrencesRequest
 )
 
 // Client struct implements ReadWriteClient and ReadOnlyClient interfaces.
@@ -47,10 +58,18 @@ type Client struct {
 	ctx    context.Context
 }
 
+func defaultListOccurrencesRequest(containerImage, kind string) *grafeas.ListOccurrencesRequest {
+	return &grafeas.ListOccurrencesRequest{
+		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
+		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
+		PageSize: constants.PageSize,
+	}
+}
+
 // TODO: separate constructor methods for r/w and r/o clients
-func New() (*Client, error) {
+func New(opts ...option.ClientOption) (*Client, error) {
 	ctx := context.Background()
-	client, err := ca.NewGrafeasV1Beta1Client(ctx)
+	client, err := ca.NewGrafeasV1Beta1Client(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +92,7 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 	}
 	vulnz := []metadata.Vulnerability{}
 	for _, occ := range occs {
-		if v := util.GetVulnerabilityFromOccurrence(occ); v != nil {
+		if v := metadata.GetVulnerabilityFromOccurrence(occ); v != nil {
 			vulnz = append(vulnz, *v)
 		}
 	}
@@ -86,19 +105,21 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 // For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
 // For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
 // In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]metadata.PGPAttestation, error) {
-	var p []metadata.PGPAttestation
-
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
-	for _, occ := range occs {
-		pgp := util.GetPgpAttestationFromOccurrence(occ)
-		p = append(p, pgp)
-	}
 
-	return p, nil
+	atts := []cryptolib.Attestation{}
+	for _, occ := range occs {
+		att, err := metadata.GetAttestationsFromOccurrence(occ)
+		if err != nil {
+			return nil, err
+		}
+		atts = append(atts, att...)
+	}
+	return atts, nil
 }
 
 func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
@@ -107,11 +128,7 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	req := &grafeas.ListOccurrencesRequest{
-		Filter:   fmt.Sprintf("resourceUrl=%q AND kind=%q", util.GetResourceURL(containerImage), kind),
-		PageSize: constants.PageSize,
-		Parent:   fmt.Sprintf("projects/%s", getProjectFromContainerImage(containerImage)),
-	}
+	req := createListOccurrencesRequest(containerImage, kind)
 
 	it := c.client.ListOccurrences(c.ctx, req)
 	occs := []*grafeas.Occurrence{}
@@ -141,7 +158,6 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 		Filter:   fmt.Sprintf("resourceUrl=%q", util.GetResourceURL(containerImage)),
 		PageSize: constants.PageSize,
 	}
-
 	occs := []*grafeas.Occurrence{}
 	it := c.client.ListNoteOccurrences(c.ctx, req)
 	for {
@@ -214,23 +230,20 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 }
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
-func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
-	containerImage string,
-	pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
+func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCR(containerImage) {
 		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
-	fingerprint := util.GetAttestationKeyFingerprint(pgpSigningKey)
 
 	// Create Attestation Signature
-	sig, err := util.CreateAttestationSignature(containerImage, pgpSigningKey)
+	att, err := util.CreateAttestation(containerImage, pgpSigningKey)
 	if err != nil {
 		return nil, err
 	}
 	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: base64.StdEncoding.EncodeToString([]byte(sig)),
+		Signature: string(att.Signature),
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: fingerprint,
+			PgpKeyId: att.PublicKeyID,
 		},
 		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
 	}
@@ -245,7 +258,7 @@ func (c Client) CreateAttestationOccurrence(note *grafeas.Note,
 	}
 	occ := &grafeas.Occurrence{
 		Resource: util.GetResource(containerImage),
-		NoteName: note.GetName(),
+		NoteName: noteName,
 		Details:  attestationDetails,
 	}
 	// Create the AttestationAuthrity Occurrence.
@@ -282,4 +295,70 @@ func (c Client) DeleteOccurrence(ID string) error {
 	}
 	glog.Infof("executed deletion of occurrence=%s", ID)
 	return c.client.DeleteOccurrence(c.ctx, req)
+}
+
+// Poll discovery occurrence for an image and wait until container analysis
+// finishes. Throws an error if analysis is not successful or timeouts.
+func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
+	// resourceURL := fmt.Sprintf("https://gcr.io/my-project/my-image")
+	// timeout := time.Duration(5) * time.Second
+
+	// Backoff time between tries, exponentially grows after each failure.
+	nextTryWait := 1
+	// Timeout clock.
+	timeoutTimer := time.NewTimer(timeout)
+	defer timeoutTimer.Stop()
+
+	// Find the discovery occurrence using a filter string.
+	var discoveryOccurrence *grafeas.Occurrence
+	for {
+		// Waiting for discovery occurrence to appear.
+		if discoveryOccurrence == nil {
+			req := &grafeas.ListOccurrencesRequest{
+				Parent: fmt.Sprintf("projects/%s", util.GetProjectFromContainerImage(containerImage)),
+				// Vulnerability discovery occurrences are always associated with the
+				// PACKAGE_VULNERABILITY note in the "goog-analysis" GCP project.
+				Filter: fmt.Sprintf(`resourceUrl=%q AND noteProjectId=%q AND noteId="PACKAGE_VULNERABILITY"`, util.GetResourceURL(containerImage), DEFAULT_DISCOVERY_NOTE_PROJECT),
+			}
+			it := c.client.ListOccurrences(c.ctx, req)
+			// Only one occurrence should ever be returned by ListOccurrences
+			// and the given filter.
+			result, err := it.Next()
+			if err == iterator.Done {
+				continue
+			}
+			if err != nil {
+				return fmt.Errorf("it.Next: %v", err)
+			}
+			if result.GetDiscovered() != nil {
+				discoveryOccurrence = result
+			}
+		}
+
+		// Update analysis status and check.
+		if discoveryOccurrence != nil {
+			// Update the occurrence.
+			req := &grafeas.GetOccurrenceRequest{Name: discoveryOccurrence.GetName()}
+			updated, err := c.client.GetOccurrence(c.ctx, req)
+			if err != nil {
+				return fmt.Errorf("GetOccurrence: %v", err)
+			}
+			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
+			case discovery.Discovered_FINISHED_SUCCESS:
+				return nil
+			case discovery.Discovered_FINISHED_FAILED:
+				return fmt.Errorf("container analysis has finished unsuccessfully")
+			case discovery.Discovered_FINISHED_UNSUPPORTED:
+				return fmt.Errorf("container analysis resource is known not to be supported")
+			}
+		}
+
+		select {
+		case <-timeoutTimer.C:
+			return fmt.Errorf("timeout while retrieving discovery occurrence")
+		case <-time.Tick(time.Duration(nextTryWait)):
+			// exponential backoff
+			nextTryWait = nextTryWait * 2
+		}
+	}
 }

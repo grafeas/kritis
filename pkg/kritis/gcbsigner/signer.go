@@ -66,14 +66,14 @@ func (s Signer) ValidateAndSign(prov BuildProvenance, bps []v1beta1.BuildPolicy)
 			continue
 		}
 		glog.Infof("Image %q matches BuildPolicy %s, creating attestations", prov.ImageRef, bp.Name)
-		if err := s.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName); err != nil {
+		if err := s.addAttestation(prov.ImageRef, bp.Namespace, bp.Spec.AttestationAuthorityName, bp.Spec.PrivateKeySecretName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s Signer) addAttestation(image string, ns string, authority string) error {
+func (s Signer) addAttestation(image string, ns string, authority string, keySecretName string) error {
 	// Get AttestaionAuthority specified in the buildpolicy.
 	a, err := authFetcher(ns, authority)
 	if err != nil {
@@ -84,11 +84,11 @@ func (s Signer) addAttestation(image string, ns string, authority string) error 
 		return err
 	}
 	// Get secret for this Authority
-	sec, err := s.config.Secret(ns, a.Spec.PrivateKeySecretName)
+	sec, err := s.config.Secret(ns, keySecretName)
 	if err != nil {
 		return err
 	}
 	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n, image, sec, grafeas.DefaultProject)
+	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, grafeas.DefaultProject)
 	return err
 }

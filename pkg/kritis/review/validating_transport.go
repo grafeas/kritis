@@ -18,13 +18,16 @@ package review
 
 import (
 	"encoding/base64"
+	"fmt"
+	"net/url"
 
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/container"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
+	"github.com/pkg/errors"
 )
 
 // ValidatingTransport allows the caller to obtain validated attestations for a given container image.
@@ -39,37 +42,132 @@ type AttestorValidatingTransport struct {
 	Attestor v1beta1.AttestationAuthority
 }
 
-func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
-	keys := map[string]string{}
-	key, fingerprint, err := secrets.KeyAndFingerprint(avt.Attestor.Spec.PublicKeyData)
-	if err != nil {
-		glog.Errorf("Error parsing key for %q: %v", avt.Attestor.Name, err)
-		return nil, err
+// validatePublicKey makes sure that a PublicKey is specified correctly.
+func (avt *AttestorValidatingTransport) validatePublicKey(pubKey v1beta1.PublicKey) error {
+	if err := validatePublicKeyType(pubKey); err != nil {
+		return err
 	}
-	keys[fingerprint] = key
+	if err := avt.validatePublicKeyId(pubKey); err != nil {
+		return err
+	}
+	return nil
+}
 
-	out := []attestation.ValidatedAttestation{}
-	host, err := container.NewAtomicContainerSig(image, map[string]string{})
-	if err != nil {
-		glog.Error(err)
-		return nil, err
+// validatePublicKeyType ensures that the appropriate fields of a PublicKey
+// are set given its KeyType.
+func validatePublicKeyType(pubKey v1beta1.PublicKey) error {
+	switch pubKey.KeyType {
+	case v1beta1.PgpKeyType:
+		if pubKey.PkixPublicKey != (v1beta1.PkixPublicKey{}) {
+			return fmt.Errorf("Invalid PGP key: %v. PkixPublicKey field should not be set", pubKey)
+		}
+		if pubKey.AsciiArmoredPgpPublicKey == "" {
+			return fmt.Errorf("Invalid PGP key: %v. AsciiArmoredPgpPublicKey field should be set", pubKey)
+		}
+	case v1beta1.PkixKeyType:
+		if pubKey.AsciiArmoredPgpPublicKey != "" {
+			return fmt.Errorf("Invalid PKIX key: %v. AsciiArmoredPgpPublicKey field should not be set", pubKey)
+		}
+		if pubKey.PkixPublicKey == (v1beta1.PkixPublicKey{}) {
+			return fmt.Errorf("Invalid PKIX key: %v. PkixPublicKey field should be set", pubKey)
+		}
+	default:
+		return fmt.Errorf("Unsupported key type %s for key %v", pubKey.KeyType, pubKey)
 	}
-	attestations, err := avt.Client.Attestations(image, &avt.Attestor)
-	if err != nil {
-		glog.Error(err)
-		return nil, err
-	}
-	for _, a := range attestations {
-		decoded_sig, err := base64.StdEncoding.DecodeString(a.Signature)
+	return nil
+}
+
+// validatePublicKeyId ensures that a PublicKey's KeyId field is valid given
+// its KeyType.
+func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.PublicKey) error {
+	switch pubKey.KeyType {
+	case v1beta1.PgpKeyType:
+		_, keyId, err := secrets.KeyAndFingerprint(pubKey.AsciiArmoredPgpPublicKey)
 		if err != nil {
-			glog.Infof("Cannot base64 decode signature: %v", err)
-			continue
+			return fmt.Errorf("Error parsing PGP key for %q: %v", avt.Attestor.Name, err)
 		}
-		if err = host.VerifyAttestationSignature(keys[a.KeyID], string(decoded_sig)); err != nil {
-			glog.Infof("Could not find or verify attestation for attestor %s: %s", a.KeyID, err.Error())
-			continue
+		if pubKey.KeyId == "" {
+			glog.Warningf("No PGP key id was provided. Will use the following keyId: %s", keyId)
+		} else if pubKey.KeyId != keyId {
+			glog.Warningf("The provided PGP keyId does not match the RFC4880 V4 fingerprint of the public key. Will use fingerprint as keyId.\nProvided keyId: %s\nFingerprint: %s\n", pubKey.KeyId, keyId)
 		}
-		out = append(out, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+		return nil
+	case v1beta1.PkixKeyType:
+		if _, err := url.Parse(pubKey.KeyId); err != nil {
+			return fmt.Errorf("PKIX key with id %s was skipped. KeyId should be a valid RFC3986 URI", pubKey.KeyId)
+		}
+	default:
+		return fmt.Errorf("Unsupported key type %s for key %v", pubKey.KeyType, pubKey)
 	}
-	return out, nil
+	return nil
+}
+
+// ParsePublicKeys parses the attestor's keys as cryptolib PublicKeys. It
+// returns the valid PublicKeys and the keyID's for keys that could not be
+// parsed.
+func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.PublicKey) ([]cryptolib.PublicKey, []string) {
+	numKeys := len(attestorKeys)
+	publicKeys, invalidKeys := []cryptolib.PublicKey{}, []string{}
+
+	for i, attestorKey := range attestorKeys {
+		if attestorKey.KeyType != "PGP" {
+			glog.Warningf("Skipping key %q with unsupported type %q", attestorKey.KeyId, attestorKey.KeyType)
+			continue
+		}
+		if err := avt.validatePublicKey(attestorKey); err != nil {
+			// Warning level because single key failure is something tolerable
+			glog.Warningf("Error parsing key %d (%d keys total) for %q: %v", i, numKeys, avt.Attestor.Name, err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
+		}
+		decodedKey, err := base64.StdEncoding.DecodeString(attestorKey.AsciiArmoredPgpPublicKey)
+		if err != nil {
+			glog.Warningf("Cannot base64 decode public key: %v", err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
+		}
+		publicKey, err := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
+		if err != nil {
+			glog.Warningf("Error creating PublicKey: %v", err)
+			invalidKeys = append(invalidKeys, attestorKey.KeyId)
+			continue
+		}
+		publicKeys = append(publicKeys, *publicKey)
+	}
+	return publicKeys, invalidKeys
+}
+
+func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]cryptolib.Attestation, error) {
+	atts, err := avt.Client.Attestations(image, &avt.Attestor)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
+	}
+	return atts, nil
+}
+
+func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) ([]attestation.ValidatedAttestation, error) {
+	publicKeys, invalidKeys := avt.parsePublicKeys(avt.Attestor.Spec.PublicKeys)
+	if len(publicKeys) == 0 {
+		return nil, fmt.Errorf("Unable to find any valid keys for %q. Unparseable keys: %v", avt.Attestor.Name, invalidKeys)
+	}
+
+	verifier, err := cryptolib.NewVerifier(image, publicKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating verifier")
+	}
+
+	atts, err := avt.fetchAttestations(image)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
+	}
+
+	validatedAtts := []attestation.ValidatedAttestation{}
+	for _, att := range atts {
+		if err := verifier.VerifyAttestation(&att); err != nil {
+			glog.Warningf("error verifying attestation: %v", err)
+			continue
+		}
+		validatedAtts = append(validatedAtts, attestation.ValidatedAttestation{AttestorName: avt.Attestor.Name, Image: image})
+	}
+	return validatedAtts, nil
 }

@@ -255,7 +255,7 @@ func createDeniedResponse(ar *v1beta1.AdmissionReview, message string) {
 
 func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
-	glog.Infof("Reviewing images for %s in namespace %s: %s", pod, ns, images)
+	glog.Infof("Reviewing images for %s in namespace %s: %s", getPodName(pod), ns, images)
 	gaps, err := admissionConfig.fetchGenericAttestationPolicies(ns)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting generic attestation policies: %v", err)
@@ -287,36 +287,34 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1beta1.Admission
 
 func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, isps []kritis.ImageSecurityPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataClient(config)
-	defer client.Close()
-
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	defer client.Close()
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewISP(images, isps, pod, client); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
+		glog.Infof("Denying %s in namespace %s: %v", getPodName(pod), ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
 
 func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar *v1beta1.AdmissionReview, gaps []kritis.GenericAttestationPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataReadOnlyClient(config)
-	defer client.Close()
-
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
 		glog.Errorf(errMsg)
 		createDeniedResponse(ar, errMsg)
 		return
 	}
+	defer client.Close()
 
 	r := admissionConfig.reviewer()
 	if err := r.ReviewGAP(images, gaps, pod, client); err != nil {
-		glog.Infof("Denying %s in namespace %s: %v", pod, ns, err)
+		glog.Infof("Denying %s in namespace %s: %v", getPodName(pod), ns, err)
 		createDeniedResponse(ar, err.Error())
 	}
 }
@@ -382,6 +380,13 @@ func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1beta1.Admission
 		return nil, ar, err
 	}
 	return &deployment, ar, nil
+}
+
+func getPodName(p *v1.Pod) string {
+	if p == nil {
+		return "nil"
+	}
+	return p.Name
 }
 
 func checkBreakglass(meta *metav1.ObjectMeta) bool {

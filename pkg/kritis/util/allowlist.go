@@ -17,42 +17,138 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 )
 
-// RemoveGloballyAllowedImages returns all images that aren't in a global allowlist
-func RemoveGloballyAllowedImages(images []string) []string {
-	notAllowlisted := []string{}
+// SplitGloballyAllowedImages returns:
+// -- list of all images that aren't in a global allowlist
+// -- list of images that are in a global allowlist
+func SplitGloballyAllowedImages(images []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
 	for _, image := range images {
-		allowlisted, err := imageInAllowlist(image)
+		isAllowlisted, err := imageInGlobalAllowlist(image)
 		if err != nil {
 			glog.Errorf("couldn't check if %s is in global allowlist: %v", image, err)
 		}
-		if !allowlisted {
-			notAllowlisted = append(notAllowlisted, image)
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
 	}
-	return notAllowlisted
+	return notAllowlistedImages, removedImages
 }
 
-func imageInAllowlist(image string) (bool, error) {
-	for _, w := range constants.GlobalImageAllowlist {
-		allowlistRef, err := name.ParseReference(w, name.WeakValidation)
+// SplitGapAllowedImages returns:
+// -- list of all images that aren't in gap allowlists
+// -- list of images that are in gap allowlists
+func SplitGapAllowedImages(images []string, allowlist []string) ([]string, []string) {
+	notAllowlistedImages := []string{}
+	removedImages := []string{}
+	for _, image := range images {
+		isAllowlisted, err := imageInGapAllowlist(image, allowlist)
 		if err != nil {
-			return false, err
+			glog.Errorf("couldn't check if %s is in gap allowlist: %v", image, err)
 		}
-		imageRef, err := name.ParseReference(image, name.WeakValidation)
-		if err != nil {
-			return false, err
+		if !isAllowlisted {
+			notAllowlistedImages = append(notAllowlistedImages, image)
+		} else {
+			removedImages = append(removedImages, image)
 		}
-		// Make sure images have the same context
-		if reflect.DeepEqual(allowlistRef.Context(), imageRef.Context()) {
+	}
+	return notAllowlistedImages, removedImages
+}
+
+// Do an image match based on reference.
+// It checks whether the image and the pattern resolves to same URL,
+// e.g., gcr.io/kritis-project/preinstall.
+// Note that it does not check digest or tag in the pattern.
+// For example, a pattern of gcr.io/hello/world:latest will match any image
+// in the gcr.io/hello/world repository.
+func imageRefMatch(image string, pattern string) (bool, error) {
+	allowRef, err := name.ParseReference(pattern, name.WeakValidation)
+	if err != nil {
+		return false, err
+	}
+	imageRef, err := name.ParseReference(image, name.WeakValidation)
+	if err != nil {
+		return false, err
+	}
+	// Make sure both resolve to same URL
+	if reflect.DeepEqual(allowRef.Context(), imageRef.Context()) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// Do an image match based on name pattern.
+// This method uses name pattern matching,
+// where a pattern is a path to a single image by
+// exact match, or to any images matching a pattern using the wildcard symbol
+// (`*`). The wildcards may only be present in the end, and not anywhere
+// else in the pattern, e.g., `gcr.io/n*x` is not allowed,
+// but `gcr.io/nginx*` is allowed. Also wilcards cannot be used to match `/`,
+// e.g., `gcr.io/nginx*` matches `gcr.io/nginx@latest`,
+// but it does not match `gcr.io/nginx/image`.
+// See more at https://cloud.google.com/binary-authorization/docs/policy-yaml-reference#admissionwhitelistpatterns
+func imageNamePatternMatch(image string, pattern string) (bool, error) {
+	if len(pattern) == 0 {
+		return false, errors.New("empty pattern")
+	}
+	if pattern[len(pattern)-1] == '*' {
+		pattern = pattern[:len(pattern)-1]
+		if strings.HasPrefix(image, pattern) &&
+			strings.LastIndex(image, "/") < len(pattern) {
+			return true, nil
+		}
+	} else {
+		if image == pattern {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func imageInAllowlistByReference(image string, allowList []string) (bool, error) {
+	for _, w := range allowList {
+		match, err := imageRefMatch(image, w)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func imageInAllowlistByPattern(image string, allowList []string) (bool, error) {
+	for _, w := range allowList {
+		match, err := imageNamePatternMatch(image, w)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Check if image is allowed by global allowlist.
+// This method uses reference matching.
+func imageInGlobalAllowlist(image string) (bool, error) {
+	return imageInAllowlistByReference(image, constants.GlobalImageAllowlist)
+}
+
+// Check if image is allowed by a GAP allowlist.
+func imageInGapAllowlist(image string, allowlist []string) (bool, error) {
+	return imageInAllowlistByPattern(image, allowlist)
 }

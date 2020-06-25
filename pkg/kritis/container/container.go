@@ -18,13 +18,9 @@ package container
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
-	"github.com/pkg/errors"
 )
 
 // for testing
@@ -105,31 +101,4 @@ func (acs *AtomicContainerSig) JSON() (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
-}
-
-func (acs *AtomicContainerSig) CreateAttestationSignature(pgpSigningKey *secrets.PGPSigningSecret) (string, error) {
-	hostStr, err := acs.JSON()
-	if err != nil {
-		return "", err
-	}
-	return attestation.CreateMessageAttestation(pgpSigningKey.PgpKey, hostStr)
-}
-
-func (acs *AtomicContainerSig) VerifyAttestationSignature(publicKey string, sig string) error {
-	hostSig, err := attestation.GetPlainMessage(publicKey, sig)
-	if err != nil {
-		return errors.Wrap(err, "error verifying signature")
-	}
-	// Unmarshall the json host string to get AtomicContainerSig struct
-	var host AtomicContainerSig
-	if err := json.Unmarshal(hostSig, &host); err != nil {
-		return errors.Wrap(err, "error unmarshaling json")
-	}
-
-	if !host.Equals(acs) {
-		h1, _ := host.JSON()
-		h2, _ := acs.JSON()
-		return fmt.Errorf("sig not verified. Expected %s, Got %s", h1, h2)
-	}
-	return nil
 }

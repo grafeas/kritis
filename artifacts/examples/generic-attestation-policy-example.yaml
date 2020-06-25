@@ -6,3 +6,6 @@ metadata:
 spec:
   attestationAuthorityNames:
   - kritis-authority
+  admissionAllowlistPatterns:
+    - namePattern: gcr.io/kritis_containers/*
+    - namePattern: gcr.io/example-project/helloworld

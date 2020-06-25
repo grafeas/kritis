@@ -85,12 +85,17 @@
             namespace: default
         spec:
             noteReference: projects/$PROJECT/notes/my-attestor
-            privateKeySecretName: my-attestor
-            publicKeyData: $PUBLIC_KEY
+            publicKeys: 
+            - keyType: PGP
+              keyId: $KEY_FINGERPRINT
+              asciiArmoredPgpPublicKey: $PUBLIC_KEY
         EOF
         ```
 
-        This `AttestationAuthority` will create [Attestation Note](https://github.com/grafeas/grafeas#definition-of-terms) in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestor` which we created.
+        This `AttestationAuthority` will create
+        [Attestation](https://github.com/grafeas/grafeas/blob/master/proto/v1beta1/attestation.proto)
+        [Note](https://github.com/grafeas/grafeas/blob/master/docs/grafeas_concepts.md)
+        in project specified in `$PROJECT` variable and attest valid images using the secret `my-attestor` which we created.
 
 1. Copy a vulnerable image.
 

@@ -128,21 +128,19 @@ func createOccRequest(note *grafeas.Note) *grafeas.CreateOccurrenceRequest {
 		log.Fatal(err)
 	}
 	log.Printf("Retrieved secret for 'attestor': %v", s)
-	fingerprint := util.GetAttestationKeyFingerprint(s)
-	log.Printf("Created fingerprint: %v", fingerprint)
 
 	// Create Attestation Signature
-	sig, err := util.CreateAttestationSignature(Image, s)
+	att, err := util.CreateAttestation(Image, s)
 	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
-	log.Printf("Created attestation signature: %v", sig)
+	log.Printf("Created attestation signature: %q", att.Signature)
 
 	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: sig,
+		Signature: string(att.Signature),
 		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: fingerprint,
+			PgpKeyId: att.PublicKeyID,
 		},
 		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
 	}
