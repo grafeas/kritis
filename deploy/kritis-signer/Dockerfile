@@ -1,4 +1,4 @@
-# Copyright 2018 Google, Inc. All rights reserved.
+# Copyright 2020 Google, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,8 @@
 
 # Builds the static Go image for Admission validation controller.
 
-FROM golang:1.13
-WORKDIR /go/src/github.com/grafeas/kritis
-COPY . .
-RUN make out/signer
-
 FROM gcr.io/google-appengine/debian10:latest
-COPY --from=0 /go/src/github.com/grafeas/kritis/out/signer /kritis/signer
+COPY out/signer /kritis/signer
 ENV HOME /root
 ENV USER /root
 ENV PATH /usr/local/bin:/kritis
