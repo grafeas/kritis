@@ -103,6 +103,22 @@ const ec521Sig = "MIGIAkIAofN81k5oSaXMYtoClAYQyVNv2aN1jJtCoIJKeQ0x4bGZAZdpGX8TMd
 
 const badKey = "malformed key"
 
+const extraDataKey = `-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAte+CWFUwOwyD/VBaK55o
+qxTMOX34Y3evVlCY9iDXwYbi+yDgSgjB4K2sTvyV6ztQEBWzReNX3GG7WkPWkHVB
+OIssRgtVUtNnngQkgoOwJWxGf0k1R/NrXRsRMReyuW1zT6iftVhClexf5eBLtmqy
+7hXCpy7NNx9486YpF8KJGa1wrV3Ko3R1qHYjGgKd/fjtQ5CcFUZUYgmYQeIkeDO1
+DiQOSYS2xnkUTfV2aHIgFUlrxdU2M50He5Z/jSE49/9IXQac599y2m6irVaVT6VM
+vY6mxSRGgRx3hkoajVrxd3MglIFLO8/FfrOGwZg9bZFIlgHjUiFPPKbn8bSyldMZ
+xNj36t7YC2ZpN6XGzeBnnLfBW1GjGomk3G1eyBUCwRk9nHt9Dsqr/xEauMocHcfA
+EfEm8/fwcp5MB8GOZ3l8p9Rs38yoBFzVbj2SeicFoQTnHe4DrtMvBzGyKsiaKszV
+5UJAPyqm7zPph/Ck++NRQDmJvkhLXcs7QrUG2TBA7veqaLzrU88jY3RDKSIbNtLA
+xBrmQID1ms7TVrCcB6nWrxHJc3FhTP6q/lUL0ziG8fOND9oW6P0YxaXj+1qIxn45
+x2j5oDwsx8ig4/V23Yuofvji2j/VYAY/KAkKJOXqfozbmlMNUCpN6HuQ5yakVFgW
+XanFz99rw4kZ0z70ziCBp68CAwEAAQ==
+-----END PUBLIC KEY-----
+with some extra stuff`
+
 func TestVerifyDetached(t *testing.T) {
 
 	tcs := []struct {
@@ -205,6 +221,14 @@ func TestVerifyDetached(t *testing.T) {
 			name:          "bad pub key",
 			signature:     []byte(rsa2048_256Sig),
 			pubkey:        []byte(badKey),
+			signingAlg:    RsaSignPkcs12048Sha256,
+			payload:       []byte(goodPayload),
+			expectedError: true,
+		},
+		{
+			name:          "pub key with extra data",
+			signature:     []byte(rsa2048_256Sig),
+			pubkey:        []byte(extraDataKey),
 			signingAlg:    RsaSignPkcs12048Sha256,
 			payload:       []byte(goodPayload),
 			expectedError: true,
