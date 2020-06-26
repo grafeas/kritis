@@ -108,6 +108,21 @@ func TestNewPublicKey(t *testing.T) {
 			expectedID:         "valid-key-id",
 		},
 		{
+			name:               "valid PKIX key ID with undefined signature algorithm",
+			keyType:            Pkix,
+			signatureAlgorithm: UndefinedSigningAlgorithm,
+			keyID:              "valid-key-id",
+			expectedErr:        true,
+		},
+		{
+			name:               "valid PGP key ID with defined signature algorithm",
+			keyType:            Pgp,
+			signatureAlgorithm: RsaSignPkcs12048Sha256,
+			keyData:            []byte(verifierPublicKey),
+			keyID:              verifierPublicKeyID,
+			expectedErr:        true,
+		},
+		{
 			name:               "invalid PKIX key ID",
 			keyType:            Pkix,
 			signatureAlgorithm: RsaSignPkcs12048Sha256,
