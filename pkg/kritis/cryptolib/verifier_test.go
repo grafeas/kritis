@@ -75,6 +75,7 @@ func TestNewPublicKey(t *testing.T) {
 	tcs := []struct {
 		name        string
 		keyType     KeyType
+		signatureAlgorithm SignatureAlgorithm
 		keyData     []byte
 		keyID       string
 		expectedErr bool
@@ -83,6 +84,7 @@ func TestNewPublicKey(t *testing.T) {
 		{
 			name:        "valid PGP key ID",
 			keyType:     Pgp,
+			signatureAlgorithm: UndefinedSigningAlgorithm,
 			keyData:     []byte(verifierPublicKey),
 			keyID:       verifierPublicKeyID,
 			expectedErr: false,
@@ -91,6 +93,7 @@ func TestNewPublicKey(t *testing.T) {
 		{
 			name:        "incorrect PGP key ID",
 			keyType:     Pgp,
+			signatureAlgorithm: UndefinedSigningAlgorithm,
 			keyData:     []byte(verifierPublicKey),
 			keyID:       "incorrect-id",
 			expectedErr: false,
@@ -112,6 +115,7 @@ func TestNewPublicKey(t *testing.T) {
 		{
 			name:        "unknown key type",
 			keyType:     UnknownKeyType,
+			signatureAlgorithm: UndefinedSigningAlgorithm,
 			expectedErr: true,
 		},
 	}
