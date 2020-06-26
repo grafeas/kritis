@@ -121,7 +121,7 @@ func main() {
 		}
 		if violations != nil && len(violations) != 0 {
 			glog.Errorf("Image %q does not pass VulnzSigningPolicy %q:", image, policy.Name)
-			glog.Errorf("Found %d violations in image %s", len(violations), image)
+			glog.Errorf("Found %d violations in image %s:", len(violations), image)
 			for _, v := range violations {
 				glog.Error(v.Reason())
 			}
