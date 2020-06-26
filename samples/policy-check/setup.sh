@@ -4,9 +4,7 @@
 # binary authorization signing and enforcement:
 # - local environment
 # - binauthz project setup
-# - cloud build steps to do image signing
-# - a GKE cluster with binauthz configured
-# After running this script, a user can do image signing & deployement with a
+# After running this script, a user can check for vulnerabilities against an allowlist with a
 # single command line, as follows:
 # gcloud builds submit --config=cloudbuild-good.yaml
 
