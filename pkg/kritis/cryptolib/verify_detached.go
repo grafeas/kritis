@@ -29,6 +29,7 @@ import (
 	"math/big"
 )
 
+// hashPayload returns the hash function, the hashed payload and an error.
 func hashPayload(payload []byte, signingAlg SignatureAlgorithm) (crypto.Hash, []byte, error) {
 	switch signingAlg {
 	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, EcdsaP256Sha256:
@@ -66,7 +67,7 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 
 	switch signingAlg {
 	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaSignPkcs14096Sha512:
-		rsa_key, ok := pub.(*rsa.PublicKey)
+		rsaKey, ok := pub.(*rsa.PublicKey)
 		if !ok {
 			return errors.New("expected rsa key")
 		}
@@ -74,13 +75,13 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if err != nil {
 			return errors.Wrap(err, "error hashing payload")
 		}
-		err = rsa.VerifyPKCS1v15(rsa_key, hash, hashedPayload, signature)
+		err = rsa.VerifyPKCS1v15(rsaKey, hash, hashedPayload, signature)
 		if err != nil {
 			return errors.Wrap(err, "signature verification failed")
 		}
 		return nil
 	case RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, RsaPss4096Sha512:
-		rsa_key, ok := pub.(*rsa.PublicKey)
+		rsaKey, ok := pub.(*rsa.PublicKey)
 		if !ok {
 			return errors.New("expected rsa key")
 		}
@@ -88,13 +89,13 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if err != nil {
 			return errors.Wrap(err, "error hashing payload")
 		}
-		err = rsa.VerifyPSS(rsa_key, hash, hashedPayload, signature, nil)
+		err = rsa.VerifyPSS(rsaKey, hash, hashedPayload, signature, nil)
 		if err != nil {
 			return errors.Wrap(err, "signature verification failed")
 		}
 		return nil
 	case EcdsaP256Sha256, EcdsaP384Sha384, EcdsaP521Sha512:
-		ec_key, ok := pub.(*ecdsa.PublicKey)
+		ecKey, ok := pub.(*ecdsa.PublicKey)
 		if !ok {
 			return errors.New("expected ecdsa key")
 		}
@@ -104,12 +105,12 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 		if _, err := asn1.Unmarshal(signature, &sigStruct); err != nil {
 			return errors.Wrap(err, "error unmarshaling ecdsa signature")
 		}
-		// hashPayload returns the hash function, the hashed payload and an error. The hash function is not needed for ecdsa.Verify.
+		// The hash function is not needed for ecdsa.Verify.
 		_, hashedPayload, err := hashPayload(payload, signingAlg)
 		if err != nil {
 			return errors.Wrap(err, "error hashing payload")
 		}
-		if !ecdsa.Verify(ec_key, hashedPayload, sigStruct.R, sigStruct.S) {
+		if !ecdsa.Verify(ecKey, hashedPayload, sigStruct.R, sigStruct.S) {
 			return errors.New("failed to verify ecdsa signature")
 		}
 		return nil
