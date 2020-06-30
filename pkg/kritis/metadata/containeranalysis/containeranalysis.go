@@ -348,7 +348,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
 			case discovery.Discovered_FINISHED_SUCCESS:
 				elapsed := time.Since(start)
-				glog.Infof("Find vulnerabilities after %s", elapsed)
+				glog.Infof("Found vulnerabilities after %s", elapsed)
 				return nil
 			case discovery.Discovered_FINISHED_FAILED:
 				return fmt.Errorf("container analysis has finished unsuccessfully")
