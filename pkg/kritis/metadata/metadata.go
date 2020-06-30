@@ -158,7 +158,6 @@ func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attesta
 // The created occurrence can either be a PgpSignedAttestation occurrence or a GenericSignedAttestation occurrence.
 func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage string, noteName string, sType SignatureType) (*grafeas.Occurrence, error) {
 	attestation := &attestationpb.Attestation{}
-
 	switch sType {
 	case PgpSignatureType:
 		pgpSignedAttestation := &attestationpb.PgpSignedAttestation{
@@ -196,16 +195,15 @@ func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage 
 		return nil, fmt.Errorf("unknown signature type %v", sType)
 	}
 
-	attestationDetails := &grafeas.Occurrence_Attestation{
-		Attestation: &attestationpb.Details{
-			Attestation: attestation,
-		},
-	}
-
 	occ := &grafeas.Occurrence{
 		Resource: getGrafeasResource(containerImage),
 		NoteName: noteName,
-		Details:  attestationDetails,
+		Details:  &grafeas.Occurrence_Attestation{
+			Attestation: &attestationpb.Details{
+				Attestation: attestation,
+			},
+		},
 	}
+
 	return occ, nil
 }
