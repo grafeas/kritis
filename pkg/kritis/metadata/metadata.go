@@ -198,7 +198,7 @@ func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage 
 	occ := &grafeas.Occurrence{
 		Resource: getGrafeasResource(containerImage),
 		NoteName: noteName,
-		Details:  &grafeas.Occurrence_Attestation{
+		Details: &grafeas.Occurrence_Attestation{
 			Attestation: &attestationpb.Details{
 				Attestation: attestation,
 			},
