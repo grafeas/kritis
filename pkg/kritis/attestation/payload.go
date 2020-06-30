@@ -20,6 +20,12 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/container"
 )
 
+// AtomicContainerPayload creates an attestation payload
+// which can be signed by a cryptolib.Signer to obtain a
+// cryptolib.Attestation.
+//
+// This payload is in the Red Hat's Atomic Host format:
+// https://github.com/aweiteka/image/blob/e5a20d98fe698732df2b142846d007b45873627f/docs/signature.md
 func AtomicContainerPayload(imageUri string) ([]byte, error) {
 	acs, err := container.NewAtomicContainerSig(imageUri, nil)
 	if err != nil {
