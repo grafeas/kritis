@@ -24,6 +24,7 @@ import (
 
 	"golang.org/x/crypto/openpgp"
 
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-	"github.com/grafeas/kritis/pkg/kritis/container"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
@@ -79,15 +79,6 @@ func GetResource(image string) *grafeas.Resource {
 }
 
 func CreateAttestation(image string, pgpSigningKey *secrets.PGPSigningSecret) (*cryptolib.Attestation, error) {
-	hostSig, err := container.NewAtomicContainerSig(image, nil)
-	if err != nil {
-		return nil, err
-	}
-	payload, err := hostSig.JSON()
-	if err != nil {
-		return nil, err
-	}
-
 	privateKey, err := extractPrivateKeyBytes(pgpSigningKey)
 	if err != nil {
 		return nil, err
@@ -97,7 +88,12 @@ func CreateAttestation(image string, pgpSigningKey *secrets.PGPSigningSecret) (*
 		return nil, err
 	}
 
-	att, err := signer.CreateAttestation([]byte(payload))
+	payload, err := attestation.AtomicContainerPayload(image)
+	if err != nil {
+		return nil, err
+	}
+
+	att, err := signer.CreateAttestation(payload)
 	if err != nil {
 		return nil, err
 	}
