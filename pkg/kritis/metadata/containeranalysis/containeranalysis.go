@@ -231,10 +231,6 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
-	}
-
 	// Create Attestation Signature
 	att, err := util.CreateAttestation(containerImage, pgpSigningKey)
 	if err != nil {

@@ -21,10 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
-	"github.com/grafeas/kritis/pkg/kritis/util"
-
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/constants"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	commonpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
@@ -55,7 +54,7 @@ type ReadWriteClient interface {
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
 	UploadAttestationOccurrence(noteName string,
-			containerImage string, att *cryptolib.Attestation, proj string, sType SignatureType) (*grafeasv1beta1.Occurrence, error)
+		containerImage string, att *cryptolib.Attestation, proj string, sType SignatureType) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
@@ -119,6 +118,11 @@ func GetVulnerabilityFromOccurrence(occ *grafeas.Occurrence) *Vulnerability {
 	return &vulnerability
 }
 
+func getGrafeasResource(image string) *grafeas.Resource {
+	resourceUrl := fmt.Sprintf("%s%s", constants.ResourceURLPrefix, image)
+	return &grafeas.Resource{Uri: resourceUrl}
+}
+
 // GetAttestationsFromOccurrence parses Attestations from PgpSignedAttestation
 // and GenericSignedAttestation Occurrences. A PgpSignedAttestation has one
 // signature and is parsed into one Attestation. A GenericSignedAttestation may
@@ -180,7 +184,7 @@ func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage 
 				},
 			},
 			SerializedPayload: att.SerializedPayload,
-			ContentType: attestationpb.GenericSignedAttestation_SIMPLE_SIGNING_JSON,
+			ContentType:       attestationpb.GenericSignedAttestation_SIMPLE_SIGNING_JSON,
 		}
 
 		attestation = &attestationpb.Attestation{
@@ -199,7 +203,7 @@ func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage 
 	}
 
 	occ := &grafeas.Occurrence{
-		Resource: util.GetResource(containerImage),
+		Resource: getGrafeasResource(containerImage),
 		NoteName: noteName,
 		Details:  attestationDetails,
 	}

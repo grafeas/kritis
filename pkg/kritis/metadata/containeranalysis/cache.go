@@ -101,6 +101,11 @@ func (c Cache) CreateAttestationOccurrence(noteName string, image string, p *sec
 	return c.client.CreateAttestationOccurrence(noteName, image, p, proj)
 }
 
+// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
+func (c Cache) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+	return c.client.UploadAttestationOccurrence(noteName, containerImage, att, proj, sType)
+}
+
 // WaitForVulnzAnalysis Wait vulnerability analysis for an image to finish, or times out.
 func (c Cache) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
 	return c.client.WaitForVulnzAnalysis(containerImage, timeout)

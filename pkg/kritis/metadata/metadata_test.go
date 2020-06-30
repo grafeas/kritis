@@ -20,12 +20,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
+	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
+	commonpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/grafeas"
 	pkg "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/package"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/vulnerability"
@@ -151,6 +152,92 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 				return att1.PublicKeyID > att2.PublicKeyID
 			})) {
 				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedAtts, actualAtts)
+			}
+		})
+	}
+}
+
+func TestCreateOccurrenceFromAttestation(t *testing.T) {
+	tests := []struct {
+		name        string
+		image       string
+		noteName    string
+		sType       SignatureType
+		cryptoAtt   *cryptolib.Attestation
+		expectedOcc *grafeas.Occurrence
+	}{
+		{
+			"pgp attestation",
+			"image-1",
+			"note-1",
+			PgpSignatureType,
+			&cryptolib.Attestation{
+				PublicKeyID:       "id-1",
+				Signature:         []byte("sig-1"),
+				SerializedPayload: []byte("payload-1"),
+			},
+			&grafeas.Occurrence{
+				Resource: &grafeas.Resource{Uri: "https://image-1"},
+				NoteName: "note-1",
+				Details: &grafeas.Occurrence_Attestation{
+					Attestation: &attestation.Details{
+						Attestation: &attestation.Attestation{
+							Signature: &attestation.Attestation_PgpSignedAttestation{
+								PgpSignedAttestation: &attestation.PgpSignedAttestation{
+									Signature: "sig-1",
+									KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
+										PgpKeyId: "id-1",
+									},
+									ContentType: attestationpb.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"generic attestation",
+			"image-1",
+			"note-1",
+			GenericSignatureType,
+			&cryptolib.Attestation{
+				PublicKeyID:       "id-1",
+				Signature:         []byte("sig-1"),
+				SerializedPayload: []byte("payload-1"),
+			},
+			&grafeas.Occurrence{
+				Resource: &grafeas.Resource{Uri: "https://image-1"},
+				NoteName: "note-1",
+				Details: &grafeas.Occurrence_Attestation{
+					Attestation: &attestation.Details{
+						Attestation: &attestationpb.Attestation{
+							Signature: &attestationpb.Attestation_GenericSignedAttestation{
+								GenericSignedAttestation: &attestationpb.GenericSignedAttestation{
+									Signatures: []*commonpb.Signature{
+										{
+											Signature:   []byte("sig-1"),
+											PublicKeyId: "id-1",
+										},
+									},
+									SerializedPayload: []byte("payload-1"),
+									ContentType:       attestationpb.GenericSignedAttestation_SIMPLE_SIGNING_JSON,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actualOcc, err := CreateOccurrenceFromAttestation(tc.cryptoAtt, tc.image, tc.noteName, tc.sType)
+			if err != nil {
+				t.Fatalf("Error while creating occurrence from attestation: %v", err)
+			}
+			if !reflect.DeepEqual(actualOcc, tc.expectedOcc) {
+				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedOcc, actualOcc)
 			}
 		})
 	}
