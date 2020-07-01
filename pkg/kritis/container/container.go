@@ -95,6 +95,14 @@ func newImage(digest string) *image {
 	}
 }
 
+func (acs *AtomicContainerSig) JSONBytes() ([]byte, error) {
+	bytes, err := json.Marshal(acs)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
 func (acs *AtomicContainerSig) JSON() (string, error) {
 	bytes, err := json.Marshal(acs)
 	if err != nil {
