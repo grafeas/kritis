@@ -297,6 +297,8 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 
 	// Backoff time between tries, exponentially grows after each failure.
 	nextTryWait := 1
+	// Track time
+	start := time.Now()
 	// Timeout clock.
 	timeoutTimer := time.NewTimer(timeout)
 	defer timeoutTimer.Stop()
@@ -337,6 +339,8 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			}
 			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
 			case discovery.Discovered_FINISHED_SUCCESS:
+				elapsed := time.Since(start)
+				glog.Infof("Found vulnerabilities after %s", elapsed)
 				return nil
 			case discovery.Discovered_FINISHED_FAILED:
 				return fmt.Errorf("container analysis has finished unsuccessfully")

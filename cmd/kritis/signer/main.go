@@ -120,7 +120,12 @@ func main() {
 			glog.Fatalf("Error when evaluating image %q against policy %q", image, policy.Name)
 		}
 		if violations != nil && len(violations) != 0 {
-			glog.Fatalf("Image %q does not pass VulnzSigningPolicy %q: %v", image, policy.Name, violations)
+			glog.Errorf("Image %q does not pass VulnzSigningPolicy %q:", image, policy.Name)
+			glog.Errorf("Found %d violations in image %s:", len(violations), image)
+			for _, v := range violations {
+				glog.Error(v.Reason())
+			}
+			os.Exit(1)
 		}
 		glog.Infof("Image %q passes VulnzSigningPolicy %s.", image, policy.Name)
 	}
