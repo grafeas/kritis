@@ -64,6 +64,17 @@ func (m *MockMetadataClient) CreateAttestationOccurrence(noteName string, image 
 	return nil, nil
 }
 
+func (m *MockMetadataClient) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	if m.Occ == nil {
+		m.Occ = map[string]string{}
+	}
+	m.Occ[fmt.Sprintf("%s-%s", containerImage, noteName)] = att.PublicKeyID
+	return nil, nil
+}
+
 func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	if m.Err != nil {
 		return nil, m.Err
