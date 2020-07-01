@@ -231,41 +231,33 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
-	}
-
 	// Create Attestation Signature
 	att, err := util.CreateAttestation(containerImage, pgpSigningKey)
 	if err != nil {
 		return nil, err
 	}
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: string(att.Signature),
-		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: att.PublicKeyID,
-		},
-		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
+	// Upload attestation
+	return c.UploadAttestationOccurrence(noteName, containerImage, att, proj, metadata.PgpSignatureType)
+}
+
+// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
+func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+	if !isValidImageOnGCR(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	attestationDetails := &grafeas.Occurrence_Attestation{
-		Attestation: &attestation.Details{
-			Attestation: &attestation.Attestation{
-				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
-				}},
-		},
+	// Create occurrence from attestation
+	occ, err := metadata.CreateOccurrenceFromAttestation(att, containerImage, noteName, sType)
+	if err != nil {
+		return nil, fmt.Errorf("creating occurrence failed: %v", err)
 	}
-	occ := &grafeas.Occurrence{
-		Resource: util.GetResource(containerImage),
-		NoteName: noteName,
-		Details:  attestationDetails,
-	}
-	// Create the AttestationAuthrity Occurrence.
+
+	// Create CreateOccurrenceRequest
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
 		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
+
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)
 }
