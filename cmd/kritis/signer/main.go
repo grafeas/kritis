@@ -26,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
@@ -43,14 +44,13 @@ const (
 )
 
 func main() {
-	var image, vulnz_timeout, pri_key_path, passphrase, pub_key_path, policy_path, mode, attestation_project, note_name string
+	var image, vulnz_timeout, pri_key_path, passphrase, policy_path, mode, attestation_project, note_name string
 
 	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&vulnz_timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
-	flag.StringVar(&pub_key_path, "public_key", "", "public key path, e.g., /dev/shm/key.pub")
 	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&note_name, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
 	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
@@ -131,14 +131,19 @@ func main() {
 	}
 
 	if doSign {
+		// TODO: support passphrase to private key (consider add support in cryptolib)
+		if passphrase != "" {
+			glog.Fatalf("Passphrase is not yet supported.\n")
+		}
 		// Read the signing credentials
 		signerKey, err := ioutil.ReadFile(pri_key_path)
 		if err != nil {
 			glog.Fatalf("Fail to read signer key: %v", err)
 		}
-		pubKey, err := ioutil.ReadFile(pub_key_path)
+		// Create a cryptolib signer
+		cSigner, err := cryptolib.NewPgpSigner(signerKey)
 		if err != nil {
-			glog.Fatalf("Fail to read public key: %v", err)
+			glog.Fatalf("Creating crypto signer failed: %v\n", err)
 		}
 
 		// Check note name
@@ -155,12 +160,6 @@ func main() {
 			glog.Infof("Using specified attestation project: %s\n", attestation_project)
 		}
 
-		// Create pgp key
-		pgpKey, err := secrets.NewPgpKey(string(signerKey), passphrase, string(pubKey))
-		if err != nil {
-			glog.Fatalf("Creating pgp key from files fail: %v\nprivate key:\n%s\npublic key:\n%s\n", err, string(signerKey), string(pubKey))
-		}
-
 		// Create AA
 		// Create an AttestaionAuthority to help create noteOcurrences.
 		// This is quite hacky.
@@ -172,18 +171,14 @@ func main() {
 				PublicKeys: []v1beta1.PublicKey{
 					{
 						KeyType:                  "PGP",
-						AsciiArmoredPgpPublicKey: base64.StdEncoding.EncodeToString([]byte(pubKey)),
+						AsciiArmoredPgpPublicKey: "",
 					},
 				},
 			},
 		}
 
 		// Create signer
-		r := signer.New(client, &signer.Config{
-			PgpKey:    pgpKey,
-			Authority: authority,
-			Project:   attestation_project,
-		})
+		r := signer.New(client, cSigner, authority, attestation_project)
 		// Sign image
 		r.SignImage(image)
 	}

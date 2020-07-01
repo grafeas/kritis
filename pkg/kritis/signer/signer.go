@@ -19,9 +19,10 @@ package signer
 import (
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
+	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
+	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 )
 
@@ -33,16 +34,20 @@ type Signer struct {
 
 // A signer config that includes necessary data and handler for signing.
 type Config struct {
-	PgpKey    *secrets.PgpKey
-	Authority v1beta1.AttestationAuthority
-	Project   string
+	cSigner    cryptolib.Signer
+	authority v1beta1.AttestationAuthority
+	project   string
 }
 
 // Creating a new signer object.
-func New(client metadata.ReadWriteClient, c *Config) Signer {
+func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, authority v1beta1.AttestationAuthority,  project string) Signer {
 	return Signer{
 		client: client,
-		config: c,
+		config: &Config{
+			cSigner,
+			authority,
+			project,
+		},
 	}
 }
 
@@ -65,34 +70,51 @@ func (s Signer) SignImage(image string) error {
 		glog.Warningf("Attestation for image %q has already been created.", image)
 		return nil
 	}
+
 	glog.Infof("Creating attestations for image %q.", image)
-	if err := s.addAttestation(image); err != nil {
+	// Create attestation
+	att, err := s.createAttestation(image)
+	if err != nil {
+		return err
+	}
+
+	glog.Infof("Uploading attestations for image %q.", image)
+	if err := s.uploadAttestation(image, att); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Creating an attestation if not already exist under the same note.
+// Creating an atestation.
+func (s Signer) createAttestation(image string) (*cryptolib.Attestation, error) {
+	payload, err := attestation.AtomicContainerPayload(image)
+	if err != nil {
+		return nil, err
+	}
+
+	att, err := s.config.cSigner.CreateAttestation(payload)
+	if err != nil {
+		return nil, err
+	}
+	return att, nil
+}
+
+// Uploading an attestation if not already exist under the same note.
 // The method will create a note if it does not already exist.
-// Returns error if creation failed, e.g., if an attestation already exists.
-func (s Signer) addAttestation(image string) error {
-	n, err := util.GetOrCreateAttestationNote(s.client, &s.config.Authority)
+// Returns error if upload failed, e.g., if an attestation already exists.
+func (s Signer) uploadAttestation(image string, att *cryptolib.Attestation) error {
+	n, err := util.GetOrCreateAttestationNote(s.client, &s.config.authority)
 	if err != nil {
 		return err
 	}
-	// Create secret for this authority
-	sec := &secrets.PGPSigningSecret{
-		PgpKey:     s.config.PgpKey,
-		SecretName: "signing-secret",
-	}
 
-	// Create Attestation Signature
-	_, err = s.client.CreateAttestationOccurrence(n.GetName(), image, sec, s.config.Project)
+	// Upload attestation
+	_, err = s.client.UploadAttestationOccurrence(n.GetName(), image, att, s.config.project, metadata.PgpSignatureType)
 	return err
 }
 
 func (s Signer) isAttestationAlreadyExist(image string) (bool, error) {
-	atts, err := s.client.Attestations(image, &s.config.Authority)
+	atts, err := s.client.Attestations(image, &s.config.authority)
 	if err == nil && len(atts) > 0 {
 		return true, nil
 	}
