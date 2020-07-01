@@ -34,13 +34,13 @@ type Signer struct {
 
 // A signer config that includes necessary data and handler for signing.
 type Config struct {
-	cSigner    cryptolib.Signer
+	cSigner   cryptolib.Signer
 	authority v1beta1.AttestationAuthority
 	project   string
 }
 
 // Creating a new signer object.
-func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, authority v1beta1.AttestationAuthority,  project string) Signer {
+func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, authority v1beta1.AttestationAuthority, project string) Signer {
 	return Signer{
 		client: client,
 		config: &Config{

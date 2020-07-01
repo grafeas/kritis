@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -28,7 +27,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
-	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
