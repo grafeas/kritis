@@ -29,7 +29,6 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
 	"github.com/grafeas/kritis/pkg/kritis/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -42,16 +41,16 @@ const (
 )
 
 func main() {
-	var image, vulnz_timeout, pri_key_path, passphrase, policy_path, mode, attestation_project, note_name string
-
-	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
+	var (
+		mode, image, vulnzTimeout, priKeyPath, passphrase, policyPath, attestationProject, noteName string
+	)
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
-	flag.StringVar(&vulnz_timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
-	flag.StringVar(&pri_key_path, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&vulnzTimeout, "vulnzTimeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
+	flag.StringVar(&priKeyPath, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
-	flag.StringVar(&policy_path, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
-	flag.StringVar(&note_name, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
-	flag.StringVar(&attestation_project, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
+	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
+	flag.StringVar(&noteName, "noteName", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
+	flag.StringVar(&attestationProject, "attestationProject", "", "project id for GCP project that stores attestation, default to image project if unspecified")
 	flag.Parse()
 
 	doCheck, doSign := false, false
@@ -83,7 +82,7 @@ func main() {
 	if doCheck {
 		// Read the vulnz signing policy
 		policy := v1beta1.VulnzSigningPolicy{}
-		policyFile, err := os.Open(policy_path)
+		policyFile, err := os.Open(policyPath)
 		if err != nil {
 			glog.Fatalf("Fail to load vulnz signing policy: %v", err)
 		}
@@ -95,7 +94,7 @@ func main() {
 			glog.Infof("Policy req: %v\n", policy.Spec.ImageVulnerabilityRequirements)
 		}
 
-		timeout, err := time.ParseDuration(vulnz_timeout)
+		timeout, err := time.ParseDuration(vulnzTimeout)
 		if err != nil {
 			glog.Fatalf("Fail to parse timeout %v", err)
 		}
@@ -134,7 +133,7 @@ func main() {
 			glog.Fatalf("Passphrase is not yet supported.\n")
 		}
 		// Read the signing credentials
-		signerKey, err := ioutil.ReadFile(pri_key_path)
+		signerKey, err := ioutil.ReadFile(priKeyPath)
 		if err != nil {
 			glog.Fatalf("Fail to read signer key: %v", err)
 		}
@@ -145,38 +144,21 @@ func main() {
 		}
 
 		// Check note name
-		err = util.CheckNoteName(note_name)
+		err = util.CheckNoteName(noteName)
 		if err != nil {
 			glog.Fatalf("Note name is invalid %v", err)
 		}
 
 		// Parse attestation project
-		if attestation_project == "" {
-			attestation_project = util.GetProjectFromContainerImage(image)
-			glog.Infof("Using image project as attestation project: %s\n", attestation_project)
+		if attestationProject == "" {
+			attestationProject = util.GetProjectFromContainerImage(image)
+			glog.Infof("Using image project as attestation project: %s\n", attestationProject)
 		} else {
-			glog.Infof("Using specified attestation project: %s\n", attestation_project)
-		}
-
-		// Create AA
-		// Create an AttestaionAuthority to help create noteOcurrences.
-		// This is quite hacky.
-		// TODO: refactor out the authority code
-		authority := v1beta1.AttestationAuthority{
-			ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
-			Spec: v1beta1.AttestationAuthoritySpec{
-				NoteReference: note_name,
-				PublicKeys: []v1beta1.PublicKey{
-					{
-						KeyType:                  "PGP",
-						AsciiArmoredPgpPublicKey: "",
-					},
-				},
-			},
+			glog.Infof("Using specified attestation project: %s\n", attestationProject)
 		}
 
 		// Create signer
-		r := signer.New(client, cSigner, authority, attestation_project)
+		r := signer.New(client, cSigner, noteName, attestationProject)
 		// Sign image
 		r.SignImage(image)
 	}

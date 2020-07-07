@@ -24,6 +24,8 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/util"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // A signer is used for creating attestations for an image.
@@ -34,18 +36,29 @@ type Signer struct {
 
 // A signer config that includes necessary data and handler for signing.
 type Config struct {
-	cSigner   cryptolib.Signer
+	cSigner cryptolib.Signer
+	// an AttestaionAuthority that is used in metadata client APIs.
+	// We should consider refactor it out because:
+	// 1. the only useful field here is noteName
+	// 2. other fields, e.g., public key, are unset
+	// TODO: refactor out the authority code
 	authority v1beta1.AttestationAuthority
 	project   string
 }
 
 // Creating a new signer object.
-func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, authority v1beta1.AttestationAuthority, project string) Signer {
+func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, noteName string, project string) Signer {
 	return Signer{
 		client: client,
 		config: &Config{
 			cSigner,
-			authority,
+			v1beta1.AttestationAuthority{
+				ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
+				Spec: v1beta1.AttestationAuthoritySpec{
+					NoteReference: noteName,
+					PublicKeys:    []v1beta1.PublicKey{},
+				},
+			},
 			project,
 		},
 	}
@@ -103,13 +116,13 @@ func (s Signer) createAttestation(image string) (*cryptolib.Attestation, error) 
 // The method will create a note if it does not already exist.
 // Returns error if upload failed, e.g., if an attestation already exists.
 func (s Signer) uploadAttestation(image string, att *cryptolib.Attestation) error {
-	n, err := util.GetOrCreateAttestationNote(s.client, &s.config.authority)
+	note, err := util.GetOrCreateAttestationNote(s.client, &s.config.authority)
 	if err != nil {
 		return err
 	}
 
 	// Upload attestation
-	_, err = s.client.UploadAttestationOccurrence(n.GetName(), image, att, s.config.project, metadata.PgpSignatureType)
+	_, err = s.client.UploadAttestationOccurrence(note.GetName(), image, att, s.config.project, metadata.PgpSignatureType)
 	return err
 }
 
