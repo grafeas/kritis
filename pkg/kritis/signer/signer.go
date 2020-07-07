@@ -30,12 +30,12 @@ import (
 
 // A signer is used for creating attestations for an image.
 type Signer struct {
-	config *Config
+	config *config
 	client metadata.ReadWriteClient
 }
 
 // A signer config that includes necessary data and handler for signing.
-type Config struct {
+type config struct {
 	cSigner cryptolib.Signer
 	// an AttestaionAuthority that is used in metadata client APIs.
 	// We should consider refactor it out because:
@@ -50,7 +50,7 @@ type Config struct {
 func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, noteName string, project string) Signer {
 	return Signer{
 		client: client,
-		config: &Config{
+		config: &config{
 			cSigner,
 			v1beta1.AttestationAuthority{
 				ObjectMeta: metav1.ObjectMeta{Name: "signing-aa"},
