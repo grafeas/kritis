@@ -19,8 +19,8 @@ package containeranalysis
 import (
 	"time"
 
+	"github.com/grafeas/kritis/pkg/attestlib"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"google.golang.org/api/option"
@@ -32,7 +32,7 @@ import (
 type Cache struct {
 	client metadata.ReadWriteClient
 	vuln   map[string][]metadata.Vulnerability
-	atts   map[string][]cryptolib.Attestation
+	atts   map[string][]attestlib.Attestation
 	notes  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note
 }
 
@@ -45,7 +45,7 @@ func NewCache(opts ...option.ClientOption) (*Cache, error) {
 	return &Cache{
 		client: c,
 		vuln:   map[string][]metadata.Vulnerability{},
-		atts:   map[string][]cryptolib.Attestation{},
+		atts:   map[string][]attestlib.Attestation{},
 		notes:  map[*kritisv1beta1.AttestationAuthority]*grafeas.Note{},
 	}, nil
 }
@@ -68,7 +68,7 @@ func (c Cache) Vulnerabilities(image string) ([]metadata.Vulnerability, error) {
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority from cache or from client.
-func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
+func (c Cache) Attestations(image string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error) {
 	if a, ok := c.atts[image]; ok {
 		return a, nil
 	}
@@ -102,7 +102,7 @@ func (c Cache) CreateAttestationOccurrence(noteName string, image string, p *sec
 }
 
 // UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
-func (c Cache) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+func (c Cache) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
 	return c.client.UploadAttestationOccurrence(noteName, containerImage, att, proj, sType)
 }
 

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 // Attestation represents an unauthenticated attestation, stripped of information
 // specific to the wire format. An Attestation can only be trusted after
