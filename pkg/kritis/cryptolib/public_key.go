@@ -41,17 +41,17 @@ type PublicKey struct {
 }
 
 // NewPublicKey creates a new PublicKey.
-// `authType` indicates the transport format of the Attestation this PublicKey
-// verifies, one of Pgp, Pkix or Jwt.
+// `authenticatorType` indicates the transport format of the Attestation this
+// PublicKey verifies, one of Pgp, Pkix or Jwt.
 // `keyData` contains the raw key material.
 // `keyID` contains a unique identifier for the public key. For PGP, this field
 // should be left blank. The ID will be the OpenPGP RFC4880 V4 fingerprint of
 // the key. For PKIX and JWT, this may be left blank, and the ID  will be
 // generated based on the DER encoding of the key. If not blank, the ID should
 // be a StringOrURI: it must either not contain ":" or be a valid URI.
-func NewPublicKey(authType AuthenticatorType, keyData []byte, keyID string) (*PublicKey, error) {
+func NewPublicKey(authenticatorType AuthenticatorType, keyData []byte, keyID string) (*PublicKey, error) {
 	newKeyID := ""
-	switch authType {
+	switch authenticatorType {
 	case Pgp:
 		id, err := extractPgpKeyID(keyData)
 		if err != nil {
@@ -69,7 +69,7 @@ func NewPublicKey(authType AuthenticatorType, keyData []byte, keyID string) (*Pu
 	}
 
 	return &PublicKey{
-		AuthenticatorType: authType,
+		AuthenticatorType: authenticatorType,
 		KeyData:           keyData,
 		ID:                newKeyID,
 	}, nil
