@@ -109,7 +109,7 @@ for PID in ${PID_LIST[@]};do
    if [ $exit_status -ne 0 ] ; then
      RESULT=1
    fi
-   script_name=`egrep $process $tmp_file | awk -F ":" '{print $2}'`
+   script_name=`egrep PID $tmp_file | awk -F ":" '{print $2}'`
    SUMMARY+="$script_name exit status: $exit_status\n"
 done
 
@@ -117,6 +117,6 @@ for log in ./tests/*.out; do
    cat $log
 done
 
-echo $SUMMARY
+printf $SUMMARY
 
 exit $RESULT
