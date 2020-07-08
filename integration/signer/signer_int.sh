@@ -90,20 +90,33 @@ export -f urlencode
 export -f delete_image
 export -f delete_occ
 
-#### TEST 1: bypass-and-sign mode ####
-./tests/test-bypass-and-sign.sh
+# run tests
+tmp_file=$(mktemp /tmp/file.XXX)
+for script in ./tests/*; do
+   bash $script > ${script}.out 2>&1 &
+   PID="$!"
+   echo "$PID:$script" >> $tmp_file
+   PID_LIST+="$PID "
+done
 
-#### TEST 2: check-and-sign mode, good case ####
-./tests/test-check-and-sign-good.sh
+# process test results
+set +ex
+RESULT=0
+SUMMARY=""
+for PID in ${PID_LIST[@]};do
+   wait $PID
+   exit_status=$?
+   if [ $exit_status -ne 0 ] ; then
+     RESULT=1
+   fi
+   script_name=`egrep $process $tmp_file | awk -F ":" '{print $2}'`
+   SUMMARY+="$script_name exit status: $exit_status\n"
+done
 
-#### TEST 3: check-and-sign mode, bad case ####
-./tests/test-check-and-sign-bad.sh
+for script in ./tests/*; do
+   echo${script}.out
+done
 
-#### TEST 4: check-only mode, good case ####
-./tests/test-check-only-good.sh
+echo $SUMMARY
 
-#### TEST 5: check-only mode, bad case ####
-./tests/test-check-only-bad.sh
-
-#### TEST 6: bypass-and-sign mode, with kms ####
-./tests/test-bypass-and-sign-with-kms.sh
+exit $RESULT
