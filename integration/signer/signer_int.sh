@@ -114,7 +114,7 @@ for PID in ${PID_LIST[@]};do
 done
 
 for script in ./tests/*; do
-   echo${script}.out
+   cat ${script}.out
 done
 
 echo $SUMMARY
