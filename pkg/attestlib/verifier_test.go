@@ -73,51 +73,51 @@ const verifierPublicKeyID = "446625EB36036D7546B2D63B77B4BE6989834233"
 
 func TestNewPublicKey(t *testing.T) {
 	tcs := []struct {
-		name        string
-		keyType     KeyType
-		keyData     []byte
-		keyID       string
-		expectedErr bool
-		expectedID  string
+		name              string
+		authenticatorType AuthenticatorType
+		keyData           []byte
+		keyID             string
+		expectedErr       bool
+		expectedID        string
 	}{
 		{
-			name:        "valid PGP key ID",
-			keyType:     Pgp,
-			keyData:     []byte(verifierPublicKey),
-			keyID:       verifierPublicKeyID,
-			expectedErr: false,
-			expectedID:  verifierPublicKeyID,
+			name:              "valid PGP key ID",
+			authenticatorType: Pgp,
+			keyData:           []byte(verifierPublicKey),
+			keyID:             verifierPublicKeyID,
+			expectedErr:       false,
+			expectedID:        verifierPublicKeyID,
 		},
 		{
-			name:        "incorrect PGP key ID",
-			keyType:     Pgp,
-			keyData:     []byte(verifierPublicKey),
-			keyID:       "incorrect-id",
-			expectedErr: false,
-			expectedID:  verifierPublicKeyID,
+			name:              "incorrect PGP key ID",
+			authenticatorType: Pgp,
+			keyData:           []byte(verifierPublicKey),
+			keyID:             "incorrect-id",
+			expectedErr:       false,
+			expectedID:        verifierPublicKeyID,
 		},
 		{
-			name:        "valid PKIX key ID",
-			keyType:     Pkix,
-			keyID:       "valid-key-id",
-			expectedErr: false,
-			expectedID:  "valid-key-id",
+			name:              "valid PKIX key ID",
+			authenticatorType: Pkix,
+			keyID:             "valid-key-id",
+			expectedErr:       false,
+			expectedID:        "valid-key-id",
 		},
 		{
-			name:        "invalid PKIX key ID",
-			keyType:     Pkix,
-			keyID:       ":{invalid-key-id}",
-			expectedErr: true,
+			name:              "invalid PKIX key ID",
+			authenticatorType: Pkix,
+			keyID:             ":{invalid-key-id}",
+			expectedErr:       true,
 		},
 		{
-			name:        "unknown key type",
-			keyType:     UnknownKeyType,
-			expectedErr: true,
+			name:              "unknown authenticator type",
+			authenticatorType: UnknownAuthenticatorType,
+			expectedErr:       true,
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			publicKey, err := NewPublicKey(tc.keyType, tc.keyData, tc.keyID)
+			publicKey, err := NewPublicKey(tc.authenticatorType, tc.keyData, tc.keyID)
 			if tc.expectedErr {
 				if err == nil {
 					t.Errorf("Got nil err, expected not-nil")

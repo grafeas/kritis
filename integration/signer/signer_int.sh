@@ -43,8 +43,8 @@ urlencode() {
 }
 
 delete_image() {
-    set +ex
     ARG=$?
+    set +ex
     IMG_TO_DELETE=$1
     echo "Delete image if uploaded."
     gcloud container images delete $IMG_TO_DELETE --force-delete-tags \
@@ -53,8 +53,8 @@ delete_image() {
 }
 
 delete_occ() {
-    set +ex
     ARG=$?
+    set +ex
     IMG_DIGEST_URL_TO_DELETE=$1
     echo "Delete occurrence if created."
     if [ -n "$IMG_DIGEST_URL_TO_DELETE" ]; then

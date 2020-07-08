@@ -112,7 +112,7 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 
 	var err error
 	payload := []byte{}
-	switch publicKey.KeyType {
+	switch publicKey.AuthenticatorType {
 	case Pkix:
 		err = v.verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
 		payload = att.SerializedPayload

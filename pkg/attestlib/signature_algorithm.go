@@ -49,12 +49,14 @@ const (
 	EcdsaP521Sha512
 )
 
-// KeyType is the type of a public key
-type KeyType int
+// AuthenticatorType specifies the transport format of the Attestation. It
+// indicates to the Verifier how to extract the appropriate information out of
+// an Attestation.
+type AuthenticatorType int
 
-// Enumeration of KeyType
+// Enumeration of AuthenticatorType
 const (
-	UnknownKeyType KeyType = iota
+	UnknownAuthenticatorType AuthenticatorType = iota
 	Pgp
 	Pkix
 	Jwt

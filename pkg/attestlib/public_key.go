@@ -27,8 +27,9 @@ import (
 
 // PublicKey stores public key material for all key types.
 type PublicKey struct {
-	// KeyType stores the type of the public key, one of Pgp, Pkix, or Jwt.
-	KeyType KeyType
+	// AuthenticatorType indicates the transport format of the Attestation this
+	// key verifies, one of Pgp, Pkix, or Jwt.
+	AuthenticatorType AuthenticatorType
 	// Signature Algorithm holds the signing and padding algorithm for the signature.
 	SignatureAlgorithm SignatureAlgorithm
 	// KeyData holds the raw key material which can verify a signature.
@@ -39,16 +40,18 @@ type PublicKey struct {
 	ID string
 }
 
-// NewPublicKey creates a new PublicKey. `keyType` contains the type of the
-// public key, one of Pgp, Pkix or Jwt. `keyData` contains the raw key
-// material. `keyID` contains a unique identifier for the public key. For PGP,
-// this field should be left blank. The ID will be the OpenPGP RFC4880 V4
-// fingerprint of the key. For PKIX and JWT, this may be left blank, and the ID
-// will be generated based on the DER encoding of the key. If not blank, the ID
-// should be a StringOrURI: it must either not contain ":" or be a valid URI.
-func NewPublicKey(keyType KeyType, keyData []byte, keyID string) (*PublicKey, error) {
+// NewPublicKey creates a new PublicKey.
+// `authenticatorType` indicates the transport format of the Attestation this
+// PublicKey verifies, one of Pgp, Pkix or Jwt.
+// `keyData` contains the raw key material.
+// `keyID` contains a unique identifier for the public key. For PGP, this field
+// should be left blank. The ID will be the OpenPGP RFC4880 V4 fingerprint of
+// the key. For PKIX and JWT, this may be left blank, and the ID  will be
+// generated based on the DER encoding of the key. If not blank, the ID should
+// be a StringOrURI: it must either not contain ":" or be a valid URI.
+func NewPublicKey(authenticatorType AuthenticatorType, keyData []byte, keyID string) (*PublicKey, error) {
 	newKeyID := ""
-	switch keyType {
+	switch authenticatorType {
 	case Pgp:
 		id, err := extractPgpKeyID(keyData)
 		if err != nil {
@@ -62,13 +65,13 @@ func NewPublicKey(keyType KeyType, keyData []byte, keyID string) (*PublicKey, er
 		}
 		newKeyID = id
 	default:
-		return nil, fmt.Errorf("invalid key type")
+		return nil, fmt.Errorf("invalid AuthenticatorType")
 	}
 
 	return &PublicKey{
-		KeyType: keyType,
-		KeyData: keyData,
-		ID:      newKeyID,
+		AuthenticatorType: authenticatorType,
+		KeyData:           keyData,
+		ID:                newKeyID,
 	}, nil
 }
 
