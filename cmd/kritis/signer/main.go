@@ -48,8 +48,8 @@ var (
 	attestationProject string
 	noteName           string
 	// pgp key flags
-	pgpPriKeyPath      string
-	pgpPassphrase      string
+	pgpPriKeyPath string
+	pgpPassphrase string
 	// kms flags
 	kmsKeyName   string
 	kmsDigestAlg string
