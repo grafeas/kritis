@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/vulnzsigningpolicy"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata/containeranalysis"
 	"github.com/grafeas/kritis/pkg/kritis/signer"
 	"github.com/grafeas/kritis/pkg/kritis/util"
@@ -151,7 +151,7 @@ func main() {
 		if kmsKeyName == "" && pgpPriKeyPath == "" {
 			glog.Fatalf("Neither kms_key_name or private_key is specified")
 		}
-		var cSigner cryptolib.Signer
+		var cSigner attestlib.Signer
 		if kmsKeyName != "" {
 			glog.Infof("Using kms key %s for signing.", kmsKeyName)
 			if kmsDigestAlg == "" {
@@ -172,7 +172,7 @@ func main() {
 				glog.Fatalf("Fail to read signer key: %v\n", err)
 			}
 			// Create a cryptolib signer
-			cSigner, err = cryptolib.NewPgpSigner(signerKey)
+			cSigner, err = attestlib.NewPgpSigner(signerKey)
 			if err != nil {
 				glog.Fatalf("Creating pgp signer failed: %v\n", err)
 			}

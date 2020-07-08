@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/discovery"
 
 	"google.golang.org/grpc/credentials"
@@ -137,13 +137,13 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 }
 
 // Attestations gets Attestations for a specified image and a specified AttestationAuthority.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error) {
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
 
-	atts := []cryptolib.Attestation{}
+	atts := []attestlib.Attestation{}
 	for _, occ := range occs {
 		att, err := metadata.GetAttestationsFromOccurrence(occ)
 		if err != nil {
@@ -204,7 +204,7 @@ func (c Client) CreateAttestationOccurrence(noteName string, containerImage stri
 }
 
 // UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
-func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *cryptolib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
 	// Create occurrence from attestation
 	occ, err := metadata.CreateOccurrenceFromAttestation(att, containerImage, noteName, sType)
 	if err != nil {

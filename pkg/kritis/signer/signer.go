@@ -18,10 +18,10 @@ package signer
 
 import (
 	"github.com/golang/glog"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
 	"github.com/grafeas/kritis/pkg/kritis/crd/authority"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/util"
 
@@ -36,7 +36,7 @@ type Signer struct {
 
 // A signer config that includes necessary data and handler for signing.
 type config struct {
-	cSigner cryptolib.Signer
+	cSigner attestlib.Signer
 	// an AttestaionAuthority that is used in metadata client APIs.
 	// We should consider refactor it out because:
 	// 1. the only useful field here is noteName
@@ -47,7 +47,7 @@ type config struct {
 }
 
 // Creating a new signer object.
-func New(client metadata.ReadWriteClient, cSigner cryptolib.Signer, noteName string, project string) Signer {
+func New(client metadata.ReadWriteClient, cSigner attestlib.Signer, noteName string, project string) Signer {
 	return Signer{
 		client: client,
 		config: &config{
@@ -102,7 +102,7 @@ func (s Signer) SignImage(image string) error {
 }
 
 // Creating an atestation.
-func (s Signer) createAttestation(image string) (*cryptolib.Attestation, error) {
+func (s Signer) createAttestation(image string) (*attestlib.Attestation, error) {
 	payload, err := attestation.AtomicContainerPayload(image)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (s Signer) createAttestation(image string) (*cryptolib.Attestation, error) 
 // Uploading an attestation if not already exist under the same note.
 // The method will create a note if it does not already exist.
 // Returns error if upload failed, e.g., if an attestation already exists.
-func (s Signer) uploadAttestation(image string, att *cryptolib.Attestation) error {
+func (s Signer) uploadAttestation(image string, att *attestlib.Attestation) error {
 	note, err := util.GetOrCreateAttestationNote(s.client, &s.config.authority)
 	if err != nil {
 		return err
