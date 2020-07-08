@@ -44,22 +44,28 @@ var (
 	mode               string
 	image              string
 	vulnzTimeout       string
-	priKeyPath         string
-	passphrase         string
 	policyPath         string
 	attestationProject string
 	noteName           string
+	// pgp key flags
+	pgpPriKeyPath string
+	pgpPassphrase string
+	// kms flags
+	kmsKeyName   string
+	kmsDigestAlg string
 )
 
 func init() {
 	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
 	flag.StringVar(&vulnzTimeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
-	flag.StringVar(&priKeyPath, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
-	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
+	flag.StringVar(&pgpPriKeyPath, "pgp_private_key", "", "pgp private signing key path, e.g., /dev/shm/key.pgp")
+	flag.StringVar(&pgpPassphrase, "pgp_passphrase", "", "passphrase for pgp private key, if any")
 	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&noteName, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
 	flag.StringVar(&attestationProject, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
+	flag.StringVar(&kmsKeyName, "kms_key_name", "", "kms key name, in the format of in the format projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*")
+	flag.StringVar(&kmsDigestAlg, "kms_digest_alg", "", "kms digest algorithm, must be one of SHA256|SHA384|SHA512, and the same as specified by the key version's algorithm")
 }
 
 func main() {
@@ -140,19 +146,36 @@ func main() {
 	}
 
 	if doSign {
-		// TODO: support passphrase to private key (consider add support in attestlib)
-		if passphrase != "" {
-			glog.Fatalf("Passphrase is not yet supported.\n")
-		}
 		// Read the signing credentials
-		signerKey, err := ioutil.ReadFile(priKeyPath)
-		if err != nil {
-			glog.Fatalf("Fail to read signer key: %v", err)
+		// Either kmsKeyName or pgpPriKeyPath needs to be set
+		if kmsKeyName == "" && pgpPriKeyPath == "" {
+			glog.Fatalf("Neither kms_key_name or private_key is specified")
 		}
-		// Create an attestlib signer
-		cSigner, err := attestlib.NewPgpSigner(signerKey)
-		if err != nil {
-			glog.Fatalf("Creating crypto signer failed: %v\n", err)
+		var cSigner attestlib.Signer
+		if kmsKeyName != "" {
+			glog.Infof("Using kms key %s for signing.", kmsKeyName)
+			if kmsDigestAlg == "" {
+				glog.Fatalf("kms_digest_alg is unspecified, must be one of SHA256|SHA384|SHA512, and the same as specified by the key version's algorithm")
+			}
+			cSigner, err = signer.NewCloudKmsSigner(kmsKeyName, signer.DigestAlgorithm(kmsDigestAlg))
+			if err != nil {
+				glog.Fatalf("Creating kms signer failed: %v\n", err)
+			}
+		} else {
+			glog.Infof("Using pgp key for signing.")
+			// TODO: support Passphrase to private key (consider add support in cryptolib)
+			if pgpPassphrase != "" {
+				glog.Fatalf("PGP Passphrase is not yet supported.\n")
+			}
+			signerKey, err := ioutil.ReadFile(pgpPriKeyPath)
+			if err != nil {
+				glog.Fatalf("Fail to read signer key: %v\n", err)
+			}
+			// Create a cryptolib signer
+			cSigner, err = attestlib.NewPgpSigner(signerKey)
+			if err != nil {
+				glog.Fatalf("Creating pgp signer failed: %v\n", err)
+			}
 		}
 
 		// Check note name
@@ -172,6 +195,9 @@ func main() {
 		// Create signer
 		r := signer.New(client, cSigner, noteName, attestationProject)
 		// Sign image
-		r.SignImage(image)
+		err := r.SignImage(image)
+		if err != nil {
+			glog.Fatalf("Signing image failed %v", err)
+		}
 	}
 }

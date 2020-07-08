@@ -28,12 +28,12 @@ import (
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
-type DigestAlgorithm int
+type DigestAlgorithm string
 
 const (
-	SHA256 = iota
-	SHA384
-	SHA512
+	SHA256 DigestAlgorithm = "SHA256"
+	SHA384 DigestAlgorithm = "SHA384"
+	SHA512 DigestAlgorithm = "SHA512"
 )
 
 type kmsSigner struct {
