@@ -94,7 +94,7 @@ set +ex
 # run tests
 tmp_file=$(mktemp /tmp/file.XXX)
 for script in ./tests/*.sh; do
-   bash $script > ${script}.out 2>&1 &
+   bash $script > ${script}.out 2>&1
    PID="$!"
    echo "$PID:$script" >> $tmp_file
    PID_LIST+="$PID "
