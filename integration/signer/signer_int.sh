@@ -20,6 +20,13 @@ set -ex
 # set note id
 NOTE_ID=kritis-attestor-note
 export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
+export KMS_KEYRING=signer-int-test-keyring
+export KMS_KEYNAME=signer-int-test-asymmetric-sign-key
+export KMS_KEYLOCATION=global
+export KMS_KEYVERSION=1
+export KMS_PROJECT=$PROJECT_ID
+export KMS_DIGESTALG=SHA512
+export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
 
 # create policy.yaml
 cp policy_template.yaml policy.yaml
@@ -97,3 +104,6 @@ export -f delete_occ
 
 #### TEST 5: check-only mode, bad case ####
 ./tests/test-check-only-bad.sh
+
+#### TEST 6: bypass-and-sign mode, with kms ####
+./tests/test-bypass-and-sign-with-kms.sh
