@@ -119,6 +119,6 @@ for log in ./tests/*.out; do
    cat $log
 done
 
-printf $SUMMARY
+echo -e $SUMMARY
 
 exit $RESULT
