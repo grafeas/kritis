@@ -90,6 +90,7 @@ export -f urlencode
 export -f delete_image
 export -f delete_occ
 
+set +ex
 # run tests
 tmp_file=$(mktemp /tmp/file.XXX)
 for script in ./tests/*.sh; do
@@ -100,7 +101,6 @@ for script in ./tests/*.sh; do
 done
 
 # process test results
-set +e
 RESULT=0
 SUMMARY=""
 for PID in ${PID_LIST[@]};do
@@ -113,8 +113,6 @@ for PID in ${PID_LIST[@]};do
    else
      SUMMARY+="$script_name succeeded.\n"
    fi
-
-
 done
 
 for log in ./tests/*.out; do
