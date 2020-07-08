@@ -92,7 +92,7 @@ export -f delete_occ
 
 # run tests
 tmp_file=$(mktemp /tmp/file.XXX)
-for script in ./tests/*; do
+for script in ./tests/*.sh; do
    bash $script > ${script}.out 2>&1 &
    PID="$!"
    echo "$PID:$script" >> $tmp_file
@@ -100,7 +100,7 @@ for script in ./tests/*; do
 done
 
 # process test results
-set +ex
+set +e
 RESULT=0
 SUMMARY=""
 for PID in ${PID_LIST[@]};do
@@ -113,8 +113,8 @@ for PID in ${PID_LIST[@]};do
    SUMMARY+="$script_name exit status: $exit_status\n"
 done
 
-for script in ./tests/*; do
-   cat ${script}.out
+for log in ./tests/*.out; do
+   cat $log
 done
 
 echo $SUMMARY
