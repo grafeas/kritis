@@ -125,7 +125,7 @@ func (s Signer) uploadAttestation(image string, att *cryptolib.Attestation) erro
 	}
 
 	// Upload attestation
-	_, err = s.client.UploadAttestationOccurrence(note.GetName(), image, att, s.config.project, metadata.PgpSignatureType)
+	_, err = s.client.UploadAttestationOccurrence(note.GetName(), image, att, s.config.project, metadata.GenericSignatureType)
 	return err
 }
 
