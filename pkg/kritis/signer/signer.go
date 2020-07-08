@@ -84,17 +84,20 @@ func (s Signer) SignImage(image string) error {
 		return nil
 	}
 
-	glog.Infof("Creating attestations for image %q.", image)
+	glog.Infof("Creating attestation for image %q.", image)
 	// Create attestation
 	att, err := s.createAttestation(image)
 	if err != nil {
 		return err
 	}
+	glog.Infof("Attestation for image %q is successfully created locally.", image)
 
-	glog.Infof("Uploading attestations for image %q.", image)
+	glog.Infof("Uploading attestation for image %q.", image)
 	if err := s.uploadAttestation(image, att); err != nil {
 		return err
 	}
+	glog.Infof("Attestation for image %q is successfully uploaded.", image)
+
 	return nil
 }
 
