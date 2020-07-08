@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 // SignatureAlgorithm specifies the algorithm and hashing functions used to
 // sign PKIX and JWT Attestations.
