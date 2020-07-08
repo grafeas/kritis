@@ -52,13 +52,14 @@ var (
 )
 
 func init() {
+	flag.StringVar(&mode, "mode", "check-and-sign", "mode of operation, check-and-sign|check-only|bypass-and-sign")
 	flag.StringVar(&image, "image", "", "image url, e.g., gcr.io/foo/bar@sha256:abcd")
-	flag.StringVar(&vulnzTimeout, "vulnzTimeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
+	flag.StringVar(&vulnzTimeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&priKeyPath, "private_key", "", "signer private key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&passphrase, "passphrase", "", "passphrase for private key, if any")
 	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
-	flag.StringVar(&noteName, "noteName", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
-	flag.StringVar(&attestationProject, "attestationProject", "", "project id for GCP project that stores attestation, default to image project if unspecified")
+	flag.StringVar(&noteName, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
+	flag.StringVar(&attestationProject, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
 }
 
 func main() {
