@@ -20,7 +20,7 @@ echo ""
 set -eux
 
 # build a "good" example image
-GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
+GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:${BUILD_ID}-test-check-and-sign-good
 docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 
 trap 'delete_image $GOOD_IMAGE_URL'  EXIT

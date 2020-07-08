@@ -20,7 +20,7 @@ echo ""
 set -eux
 
 # build a "bad" example image
-BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID
+BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:${BUILD_ID}-test-check-and-sign-bad
 docker build --no-cache -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
 
 trap 'delete_image $BAD_IMAGE_URL'  EXIT
