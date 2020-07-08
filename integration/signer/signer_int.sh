@@ -106,11 +106,15 @@ SUMMARY=""
 for PID in ${PID_LIST[@]};do
    wait $PID
    exit_status=$?
+   script_name=`egrep $PID $tmp_file | awk -F ":" '{print $2}'`
    if [ $exit_status -ne 0 ] ; then
+     SUMMARY+="$script_name failed.\n"
      RESULT=1
+   else
+     SUMMARY+="$script_name succeeded.\n"
    fi
-   script_name=`egrep PID $tmp_file | awk -F ":" '{print $2}'`
-   SUMMARY+="$script_name exit status: $exit_status\n"
+
+
 done
 
 for log in ./tests/*.out; do
