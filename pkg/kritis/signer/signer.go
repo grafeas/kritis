@@ -44,10 +44,11 @@ type config struct {
 	// TODO: refactor out the authority code
 	authority v1beta1.AttestationAuthority
 	project   string
+	overwrite bool
 }
 
 // Creating a new signer object.
-func New(client metadata.ReadWriteClient, cSigner attestlib.Signer, noteName string, project string) Signer {
+func New(client metadata.ReadWriteClient, cSigner attestlib.Signer, noteName string, project string, overwrite bool) Signer {
 	return Signer{
 		client: client,
 		config: &config{
@@ -60,6 +61,7 @@ func New(client metadata.ReadWriteClient, cSigner attestlib.Signer, noteName str
 				},
 			},
 			project,
+			overwrite,
 		},
 	}
 }
@@ -80,8 +82,16 @@ var (
 func (s Signer) SignImage(image string) error {
 	existed, _ := s.isAttestationAlreadyExist(image)
 	if existed {
-		glog.Warningf("Attestation for image %q has already been created.", image)
-		return nil
+		if s.config.overwrite {
+			glog.Infof("Deleting existing attestation for image %q because signer.config.overwrite=True.", image)
+			err := s.client.DeleteAttestationOccurrence(image, &s.config.authority)
+			if err != nil {
+				return err
+			}
+		} else {
+			glog.Warningf("Attestation for image %q already existed and signer is configured not to overwrite.", image)
+			return nil
+		}
 	}
 
 	glog.Infof("Creating attestation for image %q.", image)

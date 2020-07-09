@@ -107,3 +107,6 @@ export -f delete_occ
 
 #### TEST 6: bypass-and-sign mode, with kms ####
 ./tests/test-bypass-and-sign-with-kms.sh
+
+#### TEST 7: bypass-and-sign mode, overwrite ####
+./tests/test-overwrite.sh

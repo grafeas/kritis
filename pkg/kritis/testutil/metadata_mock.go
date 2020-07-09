@@ -110,6 +110,13 @@ func (m *MockMetadataClient) WaitForVulnzAnalysis(containerImage string, timeout
 	return nil
 }
 
+func (m *MockMetadataClient) DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error {
+	if m.Err != nil {
+		return m.Err
+	}
+	return nil
+}
+
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{

@@ -110,3 +110,8 @@ func (c Cache) UploadAttestationOccurrence(noteName string, containerImage strin
 func (c Cache) WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error {
 	return c.client.WaitForVulnzAnalysis(containerImage, timeout)
 }
+
+// Delete an attestation by image and attestation authority.
+func (c Cache) DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error {
+	return c.client.DeleteAttestationOccurrence(containerImage, aa)
+}
