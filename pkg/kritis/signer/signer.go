@@ -97,6 +97,8 @@ func (s Signer) SignImage(image string) error {
 			glog.Warningf("Attestation for image %q already existed and signer is configured not to overwrite.", image)
 			return nil
 		}
+	} else {
+		glog.Infof("No existing attestation was created for image %q.", image)
 	}
 
 	glog.Infof("Creating attestation for image %q.", image)
