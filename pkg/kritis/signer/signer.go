@@ -17,6 +17,8 @@ limitations under the License.
 package signer
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/attestlib"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -80,13 +82,16 @@ var (
 // SignImage signs an image without doing any policy check.
 // Returns an error if creating an attestation fails.
 func (s Signer) SignImage(image string) error {
-	existed, _ := s.isAttestationAlreadyExist(image)
+	existed, err := s.isAttestationAlreadyExist(image)
+	if err != nil {
+		return fmt.Errorf("checking existing attestation status failed: %v", err)
+	}
 	if existed {
 		if s.config.overwrite {
 			glog.Infof("Deleting existing attestation for image %q because signer.config.overwrite=True.", image)
 			err := s.client.DeleteAttestationOccurrence(image, &s.config.authority)
 			if err != nil {
-				return err
+				return fmt.Errorf("deleting existing attestation failed: %v", err)
 			}
 		} else {
 			glog.Warningf("Attestation for image %q already existed and signer is configured not to overwrite.", image)
@@ -98,13 +103,13 @@ func (s Signer) SignImage(image string) error {
 	// Create attestation
 	att, err := s.createAttestation(image)
 	if err != nil {
-		return err
+		return fmt.Errorf("creatiing attestation failed: %v", err)
 	}
 	glog.Infof("Attestation for image %q is successfully created locally.", image)
 
 	glog.Infof("Uploading attestation for image %q.", image)
 	if err := s.uploadAttestation(image, att); err != nil {
-		return err
+		return fmt.Errorf("uploading attestation failed: %v", err)
 	}
 	glog.Infof("Attestation for image %q is successfully uploaded.", image)
 
