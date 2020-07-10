@@ -40,5 +40,8 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
+# deploy to a binauthz-enabled cluster signer-int-test
+kubectl run --generator=run-pod/v1 --image=${GOOD_IMG_DIGEST_URL} good-image
+
 echo ""
 echo ""
