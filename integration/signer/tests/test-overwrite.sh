@@ -40,6 +40,8 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
+sleep 5
+
 # sign good image in bypass mode
 ./signer -v 10 \
 -alsologtostderr \
