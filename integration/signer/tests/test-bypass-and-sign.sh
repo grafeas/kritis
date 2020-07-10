@@ -41,6 +41,8 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test
+gcloud config set compute/zone us-central1-c
+gcloud container clusters ^Ct-credentials signer-int-test
 kubectl run --generator=run-pod/v1 --image=${GOOD_IMG_DIGEST_URL} good-image
 
 echo ""
