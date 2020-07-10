@@ -98,7 +98,7 @@ func (s Signer) SignImage(image string) error {
 			return nil
 		}
 	} else {
-		glog.Infof("No existing attestation was created for image %q.", image)
+		glog.Infof("No existing attestation was found for image %q.", image)
 	}
 
 	glog.Infof("Creating attestation for image %q.", image)
