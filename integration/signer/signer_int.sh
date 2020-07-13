@@ -50,17 +50,14 @@ urlencode() {
 }
 
 delete_image() {
-    ARG=$?
     set +ex
     IMG_TO_DELETE=$1
     echo "Delete image if uploaded."
     gcloud container images delete $IMG_TO_DELETE --force-delete-tags \
       --quiet
-    exit $ARG
 }
 
 delete_occ() {
-    ARG=$?
     set +ex
     IMG_DIGEST_URL_TO_DELETE=$1
     echo "Delete occurrence if created."
@@ -83,7 +80,6 @@ delete_occ() {
         done
       fi
     fi
-    exit $ARG
 }
 
 deploy_image() {
@@ -95,11 +91,9 @@ deploy_image() {
 }
 
 delete_pod() {
-  ARG=$?
   set +ex
   POD_NAME=$1
   kubectl delete pod $POD_NAME
-  exit $ARG
 }
 
 export -f urlencode
