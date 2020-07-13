@@ -86,9 +86,27 @@ delete_occ() {
     exit $ARG
 }
 
+func deploy_image() {
+  IMAGE_URL=$1
+  POD_NAME=$2
+  gcloud config set compute/zone us-central1-c
+  gcloud container clusters get-credentials signer-int-test
+  kubectl run --generator=run-pod/v1 --image=$IMAGE_URL $POD_NAME --command ls
+}
+
+func delete_pod() {
+  ARG=$?
+  set +ex
+  POD_NAME=$1
+  kubectl delete pod $POD_NAME
+  exit $ARG
+}
+
 export -f urlencode
 export -f delete_image
 export -f delete_occ
+export -f deploy_image
+export -f delete_pod
 
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
