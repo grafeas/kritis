@@ -86,7 +86,7 @@ delete_occ() {
     exit $ARG
 }
 
-func deploy_image() {
+deploy_image() {
   IMAGE_URL=$1
   POD_NAME=$2
   gcloud config set compute/zone us-central1-c
@@ -94,7 +94,7 @@ func deploy_image() {
   kubectl run --generator=run-pod/v1 --image=$IMAGE_URL $POD_NAME --command ls
 }
 
-func delete_pod() {
+delete_pod() {
   ARG=$?
   set +ex
   POD_NAME=$1
