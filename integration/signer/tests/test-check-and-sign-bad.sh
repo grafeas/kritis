@@ -30,7 +30,7 @@ docker push $BAD_IMAGE_URL
 # get image url with digest format
 BAD_IMG_DIGEST_URL=$(docker image inspect $BAD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
-trap 'delete_occ $BAD_IMG_DIGEST_URL'  EXIT
+trap 'delete_image $BAD_IMAGE_URL' 'delete_occ $BAD_IMG_DIGEST_URL'  EXIT
 
 signing_bad_image_failed=false
 ./signer -v 10 \

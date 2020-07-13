@@ -30,7 +30,7 @@ docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
-trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
+trap 'delete_image $GOOD_IMAGE_URL' 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 
 # sign good image
 ./signer -v 10 \
@@ -39,6 +39,10 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -pgp_private_key=private.key \
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
+
+# deploy to a binauthz-enabled cluster signer-int-test
+trap 'delete_image $GOOD_IMAGE_URL' 'delete_occ $GOOD_IMG_DIGEST_URL' 'delete_pod signer-int-test-pod'  EXIT
+deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
 echo ""
 echo ""
