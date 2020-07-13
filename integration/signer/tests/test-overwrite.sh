@@ -42,6 +42,9 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 
 sleep 5
 
+# save occ id
+OLD_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
+
 # sign good image in bypass mode
 ./signer -v 10 \
 -alsologtostderr \
@@ -51,6 +54,16 @@ sleep 5
 -policy=policy.yaml \
 -note_name=${NOTE_NAME} \
 -overwrite
+
+# check the current occ id is not same as old id
+NEW_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
+
+if [ "$OLD_OCC_ID" == "$NEW_OCC_ID" ]; then
+    echo "Attestation is not overwritten as expected"
+    exit 1
+else
+    echo "Attestation is overwritten as expected"
+fi
 
 echo ""
 echo ""
