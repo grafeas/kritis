@@ -86,19 +86,19 @@ func (s Signer) SignImage(image string) error {
 	if err != nil {
 		return fmt.Errorf("checking existing attestation status failed: %v", err)
 	}
-	if existed {
-		if s.config.overwrite {
+	if !existed {
+		glog.Infof("No existing attestation was found for image %q.", image)
+	}
+	if existed && !s.config.overwrite {
+		glog.Warningf("Attestation for image %q already existed and signer is configured not to overwrite.", image)
+		return nil
+	}
+	if existed && s.config.overwrite {
 			glog.Infof("Deleting existing attestation for image %q because signer.config.overwrite=True.", image)
 			err := s.client.DeleteAttestationOccurrence(image, &s.config.authority)
 			if err != nil {
 				return fmt.Errorf("deleting existing attestation failed: %v", err)
 			}
-		} else {
-			glog.Warningf("Attestation for image %q already existed and signer is configured not to overwrite.", image)
-			return nil
-		}
-	} else {
-		glog.Infof("No existing attestation was found for image %q.", image)
 	}
 
 	glog.Infof("Creating attestation for image %q.", image)
