@@ -24,14 +24,14 @@ docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 
 trap 'delete_image $GOOD_IMAGE_URL'  EXIT
 
-# push good image
+# push image
 docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
 trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 
-# sign good image in bypass mode with kms
+# sign image in bypass mode with kms
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \

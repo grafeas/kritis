@@ -46,6 +46,7 @@ var (
 	vulnzTimeout       string
 	policyPath         string
 	attestationProject string
+	overwrite          bool
 	noteName           string
 	// pgp key flags
 	pgpPriKeyPath string
@@ -64,6 +65,7 @@ func init() {
 	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&noteName, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
 	flag.StringVar(&attestationProject, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
+	flag.BoolVar(&overwrite, "overwrite", false, "overwrite attestation if already existed, default to false")
 	flag.StringVar(&kmsKeyName, "kms_key_name", "", "kms key name, in the format of in the format projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*")
 	flag.StringVar(&kmsDigestAlg, "kms_digest_alg", "", "kms digest algorithm, must be one of SHA256|SHA384|SHA512, and the same as specified by the key version's algorithm")
 }
@@ -193,7 +195,7 @@ func main() {
 		}
 
 		// Create signer
-		r := signer.New(client, cSigner, noteName, attestationProject)
+		r := signer.New(client, cSigner, noteName, attestationProject, overwrite)
 		// Sign image
 		err := r.SignImage(image)
 		if err != nil {

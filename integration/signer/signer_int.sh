@@ -59,28 +59,38 @@ delete_image() {
     exit $ARG
 }
 
+get_occ() {
+  IMG_URL_TO_FETCH_OCC=$1
+  ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
+  ENCODED_RESOURCE_URL=$(urlencode https://$IMG_URL_TO_FETCH_OCC)
+  OCC_NAME=""
+  _OCCURRENCES_TO_CLEANUP=$(curl -X GET \
+         -H "Content-Type: application/json" \
+         -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
+         https://containeranalysis.googleapis.com/v1/projects/${PROJECT_ID}/occurrences?filter=kind%3D%22ATTESTATION%22%20AND%20resourceUrl%3D%22${ENCODED_RESOURCE_URL}%22)
+  if [ "$(echo ${_OCCURRENCES_TO_CLEANUP} | jq length)" -gt 0 ]; then
+    _OCC_NAMES=$(echo ${_OCCURRENCES_TO_CLEANUP} | jq '.occurrences | .[] | .name' | tr -d '"')
+    OCC_NAME=${_OCC_NAMES[0]}
+  fi
+
+  echo $OCC_NAME
+}
+
 delete_occ() {
     ARG=$?
     set +ex
     IMG_DIGEST_URL_TO_DELETE=$1
-    echo "Delete occurrence if created."
     if [ -n "$IMG_DIGEST_URL_TO_DELETE" ]; then
+      OCC_NAME = $(get_occ $IMG_DIGEST_URL_TO_DELETE)
+      echo "Delete occurrence if created."
+      if [ -n "$OCC_NAME" ]; then
           ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
-          ENCODED_RESOURCE_URL=$(urlencode https://$IMG_DIGEST_URL_TO_DELETE)
-          _OCCURRENCES_TO_CLEANUP=$(curl -X GET \
-                 -H "Content-Type: application/json" \
-                 -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
-                 https://containeranalysis.googleapis.com/v1/projects/${PROJECT_ID}/occurrences?filter=kind%3D%22ATTESTATION%22%20AND%20resourceUrl%3D%22${ENCODED_RESOURCE_URL}%22)
-      if [ "$(echo ${_OCCURRENCES_TO_CLEANUP} | jq length)" -gt 0 ]; then
-        _OCC_NAMES=$(echo ${_OCCURRENCES_TO_CLEANUP} | jq '.occurrences | .[] | .name' | tr -d '"')
-        for _OCC_NAME in ${_OCC_NAMES}; do
-          echo "Delete occurrence ${_OCC_NAME}."
+          echo "Delete occurrence ${OCC_NAME}."
           curl -X DELETE \
               -H "Content-Type: application/json" \
               -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
               -H "x-goog-user-project: ${PROJECT_ID}" \
-              "https://containeranalysis.googleapis.com/v1/${_OCC_NAME}"
-        done
+              "https://containeranalysis.googleapis.com/v1/${OCC_NAME}"
       fi
     fi
     exit $ARG
@@ -89,6 +99,7 @@ delete_occ() {
 export -f urlencode
 export -f delete_image
 export -f delete_occ
+export -f get_occ
 
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
@@ -107,3 +118,6 @@ export -f delete_occ
 
 #### TEST 6: bypass-and-sign mode, with kms ####
 ./tests/test-bypass-and-sign-with-kms.sh
+
+#### TEST 7: bypass-and-sign mode, overwrite ####
+./tests/test-overwrite.sh

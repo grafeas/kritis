@@ -63,6 +63,8 @@ type ReadWriteClient interface {
 	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error)
 	// Wait vulnerability analysis for an image to finish, or times out.
 	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
+	// Delete an attestation by image and attestation authority.
+	DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error
 	// Close closes client connections
 	Close()
 }
