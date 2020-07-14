@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 
 	"google.golang.org/api/option"
 
@@ -105,13 +105,13 @@ func (c Client) Vulnerabilities(containerImage string) ([]metadata.Vulnerability
 // For GenericAttestationPolicy, this has little impact as it's expected that attestations will be created before a pod admission request is sent.
 // For ImageSecurityPolicy, which effectively caches the previous policy decision in an attestation, the policy will be re-evaluated if an attestation occurrence has not yet been retrieved.
 // In most cases, it's expected that ImageSecurityPolicy will return the same decision, as vulnerability scannig process takes longer than a few seconds to run and update metadata.
-func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
+func (c Client) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error) {
 	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
 	if err != nil {
 		return nil, err
 	}
 
-	atts := []cryptolib.Attestation{}
+	atts := []attestlib.Attestation{}
 	for _, occ := range occs {
 		att, err := metadata.GetAttestationsFromOccurrence(occ)
 		if err != nil {
@@ -231,41 +231,33 @@ func (c Client) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafea
 
 // CreateAttestationOccurrence creates an Attestation occurrence for a given image and secret.
 func (c Client) CreateAttestationOccurrence(noteName string, containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeas.Occurrence, error) {
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
-	}
-
 	// Create Attestation Signature
 	att, err := util.CreateAttestation(containerImage, pgpSigningKey)
 	if err != nil {
 		return nil, err
 	}
-	pgpSignedAttestation := &attestation.PgpSignedAttestation{
-		Signature: string(att.Signature),
-		KeyId: &attestation.PgpSignedAttestation_PgpKeyId{
-			PgpKeyId: att.PublicKeyID,
-		},
-		ContentType: attestation.PgpSignedAttestation_SIMPLE_SIGNING_JSON,
+	// Upload attestation
+	return c.UploadAttestationOccurrence(noteName, containerImage, att, proj, metadata.PgpSignatureType)
+}
+
+// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
+func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+	if !isValidImageOnGCR(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
 	}
 
-	attestationDetails := &grafeas.Occurrence_Attestation{
-		Attestation: &attestation.Details{
-			Attestation: &attestation.Attestation{
-				Signature: &attestation.Attestation_PgpSignedAttestation{
-					PgpSignedAttestation: pgpSignedAttestation,
-				}},
-		},
+	// Create occurrence from attestation
+	occ, err := metadata.CreateOccurrenceFromAttestation(att, containerImage, noteName, sType)
+	if err != nil {
+		return nil, fmt.Errorf("creating occurrence failed: %v", err)
 	}
-	occ := &grafeas.Occurrence{
-		Resource: util.GetResource(containerImage),
-		NoteName: noteName,
-		Details:  attestationDetails,
-	}
-	// Create the AttestationAuthrity Occurrence.
+
+	// Create CreateOccurrenceRequest
 	req := &grafeas.CreateOccurrenceRequest{
 		Occurrence: occ,
 		Parent:     fmt.Sprintf("projects/%s", proj),
 	}
+
 	// Call create Occurrence Api
 	return c.client.CreateOccurrence(c.ctx, req)
 }
@@ -305,6 +297,8 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 
 	// Backoff time between tries, exponentially grows after each failure.
 	nextTryWait := 1
+	// Track time
+	start := time.Now()
 	// Timeout clock.
 	timeoutTimer := time.NewTimer(timeout)
 	defer timeoutTimer.Stop()
@@ -345,6 +339,8 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			}
 			switch updated.GetDiscovered().GetDiscovered().GetAnalysisStatus() {
 			case discovery.Discovered_FINISHED_SUCCESS:
+				elapsed := time.Since(start)
+				glog.Infof("Found vulnerabilities after %s", elapsed)
 				return nil
 			case discovery.Discovered_FINISHED_FAILED:
 				return fmt.Errorf("container analysis has finished unsuccessfully")
@@ -361,4 +357,24 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			nextTryWait = nextTryWait * 2
 		}
 	}
+}
+
+// Delete an attestation by image and attestation authority.
+func (c Client) DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error {
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
+	if err != nil {
+		return err
+	}
+	if len(occs) == 0 {
+		return fmt.Errorf("no attestation is found for image %s with note %s", containerImage, aa.Spec.NoteReference)
+	} else if len(occs) > 1 {
+		return fmt.Errorf("more than one attestation are found for image %s with note %s", containerImage, aa.Spec.NoteReference)
+	}
+
+	occName := occs[0].Name
+	req := &grafeas.DeleteOccurrenceRequest{
+		Name: occName,
+	}
+	glog.Infof("executed deletion of occurrence=%s", occName)
+	return c.client.DeleteOccurrence(c.ctx, req)
 }

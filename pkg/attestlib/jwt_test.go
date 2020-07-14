@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ const jwtWithInvalidHeaderTYP = "eyAgImFsZyI6ICJFUzI1NiIsICJ0eXAiOiAiQkFEVFlQRSI
 const jwtWithCrit = "eyJhbGciOiJFUzI1NiIsICJ0eXAiOiJKV1QiLCAia2lkIjoibXktc2lnbmluZy1rZXkiLCAiY3JpdCI6ICJsaXN0LW9mLWZpZWxkcyJ9Cg.eyAic3ViIjogImNvbnRhaW5lcjpkaWdlc3Q6c2hhMjU2OmZha2UtZGlnZXN0IiwgImF1ZCI6ICIvL2JpbmFyeWF1dGhvcml6YXRpb24uZ29vZ2xlYXBpcy5jb20iLCAiYXR0ZXN0YXRpb25UeXBlIjogIlRCRCIsICJhdHRlc3RhdGlvbiI6ICIiIH0K.someisgnature"
 
 var goodPubKey = PublicKey{
-	KeyType:            Jwt,
+	AuthenticatorType:  Jwt,
 	SignatureAlgorithm: EcdsaP256Sha256,
 	ID:                 "my-signing-key",
 	KeyData:            []byte("some-key"),
@@ -49,10 +49,10 @@ func TestVerifyJWT(t *testing.T) {
 			pubkey:        goodPubKey,
 			expectedError: true,
 		}, {
-			name: "PublicKey KeyType does not match ALG in JWT header",
+			name: "PublicKey AuthenticatorType does not match ALG in JWT header",
 			jwt:  []byte(goodJwt),
 			pubkey: PublicKey{
-				KeyType:            Jwt,
+				AuthenticatorType:  Jwt,
 				SignatureAlgorithm: RsaSignPkcs14096Sha256,
 				ID:                 "my-signing-key",
 				KeyData:            []byte("some-key"),
@@ -62,7 +62,7 @@ func TestVerifyJWT(t *testing.T) {
 			name: "PublicKey ID does not match KID in JWT header",
 			jwt:  []byte(goodJwt),
 			pubkey: PublicKey{
-				KeyType:            Jwt,
+				AuthenticatorType:  Jwt,
 				SignatureAlgorithm: EcdsaP256Sha256,
 				ID:                 "some-key-id",
 				KeyData:            []byte("some-key"),

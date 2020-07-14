@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -165,7 +165,7 @@ func TestValidatingTransport(t *testing.T) {
 		name          string
 		auth          v1beta1.AttestationAuthority
 		wantAtts      []attestation.ValidatedAttestation
-		attestations  []cryptolib.Attestation
+		attestations  []attestlib.Attestation
 		errorExpected bool
 		attError      error
 	}{
@@ -174,7 +174,7 @@ func TestValidatingTransport(t *testing.T) {
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []cryptolib.Attestation{
+		}, attestations: []attestlib.Attestation{
 			*att1,
 			{
 				PublicKeyID: successFpr,
@@ -186,7 +186,7 @@ func TestValidatingTransport(t *testing.T) {
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []cryptolib.Attestation{
+		}, attestations: []attestlib.Attestation{
 			*att1,
 			{
 				PublicKeyID: successFpr,
@@ -198,50 +198,50 @@ func TestValidatingTransport(t *testing.T) {
 				AttestorName: "test-attestor",
 				Image:        testutil.QualifiedImage,
 			},
-		}, attestations: []cryptolib.Attestation{
+		}, attestations: []attestlib.Attestation{
 			*att1,
 			{
 				PublicKeyID: successFpr,
 				Signature:   []byte("invalid-sig"),
 			},
 		}, errorExpected: false, attError: nil},
-		{name: "no valid sig", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
+		{name: "no valid sig", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []attestlib.Attestation{
 			{
 				PublicKeyID: successFpr,
 				Signature:   []byte("invalid-sig"),
 			},
 		}, errorExpected: false, attError: nil},
-		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{
+		{name: "invalid secret", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []attestlib.Attestation{
 			{
 				PublicKeyID: "invalid-fpr",
 				Signature:   []byte("invalid-sig"),
 			},
 		}, errorExpected: false, attError: nil},
-		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []cryptolib.Attestation{*att2},
+		{name: "valid sig over another host", auth: validAuthWithOneGoodPgpKey, wantAtts: []attestation.ValidatedAttestation{}, attestations: []attestlib.Attestation{*att2},
 			errorExpected: false, attError: nil},
 		{name: "attestation fetch error", auth: validAuthWithOneGoodPgpKey, wantAtts: nil, attestations: nil, errorExpected: true, attError: errors.New("can't fetch attestations")},
-		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+		{name: "auth with invalid PGP key", auth: invalidAuthWithOneBadPgpKey, wantAtts: nil, attestations: []attestlib.Attestation{*att1},
 			errorExpected: true, attError: nil},
 		// TODO(acamadeo): After PKIX key verification implementation, the
 		// `wantAtts` field for this test case should be a list of
 		// ValidatedAttestations and `errorExpected` should  be false.
-		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{
+		{name: "auth with valid PKIX key", auth: validAuthWithOneGoodPkixKey, wantAtts: nil, attestations: []attestlib.Attestation{
 			{
 				PublicKeyID:       "",
 				Signature:         []byte(""),
 				SerializedPayload: []byte(""),
 			},
 		}, errorExpected: true, attError: nil},
-		{name: "invalid auth with PGP key type but PKIX key", auth: invalidAuthWithPgpTypeAndPkixKey, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+		{name: "invalid auth with PGP key type but PKIX key", auth: invalidAuthWithPgpTypeAndPkixKey, wantAtts: nil, attestations: []attestlib.Attestation{*att1},
 			errorExpected: true, attError: nil},
-		{name: "invalid auth with PKIX key type but PGP key", auth: invalidAuthWithPkixTypeAndPgpKey, wantAtts: nil, attestations: []cryptolib.Attestation{
+		{name: "invalid auth with PKIX key type but PGP key", auth: invalidAuthWithPkixTypeAndPgpKey, wantAtts: nil, attestations: []attestlib.Attestation{
 			{
 				PublicKeyID:       "",
 				Signature:         []byte(""),
 				SerializedPayload: []byte(""),
 			},
 		}, errorExpected: true, attError: nil},
-		{name: "invalid key with unknown key type", auth: invalidAuthWithUnknownKeyType, wantAtts: nil, attestations: []cryptolib.Attestation{*att1},
+		{name: "invalid key with unknown key type", auth: invalidAuthWithUnknownKeyType, wantAtts: nil, attestations: []attestlib.Attestation{*att1},
 			errorExpected: true, attError: nil},
 		// TODO(acamadeo): Add a test case for a PKIX key with a bad key once
 		// the PKIX key verification is implemented.

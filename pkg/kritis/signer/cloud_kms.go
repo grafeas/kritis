@@ -24,16 +24,16 @@ import (
 	"hash"
 
 	kms "cloud.google.com/go/kms/apiv1"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
-type DigestAlgorithm int
+type DigestAlgorithm string
 
 const (
-	SHA256 = iota
-	SHA384
-	SHA512
+	SHA256 DigestAlgorithm = "SHA256"
+	SHA384 DigestAlgorithm = "SHA384"
+	SHA512 DigestAlgorithm = "SHA512"
 )
 
 type kmsSigner struct {
@@ -42,7 +42,7 @@ type kmsSigner struct {
 	client    *kms.KeyManagementClient
 }
 
-func NewCloudKmsSigner(keyName string, digestAlg DigestAlgorithm) (cryptolib.Signer, error) {
+func NewCloudKmsSigner(keyName string, digestAlg DigestAlgorithm) (attestlib.Signer, error) {
 	// Create the client.
 	ctx := context.Background()
 	client, err := kms.NewKeyManagementClient(ctx)
@@ -57,7 +57,7 @@ func NewCloudKmsSigner(keyName string, digestAlg DigestAlgorithm) (cryptolib.Sig
 	return out, nil
 }
 
-func (s kmsSigner) CreateAttestation(payload []byte) (*cryptolib.Attestation, error) {
+func (s kmsSigner) CreateAttestation(payload []byte) (*attestlib.Attestation, error) {
 	var digest hash.Hash
 	switch s.digestAlg {
 	case SHA256:
@@ -100,7 +100,7 @@ func (s kmsSigner) CreateAttestation(payload []byte) (*cryptolib.Attestation, er
 	if err != nil {
 		return nil, err
 	}
-	att := cryptolib.Attestation{
+	att := attestlib.Attestation{
 		PublicKeyID:       fmt.Sprintf("//cloudkms.googleapis.com/v1/%s", s.keyName),
 		Signature:         result.Signature,
 		SerializedPayload: payload,

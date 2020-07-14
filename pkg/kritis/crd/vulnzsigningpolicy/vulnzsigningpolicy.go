@@ -19,6 +19,7 @@ package vulnzsigningpolicy
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/kubectl/plugins/resolve"
@@ -45,11 +46,13 @@ func ValidateVulnzSigningPolicy(vsp v1beta1.VulnzSigningPolicy, image string, vu
 
 	maxSev := vsp.Spec.ImageVulnerabilityRequirements.MaximumFixableSeverity
 	if maxSev == "" {
+		glog.Info("maximumFixableSeverity is unset, default to Critical.")
 		maxSev = constants.Critical
 	}
 
 	maxNoFixSev := vsp.Spec.ImageVulnerabilityRequirements.MaximumUnfixableSeverity
 	if maxNoFixSev == "" {
+		glog.Infof("maximumUnfixableSeverity is unset, default to AllowAll.")
 		maxNoFixSev = constants.AllowAll
 	}
 

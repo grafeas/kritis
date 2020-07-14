@@ -36,8 +36,7 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 ./signer -v 10 \
 -alsologtostderr \
 -image=${GOOD_IMG_DIGEST_URL} \
--public_key=public.key \
--private_key=private.key \
+-pgp_private_key=private.key \
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
 

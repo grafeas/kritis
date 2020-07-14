@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/crd/securitypolicy"
@@ -53,9 +53,9 @@ func TestReviewGAP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 
-	oneValidAtt := []cryptolib.Attestation{*att1}
-	twoValidAtts := []cryptolib.Attestation{*att1, *att2}
-	invalidAtts := []cryptolib.Attestation{*invalidAtt}
+	oneValidAtt := []attestlib.Attestation{*att1}
+	twoValidAtts := []attestlib.Attestation{*att1, *att2}
+	invalidAtts := []attestlib.Attestation{*invalidAtt}
 
 	sMock := func(_, name string) (*secrets.PGPSigningSecret, error) {
 		if name == "sec" {
@@ -157,7 +157,7 @@ func TestReviewGAP(t *testing.T) {
 		name            string
 		image           string
 		policies        []v1beta1.GenericAttestationPolicy
-		attestations    []cryptolib.Attestation
+		attestations    []attestlib.Attestation
 		hasRequiredAtts bool
 		shouldErr       bool
 	}{
@@ -173,7 +173,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image without attestation",
 			image:           img,
 			policies:        oneGAP,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -181,7 +181,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "gap without attestor should error",
 			image:           img,
 			policies:        gapWithoutAA,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -189,7 +189,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "gap without attestor should error on allowlisted image",
 			image:           "allowed_image_name",
 			policies:        gapWithoutAA,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       true,
 		},
@@ -197,7 +197,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "allowlisted image",
 			image:           "allowed_image_name",
 			policies:        oneGAP,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -205,7 +205,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image allowlisted in 1 policy",
 			image:           "allowed_image_name",
 			policies:        twoGAPs,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -213,7 +213,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image without policies",
 			image:           img,
 			policies:        []v1beta1.GenericAttestationPolicy{},
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -237,7 +237,7 @@ func TestReviewGAP(t *testing.T) {
 			name:            "image in global allowlist",
 			image:           "us.gcr.io/grafeas/grafeas-server:0.1.0",
 			policies:        twoGAPs,
-			attestations:    []cryptolib.Attestation{},
+			attestations:    []attestlib.Attestation{},
 			hasRequiredAtts: false,
 			shouldErr:       false,
 		},
@@ -294,7 +294,7 @@ func TestReviewISP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 	// An attestation that already exists for an image with a vulnerability
-	vulnAtts := []cryptolib.Attestation{*att}
+	vulnAtts := []attestlib.Attestation{*att}
 
 	noVulnImage := testutil.IntTestImage
 	att, err = util.CreateAttestation(noVulnImage, sec)
@@ -302,7 +302,7 @@ func TestReviewISP(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 	// An attestation for an image without vulnerabilities
-	noVulnAtts := []cryptolib.Attestation{*att}
+	noVulnAtts := []attestlib.Attestation{*att}
 
 	sMock := func(_, _ string) (*secrets.PGPSigningSecret, error) {
 		return sec, nil
@@ -350,7 +350,7 @@ func TestReviewISP(t *testing.T) {
 		name              string
 		image             string
 		isWebhook         bool
-		attestations      []cryptolib.Attestation
+		attestations      []attestlib.Attestation
 		handledViolations int
 		isAttested        bool
 		shouldAttestImage bool
@@ -370,7 +370,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w/o attestation for Webhook should handle voilations",
 			image:             vulnImage,
 			isWebhook:         true,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -380,7 +380,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w/o attestation for webhook should add attestation",
 			image:             noVulnImage,
 			isWebhook:         true,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: true,
@@ -400,7 +400,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "vulnz w/o attestation for cron should handle vuln",
 			image:             vulnImage,
 			isWebhook:         false,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -410,7 +410,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "no vulnz w/o attestation for cron should verify attestations",
 			image:             noVulnImage,
 			isWebhook:         false,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -430,7 +430,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "unqualified image for cron should fail and should not attest any image",
 			image:             "image:tag",
 			isWebhook:         false,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -440,7 +440,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "unqualified image for webhook should fail should not attest any image",
 			image:             "image:tag",
 			isWebhook:         true,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 1,
 			isAttested:        false,
 			shouldAttestImage: false,
@@ -450,7 +450,7 @@ func TestReviewISP(t *testing.T) {
 			name:              "review image in global allowlist",
 			image:             "gcr.io/kritis-project/preinstall",
 			isWebhook:         true,
-			attestations:      []cryptolib.Attestation{},
+			attestations:      []attestlib.Attestation{},
 			handledViolations: 0,
 			isAttested:        false,
 			shouldAttestImage: false,
