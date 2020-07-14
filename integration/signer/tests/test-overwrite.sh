@@ -22,32 +22,48 @@ set -eux
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
 docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 
-clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
-trap 'clean_up'  EXIT
+trap 'delete_image $GOOD_IMAGE_URL'  EXIT
 
-# push image
+# push good image
 docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
-clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; exit $ARG;}
-trap 'clean_up'  EXIT
+trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 
-# sign image in bypass mode with kms
+# sign good image in bypass mode
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
--kms_key_name=projects/$KMS_PROJECT/locations/$KMS_KEYLOCATION/keyRings/$KMS_KEYRING/cryptoKeys/$KMS_KEYNAME/cryptoKeyVersions/$KMS_KEYVERSION \
--kms_digest_alg=$KMS_DIGESTALG \
+-pgp_private_key=private.key \
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
-# deploy to a binauthz-enabled cluster signer-int-test
-clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
-trap 'clean_up'  EXIT
+sleep 5
 
-deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
+# save occ id
+OLD_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
+
+# sign good image in bypass mode
+./signer -v 10 \
+-alsologtostderr \
+-mode=bypass-and-sign \
+-image=${GOOD_IMG_DIGEST_URL} \
+-pgp_private_key=private.key \
+-policy=policy.yaml \
+-note_name=${NOTE_NAME} \
+-overwrite
+
+# check the current occ id is not same as old id
+NEW_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
+
+if [ "$OLD_OCC_ID" == "$NEW_OCC_ID" ]; then
+    echo "Attestation is not overwritten as expected"
+    exit 1
+else
+    echo "Attestation is overwritten as expected"
+fi
 
 echo ""
 echo ""

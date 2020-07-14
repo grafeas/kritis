@@ -25,7 +25,7 @@ docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
 trap 'clean_up'  EXIT
 
-# push good image
+# push image image
 docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
@@ -33,7 +33,7 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; exit $ARG;}
 trap 'clean_up'  EXIT
 
-# sign good image in bypass mode
+# sign image in bypass mode
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \

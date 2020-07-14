@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/grafeas/kritis/pkg/attestlib"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/discovery"
 
@@ -329,4 +330,25 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			nextTryWait = nextTryWait * 2
 		}
 	}
+}
+
+// Delete an attestation by image and attestation authority.
+func (c Client) DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error {
+	occs, err := c.fetchAttestationOccurrence(containerImage, AttestationAuthority, aa)
+	if err != nil {
+		return err
+	}
+	if len(occs) == 0 {
+		return fmt.Errorf("no attestation is found for image %s with note %s", containerImage, aa.Spec.NoteReference)
+	} else if len(occs) > 1 {
+		return fmt.Errorf("more than one attestation are found for image %s with note %s", containerImage, aa.Spec.NoteReference)
+	}
+
+	occName := occs[0].Name
+	req := &grafeas.DeleteOccurrenceRequest{
+		Name: occName,
+	}
+	glog.Infof("executed deletion of occurrence=%s", occName)
+	_, err = c.client.DeleteOccurrence(c.ctx, req)
+	return err
 }
