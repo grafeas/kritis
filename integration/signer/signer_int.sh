@@ -78,7 +78,7 @@ delete_occ() {
     set +ex
     IMG_DIGEST_URL_TO_DELETE=$1
     if [ -n "$IMG_DIGEST_URL_TO_DELETE" ]; then
-      OCC_NAME = $(get_occ $IMG_DIGEST_URL_TO_DELETE)
+      OCC_NAME=$(get_occ $IMG_DIGEST_URL_TO_DELETE)
       echo "Delete occurrence if created."
       if [ -n "$OCC_NAME" ]; then
           ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
