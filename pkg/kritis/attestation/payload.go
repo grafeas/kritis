@@ -21,8 +21,8 @@ import (
 )
 
 // AtomicContainerPayload creates an attestation payload
-// which can be signed by a cryptolib.Signer to obtain a
-// cryptolib.Attestation.
+// which can be signed by a attestlib.Signer to obtain a
+// attestlib.Attestation.
 //
 // This payload is in the Red Hat's Atomic Host format:
 // https://github.com/aweiteka/image/blob/e5a20d98fe698732df2b142846d007b45873627f/docs/signature.md

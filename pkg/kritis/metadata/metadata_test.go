@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	"google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
@@ -96,12 +96,12 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 	tests := []struct {
 		name         string
 		att          attestation.Attestation
-		expectedAtts []cryptolib.Attestation
+		expectedAtts []attestlib.Attestation
 	}{
 		{
 			"pgp attestation",
 			makeOccAttestationPgp("sig-1", "id-1"),
-			[]cryptolib.Attestation{
+			[]attestlib.Attestation{
 				{
 					PublicKeyID: "id-1",
 					Signature:   []byte("sig-1"),
@@ -111,7 +111,7 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 		{
 			"generic attestation",
 			makeOccAttestationGeneric([]string{"sig-1"}, []string{"id-1"}, "generic-address"),
-			[]cryptolib.Attestation{
+			[]attestlib.Attestation{
 				{
 					PublicKeyID:       "id-1",
 					Signature:         []byte("sig-1"),
@@ -122,7 +122,7 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 		{
 			"generic attestation multiple signatures",
 			makeOccAttestationGeneric([]string{"sig-1", "sig-2"}, []string{"id-1", "id-2"}, "generic-address"),
-			[]cryptolib.Attestation{
+			[]attestlib.Attestation{
 				{
 					PublicKeyID:       "id-1",
 					Signature:         []byte("sig-1"),
@@ -148,7 +148,7 @@ func TestGetAttestationsFromOccurrence(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error while parsing Attestation from Occurrence: %v", err)
 			}
-			if !cmp.Equal(actualAtts, tc.expectedAtts, cmpopts.SortSlices(func(att1, att2 cryptolib.Attestation) bool {
+			if !cmp.Equal(actualAtts, tc.expectedAtts, cmpopts.SortSlices(func(att1, att2 attestlib.Attestation) bool {
 				return att1.PublicKeyID > att2.PublicKeyID
 			})) {
 				t.Fatalf("Expected: \n%v\nGot: \n%v", tc.expectedAtts, actualAtts)
@@ -163,7 +163,7 @@ func TestCreateOccurrenceFromAttestation(t *testing.T) {
 		image       string
 		noteName    string
 		sType       SignatureType
-		cryptoAtt   *cryptolib.Attestation
+		cryptoAtt   *attestlib.Attestation
 		expectedOcc *grafeas.Occurrence
 	}{
 		{
@@ -171,7 +171,7 @@ func TestCreateOccurrenceFromAttestation(t *testing.T) {
 			"image-1",
 			"note-1",
 			PgpSignatureType,
-			&cryptolib.Attestation{
+			&attestlib.Attestation{
 				PublicKeyID:       "id-1",
 				Signature:         []byte("sig-1"),
 				SerializedPayload: []byte("payload-1"),
@@ -201,7 +201,7 @@ func TestCreateOccurrenceFromAttestation(t *testing.T) {
 			"image-1",
 			"note-1",
 			GenericSignatureType,
-			&cryptolib.Attestation{
+			&attestlib.Attestation{
 				PublicKeyID:       "id-1",
 				Signature:         []byte("sig-1"),
 				SerializedPayload: []byte("payload-1"),

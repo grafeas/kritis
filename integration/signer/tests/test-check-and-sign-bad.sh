@@ -36,8 +36,7 @@ signing_bad_image_failed=false
 ./signer -v 10 \
 -alsologtostderr \
 -image=${BAD_IMG_DIGEST_URL} \
--public_key=public.key \
--private_key=private.key \
+-pgp_private_key=private.key \
 -policy=policy.yaml \
 -note_name=${NOTE_NAME} || signing_bad_image_failed=true
 

@@ -24,8 +24,8 @@ import (
 
 	"golang.org/x/crypto/openpgp"
 
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/packet"
 	"golang.org/x/crypto/openpgp/s2k"
@@ -78,12 +78,12 @@ func GetResource(image string) *grafeas.Resource {
 	return &grafeas.Resource{Uri: GetResourceURL(image)}
 }
 
-func CreateAttestation(image string, pgpSigningKey *secrets.PGPSigningSecret) (*cryptolib.Attestation, error) {
+func CreateAttestation(image string, pgpSigningKey *secrets.PGPSigningSecret) (*attestlib.Attestation, error) {
 	privateKey, err := extractPrivateKeyBytes(pgpSigningKey)
 	if err != nil {
 		return nil, err
 	}
-	signer, err := cryptolib.NewPgpSigner(privateKey, "")
+	signer, err := attestlib.NewPgpSigner(privateKey, "")
 	if err != nil {
 		return nil, err
 	}
