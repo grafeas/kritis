@@ -199,7 +199,7 @@ func main() {
 		// Sign image
 		err := r.SignImage(image)
 		if err != nil {
-			glog.Fatalf("Signing image failed %v", err)
+			glog.Fatalf("Signing image failed: %v", err)
 		}
 	}
 }
