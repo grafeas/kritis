@@ -239,7 +239,7 @@ func TestVerifyDetached(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			decodedSig, decodeErr := base64.RawURLEncoding.DecodeString(tc.signature)
 			if decodeErr != nil {
-				t.Fatalf("error base64 decoding signature: %e", decodeErr)
+				t.Fatalf("error base64 decoding signature: %v", decodeErr)
 			}
 			err := verifyDetached(decodedSig, tc.pubkey, tc.signingAlg, tc.payload)
 			if tc.expectedError {
@@ -248,7 +248,7 @@ func TestVerifyDetached(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("verifyDetached(...)=%e, expected nil", err)
+					t.Errorf("verifyDetached(...)=%v, expected nil", err)
 				}
 			}
 		})

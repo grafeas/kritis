@@ -83,7 +83,7 @@ func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgo
 	case RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, RsaPss4096Sha512:
 		rsaKey, ok := pub.(*rsa.PublicKey)
 		if !ok {
-			return err
+			return errors.New("expected ecdsa key")
 		}
 		hash, hashedPayload, err := hashPayload(payload, signingAlg)
 		if err != nil {
