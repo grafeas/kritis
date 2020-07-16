@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafeas/kritis/pkg/attestlib"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/constants"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	attestationpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/attestation"
 	commonpb "google.golang.org/genproto/googleapis/devtools/containeranalysis/v1beta1/common"
@@ -54,15 +54,17 @@ type ReadWriteClient interface {
 		containerImage string, pgpSigningKey *secrets.PGPSigningSecret, proj string) (*grafeasv1beta1.Occurrence, error)
 	// UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
 	UploadAttestationOccurrence(noteName string,
-		containerImage string, att *cryptolib.Attestation, proj string, sType SignatureType) (*grafeasv1beta1.Occurrence, error)
+		containerImage string, att *attestlib.Attestation, proj string, sType SignatureType) (*grafeasv1beta1.Occurrence, error)
 	//AttestationNote fetches an Attestation note for an Attestation Authority.
 	AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Create Attestation Note for an Attestation Authority.
 	CreateAttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeasv1beta1.Note, error)
 	// Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error)
 	// Wait vulnerability analysis for an image to finish, or times out.
 	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
+	// Delete an attestation by image and attestation authority.
+	DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error
 	// Close closes client connections
 	Close()
 }
@@ -72,7 +74,7 @@ type ReadOnlyClient interface {
 	// Vulnerabilities returns package vulnerabilities for a given image.
 	Vulnerabilities(containerImage string) ([]Vulnerability, error)
 	//Attestations get Attestation Occurrences for given image.
-	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error)
+	Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error)
 	// Wait vulnerability analysis for an image to finish, or times out.
 	WaitForVulnzAnalysis(containerImage string, timeout time.Duration) error
 	// Close closes client connections
@@ -127,13 +129,13 @@ func getGrafeasResource(image string) *grafeas.Resource {
 // and GenericSignedAttestation Occurrences. A PgpSignedAttestation has one
 // signature and is parsed into one Attestation. A GenericSignedAttestation may
 // have multiple signatures, which are parsed into multiple Attestations.
-func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attestation, error) {
-	atts := []cryptolib.Attestation{}
+func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]attestlib.Attestation, error) {
+	atts := []attestlib.Attestation{}
 	occAtt := occ.GetAttestation().GetAttestation()
 	switch occAtt.Signature.(type) {
 	case *attestationpb.Attestation_PgpSignedAttestation:
 		psa := occAtt.GetPgpSignedAttestation()
-		att := cryptolib.Attestation{
+		att := attestlib.Attestation{
 			PublicKeyID: psa.GetPgpKeyId(),
 			Signature:   []byte(psa.GetSignature()),
 		}
@@ -141,7 +143,7 @@ func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attesta
 	case *attestationpb.Attestation_GenericSignedAttestation:
 		gsa := occAtt.GetGenericSignedAttestation()
 		for _, sig := range gsa.GetSignatures() {
-			att := cryptolib.Attestation{
+			att := attestlib.Attestation{
 				PublicKeyID:       string(sig.PublicKeyId),
 				Signature:         sig.Signature,
 				SerializedPayload: gsa.GetSerializedPayload(),
@@ -156,7 +158,7 @@ func GetAttestationsFromOccurrence(occ *grafeas.Occurrence) ([]cryptolib.Attesta
 
 // CreateOccurrenceFromAttestation creates an occurrence from an attestation by specified signature type.
 // The created occurrence can either be a PgpSignedAttestation occurrence or a GenericSignedAttestation occurrence.
-func CreateOccurrenceFromAttestation(att *cryptolib.Attestation, containerImage string, noteName string, sType SignatureType) (*grafeas.Occurrence, error) {
+func CreateOccurrenceFromAttestation(att *attestlib.Attestation, containerImage string, noteName string, sType SignatureType) (*grafeas.Occurrence, error) {
 	attestation := &attestationpb.Attestation{}
 	switch sType {
 	case PgpSignatureType:

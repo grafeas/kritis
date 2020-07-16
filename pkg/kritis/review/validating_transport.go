@@ -22,9 +22,9 @@ import (
 	"net/url"
 
 	"github.com/golang/glog"
+	"github.com/grafeas/kritis/pkg/attestlib"
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/attestation"
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/pkg/errors"
@@ -102,12 +102,12 @@ func (avt *AttestorValidatingTransport) validatePublicKeyId(pubKey v1beta1.Publi
 	return nil
 }
 
-// ParsePublicKeys parses the attestor's keys as cryptolib PublicKeys. It
+// ParsePublicKeys parses the attestor's keys as attestlib PublicKeys. It
 // returns the valid PublicKeys and the keyID's for keys that could not be
 // parsed.
-func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.PublicKey) ([]cryptolib.PublicKey, []string) {
+func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.PublicKey) ([]attestlib.PublicKey, []string) {
 	numKeys := len(attestorKeys)
-	publicKeys, invalidKeys := []cryptolib.PublicKey{}, []string{}
+	publicKeys, invalidKeys := []attestlib.PublicKey{}, []string{}
 
 	for i, attestorKey := range attestorKeys {
 		if attestorKey.KeyType != "PGP" {
@@ -126,7 +126,7 @@ func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.P
 			invalidKeys = append(invalidKeys, attestorKey.KeyId)
 			continue
 		}
-		publicKey, err := cryptolib.NewPublicKey(cryptolib.Pgp, decodedKey, attestorKey.KeyId)
+		publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, decodedKey, attestorKey.KeyId)
 		if err != nil {
 			glog.Warningf("Error creating PublicKey: %v", err)
 			invalidKeys = append(invalidKeys, attestorKey.KeyId)
@@ -137,7 +137,7 @@ func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.P
 	return publicKeys, invalidKeys
 }
 
-func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]cryptolib.Attestation, error) {
+func (avt *AttestorValidatingTransport) fetchAttestations(image string) ([]attestlib.Attestation, error) {
 	atts, err := avt.Client.Attestations(image, &avt.Attestor)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching attestations for image %s: %v", image, err)
@@ -151,7 +151,7 @@ func (avt *AttestorValidatingTransport) GetValidatedAttestations(image string) (
 		return nil, fmt.Errorf("Unable to find any valid keys for %q. Unparseable keys: %v", avt.Attestor.Name, invalidKeys)
 	}
 
-	verifier, err := cryptolib.NewVerifier(image, publicKeys)
+	verifier, err := attestlib.NewVerifier(image, publicKeys)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating verifier")
 	}
