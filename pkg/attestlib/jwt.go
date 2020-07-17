@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 import (
 	"bytes"
@@ -91,10 +91,5 @@ func (v jwtVerifierImpl) verifyJwt(signature []byte, publicKey PublicKey) ([]byt
 		return nil, errors.Wrap(err, "cannot decode payload")
 	}
 	verifyDetached(parts[2], publicKey.KeyData, publicKey.SignatureAlgorithm, append(parts[0], parts[1]...))
-
 	return nil, errors.New("unimplemented")
-}
-
-func verifyDetached(signature []byte, publicKey []byte, signingAlg SignatureAlgorithm, plaintext []byte) error {
-	return errors.New("verifyDetached is not implemented yet")
 }

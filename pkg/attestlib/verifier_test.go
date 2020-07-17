@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 import (
 	"testing"
@@ -74,7 +74,7 @@ const verifierPublicKeyID = "446625EB36036D7546B2D63B77B4BE6989834233"
 func TestNewPublicKey(t *testing.T) {
 	tcs := []struct {
 		name               string
-		keyType            KeyType
+		authenticatorType  AuthenticatorType
 		signatureAlgorithm SignatureAlgorithm
 		keyData            []byte
 		keyID              string
@@ -83,8 +83,8 @@ func TestNewPublicKey(t *testing.T) {
 	}{
 		{
 			name:               "valid PGP key ID",
-			keyType:            Pgp,
-			signatureAlgorithm: UndefinedSigningAlgorithm,
+			authenticatorType:  Pgp,
+			signatureAlgorithm: PGPUnused,
 			keyData:            []byte(verifierPublicKey),
 			keyID:              verifierPublicKeyID,
 			expectedErr:        false,
@@ -92,8 +92,8 @@ func TestNewPublicKey(t *testing.T) {
 		},
 		{
 			name:               "incorrect PGP key ID",
-			keyType:            Pgp,
-			signatureAlgorithm: UndefinedSigningAlgorithm,
+			authenticatorType:  Pgp,
+			signatureAlgorithm: PGPUnused,
 			keyData:            []byte(verifierPublicKey),
 			keyID:              "incorrect-id",
 			expectedErr:        false,
@@ -101,7 +101,7 @@ func TestNewPublicKey(t *testing.T) {
 		},
 		{
 			name:               "valid PKIX key ID",
-			keyType:            Pkix,
+			authenticatorType:  Pkix,
 			signatureAlgorithm: RsaSignPkcs12048Sha256,
 			keyID:              "valid-key-id",
 			expectedErr:        false,
@@ -109,14 +109,14 @@ func TestNewPublicKey(t *testing.T) {
 		},
 		{
 			name:               "valid PKIX key ID with undefined signature algorithm",
-			keyType:            Pkix,
-			signatureAlgorithm: UndefinedSigningAlgorithm,
+			authenticatorType:  Pkix,
+			signatureAlgorithm: UnknownSigningAlgorithm,
 			keyID:              "valid-key-id",
 			expectedErr:        true,
 		},
 		{
-			name:               "valid PGP key ID with defined signature algorithm",
-			keyType:            Pgp,
+			name:               "valid PGP key ID with incorrect signature algorithm",
+			authenticatorType:  Pgp,
 			signatureAlgorithm: RsaSignPkcs12048Sha256,
 			keyData:            []byte(verifierPublicKey),
 			keyID:              verifierPublicKeyID,
@@ -124,21 +124,20 @@ func TestNewPublicKey(t *testing.T) {
 		},
 		{
 			name:               "invalid PKIX key ID",
-			keyType:            Pkix,
+			authenticatorType:  Pkix,
 			signatureAlgorithm: RsaSignPkcs12048Sha256,
 			keyID:              ":{invalid-key-id}",
 			expectedErr:        true,
 		},
 		{
-			name:               "unknown key type",
-			keyType:            UnknownKeyType,
-			signatureAlgorithm: UndefinedSigningAlgorithm,
-			expectedErr:        true,
+			name:              "unknown authenticator type",
+			authenticatorType: UnknownAuthenticatorType,
+			expectedErr:       true,
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			publicKey, err := NewPublicKey(tc.keyType, tc.signatureAlgorithm, tc.keyData, tc.keyID)
+			publicKey, err := NewPublicKey(tc.authenticatorType, tc.signatureAlgorithm, tc.keyData, tc.keyID)
 			if tc.expectedErr {
 				if err == nil {
 					t.Errorf("Got nil err, expected not-nil")

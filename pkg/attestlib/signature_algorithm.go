@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cryptolib
+package attestlib
 
 // SignatureAlgorithm specifies the algorithm and hashing functions used to
 // sign PKIX and JWT Attestations.
@@ -22,8 +22,7 @@ type SignatureAlgorithm int
 
 // Enumeration of SignatureAlgorithm
 const (
-	// Valid for PGP case
-	UndefinedSigningAlgorithm SignatureAlgorithm = iota
+	UnknownSigningAlgorithm SignatureAlgorithm = iota
 	// RSASSA-PSS 2048 bit key with a SHA256 digest.
 	RsaPss2048Sha256
 	// RSASSA-PSS 3072 bit key with a SHA256 digest.
@@ -48,14 +47,18 @@ const (
 	EcdsaP384Sha384
 	// ECDSA on the NIST P-521 curve with a SHA512 digest.
 	EcdsaP521Sha512
+	// Valid for PGP case
+	PGPUnused
 )
 
-// KeyType is the type of a public key
-type KeyType int
+// AuthenticatorType specifies the transport format of the Attestation. It
+// indicates to the Verifier how to extract the appropriate information out of
+// an Attestation.
+type AuthenticatorType int
 
-// Enumeration of KeyType
+// Enumeration of AuthenticatorType
 const (
-	UnknownKeyType KeyType = iota
+	UnknownAuthenticatorType AuthenticatorType = iota
 	Pgp
 	Pkix
 	Jwt

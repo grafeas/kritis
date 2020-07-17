@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -67,13 +67,13 @@ func TestVCache(t *testing.T) {
 }
 
 func TestACache(t *testing.T) {
-	aCache := []cryptolib.Attestation{
+	aCache := []attestlib.Attestation{
 		{
 			PublicKeyID: "sig-cache",
 			Signature:   []byte("key-cache"),
 		},
 	}
-	aClient := []cryptolib.Attestation{
+	aClient := []attestlib.Attestation{
 		{
 			PublicKeyID: "sig-client",
 			Signature:   []byte("key-client"),
@@ -82,13 +82,13 @@ func TestACache(t *testing.T) {
 	c := Cache{
 		client: &testutil.MockMetadataClient{Atts: aClient},
 		vuln:   nil,
-		atts:   map[string][]cryptolib.Attestation{"image-hit": aCache},
+		atts:   map[string][]attestlib.Attestation{"image-hit": aCache},
 		notes:  nil,
 	}
 	tcs := []struct {
 		name     string
 		image    string
-		expected []cryptolib.Attestation
+		expected []attestlib.Attestation
 	}{
 		{"hit", "image-hit", aCache},
 		{"miss", "image-miss", aClient},
