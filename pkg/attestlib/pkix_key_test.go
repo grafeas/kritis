@@ -81,15 +81,15 @@ func TestGeneratePKIXPublicKeyId(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error parsing key %v", err)
 			}
-			_, err = generatePKIXPublicKeyId(key)
+			_, err = generatePkixPublicKeyId(key)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("generatePKIXPublicKeyId(...) = nil, expected non nil")
+					t.Errorf("generatePkixPublicKeyId(...) = nil, expected non nil")
 
 				}
 			} else {
 				if err != nil {
-					t.Errorf("generatePKIXPublicKeyId(..) = %v, expected nil", err)
+					t.Errorf("generatePkixPublicKeyId(..) = %v, expected nil", err)
 				}
 			}
 

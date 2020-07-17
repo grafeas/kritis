@@ -40,7 +40,7 @@ func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm
 
 	// If no ID id provided one is computed based on the default digest-based URI extracted from the public key material
 	if len(publicKeyID) == 0 {
-		publicKeyID, err = generatePKIXPublicKeyId(key)
+		publicKeyID, err = generatePkixPublicKeyId(key)
 		if err != nil {
 			return nil, errors.Wrap(err, "error generating public key id")
 		}

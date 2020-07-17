@@ -41,7 +41,7 @@ func parsePkixPrivateKeyPem(privateKey []byte) (interface{}, error) {
 	return key, nil
 }
 
-func generatePKIXPublicKeyId(privateKey interface{}) (string, error) {
+func generatePkixPublicKeyId(privateKey interface{}) (string, error) {
 	switch privateKey.(type) {
 	case *rsa.PrivateKey:
 		rsaKey := privateKey.(*rsa.PrivateKey)
