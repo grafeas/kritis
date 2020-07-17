@@ -70,11 +70,9 @@ func (m *NetworkPolicy) Reset()                    { *m = NetworkPolicy{} }
 func (*NetworkPolicy) ProtoMessage()               {}
 func (*NetworkPolicy) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{1} }
 
-func (m *NetworkPolicyEgressRule) Reset()      { *m = NetworkPolicyEgressRule{} }
-func (*NetworkPolicyEgressRule) ProtoMessage() {}
-func (*NetworkPolicyEgressRule) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{2}
-}
+func (m *NetworkPolicyEgressRule) Reset()                    { *m = NetworkPolicyEgressRule{} }
+func (*NetworkPolicyEgressRule) ProtoMessage()               {}
+func (*NetworkPolicyEgressRule) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{2} }
 
 func (m *NetworkPolicyIngressRule) Reset()      { *m = NetworkPolicyIngressRule{} }
 func (*NetworkPolicyIngressRule) ProtoMessage() {}

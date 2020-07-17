@@ -87,7 +87,7 @@ func (r *pluralNamer) Name(t *types.Type) string {
 			plural = sPlural(singular)
 		}
 	case 'f':
-		plural = vesPlural(singular)
+			plural = vesPlural(singular)
 	default:
 		plural = sPlural(singular)
 	}
