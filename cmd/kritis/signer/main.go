@@ -165,16 +165,12 @@ func main() {
 			}
 		} else {
 			glog.Infof("Using pgp key for signing.")
-			// TODO: support Passphrase to private key (consider add support in cryptolib)
-			if pgpPassphrase != "" {
-				glog.Fatalf("PGP Passphrase is not yet supported.\n")
-			}
 			signerKey, err := ioutil.ReadFile(pgpPriKeyPath)
 			if err != nil {
 				glog.Fatalf("Fail to read signer key: %v\n", err)
 			}
 			// Create a cryptolib signer
-			cSigner, err = attestlib.NewPgpSigner(signerKey)
+			cSigner, err = attestlib.NewPgpSigner(signerKey, pgpPassphrase)
 			if err != nil {
 				glog.Fatalf("Creating pgp signer failed: %v\n", err)
 			}
