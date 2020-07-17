@@ -115,9 +115,11 @@ func (m *DaemonSetStatus) Reset()                    { *m = DaemonSetStatus{} }
 func (*DaemonSetStatus) ProtoMessage()               {}
 func (*DaemonSetStatus) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{6} }
 
-func (m *DaemonSetUpdateStrategy) Reset()                    { *m = DaemonSetUpdateStrategy{} }
-func (*DaemonSetUpdateStrategy) ProtoMessage()               {}
-func (*DaemonSetUpdateStrategy) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{7} }
+func (m *DaemonSetUpdateStrategy) Reset()      { *m = DaemonSetUpdateStrategy{} }
+func (*DaemonSetUpdateStrategy) ProtoMessage() {}
+func (*DaemonSetUpdateStrategy) Descriptor() ([]byte, []int) {
+	return fileDescriptorGenerated, []int{7}
+}
 
 func (m *Deployment) Reset()                    { *m = Deployment{} }
 func (*Deployment) ProtoMessage()               {}
@@ -163,9 +165,11 @@ func (m *ReplicaSetStatus) Reset()                    { *m = ReplicaSetStatus{} 
 func (*ReplicaSetStatus) ProtoMessage()               {}
 func (*ReplicaSetStatus) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{18} }
 
-func (m *RollingUpdateDaemonSet) Reset()                    { *m = RollingUpdateDaemonSet{} }
-func (*RollingUpdateDaemonSet) ProtoMessage()               {}
-func (*RollingUpdateDaemonSet) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{19} }
+func (m *RollingUpdateDaemonSet) Reset()      { *m = RollingUpdateDaemonSet{} }
+func (*RollingUpdateDaemonSet) ProtoMessage() {}
+func (*RollingUpdateDaemonSet) Descriptor() ([]byte, []int) {
+	return fileDescriptorGenerated, []int{19}
+}
 
 func (m *RollingUpdateDeployment) Reset()      { *m = RollingUpdateDeployment{} }
 func (*RollingUpdateDeployment) ProtoMessage() {}
