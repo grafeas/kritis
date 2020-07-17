@@ -16,12 +16,10 @@ limitations under the License.
 package attestlib
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/sha512"
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/base64"
@@ -30,23 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 )
-
-// hashPayload returns the hash function, the hashed payload and an error.
-func hashPayload(payload []byte, signingAlg SignatureAlgorithm) (crypto.Hash, []byte, error) {
-	switch signingAlg {
-	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, EcdsaP256Sha256:
-		hashedPayload := sha256.Sum256(payload)
-		return crypto.SHA256, hashedPayload[:], nil
-	case EcdsaP384Sha384:
-		hashedPayload := sha512.Sum384(payload)
-		return crypto.SHA384, hashedPayload[:], nil
-	case RsaSignPkcs14096Sha512, RsaPss4096Sha512, EcdsaP521Sha512:
-		hashedPayload := sha512.Sum512(payload)
-		return crypto.SHA512, hashedPayload[:], nil
-	default:
-		return 0, nil, errors.New("invalid signature algorithm")
-	}
-}
 
 type pkixSigner struct {
 	PrivateKey         interface{}
