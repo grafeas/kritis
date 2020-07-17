@@ -399,15 +399,6 @@ func TestEndToEndWithAttestations(t *testing.T) {
 			wantCreateErr: false,
 			wantVerifyErr: true,
 		},
-		{
-			name:          "cannot verify: omitted passphrase to decrypt private key",
-			privateKey:    []byte(pwPrivateKey),
-			publicKey:     []byte(pwPublicKey),
-			keyID:         pwKeyID,
-			payload:       []byte(e2eTestPayload),
-			image:         e2eTestImage,
-			wantCreateErr: true,
-		},
 	}
 	for _, tc := range tcs {
 		signer, err := attestlib.NewPgpSigner(tc.privateKey, tc.password)
@@ -418,11 +409,11 @@ func TestEndToEndWithAttestations(t *testing.T) {
 		att, err := signer.CreateAttestation(tc.payload)
 		if tc.wantCreateErr {
 			if err == nil {
-				t.Fatalf("Expected error, but returned none")
+				t.Fatalf("CreateAttestation(...)=nil, want non-nil")
 			}
 		} else {
 			if err != nil {
-				t.Fatalf("Unexpected error creating attestation: %v", err)
+				t.Fatalf("CreateAttestation(...)=%v, want nil", err)
 			}
 
 			publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, tc.publicKey, tc.keyID)
@@ -436,9 +427,9 @@ func TestEndToEndWithAttestations(t *testing.T) {
 
 			err = verifier.VerifyAttestation(att)
 			if tc.wantVerifyErr && err == nil {
-				t.Errorf("Expected error, but returned none")
+				t.Errorf("VerifyAttestation(...)=nil, want non-nil")
 			} else if !tc.wantVerifyErr && err != nil {
-				t.Errorf("Unexpected error verifying attestation: %v", err)
+				t.Errorf("VerifyAttestation(...)=%v, want nil", err)
 			}
 		}
 	}

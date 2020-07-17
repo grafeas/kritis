@@ -296,11 +296,11 @@ func TestVerifyPgp(t *testing.T) {
 			actualPayload, err := v.verifyPgp(tc.signature, tc.publicKey)
 			if tc.expectedErr {
 				if err == nil {
-					t.Fatalf("Expected error, but returned none")
+					t.Fatalf("verifyPgp(...)=nil, want non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					t.Fatalf("verifyPgp(...)=%v, want nil", err)
 				}
 				expectedPayload := []byte(testPayload)
 				if string(actualPayload) != string(expectedPayload) {
@@ -338,6 +338,11 @@ func TestNewPgpSigner(t *testing.T) {
 			name:        "incorrect password to decrypt private key",
 			privateKey:  []byte(pwPrivateKey),
 			password:    "wrong-password",
+			expectedErr: true,
+		},
+		{
+			name:        "omitted password to decrypt private key",
+			privateKey:  []byte(pwPrivateKey),
 			expectedErr: true,
 		},
 	}

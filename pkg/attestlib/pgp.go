@@ -85,7 +85,10 @@ func NewPgpSigner(privateKey []byte, passphrase string) (Signer, error) {
 	}
 	key := keyring[0]
 
-	if passphrase != "" {
+	if key.PrivateKey.Encrypted {
+		if passphrase == "" {
+			return nil, fmt.Errorf("missing passphrase for encrypted private key")
+		}
 		err := key.PrivateKey.Decrypt([]byte(passphrase))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not decrypt private key")
