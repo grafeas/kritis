@@ -27,15 +27,14 @@ func TestParsePkixPrivateKeyPem(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          " parse rsa key successful",
+			name:          "parse rsa key successful",
 			privateKey:    []byte(rsa2048PrivateKey),
 			expectedError: false,
 		}, {
 			name:          "parse ecdsa key successful",
 			privateKey:    []byte(ec256PrivateKey),
 			expectedError: false,
-		},
-		{
+		}, {
 			name:          "invalid key",
 			privateKey:    []byte("not a pem"),
 			expectedError: true,
@@ -66,7 +65,7 @@ func TestGeneratePKIXPublicKeyId(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          " genrate rsa key id successful",
+			name:          "genrate rsa key id successful",
 			privateKey:    []byte(rsa2048PrivateKey),
 			expectedError: false,
 		}, {

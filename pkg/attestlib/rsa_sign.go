@@ -19,6 +19,7 @@ package attestlib
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -27,17 +28,17 @@ func rsaSign(privateKey *rsa.PrivateKey, payload []byte, signatureAlgorithm Sign
 	case RsaSignPkcs12048Sha256, RsaSignPkcs13072Sha256, RsaSignPkcs14096Sha256, RsaSignPkcs14096Sha512:
 		hash, hashedPayload, err := hashPayload(payload, signatureAlgorithm)
 		if err != nil {
-			return nil, errors.Wrap(err, "some err")
+			return nil, errors.Wrap(err, "hash payload error")
 		}
 		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, hashedPayload[:])
 	case RsaPss2048Sha256, RsaPss3072Sha256, RsaPss4096Sha256, RsaPss4096Sha512:
 		hash, hashedPayload, err := hashPayload(payload, signatureAlgorithm)
 		if err != nil {
-			return nil, errors.Wrap(err, "some err")
+			return nil, errors.Wrap(err, "hash payload error")
 		}
 		return rsa.SignPSS(rand.Reader, privateKey, hash, hashedPayload[:], nil)
 
 	default:
-		return nil, errors.New("expected rsa signature algorithm")
+		return nil, fmt.Errorf("expected rsa signature algorithm, got %v", signatureAlgorithm)
 	}
 }

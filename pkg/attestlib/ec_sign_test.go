@@ -21,6 +21,9 @@ import (
 	"testing"
 )
 
+// ECDSA keys were generated using the following command: openssl ecparam -name prime256v1 -genkey -noout -out key.pem.
+// The prime value changes depending on the curve.
+
 const ec256PrivateKey = `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgS0iQ5IlSHswYTbiz
 vwR/YeueAakvrLayzcuLVzUPg+ihRANCAASLomGqGvbwvN3ai5f+kUsBXeBcJD26
@@ -53,17 +56,17 @@ func TestEcSign(t *testing.T) {
 		expectedError      bool
 	}{
 		{
-			name:               "create ec 256 signature success",
+			name:               "create ec256 signature success",
 			privateKey:         []byte(ec256PrivateKey),
 			signatureAlgorithm: EcdsaP256Sha256,
 			expectedError:      false,
 		}, {
-			name:               "create ec 384 signature success",
+			name:               "create ec384 signature success",
 			privateKey:         []byte(ec384PrivateKey),
 			signatureAlgorithm: EcdsaP384Sha384,
 			expectedError:      false,
 		}, {
-			name:               "create ec 521 signature success",
+			name:               "create ec521 signature success",
 			privateKey:         []byte(ec521PrivateKey),
 			signatureAlgorithm: EcdsaP521Sha512,
 			expectedError:      false,

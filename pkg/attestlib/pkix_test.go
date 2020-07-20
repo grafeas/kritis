@@ -57,7 +57,7 @@ func TestNewPkixSigner(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewPkixSigner(tc.privateKey, tc.publicKeyId, tc.signatureAlgorithm)
+			_, err := NewPkixSigner(tc.privateKey, tc.signatureAlgorithm, tc.publicKeyId)
 			if tc.expectedError {
 				if err == nil {
 					t.Errorf("NewPkixSigner(...) = nil, expected non nil")
@@ -97,14 +97,14 @@ func TestCreatePkixAttestation(t *testing.T) {
 		{
 			name:               "invalid signature algorithm",
 			privateKey:         []byte(rsa2048PrivateKey),
-			publicKeyId:        "keyId",
+			publicKeyId:        "kid",
 			signatureAlgorithm: 0,
 			expectedError:      true,
 		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			signer, err := NewPkixSigner(tc.privateKey, tc.publicKeyId, tc.signatureAlgorithm)
+			signer, err := NewPkixSigner(tc.privateKey, tc.signatureAlgorithm, tc.publicKeyId)
 			if err != nil {
 				t.Fatalf("failed to create signer")
 			}

@@ -20,10 +20,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/asn1"
+	"fmt"
 	"github.com/pkg/errors"
 	"math/big"
 )
 
+// ecSign returns the asn1 encoded representation of the integer signature returned from ecdsa.Sign.
 func ecSign(privateKey *ecdsa.PrivateKey, payload []byte, signatureAlgorithm SignatureAlgorithm) ([]byte, error) {
 	switch signatureAlgorithm {
 	case EcdsaP256Sha256, EcdsaP384Sha384, EcdsaP521Sha512:
@@ -32,14 +34,14 @@ func ecSign(privateKey *ecdsa.PrivateKey, payload []byte, signatureAlgorithm Sig
 		}
 		_, hashedPayload, err := hashPayload(payload, signatureAlgorithm)
 		if err != nil {
-			return nil, errors.Wrap(err, "some err")
+			return nil, errors.Wrap(err, "hash payload error")
 		}
 		sigStruct.R, sigStruct.S, err = ecdsa.Sign(rand.Reader, privateKey, hashedPayload[:])
 		if err != nil {
-			return nil, errors.Wrap(err, "some err")
+			return nil, errors.Wrap(err, "error creating ecdsa signature")
 		}
 		return asn1.Marshal(sigStruct)
 	default:
-		return nil, errors.New("expected ecdsa signature algorithm")
+		return nil, fmt.Errorf("expected ecdsa signature algorithm, got %v", signatureAlgorithm)
 	}
 }

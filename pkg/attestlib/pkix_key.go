@@ -47,7 +47,7 @@ func generatePkixPublicKeyId(privateKey interface{}) (string, error) {
 		rsaKey := privateKey.(*rsa.PrivateKey)
 		publicKeyMaterial, err := x509.MarshalPKIXPublicKey(&rsaKey.PublicKey)
 		if err != nil {
-			return "", errors.Wrap(err, "some err")
+			return "", errors.Wrap(err, "marshal rsa public key error")
 		}
 		dgst := sha256.Sum256(publicKeyMaterial)
 		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
@@ -56,7 +56,7 @@ func generatePkixPublicKeyId(privateKey interface{}) (string, error) {
 		ecKey := privateKey.(*ecdsa.PrivateKey)
 		publicKeyMaterial, err := x509.MarshalPKIXPublicKey(&ecKey.PublicKey)
 		if err != nil {
-			return "", errors.Wrap(err, "some err")
+			return "", errors.Wrap(err, "marshal ecdsa public key error")
 		}
 		dgst := sha256.Sum256(publicKeyMaterial)
 		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])

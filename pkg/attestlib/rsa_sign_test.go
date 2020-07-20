@@ -21,6 +21,9 @@ import (
 	"testing"
 )
 
+// RSA keys were generated using the following command: openssl genrsa -out key.pem 2048
+// The last value, 2048 in the above example, is the key size and should be changed for the desired value
+
 const rsa2048PrivateKey = `-----BEGIN PRIVATE KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDVV/6DeIAscHkY
 fPaxMyZWZ6ZUyKjyICAhcOF90mYAkkJQbrW8ftkU4k1bBU+JfYcTiILyq4tPdrZb
