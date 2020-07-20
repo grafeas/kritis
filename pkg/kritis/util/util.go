@@ -83,7 +83,7 @@ func CreateAttestation(image string, pgpSigningKey *secrets.PGPSigningSecret) (*
 	if err != nil {
 		return nil, err
 	}
-	signer, err := attestlib.NewPgpSigner(privateKey)
+	signer, err := attestlib.NewPgpSigner(privateKey, "")
 	if err != nil {
 		return nil, err
 	}

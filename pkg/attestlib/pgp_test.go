@@ -173,6 +173,96 @@ KjcvssXVpdQiiRae+2e/hWxfnPdAN0Tk
 -----END PGP PRIVATE KEY BLOCK-----
 `
 
+// This key was generated from the following commands, entering 'passw0rd' into
+// the "Enter passphrase" prompt:
+// gpg --quick-generate-key --yes password@cryptolib.com
+// gpg --export-secret-key --armor password@cryptolib.com
+const pwPrivateKey = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+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
+UBALQ75fYIAywC8w5C1gXY88FrZ9NbLjOSA=
+=MxhO
+-----END PGP PRIVATE KEY BLOCK-----`
+
+const password = "passw0rd"
+
 func TestVerifyPgp(t *testing.T) {
 	tcs := []struct {
 		name        string
@@ -206,11 +296,11 @@ func TestVerifyPgp(t *testing.T) {
 			actualPayload, err := v.verifyPgp(tc.signature, tc.publicKey)
 			if tc.expectedErr {
 				if err == nil {
-					t.Fatalf("Expected error, but returned none")
+					t.Fatalf("verifyPgp(...)=nil, want non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					t.Fatalf("verifyPgp(...)=%v, want nil", err)
 				}
 				expectedPayload := []byte(testPayload)
 				if string(actualPayload) != string(expectedPayload) {
@@ -225,6 +315,7 @@ func TestNewPgpSigner(t *testing.T) {
 	tcs := []struct {
 		name        string
 		privateKey  []byte
+		password    string
 		expectedErr bool
 	}{
 		{
@@ -237,10 +328,27 @@ func TestNewPgpSigner(t *testing.T) {
 			privateKey:  []byte("invalid-private-key"),
 			expectedErr: true,
 		},
+		{
+			name:        "correct password to decrypt private key",
+			privateKey:  []byte(pwPrivateKey),
+			password:    password,
+			expectedErr: false,
+		},
+		{
+			name:        "incorrect password to decrypt private key",
+			privateKey:  []byte(pwPrivateKey),
+			password:    "wrong-password",
+			expectedErr: true,
+		},
+		{
+			name:        "omitted password to decrypt private key",
+			privateKey:  []byte(pwPrivateKey),
+			expectedErr: true,
+		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewPgpSigner(tc.privateKey)
+			_, err := NewPgpSigner(tc.privateKey, tc.password)
 			if tc.expectedErr {
 				if err == nil {
 					t.Fatalf("Expected error but returned none")
@@ -255,7 +363,7 @@ func TestNewPgpSigner(t *testing.T) {
 }
 
 func TestCreateAttestation(t *testing.T) {
-	signer, err := NewPgpSigner([]byte(gpgPrivateKey))
+	signer, err := NewPgpSigner([]byte(gpgPrivateKey), "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating signer: %v", err)
 	}
@@ -280,7 +388,7 @@ func TestCreateAttestation(t *testing.T) {
 // including time and date.
 func TestCreateAndVerifyAttestation(t *testing.T) {
 	v := pgpVerifierImpl{}
-	signer, err := NewPgpSigner([]byte(gpgPrivateKey))
+	signer, err := NewPgpSigner([]byte(gpgPrivateKey), "")
 	if err != nil {
 		t.Fatalf("Error creating the signer: %v", err)
 	}
