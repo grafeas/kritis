@@ -47,6 +47,8 @@ const (
 	EcdsaP384Sha384
 	// ECDSA on the NIST P-521 curve with a SHA512 digest.
 	EcdsaP521Sha512
+	// Valid for PGP case
+	PGPUnused
 )
 
 // AuthenticatorType specifies the transport format of the Attestation. It
