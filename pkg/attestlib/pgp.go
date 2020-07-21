@@ -71,9 +71,11 @@ type pgpSigner struct {
 	publicKeyID string
 }
 
-// NewPgpSigner creates a Signer interface for PGP Attestations. `privateKey`
-// contains the ASCII-armored private key.
-func NewPgpSigner(privateKey []byte) (Signer, error) {
+// NewPgpSigner creates a Signer interface for PGP Attestations.
+// `privateKey` contains the ASCII-armored private key.
+// `passphrase` contains an optional password to decrypt the private key. If the
+// private key is not encrypted, pass in an empty string.
+func NewPgpSigner(privateKey []byte, passphrase string) (Signer, error) {
 	keyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(privateKey))
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading armored private key")
@@ -82,6 +84,16 @@ func NewPgpSigner(privateKey []byte) (Signer, error) {
 		return nil, fmt.Errorf("expected 1 key in keyring, got %d", len(keyring))
 	}
 	key := keyring[0]
+
+	if key.PrivateKey.Encrypted {
+		if passphrase == "" {
+			return nil, fmt.Errorf("missing passphrase for encrypted private key")
+		}
+		err := key.PrivateKey.Decrypt([]byte(passphrase))
+		if err != nil {
+			return nil, errors.Wrap(err, "could not decrypt private key")
+		}
+	}
 	return &pgpSigner{
 		privateKey:  key,
 		publicKeyID: fmt.Sprintf("%X", key.PrimaryKey.Fingerprint),
