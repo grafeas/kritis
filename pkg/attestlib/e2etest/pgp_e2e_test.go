@@ -416,7 +416,7 @@ func TestEndToEndWithAttestations(t *testing.T) {
 				t.Fatalf("CreateAttestation(...)=%v, want nil", err)
 			}
 
-			publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, tc.publicKey, tc.keyID)
+			publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, attestlib.PGPUnused, tc.publicKey, tc.keyID)
 			if err != nil {
 				t.Fatalf("Error creating public key: %v", err)
 			}

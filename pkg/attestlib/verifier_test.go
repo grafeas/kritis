@@ -73,41 +73,61 @@ const verifierPublicKeyID = "446625EB36036D7546B2D63B77B4BE6989834233"
 
 func TestNewPublicKey(t *testing.T) {
 	tcs := []struct {
-		name              string
-		authenticatorType AuthenticatorType
-		keyData           []byte
-		keyID             string
-		expectedErr       bool
-		expectedID        string
+		name               string
+		authenticatorType  AuthenticatorType
+		signatureAlgorithm SignatureAlgorithm
+		keyData            []byte
+		keyID              string
+		expectedErr        bool
+		expectedID         string
 	}{
 		{
-			name:              "valid PGP key ID",
-			authenticatorType: Pgp,
-			keyData:           []byte(verifierPublicKey),
-			keyID:             verifierPublicKeyID,
-			expectedErr:       false,
-			expectedID:        verifierPublicKeyID,
+			name:               "valid PGP key ID",
+			authenticatorType:  Pgp,
+			signatureAlgorithm: PGPUnused,
+			keyData:            []byte(verifierPublicKey),
+			keyID:              verifierPublicKeyID,
+			expectedErr:        false,
+			expectedID:         verifierPublicKeyID,
 		},
 		{
-			name:              "incorrect PGP key ID",
-			authenticatorType: Pgp,
-			keyData:           []byte(verifierPublicKey),
-			keyID:             "incorrect-id",
-			expectedErr:       false,
-			expectedID:        verifierPublicKeyID,
+			name:               "incorrect PGP key ID",
+			authenticatorType:  Pgp,
+			signatureAlgorithm: PGPUnused,
+			keyData:            []byte(verifierPublicKey),
+			keyID:              "incorrect-id",
+			expectedErr:        false,
+			expectedID:         verifierPublicKeyID,
 		},
 		{
-			name:              "valid PKIX key ID",
-			authenticatorType: Pkix,
-			keyID:             "valid-key-id",
-			expectedErr:       false,
-			expectedID:        "valid-key-id",
+			name:               "valid PKIX key ID",
+			authenticatorType:  Pkix,
+			signatureAlgorithm: RsaSignPkcs12048Sha256,
+			keyID:              "valid-key-id",
+			expectedErr:        false,
+			expectedID:         "valid-key-id",
 		},
 		{
-			name:              "invalid PKIX key ID",
-			authenticatorType: Pkix,
-			keyID:             ":{invalid-key-id}",
-			expectedErr:       true,
+			name:               "valid PKIX key ID with undefined signature algorithm",
+			authenticatorType:  Pkix,
+			signatureAlgorithm: UnknownSigningAlgorithm,
+			keyID:              "valid-key-id",
+			expectedErr:        true,
+		},
+		{
+			name:               "valid PGP key ID with incorrect signature algorithm",
+			authenticatorType:  Pgp,
+			signatureAlgorithm: RsaSignPkcs12048Sha256,
+			keyData:            []byte(verifierPublicKey),
+			keyID:              verifierPublicKeyID,
+			expectedErr:        true,
+		},
+		{
+			name:               "invalid PKIX key ID",
+			authenticatorType:  Pkix,
+			signatureAlgorithm: RsaSignPkcs12048Sha256,
+			keyID:              ":{invalid-key-id}",
+			expectedErr:        true,
 		},
 		{
 			name:              "unknown authenticator type",
@@ -117,7 +137,7 @@ func TestNewPublicKey(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			publicKey, err := NewPublicKey(tc.authenticatorType, tc.keyData, tc.keyID)
+			publicKey, err := NewPublicKey(tc.authenticatorType, tc.signatureAlgorithm, tc.keyData, tc.keyID)
 			if tc.expectedErr {
 				if err == nil {
 					t.Errorf("Got nil err, expected not-nil")
@@ -140,15 +160,15 @@ func TestVerifyAttestation(t *testing.T) {
 		Signature:         []byte("signature"),
 		SerializedPayload: []byte("payload"),
 	}
-	matchingKey, err := NewPublicKey(Pkix, []byte("key-data"), "key-id")
+	matchingKey, err := NewPublicKey(Pkix, EcdsaP256Sha256, []byte("key-data"), "key-id")
 	if err != nil {
 		t.Fatalf("error creating public key: %v", err)
 	}
-	otherMatchingKey, err := NewPublicKey(Pkix, []byte("key-data-other"), "key-id")
+	otherMatchingKey, err := NewPublicKey(Pkix, EcdsaP256Sha256, []byte("key-data-other"), "key-id")
 	if err != nil {
 		t.Fatalf("error creating public key: %v", err)
 	}
-	nonmatchingKey, err := NewPublicKey(Pkix, []byte("key-data-other"), "key-id-other")
+	nonmatchingKey, err := NewPublicKey(Pkix, RsaSignPkcs12048Sha256, []byte("key-data-other"), "key-id-other")
 	if err != nil {
 		t.Fatalf("error creating public key: %v", err)
 	}

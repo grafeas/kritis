@@ -40,7 +40,7 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
-sleep 5
+sleep 10
 
 # save occ id
 OLD_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
