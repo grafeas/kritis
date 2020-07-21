@@ -106,12 +106,23 @@ delete_pod() {
   kubectl delete pod $POD_NAME
 }
 
+# exporting helper functions
+export -f get_occ
 export -f urlencode
+
+# exporting clean-up task functions.
+# Clean-up task functions are used in conjuction with trap command to perform resource
+# clean-up on exit. Because only one bash function can be linked to an exit code,
+# we need to redfine clean-up function and re-link to exit code throughoput test code. E.g.,
+#
+# clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
+# trap 'clean_up'  EXIT
+#
+# See more in example test files.
 export -f delete_image
 export -f delete_occ
 export -f deploy_image
 export -f delete_pod
-export -f get_occ
 
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
