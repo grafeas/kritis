@@ -124,7 +124,7 @@ func parseSignerMode(mode SignerMode) (doCheck bool, doSign bool, err error) {
 	default:
 		return false, false, fmt.Errorf("unrecognized mode %s, must be one of check-and-sign|check-only|bypass-and-sign", mode)
 	}
-	modeFlags.Parse(os.Args[1:])
+	flag.Parse()
 	return doCheck, doSign, err
 }
 
