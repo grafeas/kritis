@@ -58,7 +58,7 @@ var (
 	kmsDigestAlg string
 
 	// helper global variables
-	modeFlags *flag.FlagSet
+	modeFlags   *flag.FlagSet
 	modeExample string
 )
 
