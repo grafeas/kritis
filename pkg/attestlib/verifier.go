@@ -34,7 +34,7 @@ type Verifier interface {
 }
 
 type pkixVerifier interface {
-	verifyPkix(signature []byte, payload []byte, publicKey []byte) error
+	verifyPkix(signature []byte, payload []byte, publicKey PublicKey) error
 }
 
 type pgpVerifier interface {
@@ -114,7 +114,7 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	payload := []byte{}
 	switch publicKey.AuthenticatorType {
 	case Pkix:
-		err = v.verifyPkix(att.Signature, att.SerializedPayload, publicKey.KeyData)
+		err = v.verifyPkix(att.Signature, att.SerializedPayload, publicKey)
 		payload = att.SerializedPayload
 	case Pgp:
 		payload, err = v.verifyPgp(att.Signature, publicKey.KeyData)
@@ -135,8 +135,4 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	return v.checkAuthenticatedAttestation(payload, v.ImageName, v.ImageDigest, convertAuthenticatedAttestation)
 }
 
-type pkixVerifierImpl struct{}
 
-func (v pkixVerifierImpl) verifyPkix(signature []byte, payload []byte, publicKey []byte) error {
-	return errors.New("verify pkix not implemented")
-}
