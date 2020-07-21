@@ -27,27 +27,10 @@ type Signer interface {
 	CreateAttestation(payload []byte) (*Attestation, error)
 }
 
-type pkixSigner struct {
-	PrivateKey         []byte
-	PublicKeyID        string
-	SignatureAlgorithm SignatureAlgorithm
-}
-
 type jwtSigner struct {
 	PrivateKey         []byte
 	PublicKeyID        string
 	SignatureAlgorithm SignatureAlgorithm
-}
-
-// NewPkixSigner creates a Signer interface for PKIX Attestations. `privateKey`
-// contains the PEM-encoded private key. `publicKeyID` is the ID of the public
-// key that can verify the Attestation signature.
-func NewPkixSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) (Signer, error) {
-	return &pkixSigner{
-		PrivateKey:         privateKey,
-		PublicKeyID:        publicKeyID,
-		SignatureAlgorithm: alg,
-	}, nil
 }
 
 // NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
@@ -59,11 +42,6 @@ func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm)
 		PublicKeyID:        publicKeyID,
 		SignatureAlgorithm: alg,
 	}, nil
-}
-
-// CreateAttestation creates a signed PKIX Attestation. See Signer for more details.
-func (s *pkixSigner) CreateAttestation(payload []byte) (*Attestation, error) {
-	return nil, errors.New("pkix attestations not implemented")
 }
 
 // CreateAttestation creates a signed JWT Attestation. See Signer for more details.
