@@ -40,7 +40,6 @@ trap 'clean_up'  EXIT
 -image=${GOOD_IMG_DIGEST_URL} \
 -kms_key_name=projects/$KMS_PROJECT/locations/$KMS_KEYLOCATION/keyRings/$KMS_KEYRING/cryptoKeys/$KMS_KEYNAME/cryptoKeyVersions/$KMS_KEYVERSION \
 -kms_digest_alg=$KMS_DIGESTALG \
--policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test

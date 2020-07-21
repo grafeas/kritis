@@ -142,5 +142,8 @@ export -f delete_pod
 #### TEST 6: bypass-and-sign mode, with kms ####
 ./tests/test-bypass-and-sign-with-kms.sh
 
-#### TEST 7: bypass-and-sign mode, overwrite ####
+#### TEST 7: bypass-and-sign mode, with pkix ####
+./tests/test-bypass-and-sign-with-pkix.sh
+
+#### TEST 8: bypass-and-sign mode, overwrite ####
 ./tests/test-overwrite.sh

@@ -38,13 +38,20 @@ trap 'clean_up'  EXIT
 -alsologtostderr \
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
--pgp_private_key=private.key \
+-pkix_private_key=ec_private.pem \
+-pkix_alg=ecdsa-p256-sha256 \
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
 trap 'clean_up'  EXIT
 
+# need to run the below command first to add key:
+# gcloud --project=kritis-int-test \
+#  alpha container binauthz attestors public-keys add \
+#  --attestor=kritis-signer-attestor \
+#  --pkix-public-key-file=integration/signer/ec_public.pem \
+#  --pkix-public-key-algorithm ecdsa-p256-sha256
 deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
 
