@@ -1,20 +1,25 @@
-# Signing
+# Attestation Library Tutorial
+
+## Signing
+
+The Signer generates Attestations using a private key. Before creating any Attestations, you must first create a Signer initialized with a private key. Then you can pass the Signer a payload, which the Signer signs and returns in an Attestation.
 
 1. Create a Signer.
    
    Create a Signer by calling the appropriate `NewSigner` constructor based on the type of Attestation you wish to create. For example, if you want to create PGP Attestations, call `NewPgpSigner`.
    
    ### PGP
-   For PGP, the signer is constructed by passing in an ASCII-armored PGP private key:
+   For PGP, the signer is constructed by passing in an ASCII-armored PGP private key. If the private key is passphrase-encrypted, the passphrase should be passed through the `passphrase` argument. Otherwise, `passphrase` should be an empty string.
    ```
    privateKey := `-----BEGIN PGP PRIVATE KEY BLOCK-----
    ...
    `
-   signer, err := NewPgpSigner([]byte(privateKey))
+   passphrase := "some-passphrase"
+   signer, err := NewPgpSigner([]byte(privateKey), passphrase)
    ```
    
    ### Raw PKIX / JWT
-   For PKIX and JWT, the signer is constructed by passing in the ASCII-armored private key and its SignatureAlgorithm, as well as the ID of the corresponding public key (see [list of supported SignatureAlgorithms](https://github.com/grafeas/kritis/blob/master/pkg/attestlib/signature_algorithm.go#L24)):
+   For PKIX and JWT, the signer is constructed by passing in the ASCII-armored private key and its SignatureAlgorithm (see [list of supported SignatureAlgorithms](https://github.com/grafeas/kritis/blob/master/pkg/attestlib/signature_algorithm.go#L24)), as well as the ID of the corresponding public key:
    
    #### PKIX
    ```
@@ -64,7 +69,7 @@
    The payload containing the image digest is stored in the payload section. The signature is stored in the signature section. The JWT is serialized and stored in the Attestation’s `Signature` field.
    
    
-# Verifying
+## Verifying
 
 The Verifier holds a set of PublicKeys. When given an Attestation, the Verifier checks if any of its PublicKeys can verify the Attestation. To verify an Attestation, you must create a Verifier, which is initialized with a set of PublicKeys.
 
@@ -96,8 +101,6 @@ The Verifier holds a set of PublicKeys. When given an Attestation, the Verifier 
    key, err := NewJwtPublicKey([]byte(publicKey), “some-key-id”, EcdsaP256Sha256)
    ```
 
-   
-
 2. Create a Verifier.
 
    Create a Verifier using the `NewVerifier` constructor, passing in the image digest you are checking and a slice of PublicKeys.
@@ -110,7 +113,9 @@ The Verifier holds a set of PublicKeys. When given an Attestation, the Verifier 
 
 3. Call VerifyAttestation.
 
-   Verify an Attestation by passing it to the Verifier’s `VerifyAttestation` method. The method will check that the Verifier holds a public key that verifies the Attestation. It also checks that the signed payload corresponds to the image you are checking. If either step fails, the method returns an error:
+   Verify an Attestation by passing it to the Verifier’s `VerifyAttestation` method. The method will first check that the Verifier holds a public key that verifies the Attestation's signature. It then extracts data from the Attestation's payload, including the image name and digest. It checks that the image name and digest match the `image` you are verifying.
+   
+   If either step fails, the method returns an error:
    
    ```
    if err := verifier.VerifyAttestation(attestation); err != nil {
@@ -119,6 +124,6 @@ The Verifier holds a set of PublicKeys. When given an Attestation, the Verifier 
    ```
    
    ### JWT
-   For JWT, the `VerifyAttestation` method additionally checks for the well-formedness of the JWT. In the header, it checks that the `crit` field is not populated; the `typ`, `kid`, and `alg` fields may be populated, but they are not used to verify the Attestation. 
+   For JWT, the `VerifyAttestation` method additionally checks for the well-formedness of the JWT. In the header, it checks that the `crit` field is not populated; the `typ`, `kid`, and `alg` fields must be populated, but they are not used to verify the signature. 
    
    The payload and signature are extracted from their respective sections of the JWT, and are used to cryptographically verify the signature.
