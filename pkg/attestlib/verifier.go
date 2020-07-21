@@ -134,5 +134,3 @@ func (v *verifier) VerifyAttestation(att *Attestation) error {
 	// can trust.
 	return v.checkAuthenticatedAttestation(payload, v.ImageName, v.ImageDigest, convertAuthenticatedAttestation)
 }
-
-

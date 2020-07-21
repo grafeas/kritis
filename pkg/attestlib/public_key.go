@@ -75,9 +75,10 @@ func NewPublicKey(authenticatorType AuthenticatorType, signatureAlgorithm Signat
 	}
 
 	return &PublicKey{
-		AuthenticatorType: authenticatorType,
-		KeyData:           keyData,
-		ID:                newKeyID,
+		AuthenticatorType:  authenticatorType,
+		SignatureAlgorithm: signatureAlgorithm,
+		KeyData:            keyData,
+		ID:                 newKeyID,
 	}, nil
 }
 
@@ -93,7 +94,7 @@ func extractPgpKeyID(keyData []byte) (string, error) {
 }
 
 func extractPkixKeyID(keyData []byte, keyID string) (string, error) {
-	if (len(keyID) == 0){
+	if len(keyID) == 0 {
 		return generatePkixPublicKeyId(keyData)
 	}
 	if strings.Contains(keyID, ":") {
