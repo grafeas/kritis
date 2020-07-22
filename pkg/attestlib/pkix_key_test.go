@@ -17,6 +17,7 @@ limitations under the License.
 package attestlib
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -58,18 +59,18 @@ func TestParsePkixPrivateKeyPem(t *testing.T) {
 	}
 }
 
-func TestGeneratePKIXPublicKeyId(t *testing.T) {
+func TestGeneratePKIXPublicKeyIdFromPrivateKey(t *testing.T) {
 	tcs := []struct {
 		name          string
 		privateKey    []byte
 		expectedError bool
 	}{
 		{
-			name:          "genrate rsa key id successful",
+			name:          "genrate rsa private key id successful",
 			privateKey:    []byte(rsa2048PrivateKey),
 			expectedError: false,
 		}, {
-			name:          "generate ecdsa key id successful",
+			name:          "generate ecdsa private key id successful",
 			privateKey:    []byte(ec256PrivateKey),
 			expectedError: false,
 		},
@@ -92,6 +93,41 @@ func TestGeneratePKIXPublicKeyId(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestGeneratePKIXPublicKeyIdFromPublicKey(t *testing.T) {
+	tcs := []struct {
+		name          string
+		publicKey     []byte
+		expectedError bool
+	}{
+		{
+			name:          "genrate rsa public key id successful",
+			publicKey:     []byte(rsa2048PubKey),
+			expectedError: false,
+		}, {
+			name:          "generate ecdsa public key id successful",
+			publicKey:     []byte(ec256PubKey),
+			expectedError: false,
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			keyId, err := generatePkixPublicKeyId(tc.publicKey)
+			if tc.expectedError {
+				if err == nil {
+					t.Errorf("generatePkixPublicKeyId(...) = nil, expected non nil")
+
+				}
+			} else {
+				if err != nil {
+					t.Errorf("generatePkixPublicKeyId(..) = %v, expected nil", err)
+				} else if !strings.HasPrefix(keyId, "ni:///sha-256;") {
+					t.Errorf("unexpected keyId %s", keyId)
+				}
+			}
 		})
 	}
 }
