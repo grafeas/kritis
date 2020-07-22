@@ -419,7 +419,9 @@ func (x *Query_Filter_Operator) UnmarshalJSON(data []byte) error {
 	*x = Query_Filter_Operator(value)
 	return nil
 }
-func (Query_Filter_Operator) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{15, 0, 0} }
+func (Query_Filter_Operator) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{15, 0, 0}
+}
 
 type Query_Order_Direction int32
 
@@ -453,7 +455,9 @@ func (x *Query_Order_Direction) UnmarshalJSON(data []byte) error {
 	*x = Query_Order_Direction(value)
 	return nil
 }
-func (Query_Order_Direction) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{15, 1, 0} }
+func (Query_Order_Direction) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{15, 1, 0}
+}
 
 type Error_ErrorCode int32
 
@@ -744,10 +748,12 @@ type PropertyValue_ReferenceValue struct {
 	XXX_unrecognized []byte                                      `json:"-"`
 }
 
-func (m *PropertyValue_ReferenceValue) Reset()                    { *m = PropertyValue_ReferenceValue{} }
-func (m *PropertyValue_ReferenceValue) String() string            { return proto.CompactTextString(m) }
-func (*PropertyValue_ReferenceValue) ProtoMessage()               {}
-func (*PropertyValue_ReferenceValue) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 2} }
+func (m *PropertyValue_ReferenceValue) Reset()         { *m = PropertyValue_ReferenceValue{} }
+func (m *PropertyValue_ReferenceValue) String() string { return proto.CompactTextString(m) }
+func (*PropertyValue_ReferenceValue) ProtoMessage()    {}
+func (*PropertyValue_ReferenceValue) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{1, 2}
+}
 
 func (m *PropertyValue_ReferenceValue) GetApp() string {
 	if m != nil && m.App != nil {
@@ -1835,10 +1841,12 @@ type CompiledQuery_MergeJoinScan struct {
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *CompiledQuery_MergeJoinScan) Reset()                    { *m = CompiledQuery_MergeJoinScan{} }
-func (m *CompiledQuery_MergeJoinScan) String() string            { return proto.CompactTextString(m) }
-func (*CompiledQuery_MergeJoinScan) ProtoMessage()               {}
-func (*CompiledQuery_MergeJoinScan) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16, 1} }
+func (m *CompiledQuery_MergeJoinScan) Reset()         { *m = CompiledQuery_MergeJoinScan{} }
+func (m *CompiledQuery_MergeJoinScan) String() string { return proto.CompactTextString(m) }
+func (*CompiledQuery_MergeJoinScan) ProtoMessage()    {}
+func (*CompiledQuery_MergeJoinScan) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{16, 1}
+}
 
 const Default_CompiledQuery_MergeJoinScan_ValuePrefix bool = false
 
