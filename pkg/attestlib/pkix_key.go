@@ -33,12 +33,28 @@ func parsePkixPrivateKeyPem(privateKey []byte) (interface{}, error) {
 	if len(rest) != 0 {
 		return nil, errors.New("expected one public key")
 	}
-
-	key, err := x509.ParsePKCS8PrivateKey(der.Bytes)
-	if err != nil {
-		return nil, err
+	switch (der.Type){
+	case "RSA PRIVATE KEY" :
+		key, err := x509.ParsePKCS1PrivateKey(der.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	case "EC PRIVATE KEY":
+		key, err := x509.ParseECPrivateKey(der.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(der.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	default:
+		return nil, errors.New("unexpected key type")
 	}
-	return key, nil
 }
 
 func generatePkixPublicKeyId(privateKey interface{}) (string, error) {
