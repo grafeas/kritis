@@ -38,7 +38,7 @@ trap 'clean_up'  EXIT
 -alsologtostderr \
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
--pkix_private_key=ec_private.pem \
+-pkix_private_key=ec_private_p8.pem \
 -pkix_alg=ecdsa-p256-sha256 \
 -note_name=${NOTE_NAME}
 
