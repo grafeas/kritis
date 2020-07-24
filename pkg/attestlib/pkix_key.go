@@ -62,7 +62,11 @@ func generatePkixPublicKeyId(key interface{}) (string, error) {
 		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
 		return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
 	case []byte:
-		dgst := sha256.Sum256(key.([]byte))
+		der, rest := pem.Decode(key.([]byte))
+		if len(rest) != 0 {
+			return "", errors.New("expected one public key")
+		}
+		dgst := sha256.Sum256(der.Bytes)
 		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
 		return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
 	default:
