@@ -41,19 +41,19 @@ func parsePkixPrivateKeyPem(privateKey []byte) (interface{}, error) {
 	case rsaPkcs1Key:
 		key, err := x509.ParsePKCS1PrivateKey(der.Bytes)
 		if err != nil {
-			return nil, errors.Wrapy(err, "failed to parse rsa pkcs1 private key")
+			return nil, errors.Wrap(err, "failed to parse rsa pkcs1 private key")
 		}
 		return key, nil
 	case ecPkcs1Key:
 		key, err := x509.ParseECPrivateKey(der.Bytes)
 		if err != nil {
-			return nil, errors.Wrapy(err, "failed to parse ecdsa pkcs1 private key")
+			return nil, errors.Wrap(err, "failed to parse ecdsa pkcs1 private key")
 		}
 		return key, nil
 	case pkcs8Key:
 		key, err := x509.ParsePKCS8PrivateKey(der.Bytes)
 		if err != nil {
-			return nil, errors.Wrapy(err, "failed to parse pkcs8 private key")
+			return nil, errors.Wrap(err, "failed to parse pkcs8 private key")
 		}
 		return key, nil
 	default:
