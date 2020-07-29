@@ -92,6 +92,24 @@ delete_occ() {
     fi
 }
 
+read_occ() {
+    set +ex
+    IMG_DIGEST_URL_TO_READ=$1
+    if [ -n "$IMG_DIGEST_URL_TO_READ" ]; then
+      OCC_NAME=$(get_occ $IMG_DIGEST_URL_TO_READ)
+      echo "Delete occurrence if created."
+      if [ -n "$OCC_NAME" ]; then
+          ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
+          echo "Delete occurrence ${OCC_NAME}."
+          curl -X GET \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
+              -H "x-goog-user-project: ${PROJECT_ID}" \
+              "https://containeranalysis.googleapis.com/v1/${OCC_NAME}"
+      fi
+    fi
+}
+
 deploy_image() {
   IMAGE_URL=$1
   POD_NAME=$2
@@ -108,6 +126,7 @@ delete_pod() {
 
 # exporting helper functions
 export -f get_occ
+export -f read_occ
 export -f urlencode
 
 # exporting clean-up task functions.
