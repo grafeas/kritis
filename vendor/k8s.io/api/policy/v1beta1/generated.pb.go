@@ -99,17 +99,13 @@ func (m *PodDisruptionBudget) Reset()                    { *m = PodDisruptionBud
 func (*PodDisruptionBudget) ProtoMessage()               {}
 func (*PodDisruptionBudget) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{6} }
 
-func (m *PodDisruptionBudgetList) Reset()      { *m = PodDisruptionBudgetList{} }
-func (*PodDisruptionBudgetList) ProtoMessage() {}
-func (*PodDisruptionBudgetList) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{7}
-}
+func (m *PodDisruptionBudgetList) Reset()                    { *m = PodDisruptionBudgetList{} }
+func (*PodDisruptionBudgetList) ProtoMessage()               {}
+func (*PodDisruptionBudgetList) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{7} }
 
-func (m *PodDisruptionBudgetSpec) Reset()      { *m = PodDisruptionBudgetSpec{} }
-func (*PodDisruptionBudgetSpec) ProtoMessage() {}
-func (*PodDisruptionBudgetSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{8}
-}
+func (m *PodDisruptionBudgetSpec) Reset()                    { *m = PodDisruptionBudgetSpec{} }
+func (*PodDisruptionBudgetSpec) ProtoMessage()               {}
+func (*PodDisruptionBudgetSpec) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{8} }
 
 func (m *PodDisruptionBudgetStatus) Reset()      { *m = PodDisruptionBudgetStatus{} }
 func (*PodDisruptionBudgetStatus) ProtoMessage() {}
@@ -135,11 +131,9 @@ func (*RunAsUserStrategyOptions) Descriptor() ([]byte, []int) {
 	return fileDescriptorGenerated, []int{13}
 }
 
-func (m *SELinuxStrategyOptions) Reset()      { *m = SELinuxStrategyOptions{} }
-func (*SELinuxStrategyOptions) ProtoMessage() {}
-func (*SELinuxStrategyOptions) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{14}
-}
+func (m *SELinuxStrategyOptions) Reset()                    { *m = SELinuxStrategyOptions{} }
+func (*SELinuxStrategyOptions) ProtoMessage()               {}
+func (*SELinuxStrategyOptions) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{14} }
 
 func (m *SupplementalGroupsStrategyOptions) Reset()      { *m = SupplementalGroupsStrategyOptions{} }
 func (*SupplementalGroupsStrategyOptions) ProtoMessage() {}

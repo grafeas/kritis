@@ -90,11 +90,9 @@ func (m *ResourceRule) Reset()                    { *m = ResourceRule{} }
 func (*ResourceRule) ProtoMessage()               {}
 func (*ResourceRule) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{5} }
 
-func (m *SelfSubjectAccessReview) Reset()      { *m = SelfSubjectAccessReview{} }
-func (*SelfSubjectAccessReview) ProtoMessage() {}
-func (*SelfSubjectAccessReview) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{6}
-}
+func (m *SelfSubjectAccessReview) Reset()                    { *m = SelfSubjectAccessReview{} }
+func (*SelfSubjectAccessReview) ProtoMessage()               {}
+func (*SelfSubjectAccessReview) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{6} }
 
 func (m *SelfSubjectAccessReviewSpec) Reset()      { *m = SelfSubjectAccessReviewSpec{} }
 func (*SelfSubjectAccessReviewSpec) ProtoMessage() {}

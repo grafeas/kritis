@@ -81,11 +81,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-func (m *ContainerResourcePolicy) Reset()      { *m = ContainerResourcePolicy{} }
-func (*ContainerResourcePolicy) ProtoMessage() {}
-func (*ContainerResourcePolicy) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{0}
-}
+func (m *ContainerResourcePolicy) Reset()                    { *m = ContainerResourcePolicy{} }
+func (*ContainerResourcePolicy) ProtoMessage()               {}
+func (*ContainerResourcePolicy) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{0} }
 
 func (m *CrossVersionObjectReference) Reset()      { *m = CrossVersionObjectReference{} }
 func (*CrossVersionObjectReference) ProtoMessage() {}
@@ -101,11 +99,9 @@ func (m *ExternalMetricStatus) Reset()                    { *m = ExternalMetricS
 func (*ExternalMetricStatus) ProtoMessage()               {}
 func (*ExternalMetricStatus) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{3} }
 
-func (m *HorizontalPodAutoscaler) Reset()      { *m = HorizontalPodAutoscaler{} }
-func (*HorizontalPodAutoscaler) ProtoMessage() {}
-func (*HorizontalPodAutoscaler) Descriptor() ([]byte, []int) {
-	return fileDescriptorGenerated, []int{4}
-}
+func (m *HorizontalPodAutoscaler) Reset()                    { *m = HorizontalPodAutoscaler{} }
+func (*HorizontalPodAutoscaler) ProtoMessage()               {}
+func (*HorizontalPodAutoscaler) Descriptor() ([]byte, []int) { return fileDescriptorGenerated, []int{4} }
 
 func (m *HorizontalPodAutoscalerCondition) Reset()      { *m = HorizontalPodAutoscalerCondition{} }
 func (*HorizontalPodAutoscalerCondition) ProtoMessage() {}

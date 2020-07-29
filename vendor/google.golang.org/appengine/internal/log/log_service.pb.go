@@ -75,9 +75,7 @@ func (x *LogServiceError_ErrorCode) UnmarshalJSON(data []byte) error {
 	*x = LogServiceError_ErrorCode(value)
 	return nil
 }
-func (LogServiceError_ErrorCode) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{0, 0}
-}
+func (LogServiceError_ErrorCode) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
 
 type LogServiceError struct {
 	XXX_unrecognized []byte `json:"-"`
