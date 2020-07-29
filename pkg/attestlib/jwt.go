@@ -89,22 +89,17 @@ func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "error marshaling header")
 	}
-	var headerBase64 []byte
-	base64.RawURLEncoding.Encode(headerBase64, headerJson)
-	headerDot := append(headerBase64, []byte(".")...)
-	var payloadBase64 []byte
-	base64.RawURLEncoding.Encode(payloadBase64, payload)
-	headerDotPayload := append(headerDot, payloadBase64...)
-	signature, err := createDetachedSignature(s.privateKey, headerDotPayload, s.signatureAlgorithm)
+	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJson)
+	payloadBase64 := base64.RawURLEncoding.EncodeToString(payload)
+	signature, err := createDetachedSignature(s.privateKey, []byte(headerBase64+"."+payloadBase64), s.signatureAlgorithm)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating signature")
 	}
-	var signatureBase64 []byte
-	base64.RawURLEncoding.Encode(signatureBase64, signature)
-	jwt := append(headerDotPayload, signatureBase64...)
+	signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
+	jwt := headerBase64 + "." + payloadBase64 + "." + signatureBase64
 	return &Attestation{
 		PublicKeyID:       s.publicKeyID,
-		Signature:         jwt,
+		Signature:         []byte(jwt),
 		SerializedPayload: payload,
 	}, nil
 }
