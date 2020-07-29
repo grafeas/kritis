@@ -47,6 +47,8 @@ trap 'clean_up'  EXIT
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
 trap 'clean_up'  EXIT
 
+read_occ $GOOD_IMAGE_URL
+
 deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
 echo ""
