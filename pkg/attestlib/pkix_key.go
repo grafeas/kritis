@@ -62,6 +62,7 @@ func parsePkixPrivateKeyPem(privateKey []byte) (interface{}, error) {
 	}
 }
 
+// key should be of type *rsa.PrivateKey, *ecdsa.PrivateKey or []byte. If []byte the key should be a public key.
 func generatePkixPublicKeyId(key interface{}) (string, error) {
 	switch key.(type) {
 	case *rsa.PrivateKey:
@@ -70,10 +71,9 @@ func generatePkixPublicKeyId(key interface{}) (string, error) {
 		if err != nil {
 			return "", errors.Wrap(err, "marshal rsa public key error")
 		}
-		return base64.RawURLEncoding.EncodeToString(publicKeyMaterial), nil
-		// dgst := sha256.Sum256(publicKeyMaterial)
-		// base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
-		// return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
+		dgst := sha256.Sum256(publicKeyMaterial)
+		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
+		return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
 	case *ecdsa.PrivateKey:
 		ecKey := key.(*ecdsa.PrivateKey)
 		publicKeyMaterial, err := x509.MarshalPKIXPublicKey(&ecKey.PublicKey)
@@ -88,12 +88,10 @@ func generatePkixPublicKeyId(key interface{}) (string, error) {
 		if len(rest) != 0 {
 			return "", errors.New("expected one public key")
 		}
-		return base64.RawURLEncoding.EncodeToString(der.Bytes), nil
-		// dgst := sha256.Sum256(der.Bytes)
-		// base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
-		// return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
+		dgst := sha256.Sum256(der.Bytes)
+		base64Dgst := base64.RawURLEncoding.EncodeToString(dgst[:])
+		return fmt.Sprintf("ni:///sha-256;%s", base64Dgst), nil
 	default:
 		return "", errors.New("unexpected key type")
 	}
-
 }

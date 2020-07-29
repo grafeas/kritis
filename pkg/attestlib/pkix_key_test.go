@@ -67,7 +67,7 @@ func TestGeneratePKIXPublicKeyIdFromPrivateKey(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          "genrate rsa private key id successful",
+			name:          "generate rsa private key id successful",
 			privateKey:    []byte(rsa2048PrivateKey),
 			expectedError: false,
 		}, {
@@ -120,7 +120,6 @@ func TestGeneratePKIXPublicKeyIdFromPublicKey(t *testing.T) {
 			if tc.expectedError {
 				if err == nil {
 					t.Errorf("generatePkixPublicKeyId(...) = nil, expected non nil")
-
 				}
 			} else {
 				if err != nil {
