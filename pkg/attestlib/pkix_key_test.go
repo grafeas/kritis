@@ -17,6 +17,7 @@ limitations under the License.
 package attestlib
 
 import (
+	"crypto/rsa"
 	"strings"
 	"testing"
 )
@@ -160,12 +161,21 @@ BvDUTqxtLRN/CYCdlMS/cVU2KxLsu0wnqQNQqHnaNisdXZwU8rygXyP0wLC7fiWd
 /M8plG7635TBvXPSZYQLTbcZuDBdAaLo40Yb3MVxpqiLeDko3UM=
 -----END RSA PRIVATE KEY-----
 `
-func TestGenerateIdMatchForKeyPair(t *testing.T){
+
+func TestGenerateIdMatchForKeyPair(t *testing.T) {
 	keyId1, err := generatePkixPublicKeyId([]byte(rsa2048PubKey))
 	if err != nil {
 		t.Fatalf("error generating id from public key, %v", err)
 	}
-	keyId2, err := generatePkixPublicKeyId([]byte(rsaPkcs1PrivKey))
+	key, err := parsePkixPrivateKeyPem([]byte(rsaPkcs1PrivKey))
+	if err != nil {
+		t.Fatalf("error parsing private key, %v", err)
+	}
+	rsaKey, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		t.Fatalf("error with rsa key")
+	}
+	keyId2, err := generatePkixPublicKeyId(rsaKey)
 	if err != nil {
 		t.Fatalf("error generating id from private key, %v", err)
 	}
