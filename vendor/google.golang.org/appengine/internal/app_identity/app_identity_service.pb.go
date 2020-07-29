@@ -294,10 +294,12 @@ type GetDefaultGcsBucketNameRequest struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *GetDefaultGcsBucketNameRequest) Reset()                    { *m = GetDefaultGcsBucketNameRequest{} }
-func (m *GetDefaultGcsBucketNameRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetDefaultGcsBucketNameRequest) ProtoMessage()               {}
-func (*GetDefaultGcsBucketNameRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+func (m *GetDefaultGcsBucketNameRequest) Reset()         { *m = GetDefaultGcsBucketNameRequest{} }
+func (m *GetDefaultGcsBucketNameRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDefaultGcsBucketNameRequest) ProtoMessage()    {}
+func (*GetDefaultGcsBucketNameRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{10}
+}
 
 type GetDefaultGcsBucketNameResponse struct {
 	DefaultGcsBucketName *string `protobuf:"bytes,1,opt,name=default_gcs_bucket_name,json=defaultGcsBucketName" json:"default_gcs_bucket_name,omitempty"`

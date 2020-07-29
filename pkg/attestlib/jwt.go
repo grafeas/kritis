@@ -45,6 +45,70 @@ func getAlgName(alg SignatureAlgorithm) string {
 	}
 }
 
+type jwtSigner struct {
+	privateKey         interface{}
+	publicKeyID        string
+	signatureAlgorithm SignatureAlgorithm
+}
+
+// NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
+// is the ID of the public key that can verify the Attestation signature.
+// TODO: Explain formatting of JWT private keys.
+func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) (Signer, error) {
+	key, err := parsePkixPrivateKeyPem(privateKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing private key")
+	}
+
+	// If no ID is provided one is computed based on the default digest-based URI extracted from the public key material
+	if len(publicKeyID) == 0 {
+		publicKeyID, err = generatePkixPublicKeyId(key)
+		if err != nil {
+			return nil, errors.Wrap(err, "error generating public key id")
+		}
+	}
+	return &jwtSigner{
+		privateKey:         key,
+		publicKeyID:        publicKeyID,
+		signatureAlgorithm: alg,
+	}, nil
+}
+
+// CreateAttestation creates a signed JWT Attestation. See Signer for more details.
+func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+	type headerTemplate struct {
+		typ, alg, kid string
+	}
+	header := headerTemplate{
+		typ: "JWT",
+		alg: getAlgName(s.signatureAlgorithm),
+		kid: s.publicKeyID,
+	}
+
+	headerJson, err := json.Marshal(header)
+	if err != nil {
+		return nil, errors.Wrap(err, "error marshaling header")
+	}
+	var headerBase64 []byte
+	base64.RawURLEncoding.Encode(headerBase64, headerJson)
+	headerDot := append(headerBase64, []byte(".")...)
+	var payloadBase64 []byte
+	base64.RawURLEncoding.Encode(payloadBase64, payload)
+	headerDotPayload := append(headerDot, payloadBase64...)
+	signature, err := createDetachedSignature(s.privateKey, headerDotPayload, s.signatureAlgorithm)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating signature")
+	}
+	var signatureBase64 []byte
+	base64.RawURLEncoding.Encode(signatureBase64, signature)
+	jwt := append(headerDotPayload, signatureBase64...)
+	return &Attestation{
+		PublicKeyID:       s.publicKeyID,
+		Signature:         jwt,
+		SerializedPayload: payload,
+	}, nil
+}
+
 func checkHeader(headerIn []byte, publicKey PublicKey) error {
 	type headerTemplate struct {
 		Typ, Alg, Kid, Crit string
