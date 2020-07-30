@@ -51,6 +51,9 @@ var (
 	// pgp key flags
 	pgpPriKeyPath string
 	pgpPassphrase string
+	// pkix key flags
+	pkixPriKeyPath string
+	pkixAlg        string
 	// kms flags
 	kmsKeyName   string
 	kmsDigestAlg string
@@ -62,6 +65,8 @@ func init() {
 	flag.StringVar(&vulnzTimeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
 	flag.StringVar(&pgpPriKeyPath, "pgp_private_key", "", "pgp private signing key path, e.g., /dev/shm/key.pgp")
 	flag.StringVar(&pgpPassphrase, "pgp_passphrase", "", "passphrase for pgp private key, if any")
+	flag.StringVar(&pkixPriKeyPath, "pkix_private_key", "", "pkix private signing key path, e.g., /dev/shm/key.pem")
+	flag.StringVar(&pkixAlg, "pkix_alg", "", "pkix signature algorithm, e.g., ecdsa-p256-sha256")
 	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&noteName, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
 	flag.StringVar(&attestationProject, "attestation_project", "", "project id for GCP project that stores attestation, default to image project if unspecified")
@@ -150,8 +155,8 @@ func main() {
 	if doSign {
 		// Read the signing credentials
 		// Either kmsKeyName or pgpPriKeyPath needs to be set
-		if kmsKeyName == "" && pgpPriKeyPath == "" {
-			glog.Fatalf("Neither kms_key_name or private_key is specified")
+		if kmsKeyName == "" && pgpPriKeyPath == "" && pkixPriKeyPath == "" {
+			glog.Fatalf("Neither kms_key_name, pgp_private_key, or pkix_private_key is specified")
 		}
 		var cSigner attestlib.Signer
 		if kmsKeyName != "" {
@@ -163,7 +168,7 @@ func main() {
 			if err != nil {
 				glog.Fatalf("Creating kms signer failed: %v\n", err)
 			}
-		} else {
+		} else if pgpPriKeyPath != "" {
 			glog.Infof("Using pgp key for signing.")
 			signerKey, err := ioutil.ReadFile(pgpPriKeyPath)
 			if err != nil {
@@ -173,6 +178,20 @@ func main() {
 			cSigner, err = attestlib.NewPgpSigner(signerKey, pgpPassphrase)
 			if err != nil {
 				glog.Fatalf("Creating pgp signer failed: %v\n", err)
+			}
+		} else {
+			glog.Infof("Using pkix key for signing.")
+			signerKey, err := ioutil.ReadFile(pkixPriKeyPath)
+			if err != nil {
+				glog.Fatalf("Fail to read signer key: %v\n", err)
+			}
+			sAlg := attestlib.ParseSignatureAlgorithm(pkixAlg)
+			if sAlg == attestlib.UnknownSigningAlgorithm {
+				glog.Fatalf("Empty or unknown PKIX signature algorithm: %s\n", pkixAlg)
+			}
+			cSigner, err = attestlib.NewPkixSigner(signerKey, sAlg, "")
+			if err != nil {
+				glog.Fatalf("Creating pkix signer failed: %v\n", err)
 			}
 		}
 
