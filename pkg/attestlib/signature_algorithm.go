@@ -16,6 +16,10 @@ limitations under the License.
 
 package attestlib
 
+import (
+	"strings"
+)
+
 // SignatureAlgorithm specifies the algorithm and hashing functions used to
 // sign PKIX and JWT Attestations.
 type SignatureAlgorithm int
@@ -50,6 +54,38 @@ const (
 	// Valid for PGP case
 	PGPUnused
 )
+
+// GetAlg parses an algorithm string into SignatureAlgorithm type.
+// Naming should be consistent with:
+// https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm
+func ParseSignatureAlgorithm(algStr string) SignatureAlgorithm {
+	switch strings.ToLower(algStr) {
+	case "rsa-pss-2048-sha256":
+		return RsaPss2048Sha256
+	case "rsa-pss-3072-sha256":
+		return RsaPss3072Sha256
+	case "rsa-pss-4096s-ha256":
+		return RsaPss4096Sha256
+	case "rsa-pss-4096-sha512":
+		return RsaPss4096Sha512
+	case "rsa-sign-pkcs1-2048-sha256":
+		return RsaSignPkcs12048Sha256
+	case "rsa-sign-pkcs1-3072-sha256":
+		return RsaSignPkcs13072Sha256
+	case "rsa-sign-pkcs1-4096-sha256":
+		return RsaSignPkcs14096Sha256
+	case "rsa-sign-pkcs1-4096-sha512":
+		return RsaSignPkcs14096Sha512
+	case "ecdsa-p256-sha256":
+		return EcdsaP256Sha256
+	case "ecdsa-p384-sha384":
+		return EcdsaP384Sha384
+	case "ecdsa-p521-sha512":
+		return EcdsaP521Sha512
+	default:
+		return UnknownSigningAlgorithm
+	}
+}
 
 // AuthenticatorType specifies the transport format of the Attestation. It
 // indicates to the Verifier how to extract the appropriate information out of
