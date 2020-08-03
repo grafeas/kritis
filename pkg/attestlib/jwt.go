@@ -54,7 +54,7 @@ type jwtSigner struct {
 // NewJwtSigner creates a Signer interface for JWT Attestations. `privateKey`
 // contains the PEM-encoded private key. `publicKeyID` is the ID of the public
 // key that can verify the Attestation signature. In most cases, publicKeyID should be left empty and will be generated automatically.
-func NewJwtSigner(privateKey []byte,  alg SignatureAlgorithm, publicKeyID string) (Signer, error) {
+func NewJwtSigner(privateKey []byte, alg SignatureAlgorithm, publicKeyID string) (Signer, error) {
 	key, err := parsePkixPrivateKeyPem(privateKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "error parsing private key")
@@ -98,8 +98,8 @@ func (s *jwtSigner) CreateAttestation(jsonJwtBody []byte) (*Attestation, error) 
 	signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
 	jwt := headerBase64 + "." + payloadBase64 + "." + signatureBase64
 	return &Attestation{
-		PublicKeyID:       s.publicKeyID,
-		Signature:         []byte(jwt),
+		PublicKeyID: s.publicKeyID,
+		Signature:   []byte(jwt),
 	}, nil
 }
 
