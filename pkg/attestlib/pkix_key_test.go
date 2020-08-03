@@ -105,7 +105,7 @@ func TestGeneratePKIXPublicKeyIdFromPublicKey(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          "genrate rsa public key id successful",
+			name:          "generate rsa public key id successful",
 			publicKey:     []byte(rsa2048PubKey),
 			expectedError: false,
 		}, {
