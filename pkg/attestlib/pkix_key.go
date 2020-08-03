@@ -37,7 +37,6 @@ func parsePkixPrivateKeyPem(privateKey []byte) (interface{}, error) {
 	if len(rest) != 0 {
 		return nil, errors.New("expected one public key")
 	}
-
 	switch der.Type {
 	case rsaPkcs1Key:
 		key, err := x509.ParsePKCS1PrivateKey(der.Bytes)
