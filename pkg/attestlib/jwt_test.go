@@ -136,7 +136,7 @@ func TestNewJwtSigner(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewJwtSigner(tc.key, tc.publicKeyId, tc.alg)
+			_, err := NewJwtSigner(tc.key, tc.alg, tc.publicKeyId)
 			if tc.expectedError {
 				if err == nil {
 					t.Errorf("NewJwtSigner(...) = nil, expected non nil")
@@ -151,7 +151,7 @@ func TestNewJwtSigner(t *testing.T) {
 }
 
 func TestCreateJwtAttestation(t *testing.T) {
-	signer, err := NewJwtSigner([]byte(rsa2048PrivateKey), "kid", RsaSignPkcs12048Sha256)
+	signer, err := NewJwtSigner([]byte(rsa2048PrivateKey), RsaSignPkcs12048Sha256, "kid")
 	if err != nil {
 		t.Fatalf("failed to create signer")
 	}

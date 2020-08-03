@@ -96,7 +96,7 @@ func (s *jwtSigner) CreateAttestation(jsonJwtBody []byte) (*Attestation, error) 
 		return nil, errors.Wrap(err, "error creating signature")
 	}
 	signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
-	jwt := headerBase64 + "." + payloadBase64 + "." + signatureBase64
+	jwt := headerBase64 + "." + jsonJwtBodyBase64 + "." + signatureBase64
 	return &Attestation{
 		PublicKeyID: s.publicKeyID,
 		Signature:   []byte(jwt),
