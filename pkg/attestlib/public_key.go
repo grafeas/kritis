@@ -75,9 +75,10 @@ func NewPublicKey(authenticatorType AuthenticatorType, signatureAlgorithm Signat
 	}
 
 	return &PublicKey{
-		AuthenticatorType: authenticatorType,
-		KeyData:           keyData,
-		ID:                newKeyID,
+		AuthenticatorType:  authenticatorType,
+		SignatureAlgorithm: signatureAlgorithm,
+		KeyData:            keyData,
+		ID:                 newKeyID,
 	}, nil
 }
 
@@ -93,8 +94,9 @@ func extractPgpKeyID(keyData []byte) (string, error) {
 }
 
 func extractPkixKeyID(keyData []byte, keyID string) (string, error) {
-	// TODO(https://github.com/grafeas/kritis/issues/541): Generate ID based on
-	// DER encoding of key when keyID is empty string.
+	if len(keyID) == 0 {
+		return generatePkixPublicKeyId(keyData)
+	}
 	if strings.Contains(keyID, ":") {
 		_, err := url.ParseRequestURI(keyID)
 		if err != nil {
