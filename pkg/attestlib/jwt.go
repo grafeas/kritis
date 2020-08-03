@@ -51,10 +51,10 @@ type jwtSigner struct {
 	signatureAlgorithm SignatureAlgorithm
 }
 
-// NewJwtSigner creates a Signer interface for JWT Attestations. `publicKeyID`
-// is the ID of the public key that can verify the Attestation signature.
-// TODO: Explain formatting of JWT private keys.
-func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm) (Signer, error) {
+// NewJwtSigner creates a Signer interface for JWT Attestations. `privateKey`
+// contains the PEM-encoded private key. `publicKeyID` is the ID of the public
+// key that can verify the Attestation signature. In most cases, publicKeyID should be left empty and will be generated automatically.
+func NewJwtSigner(privateKey []byte,  alg SignatureAlgorithm, publicKeyID string) (Signer, error) {
 	key, err := parsePkixPrivateKeyPem(privateKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "error parsing private key")
@@ -75,7 +75,7 @@ func NewJwtSigner(privateKey []byte, publicKeyID string, alg SignatureAlgorithm)
 }
 
 // CreateAttestation creates a signed JWT Attestation. See Signer for more details.
-func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
+func (s *jwtSigner) CreateAttestation(jsonJwtBody []byte) (*Attestation, error) {
 	type headerTemplate struct {
 		typ, alg, kid string
 	}
@@ -90,8 +90,8 @@ func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 		return nil, errors.Wrap(err, "error marshaling header")
 	}
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJson)
-	payloadBase64 := base64.RawURLEncoding.EncodeToString(payload)
-	signature, err := createDetachedSignature(s.privateKey, []byte(headerBase64+"."+payloadBase64), s.signatureAlgorithm)
+	jsonJwtBodyBase64 := base64.RawURLEncoding.EncodeToString(jsonJwtBody)
+	signature, err := createDetachedSignature(s.privateKey, []byte(headerBase64+"."+jsonJwtBodyBase64), s.signatureAlgorithm)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating signature")
 	}
@@ -100,7 +100,6 @@ func (s *jwtSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 	return &Attestation{
 		PublicKeyID:       s.publicKeyID,
 		Signature:         []byte(jwt),
-		SerializedPayload: payload,
 	}, nil
 }
 

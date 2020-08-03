@@ -143,7 +143,7 @@ func TestNewJwtSigner(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("NewJwtSigner(...)=%v, expected nil", err)
+					t.Errorf("NewJwtSigner(...) = %v, expected nil", err)
 				}
 			}
 		})

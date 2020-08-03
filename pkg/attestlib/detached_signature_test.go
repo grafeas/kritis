@@ -244,11 +244,11 @@ func TestVerifyDetached(t *testing.T) {
 			err := verifyDetached(decodedSig, tc.pubkey, tc.signingAlg, tc.payload)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("verifyDetached(...)=nil, expected non-nil")
+					t.Errorf("verifyDetached(...) = nil, expected non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("verifyDetached(...)=%v, expected nil", err)
+					t.Errorf("verifyDetached(...) = %v, expected nil", err)
 				}
 			}
 		})
@@ -288,11 +288,11 @@ func TestCreateDetachedSignature(t *testing.T) {
 			_, err = createDetachedSignature(privKey, []byte(payload), tc.alg)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("createDetachedSignature(...)=nil, expected non-nil")
+					t.Errorf("createDetachedSignature(...) = nil, expected non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("createDetachedSignature(...)=%v, expected nil", err)
+					t.Errorf("createDetachedSignature(...) = %v, expected nil", err)
 				}
 			}
 		})
