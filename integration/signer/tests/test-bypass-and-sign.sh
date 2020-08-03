@@ -39,7 +39,6 @@ trap 'clean_up'  EXIT
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
 -pgp_private_key=private.key \
--policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test

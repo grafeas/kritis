@@ -124,3 +124,22 @@ func TestCreatePkixAttestation(t *testing.T) {
 		})
 	}
 }
+
+func TestVerifyPkixAttestation(t *testing.T) {
+	pkixVerifier := pkixVerifierImpl{}
+	signer, err := NewPkixSigner([]byte(rsa2048PrivateKey), RsaSignPkcs12048Sha256, "")
+	if err != nil {
+		t.Fatalf("failed to create signer: %v", err)
+	}
+	attestation, err := signer.CreateAttestation([]byte(payload))
+	if err != nil {
+		t.Fatalf("failed to create attestation: %v", err)
+	}
+	publicKey, err := NewPublicKey(Pkix, RsaSignPkcs12048Sha256, []byte(rsa2048PubKey), "")
+
+	err = pkixVerifier.verifyPkix(attestation.Signature, attestation.SerializedPayload, *publicKey)
+
+	if err != nil {
+		t.Errorf("error verifying attestation: %v", err)
+	}
+}

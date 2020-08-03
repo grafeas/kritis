@@ -235,7 +235,7 @@ type mockPkixVerifier struct {
 	shouldErr bool
 }
 
-func (v mockPkixVerifier) verifyPkix([]byte, []byte, []byte) error {
+func (v mockPkixVerifier) verifyPkix([]byte, []byte, PublicKey) error {
 	if v.shouldErr {
 		return errors.New("error verifying PKIX")
 	}
