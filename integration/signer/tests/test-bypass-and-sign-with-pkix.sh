@@ -22,48 +22,40 @@ set -eux
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
 docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 
-trap 'delete_image $GOOD_IMAGE_URL'  EXIT
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
+trap 'clean_up'  EXIT
 
-# push good image
+# push image image
 docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
-trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; exit $ARG;}
+trap 'clean_up'  EXIT
 
-# sign good image in bypass mode
+# sign image in bypass mode
 ./signer -v 10 \
 -alsologtostderr \
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
--pgp_private_key=private.key \
--policy=policy.yaml \
+-pkix_private_key=ec_private_p8.pem \
+-pkix_alg=ecdsa-p256-sha256 \
 -note_name=${NOTE_NAME}
 
-sleep 10
+# deploy to a binauthz-enabled cluster signer-int-test
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
+trap 'clean_up'  EXIT
 
-# save occ id
-OLD_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
+read_occ $GOOD_IMAGE_URL
 
-# sign good image in bypass mode
-./signer -v 10 \
--alsologtostderr \
--mode=bypass-and-sign \
--image=${GOOD_IMG_DIGEST_URL} \
--pgp_private_key=private.key \
--policy=policy.yaml \
--note_name=${NOTE_NAME} \
--overwrite
+# need to run the below command first to add key:
+# gcloud --project=kritis-int-test \
+#  alpha container binauthz attestors public-keys add \
+#  --attestor=kritis-signer-attestor \
+#  --pkix-public-key-file=integration/signer/ec_public.pem \
+#  --pkix-public-key-algorithm ecdsa-p256-sha256
+deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
-# check the current occ id is not same as old id
-NEW_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
-
-if [ "$OLD_OCC_ID" == "$NEW_OCC_ID" ]; then
-    echo "Attestation is not overwritten as expected"
-    exit 1
-else
-    echo "Attestation is overwritten as expected"
-fi
 
 echo ""
 echo ""

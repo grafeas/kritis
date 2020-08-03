@@ -61,3 +61,13 @@ func (s *pkixSigner) CreateAttestation(payload []byte) (*Attestation, error) {
 		SerializedPayload: payload,
 	}, nil
 }
+
+type pkixVerifierImpl struct{}
+
+func (v pkixVerifierImpl) verifyPkix(signature []byte, payload []byte, publicKey PublicKey) error {
+	err := verifyDetached(signature, publicKey.KeyData, publicKey.SignatureAlgorithm, payload)
+	if err != nil {
+		return errors.Wrap(err, "error verifying signature")
+	}
+	return nil
+}
