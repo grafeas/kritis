@@ -90,7 +90,6 @@ func TestParsePkixPrivateKeyPem(t *testing.T) {
 			if tc.expectedError {
 				if err == nil {
 					t.Errorf("parsePkixPrivateKeyPem(...) = nil, expected non nil")
-
 				}
 			} else {
 				if err != nil {
@@ -128,7 +127,6 @@ func TestGeneratePKIXPublicKeyIdFromPrivateKey(t *testing.T) {
 			if tc.expectedError {
 				if err == nil {
 					t.Errorf("generatePkixPublicKeyId(...) = nil, expected non nil")
-
 				}
 			} else {
 				if err != nil {
