@@ -272,13 +272,13 @@ func TestCreateDetachedSignature(t *testing.T) {
 			key:           []byte(ec256PrivateKey),
 			alg:           EcdsaP256Sha256,
 			expectedError: false,
-		}, 
+		},
 		{
 			name:          "rsa key with ecdsa alg",
 			key:           []byte(rsa2048PrivateKey),
 			alg:           EcdsaP256Sha256,
 			expectedError: true,
-		},{
+		}, {
 			name:          "ecdsa key with rsa alg",
 			key:           []byte(ec256PrivateKey),
 			alg:           RsaSignPkcs12048Sha256,
