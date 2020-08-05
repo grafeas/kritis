@@ -106,199 +106,198 @@ The tutorial will walk through how to run the signing helper tool in a local env
 
 1. Build the tool.
 
-```shell
-go build -o ./signer ./cmd/kritis/signer
-```
+    ```shell
+    go build -o ./signer ./cmd/kritis/signer
+    ```
 
 2. Enable GCP services.
 
-The signing tool needs to access a number of Google Cloud Platform (GCP) services.
+    The signing tool needs to access a number of Google Cloud Platform (GCP) services.
 First we need to pick a GCP project and enable those services within the project.
+
     1. Set the default GCP project used by `gcloud`.
 
-```shell
-export PROJECT_ID=[PROJECT ID]
-```
+        ```shell
+        export PROJECT_ID=[PROJECT ID]
+        ```
 
     2. Set the default GCP project used by `gcloud`.
 
-```shell
-gcloud config set project ${PROJECT_ID}
-```
+        ```shell
+        gcloud config set project ${PROJECT_ID}
+        ```
 
     3. Run `gcloud` to enable services within a project.
 
-```shell
-gcloud services enable \
-  cloudbuild.googleapis.com \
-  containerregistry.googleapis.com \
-  containeranalysis.googleapis.com \
-  containerscanning.googleapis.com \
-  cloudkms.googleapis.com # If using Cloud KMS
-```
+        ```shell
+        gcloud services enable \
+          cloudbuild.googleapis.com \
+          containerregistry.googleapis.com \
+          containeranalysis.googleapis.com \
+          containerscanning.googleapis.com \
+          cloudkms.googleapis.com # If using Cloud KMS
+        ```
 
 3. Setting up GCP credentials.
 
     1. Create a service account within the GCP project.
 
-```shell
-export SA_NAME=[Service Account Name]
-gcloud iam service-accounts create ${SA_NAME}
-```
+        ```shell
+        export SA_NAME=[Service Account Name]
+        gcloud iam service-accounts create ${SA_NAME}
+        ```
 
     2. Add permissions to the created service account.
 
-```shell
-# permission to create note
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
-  --role roles/containeranalysis.notes.editor
+        ```shell
+        # permission to create note
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+          --role roles/containeranalysis.notes.editor
 
-# permission to view vulnerability and attestation occurrences
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
-  --role roles/containeranalysis.notes.occurrences.viewer
+        # permission to view vulnerability and attestation occurrences
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+          --role roles/containeranalysis.notes.occurrences.viewer
 
-# permission to upload attestation occurrences
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
-  --role roles/containeranalysis.occurrences.editor
+        # permission to upload attestation occurrences
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+          --role roles/containeranalysis.occurrences.editor
 
-# (if using Cloud KMS) permission to cloud KMS signing service
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
-  --role roles/cloudkms.signer
-```
+        # (if using Cloud KMS) permission to cloud KMS signing service
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member serviceAccount:${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+          --role roles/cloudkms.signer
+        ```
 
     3. Create json credentials for the service account.
 
-```shell
-gcloud iam service-accounts keys create ./sa.json  --iam-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
-```
+        ```shell
+        gcloud iam service-accounts keys create ./sa.json  --iam-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+        ```
 
-The json credentials are saved in `sa.json`.
+        The json credentials are saved in `sa.json`.
 
     4. Setting GAC environment variable.
 
-```shell
-export GOOGLE_APPLICATION_CREDENTIALS="$PWD/sa.json"
-```
+        ```shell
+        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/sa.json"
+        ```
 
-Now the signer tool will automatically pick up the credentials via the environment variable.
+        Now the signer tool will automatically pick up the credentials via the environment variable.
 
 4. Creating a signing key. 
 
-A private signing key is required to create attestations for an image. 
+    A private signing key is required to create attestations for an image. 
 Here, we use Cloud KMS as an example. The tool also supports PGP and PKIX keys.
 
-Run the following commands to create a key ring and an asymmetric signing key, and note down the KMS key name.
+    Run the following commands to create a key ring and an asymmetric signing key, and note down the KMS key name.
 
-```shell
-gcloud kms keyrings create my-key-ring-1 \
-    --location global
+    ```shell
+    gcloud kms keyrings create my-key-ring-1 \
+        --location global
 
-gcloud --project=$PROJECT_ID kms keys create my-signing-key-1 \
-    --keyring my-key-ring-1 \
-    --location global \
-    --purpose "asymmetric-signing" \
-    --default-algorithm "rsa-sign-pkcs1-2048-sha256"
-```
+    gcloud --project=$PROJECT_ID kms keys create my-signing-key-1 \
+        --keyring my-key-ring-1 \
+        --location global \
+        --purpose "asymmetric-signing" \
+        --default-algorithm "rsa-sign-pkcs1-2048-sha256"
+    ```
 
-Note down the digest algorithm “SHA256” and key name.
+    Note down the digest algorithm “SHA256” and key name.
 
-```shell
-export KMS_DIGEST_ALG=SHA256
-export KMS_KEY_NAME=projects/$PROJECT_ID/locations/global/keyRings/my-key-ring-1/cryptoKeys/my-signing-key-1/cryptoKeyVersions/1
-```
+    ```shell
+    export KMS_DIGEST_ALG=SHA256
+    export KMS_KEY_NAME=projects/$PROJECT_ID/locations/global/keyRings/my-key-ring-1/cryptoKeys/my-signing-key-1/cryptoKeyVersions/1
+    ```
 
 5. Pick a note name.
 
-All attestations need to be attached to a note. The signer tool will automatically create a note for a given name. It can also reuse an existing note.
+    All attestations need to be attached to a note. The signer tool will automatically create a note for a given name. It can also reuse an existing note.
 
-```shell
-export NOTE_ID=my-signer-note
-export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
-```
+    ```shell
+    export NOTE_ID=my-signer-note
+    export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
+    ```
 
 6. Create vulnerability signing policy.
 
-An example policy is in the samples.
+    An example policy is in the samples.
 
-```shell
-cat samples/signer/policy.yaml
+    ```shell
+    cat samples/signer/policy.yaml
 
-apiVersion: kritis.grafeas.io/v1beta1
-kind: VulnzSigningPolicy
-metadata:
-  name: my-vsp
-spec:
-  imageVulnerabilityRequirements:
-    maximumFixableSeverity: MEDIUM
-    maximumUnfixableSeverity: MEDIUM
-    allowlistCVEs:
-    - projects/goog-vulnz/notes/CVE-2020-10543
-    - projects/goog-vulnz/notes/CVE-2020-10878
-    - projects/goog-vulnz/notes/CVE-2020-14155
-```
+    apiVersion: kritis.grafeas.io/v1beta1
+    kind: VulnzSigningPolicy
+    metadata:
+      name: my-vsp
+    spec:
+      imageVulnerabilityRequirements:
+        maximumFixableSeverity: MEDIUM
+        maximumUnfixableSeverity: MEDIUM
+        allowlistCVEs:
+        - projects/goog-vulnz/notes/CVE-2020-10543
+        - projects/goog-vulnz/notes/CVE-2020-10878
+        - projects/goog-vulnz/notes/CVE-2020-14155
+    ```
 
 7. Run signer on a built image (pass example).
 
     1. Build and push an example good image.
 
-```shell
-docker build -t gcr.io/$PROJECT_ID/signer-test:good -f samples/signer/Dockerfile.good .
-docker push gcr.io/$PROJECT_ID/signer-test:good
-```
+        ```shell
+        docker build -t gcr.io/$PROJECT_ID/signer-test:good -f samples/signer/Dockerfile.good .
+        docker push gcr.io/$PROJECT_ID/signer-test:good
+        ```
 
     2. Note down the image digest url.
 
-```shell
-export GOOD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:good --format '{{index .RepoDigests 0}}')
-```
+        ```shell
+        export GOOD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:good --format '{{index .RepoDigests 0}}')
+        ```
 
     3. Run the signer.
 
-```shell
-./signer \
-  -v=10 \
-  -alsologtostderr \
-  -image=$GOOD_IMG_URL \
-  -policy=samples/signer/policy.yaml \
-  -kms_key_name=$KMS_KEY_NAME \
-  -kms_digest_alg=$KMS_DIGEST_ALG \
-  -note_name=$NOTE_NAME
-```
+        ```shell
+        ./signer \
+          -v=10 \
+          -alsologtostderr \
+          -image=$GOOD_IMG_URL \
+          -policy=samples/signer/policy.yaml \
+          -kms_key_name=$KMS_KEY_NAME \
+          -kms_digest_alg=$KMS_DIGEST_ALG \
+          -note_name=$NOTE_NAME
+        ```
 
-The signer should print out 
+        The signer should print out that the image "passes VulnzSigningPolicy my-vsp" and that an attestation is created and uploaded.
 
 8. Run signer on a built image (fail example).
 
     1. Build and push an example good image.
 
-```shell
-docker build -t gcr.io/$PROJECT_ID/signer-test:bad -f samples/signer/Dockerfile.bad .
-docker push gcr.io/$PROJECT_ID/signer-test:bad
-```
+        ```shell
+        docker build -t gcr.io/$PROJECT_ID/signer-test:bad -f samples/signer/Dockerfile.bad .
+        docker push gcr.io/$PROJECT_ID/signer-test:bad
+        ```
 
     2. Note down the image digest url.
 
-```shell
-export BAD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:bad --format '{{index .RepoDigests 0}}')
-```
+        ```shell
+        export BAD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:bad --format '{{index .RepoDigests 0}}')
+        ```
 
     3. Run the signer.
 
-```shell
-./signer \
-  -v=10 \
-  -alsologtostderr \
-  -image=$BAD_IMG_URL \
-  -policy=samples/signer/policy.yaml \
-  -kms_key_name=$KMS_KEY_NAME \
-  -kms_digest_alg=$KMS_DIGEST_ALG \
-  -note_name=$NOTE_NAME
-```
+        ```shell
+        ./signer \
+          -v=10 \
+          -alsologtostderr \
+          -image=$BAD_IMG_URL \
+          -policy=samples/signer/policy.yaml \
+          -kms_key_name=$KMS_KEY_NAME \
+          -kms_digest_alg=$KMS_DIGEST_ALG \
+          -note_name=$NOTE_NAME
+        ```
 
-The signer should print out 
-
-
+        The signer should print out that the image "does not pass VulnzSigningPolicy my-vsp".
