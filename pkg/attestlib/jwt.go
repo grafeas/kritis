@@ -75,6 +75,8 @@ func NewJwtSigner(privateKey []byte, alg SignatureAlgorithm, publicKeyID string)
 }
 
 // CreateAttestation creates a signed JWT Attestation. See Signer for more details.
+// jsonJwtBody is the second section in the JWT. This should contain the following claims: 
+// "sub" = container:digest:sha256:<my-image-digest>,  "aud" : "//binaryauthorization.googleapis.com", "attestationType" : "claimless"
 func (s *jwtSigner) CreateAttestation(jsonJwtBody []byte) (*Attestation, error) {
 	type headerTemplate struct {
 		typ, alg, kid string

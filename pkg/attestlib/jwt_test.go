@@ -113,21 +113,21 @@ func TestNewJwtSigner(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          "new jwt singer success",
+			name:          "new jwt signer success",
 			key:           []byte(rsa2048PrivateKey),
 			publicKeyId:   "kid",
 			alg:           RsaSignPkcs12048Sha256,
 			expectedError: false,
 		},
 		{
-			name:          "new jwt singer with no key id success",
+			name:          "new jwt signer with no key id success",
 			key:           []byte(rsa2048PrivateKey),
 			publicKeyId:   "",
 			alg:           RsaSignPkcs12048Sha256,
 			expectedError: false,
 		},
 		{
-			name:          "new jwt singer with bad key fails",
+			name:          "new jwt signer with bad key fails",
 			key:           []byte("some-key"),
 			publicKeyId:   "",
 			alg:           RsaSignPkcs12048Sha256,
@@ -139,11 +139,11 @@ func TestNewJwtSigner(t *testing.T) {
 			_, err := NewJwtSigner(tc.key, tc.alg, tc.publicKeyId)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("NewJwtSigner(...) = nil, expected non nil")
+					t.Errorf("NewJwtSigner(...)=nil, expected non nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("NewJwtSigner(...) = %v, expected nil", err)
+					t.Errorf("NewJwtSigner(...)=%v, expected nil", err)
 				}
 			}
 		})
@@ -157,8 +157,8 @@ func TestCreateJwtAttestation(t *testing.T) {
 	}
 	attestation, err := signer.CreateAttestation([]byte(payload))
 	if err != nil {
-		t.Errorf("CreateAttestation(..) = %v, expected nil", err)
+		t.Errorf("CreateAttestation(..)=%v, expected nil", err)
 	} else if attestation.PublicKeyID != "kid" {
-		t.Errorf("attestation.PublicKeyID = %v, expected kid", attestation.PublicKeyID)
+		t.Errorf("attestation.PublicKeyID=%v, expected kid", attestation.PublicKeyID)
 	}
 }

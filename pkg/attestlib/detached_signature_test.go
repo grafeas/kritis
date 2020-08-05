@@ -244,11 +244,11 @@ func TestVerifyDetached(t *testing.T) {
 			err := verifyDetached(decodedSig, tc.pubkey, tc.signingAlg, tc.payload)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("verifyDetached(...) = nil, expected non-nil")
+					t.Errorf("verifyDetached(...)=nil, expected non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("verifyDetached(...) = %v, expected nil", err)
+					t.Errorf("verifyDetached(...)=%v, expected nil", err)
 				}
 			}
 		})
@@ -272,6 +272,17 @@ func TestCreateDetachedSignature(t *testing.T) {
 			key:           []byte(ec256PrivateKey),
 			alg:           EcdsaP256Sha256,
 			expectedError: false,
+		}, 
+		{
+			name:          "rsa key with ecdsa alg",
+			key:           []byte(rsa2048PrivateKey),
+			alg:           EcdsaP256Sha256,
+			expectedError: true,
+		},{
+			name:          "ecdsa key with rsa alg",
+			key:           []byte(ec256PrivateKey),
+			alg:           RsaSignPkcs12048Sha256,
+			expectedError: true,
 		}, {
 			name:          "unknown singature algorithm",
 			key:           []byte(rsa2048PrivateKey),
@@ -288,11 +299,11 @@ func TestCreateDetachedSignature(t *testing.T) {
 			_, err = createDetachedSignature(privKey, []byte(payload), tc.alg)
 			if tc.expectedError {
 				if err == nil {
-					t.Errorf("createDetachedSignature(...) = nil, expected non-nil")
+					t.Errorf("createDetachedSignature(...)=nil, expected non-nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("createDetachedSignature(...) = %v, expected nil", err)
+					t.Errorf("createDetachedSignature(...)=%v, expected nil", err)
 				}
 			}
 		})
