@@ -53,7 +53,11 @@ var (
 	// input flags: pgp key flags
 	pgpPriKeyPath string
 	pgpPassphrase string
-	// input flags: kms flags
+	// pkix key flags
+	pkixPriKeyPath string
+	pkixAlg        string
+
+  // input flags: kms flags
 	kmsKeyName   string
 	kmsDigestAlg string
 
@@ -87,6 +91,8 @@ func addSignFlags(fs *flag.FlagSet) {
 	fs.StringVar(&kmsDigestAlg, "kms_digest_alg", "", "kms digest algorithm, must be one of SHA256|SHA384|SHA512, and the same as specified by the key version's algorithm")
 	fs.StringVar(&pgpPriKeyPath, "pgp_private_key", "", "pgp private signing key path, e.g., /dev/shm/key.pgp")
 	fs.StringVar(&pgpPassphrase, "pgp_passphrase", "", "passphrase for pgp private key, if any")
+  flag.StringVar(&pkixPriKeyPath, "pkix_private_key", "", "pkix private signing key path, e.g., /dev/shm/key.pem")
+  flag.StringVar(&pkixAlg, "pkix_alg", "", "pkix signature algorithm, e.g., ecdsa-p256-sha256")
 }
 
 // parseSignerMode creates mode-specific flagset and analyze actions (check, sign) for given mode
@@ -212,8 +218,8 @@ func main() {
 	if doSign {
 		// Read the signing credentials
 		// Either kmsKeyName or pgpPriKeyPath needs to be set
-		if kmsKeyName == "" && pgpPriKeyPath == "" {
-			exitOnBadFlags(SignerMode(mode), "neither kms_key_name or private_key is specified")
+		if kmsKeyName == "" && pgpPriKeyPath == "" && pkixPriKeyPath == "" {
+      exitOnBadFlags(SignerMode(mode), "Neither kms_key_name, pgp_private_key, or pkix_private_key is specified")
 		}
 		var cSigner attestlib.Signer
 		if kmsKeyName != "" {
@@ -225,7 +231,7 @@ func main() {
 			if err != nil {
 				glog.Fatalf("Creating kms signer failed: %v\n", err)
 			}
-		} else {
+		} else if pgpPriKeyPath != "" {
 			glog.Infof("Using pgp key for signing.")
 			signerKey, err := ioutil.ReadFile(pgpPriKeyPath)
 			if err != nil {
@@ -235,6 +241,20 @@ func main() {
 			cSigner, err = attestlib.NewPgpSigner(signerKey, pgpPassphrase)
 			if err != nil {
 				glog.Fatalf("Creating pgp signer failed: %v\n", err)
+			}
+		} else {
+			glog.Infof("Using pkix key for signing.")
+			signerKey, err := ioutil.ReadFile(pkixPriKeyPath)
+			if err != nil {
+				glog.Fatalf("Fail to read signer key: %v\n", err)
+			}
+			sAlg := attestlib.ParseSignatureAlgorithm(pkixAlg)
+			if sAlg == attestlib.UnknownSigningAlgorithm {
+				glog.Fatalf("Empty or unknown PKIX signature algorithm: %s\n", pkixAlg)
+			}
+			cSigner, err = attestlib.NewPkixSigner(signerKey, sAlg, "")
+			if err != nil {
+				glog.Fatalf("Creating pkix signer failed: %v\n", err)
 			}
 		}
 
@@ -257,7 +277,7 @@ func main() {
 		// Sign image
 		err := r.SignImage(image)
 		if err != nil {
-			glog.Fatalf("Signing image failed %v", err)
+			glog.Fatalf("Signing image failed: %v", err)
 		}
 	}
 }
