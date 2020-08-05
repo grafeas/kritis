@@ -57,7 +57,7 @@ var (
 	pkixPriKeyPath string
 	pkixAlg        string
 
-  // input flags: kms flags
+	// input flags: kms flags
 	kmsKeyName   string
 	kmsDigestAlg string
 
@@ -91,8 +91,8 @@ func addSignFlags(fs *flag.FlagSet) {
 	fs.StringVar(&kmsDigestAlg, "kms_digest_alg", "", "kms digest algorithm, must be one of SHA256|SHA384|SHA512, and the same as specified by the key version's algorithm")
 	fs.StringVar(&pgpPriKeyPath, "pgp_private_key", "", "pgp private signing key path, e.g., /dev/shm/key.pgp")
 	fs.StringVar(&pgpPassphrase, "pgp_passphrase", "", "passphrase for pgp private key, if any")
-  flag.StringVar(&pkixPriKeyPath, "pkix_private_key", "", "pkix private signing key path, e.g., /dev/shm/key.pem")
-  flag.StringVar(&pkixAlg, "pkix_alg", "", "pkix signature algorithm, e.g., ecdsa-p256-sha256")
+	flag.StringVar(&pkixPriKeyPath, "pkix_private_key", "", "pkix private signing key path, e.g., /dev/shm/key.pem")
+	flag.StringVar(&pkixAlg, "pkix_alg", "", "pkix signature algorithm, e.g., ecdsa-p256-sha256")
 }
 
 // parseSignerMode creates mode-specific flagset and analyze actions (check, sign) for given mode
@@ -219,7 +219,7 @@ func main() {
 		// Read the signing credentials
 		// Either kmsKeyName or pgpPriKeyPath needs to be set
 		if kmsKeyName == "" && pgpPriKeyPath == "" && pkixPriKeyPath == "" {
-      exitOnBadFlags(SignerMode(mode), "Neither kms_key_name, pgp_private_key, or pkix_private_key is specified")
+			exitOnBadFlags(SignerMode(mode), "Neither kms_key_name, pgp_private_key, or pkix_private_key is specified")
 		}
 		var cSigner attestlib.Signer
 		if kmsKeyName != "" {
