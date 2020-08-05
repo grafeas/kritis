@@ -39,12 +39,13 @@ trap 'clean_up'  EXIT
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
 -pgp_private_key=private.key \
--policy=policy.yaml \
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
 trap 'clean_up'  EXIT
+
+read_occ $GOOD_IMAGE_URL
 
 deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
