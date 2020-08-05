@@ -12,12 +12,11 @@ Support for other type of checks (e.g., base-image check), other vulnerability s
 
 This doc provides:
 - a general overview;
-- a step by step tutorial for the signer tool;
-- links to other resources, e.g., CI integration of the signer tool with Google Cloud Build.
+- a step by step tutorial for the signer tool.
 
 ## Overview
 
-## Signer Modes
+### Signer Modes
 
 The tool can be run in three different modes:
 - **check-and-sign**: default mode, checks policy conformance for a image, and conditionally creates attestation for the image if check passes.
@@ -90,8 +89,34 @@ Signing is the process of creating and storing an attestation for an image.
 To create an attestation, a private signing key is needed. The signer tool now
 supports three types of signing methods: PGP keys, PKIX keys, or signing via [Cloud KMS] (https://cloud.google.com/kms).
 
+By default, the signing helper will also upload the attestation occurrence to [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis),
+and the uploaded attestation can be used by both Binary Authorization and Kritis for enforcement-time decisions.
+
+#### Supported key types
+
+The tool currently supports three types of keys:
+
+- PGP keys using `-pgp_private_key` and optionally `-pgp_passphrase`  if the key is passphrase protected.
+- PKIX keys using `-pkix_private_key` and `-pkix_alg`. Supported PKIX algorithms match those [supported by Binary Authorization](https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm).
+- Cloud KMS using with `-kms_key_name` and `-kms_digest_alg`. 
+
 ## Tutorial
 
+The tutorial will walk through how to run the signing helper tool in a local environment.
 
-## Useful links
+1. Build the tool binary.
 
+```shell
+go build -o out/signer ./cmd/kritis/signer
+```
+
+2. Start a Docker container.
+
+
+3.  Setting up GCP credentials
+    1.  Step 3.1
+    2.  Step 3.2
+    3.  Step 3.3
+
+
+3.  Step 3
