@@ -1,0 +1,36 @@
+# Cloudbuild pipeline for a build with an image
+# that passes the vuln policy
+steps:
+  # Build a 'bad' image
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
+    args:
+      - -c
+      - |
+        docker build -t gcr.io/$PROJECT_ID/binauthz-test:latest -f ./Dockerfile.bad .
+    id: build
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: /bin/bash
+    args:
+    - -c
+    - |
+      docker push gcr.io/$PROJECT_ID/binauthz-test:latest &&
+      docker image inspect gcr.io/$PROJECT_ID/binauthz-test:latest --format '{{index .RepoDigests 0}}' > image-digest.txt &&
+      cat image-digest.txt
+    id: push
+  - name: gcr.io/$PROJECT_ID/kritis-signer
+    entrypoint: /bin/bash
+    args:
+    - -c
+    - |
+      /kritis/signer \
+      -v=10 \
+      -alsologtostderr \
+      -image=$(/bin/cat image-digest.txt) \
+      -policy=policy.yaml \
+      -kms_key_name=<KMS_KEY_NAME> \
+      -kms_digest_alg=<KMS_DIGEST_ALG> \
+      -note_name=<NOTE_NAME>
+    waitFor: push
+    id: vulnsign
+images: ['gcr.io/$PROJECT_ID/binauthz-test:latest']
