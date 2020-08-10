@@ -121,10 +121,10 @@ func TestPkixEndToEnd(t *testing.T) {
 		att, err := signer.CreateAttestation(tc.payload)
 		if tc.expectedCreateError {
 			if err == nil {
-				t.Fatalf("CreateAttestation(...)=nil, want non-nil")
+				t.Fatalf("CreateAttestation(...)=nil, expected non-nil")
 			}
 		} else if err != nil {
-			t.Fatalf("CreateAttestation(...)=%v, want nil", err)
+			t.Fatalf("CreateAttestation(...)=%v, expected nil", err)
 		}
 		publicKey, err := attestlib.NewPublicKey(attestlib.Pkix, tc.signatureAlgorithm, tc.publicKey, "")
 		if err != nil {
@@ -136,9 +136,9 @@ func TestPkixEndToEnd(t *testing.T) {
 		}
 		err = verifier.VerifyAttestation(att)
 		if tc.expectedVerifyError && err == nil {
-			t.Errorf("VerifyAttestation(...)=nil, want non-nil")
+			t.Errorf("VerifyAttestation(...)=nil, expected non-nil")
 		} else if !tc.expectedVerifyError && err != nil {
-			t.Errorf("VerifyAttestation(...)=%v, want nil", err)
+			t.Errorf("VerifyAttestation(...)=%v, expected nil", err)
 		}
 	}
 }
