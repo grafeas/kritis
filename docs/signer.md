@@ -1,25 +1,27 @@
-# Kritis Signing Helper
+# Kritis Signer
 
-Kritis signing helper (or, the signer tool) is a command-line tool that can be run locally or in
-CI environment to check policy conformance for images and create attestations (signing).
-The created attestations can be used for Kritis and Binary Authorization deployment enforcement. 
+Kritis Signer is a command-line tool that creates attestations. These attestations can be used for Kritis and Binary Authorization deployment enforcement.
+
+The tool can create attestations directly or conditionally, checking policy conformance based on Vulnerability scanning results from Google Cloud Container Analysis.
+
+It can be run either locally or as part of a continuous integration (CI) pipeline.
 
 Currently, the tool supports vulnerability-based policy check, 
 uses [Google Vulnerability Scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) as vulnerability source,
-and creates attestation in
-[Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis).
+and creates an attestation that is stored in
+[Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) data store.
 Support for other type of checks (e.g., base-image check), other vulnerability sources and attestation storage are underway.
 
 This doc provides:
 - a general overview;
-- a step by step tutorial for the signer tool.
+- a step by step tutorial describing how to use the signer tool.
 
 ## Overview
 
 ### Signer Modes
 
 The tool can be run in three different modes:
-- **check-and-sign**: default mode, checks policy conformance for a image, and conditionally creates attestation for the image if check passes.
+- **check-and-sign**: default mode, checks policy conformance for a image, and conditionally creates attestation for the image if check passes. Currently, only vulnerability policy is supported. 
 - **check-only**: only checks policy conformance and outputs results, but does not create any attestation.
 - **bypass-and-sign**: bypasses any check and creates attestation for a image.
 
@@ -272,6 +274,30 @@ Here, we use Cloud KMS as an example. The tool also supports PGP and PKIX keys.
 
         The signer should print out that the image "passes VulnzSigningPolicy my-vsp" and that an attestation is created and uploaded.
 
+    4. (optional) Run the tool in other modes.
+
+        The signer can also run in other modes to only perform policy check (`check-only`) or create attestation (`bypass-and-sign`):
+
+        ```shell
+        ./signer \
+          -mode=check-only \
+          -v=10 \
+          -alsologtostderr \
+          -image=$GOOD_IMG_URL \
+          -policy=samples/signer/policy.yaml \
+        ```
+
+        ```shell
+        ./signer \
+          -mode=bypass-and-sign \
+          -v=10 \
+          -alsologtostderr \
+          -image=$GOOD_IMG_URL \
+          -kms_key_name=$KMS_KEY_NAME \
+          -kms_digest_alg=$KMS_DIGEST_ALG \
+          -note_name=$NOTE_NAME
+        ```
+
 8. Run signer on a built image (fail example).
 
     1. Build and push an example good image.
@@ -301,3 +327,30 @@ Here, we use Cloud KMS as an example. The tool also supports PGP and PKIX keys.
         ```
 
         The signer should print out that the image "does not pass VulnzSigningPolicy my-vsp".
+
+    4. (optional) Run the tool in other modes.
+
+        The signer can also run in other modes to only perform policy check (`check-only`) or create attestation (`bypass-and-sign`):
+
+        ```shell
+        ./signer \
+          -mode=check-only \
+          -v=10 \
+          -alsologtostderr \
+          -image=$BAD_IMG_URL \
+          -policy=samples/signer/policy.yaml \
+        ```
+
+        ```shell
+        ./signer \
+          -mode=bypass-and-sign \
+          -v=10 \
+          -alsologtostderr \
+          -image=$BAD_IMG_URL \
+          -kms_key_name=$KMS_KEY_NAME \
+          -kms_digest_alg=$KMS_DIGEST_ALG \
+          -note_name=$NOTE_NAME
+        ```
+
+        With `bypass-and-sign` mode, an attestation will also be created for the bad image.
+
