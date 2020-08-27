@@ -7,9 +7,7 @@ The tool can create attestations directly or conditionally, checking policy conf
 It can be run either locally or as part of a continuous integration (CI) pipeline.
 
 Currently, the tool supports vulnerability-based policy check, 
-uses [Google Vulnerability Scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) as vulnerability source,
-and creates an attestation that is stored in
-[Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) data store.
+using [Google Vulnerability Scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning), a feature of  Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) that returns a list of vulnerabilities associated with a container image. Kritis Signer then creates an attestation that is stored in the Google Container Analysis data store. data store.
 Support for other type of checks (e.g., base-image check), other vulnerability sources and attestation storage are underway.
 
 This doc provides:
@@ -272,7 +270,7 @@ Here, we use Cloud KMS as an example. The tool also supports PGP and PKIX keys.
           -note_name=$NOTE_NAME
         ```
 
-        The signer should print out that the image "passes VulnzSigningPolicy my-vsp" and that an attestation is created and uploaded.
+        The signer should output that the image "passes VulnzSigningPolicy my-vsp" and that an attestation is created and uploaded.
 
     4. (optional) Run the tool in other modes.
 
