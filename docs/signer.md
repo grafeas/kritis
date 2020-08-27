@@ -1,13 +1,11 @@
 # Kritis Signer
 
-Kritis Signer is a command-line tool that creates attestations. These attestations can be used for Kritis and Binary Authorization deployment enforcement.
+Kritis Signer is a command-line tool that creates attestations for a container image. These attestations can be used for Kritis and Binary Authorization deployment enforcement when you attempt to deploy the container image.
 
-The tool can create attestations directly or conditionally, checking policy conformance based on Vulnerability scanning results from Google Cloud Container Analysis.
+Kritis Signer can create attestations based on identified software vulnerabilities in your container images.  To scan for vulnerabilities, your container image has to be uploaded to [Google Container Registry](https://cloud.google.com/container-registry) where [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) performs [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) and produces a vulnerability result for your container image. Kritis Signer then checks the vulnerability result against your vulnerability policy.  If the vulnerability result complies with your policy, then Kritis Signer creates the attestation and stores it in the Container Analysis data store.
 
-It can be run either locally or as part of a continuous integration (CI) pipeline.
+The tool can be run either locally or as part of a continuous integration (CI) pipeline.
 
-Currently, the tool supports vulnerability-based policy check, 
-using [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning), a feature of [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) that returns a list of vulnerabilities associated with a container image. Kritis Signer then creates an attestation and stores it in Google Container Analysis data store.
 Support for other type of checks (e.g., base-image check), other vulnerability sources and attestation storage are underway.
 
 This doc provides:
@@ -33,19 +31,18 @@ Users can specify the mode with `-mode` flag.
 
 ### Checking
 
-The signer tool can check an image's metadata against rules in a user-provided policy. The tool now supports vulnerability-based policy check
+Kritis Signer can check an image's metadata against rules in a user-provided policy. The tool now supports vulnerability-based policy check
 and will add more checks in the future.
 
 #### Vulnerability Source
 
-During the checking process, the signer tool will fetch vulnerability results for the image from a source. 
-The tool now supports [Google Vulnerability Scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) as a vulnerability source.
-If enabled, any image a user pushes to Google Container Registry, or gcr.io, will be automatically scanned for vulnerability. 
+During the checking process, the signer tool will fetch vulnerability results for the image from a vulnerability source. 
+The tool now supports [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) as a vulnerability source.
+If enabled, any image a user pushes to Google Container Registry, or gcr.io, will be automatically scanned for vulnerabilities. 
 
 #### Vulnerability Signing Policy
 
-A vulnerability signing policy yaml file can be specified via `-policy` flag, and controls requirements 
-for an image to pass vulnerability-based checks.
+The vulnerability signing policy is a YAML-formatted file.  Kritis Signer uses the vulnerability signing policy you specify with the `-policy` flag.  Kritis Signer checks the vulnerability results from Container Analysis with the specified vulnerability policy to determine whether or not to create an attestation for the associated container image.
 
 #### Vulnerability Signing Policy Spec
 
@@ -72,7 +69,7 @@ spec:
       - projects/goog-vulnz/notes/CVE-2020-14155
 ```
 
-Here are the valid values for severity levels.
+The valid severity levels are:
 
 | Value       | Outcome |
 |-------------|----------- |
@@ -86,23 +83,22 @@ Here are the valid values for severity levels.
 ### Signing
 
 Signing is the process of creating and storing an attestation for an image.
-To create an attestation, a private signing key is needed. The signer tool now
-supports three types of signing methods: PGP keys, PKIX keys, or signing via [Cloud KMS] (https://cloud.google.com/kms).
+To create an attestation, you must first create a private signing key. Kritis Signer now
+supports PGP keys, PKIX keys, and also signing via [Cloud KMS](https://cloud.google.com/kms).
 
-By default, the signing helper will also upload the attestation occurrence to [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis),
-and the uploaded attestation can be used by both Binary Authorization and Kritis for enforcement-time decisions.
+By default, Kritis Signer also uploads the attestation occurrence to Container Analysis. The uploaded attestation can be used by Binary Authorization and Kritis for deploy-time enforcement.
 
 #### Supported key types
 
-The tool currently supports three types of keys:
+The tool supports three types of keys:
 
-- PGP keys using `-pgp_private_key` and optionally `-pgp_passphrase`  if the key is passphrase protected.
+- PGP keys, using the `-pgp_private_key` flag, with the optional `-pgp_passphrase` flag if your key is passphrase protected.
 - PKIX keys using `-pkix_private_key` and `-pkix_alg`. Supported PKIX algorithms match those [supported by Binary Authorization](https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm).
-- Cloud KMS using with `-kms_key_name` and `-kms_digest_alg`. 
+- Cloud KMS, using the `-kms_key_name` and `-kms_digest_alg` flags. 
 
 ## Tutorial
 
-The tutorial will walk through how to run the signing helper tool in a local environment.
+The tutorial walks you through how to run the signing helper tool in a local environment.
 
 1. Build the tool.
 
@@ -138,7 +134,7 @@ First we need to pick a GCP project and enable those services within the project
           cloudkms.googleapis.com # If using Cloud KMS
         ```
 
-3. Setting up GCP credentials.
+3. Enable Google Cloud service accounts and Cloud IAM roles.
 
     1. Create a service account within the GCP project.
 
@@ -147,7 +143,7 @@ First we need to pick a GCP project and enable those services within the project
         gcloud iam service-accounts create ${SA_NAME}
         ```
 
-    2. Add permissions to the created service account.
+    2. Add roles to the created service account.
 
         ```shell
         # permission to create note
@@ -171,7 +167,7 @@ First we need to pick a GCP project and enable those services within the project
           --role roles/cloudkms.signer
         ```
 
-    3. Create json credentials for the service account.
+    3. Create JSON credentials for the service account.
 
         ```shell
         gcloud iam service-accounts keys create ./sa.json  --iam-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
@@ -189,10 +185,9 @@ First we need to pick a GCP project and enable those services within the project
 
 4. Creating a signing key. 
 
-    A private signing key is required to create attestations for an image. 
-Here, we use Cloud KMS as an example. The tool also supports PGP and PKIX keys.
+    A private signing key is required to create attestations for an image. In this example you use Cloud KMS with PKIX keys. Kritis Signer also supports PGP keys.
 
-    Run the following commands to create a key ring and an asymmetric signing key, and note down the KMS key name.
+    Run the following commands to create a key ring and an asymmetric signing key, and save the KMS key name.
 
     ```shell
     gcloud kms keyrings create my-key-ring-1 \
