@@ -1,8 +1,8 @@
 # Kritis Signer
 
-Kritis Signer is a command-line tool that creates attestations for a container image. These attestations can be used for Kritis and Binary Authorization deployment enforcement when you attempt to deploy the container image.
+Kritis Signer is a command-line tool that creates attestations for a container image. These attestations can be used for Kritis and Binary Authorization enforcement when you attempt to deploy the container image.
 
-Kritis Signer can create attestations based on identified software vulnerabilities in your container images.  To scan for vulnerabilities, your container image has to be uploaded to [Google Container Registry](https://cloud.google.com/container-registry) where [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) performs [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) and produces a vulnerability result for your container image. Kritis Signer then checks the vulnerability result against your vulnerability policy.  If the vulnerability result complies with your policy, then Kritis Signer creates the attestation and stores it in the Container Analysis data store.
+Kritis Signer can create attestations based on identified software vulnerabilities in your container images.  To scan for vulnerabilities, your container image is uploaded to [Google Container Registry](https://cloud.google.com/container-registry) where [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) performs [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) and produces a vulnerability result for the image. Kritis Signer then checks the vulnerability result against your vulnerability policy.  If the vulnerability result complies with your policy, then Kritis Signer creates the attestation and stores it in the Container Analysis data store.
 
 The tool can be run either locally or as part of a continuous integration (CI) pipeline.
 
@@ -93,7 +93,7 @@ By default, Kritis Signer also uploads the attestation occurrence to Container A
 The tool supports three types of keys:
 
 - PGP keys, using the `-pgp_private_key` flag, with the optional `-pgp_passphrase` flag if your key is passphrase protected.
-- PKIX keys using `-pkix_private_key` and `-pkix_alg`. Supported PKIX algorithms match those [supported by Binary Authorization](https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm).
+- PKIX keys, using the `-pkix_private_key` and `-pkix_alg` flags. Supported PKIX algorithms match those [supported by Binary Authorization](https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm).
 - Cloud KMS, using the `-kms_key_name` and `-kms_digest_alg` flags. 
 
 ## Tutorial
