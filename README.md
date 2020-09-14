@@ -33,8 +33,8 @@ packageVulnerabilityPolicy:
 In addition to the enforcement this project also contains *signers* that can be
 used to create [Grafeas](https://github.com/grafeas/grafeas) Attestation
 Occurrences to be used in other enforcement systems like [Binary
-Authorization](https://cloud.google.com/binary-authorization/).  For details see
-[Kritis Signer](docs/signer_install.md).
+Authorization](https://cloud.google.com/binary-authorization/).  (TODO#571: add doc and fix link)
+For details see upcoming doc [Kritis Signer](docs/signer.md).
 
 ## Getting Started
 
