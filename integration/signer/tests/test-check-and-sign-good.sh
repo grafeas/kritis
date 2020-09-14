@@ -23,14 +23,16 @@ set -eux
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
 docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
 
-trap 'delete_image $GOOD_IMAGE_URL'  EXIT
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
+trap 'clean_up'  EXIT
 
 # push good image
 docker push $GOOD_IMAGE_URL
 # get image url with digest format
 GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .RepoDigests 0}}')
 
-trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; exit $ARG;}
+trap 'clean_up'  EXIT
 
 # sign good image
 ./signer -v 10 \
@@ -39,6 +41,14 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -pgp_private_key=private.key \
 -policy=policy.yaml \
 -note_name=${NOTE_NAME}
+
+# deploy to a binauthz-enabled cluster signer-int-test
+clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; delete_occ $GOOD_IMG_DIGEST_URL; delete_pod signer-int-test-pod; exit $ARG;}
+trap 'clean_up'  EXIT
+
+read_occ $GOOD_IMAGE_URL
+
+deploy_image ${GOOD_IMG_DIGEST_URL} signer-int-test-pod
 
 echo ""
 echo ""

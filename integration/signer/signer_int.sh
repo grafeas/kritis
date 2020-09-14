@@ -50,13 +50,11 @@ urlencode() {
 }
 
 delete_image() {
-    ARG=$?
     set +ex
     IMG_TO_DELETE=$1
     echo "Delete image if uploaded."
     gcloud container images delete $IMG_TO_DELETE --force-delete-tags \
       --quiet
-    exit $ARG
 }
 
 get_occ() {
@@ -77,11 +75,10 @@ get_occ() {
 }
 
 delete_occ() {
-    ARG=$?
     set +ex
     IMG_DIGEST_URL_TO_DELETE=$1
     if [ -n "$IMG_DIGEST_URL_TO_DELETE" ]; then
-      OCC_NAME = $(get_occ $IMG_DIGEST_URL_TO_DELETE)
+      OCC_NAME=$(get_occ $IMG_DIGEST_URL_TO_DELETE)
       echo "Delete occurrence if created."
       if [ -n "$OCC_NAME" ]; then
           ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
@@ -93,13 +90,58 @@ delete_occ() {
               "https://containeranalysis.googleapis.com/v1/${OCC_NAME}"
       fi
     fi
-    exit $ARG
 }
 
+read_occ() {
+    set +ex
+    IMG_DIGEST_URL_TO_READ=$1
+    if [ -n "$IMG_DIGEST_URL_TO_READ" ]; then
+      OCC_NAME=$(get_occ $IMG_DIGEST_URL_TO_READ)
+      echo "Delete occurrence if created."
+      if [ -n "$OCC_NAME" ]; then
+          ACCESS_TOKEN=$(gcloud --project ${PROJECT_ID} auth print-access-token)
+          echo "Delete occurrence ${OCC_NAME}."
+          curl -X GET \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${ACCESS_TOKEN}"  \
+              -H "x-goog-user-project: ${PROJECT_ID}" \
+              "https://containeranalysis.googleapis.com/v1/${OCC_NAME}"
+      fi
+    fi
+}
+
+deploy_image() {
+  IMAGE_URL=$1
+  POD_NAME=$2
+  gcloud config set compute/zone us-central1-c
+  gcloud container clusters get-credentials signer-int-test
+  kubectl run --generator=run-pod/v1 --image=$IMAGE_URL $POD_NAME --command ls
+}
+
+delete_pod() {
+  set +ex
+  POD_NAME=$1
+  kubectl delete pod $POD_NAME
+}
+
+# exporting helper functions
+export -f get_occ
+export -f read_occ
 export -f urlencode
+
+# exporting clean-up task functions.
+# Clean-up task functions are used in conjuction with trap command to perform resource
+# clean-up on exit. Because only one bash function can be linked to an exit code,
+# we need to redfine clean-up function and re-link to exit code throughoput test code. E.g.,
+#
+# clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
+# trap 'clean_up'  EXIT
+#
+# See more in example test files.
 export -f delete_image
 export -f delete_occ
-export -f get_occ
+export -f deploy_image
+export -f delete_pod
 
 #### TEST 1: bypass-and-sign mode ####
 ./tests/test-bypass-and-sign.sh
@@ -119,5 +161,8 @@ export -f get_occ
 #### TEST 6: bypass-and-sign mode, with kms ####
 ./tests/test-bypass-and-sign-with-kms.sh
 
-#### TEST 7: bypass-and-sign mode, overwrite ####
+#### TEST 7: bypass-and-sign mode, with pkix ####
+./tests/test-bypass-and-sign-with-pkix.sh
+
+#### TEST 8: bypass-and-sign mode, overwrite ####
 ./tests/test-overwrite.sh

@@ -126,7 +126,7 @@ func (avt *AttestorValidatingTransport) parsePublicKeys(attestorKeys []v1beta1.P
 			invalidKeys = append(invalidKeys, attestorKey.KeyId)
 			continue
 		}
-		publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, decodedKey, attestorKey.KeyId)
+		publicKey, err := attestlib.NewPublicKey(attestlib.Pgp, attestlib.PGPUnused, decodedKey, attestorKey.KeyId)
 		if err != nil {
 			glog.Warningf("Error creating PublicKey: %v", err)
 			invalidKeys = append(invalidKeys, attestorKey.KeyId)
