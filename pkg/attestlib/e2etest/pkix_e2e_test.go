@@ -22,7 +22,7 @@ import (
 	"github.com/grafeas/kritis/pkg/attestlib"
 )
 
-const rsa2048PrivateKey = `-----BEGIN PRIVATE KEY-----
+const unsecureRsa2048PrivateKey = `-----BEGIN PRIVATE KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDVV/6DeIAscHkY
 fPaxMyZWZ6ZUyKjyICAhcOF90mYAkkJQbrW8ftkU4k1bBU+JfYcTiILyq4tPdrZb
 mHzU6INjYVd8Pm9kHSXJxc1mhqzKFSULhMWwvTW2CHtbtY3mIEOXDFjXdtyC/v1I
@@ -51,7 +51,7 @@ TCepA1Coedo2Kx1dnBTyvKBfI/TAsLt+JZ38zymUbvrflMG9c9JlhAtNtxm4MF0B
 oujjRhvcxXGmqIt4OSjdQw==
 -----END PRIVATE KEY-----`
 
-const rsa2048PubKey = `-----BEGIN PUBLIC KEY-----
+const rsa2048PubKey1 = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Vf+g3iALHB5GHz2sTMm
 VmemVMio8iAgIXDhfdJmAJJCUG61vH7ZFOJNWwVPiX2HE4iC8quLT3a2W5h81OiD
 Y2FXfD5vZB0lycXNZoasyhUlC4TFsL01tgh7W7WN5iBDlwxY13bcgv79SIbroz/C
@@ -61,72 +61,54 @@ NiCquPVF1EYnUXKrC+ANoWr/l7ldEJ7V4vpo+9EClnXcxAzq/knqeN5WdM6iPYny
 qwIDAQAB
 -----END PUBLIC KEY-----`
 
-const rsa3072PubKey = `-----BEGIN PUBLIC KEY-----
-MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA174cl1EgPn1w/4r1OTNy
-O5ViVEtjPV1Bl2xXA/4EOcVyvztdwovJriC2sry+gW7WS/YraS6BXTY328daY7u5
-OYAHnr/NiF3BoAzbAYMpHU6otMiAlGADrgevESj5XKUp4+XuiYxdOPH7pqgHaZ0+
-ZIvp08vH+xXsY1+WqA3TBsKxkCwTmWGUSy/j2Gml6XHgX1SywJGJ9VEI/5wACExX
-3NYHx+OXBS5XyjFzIoBxFiuA4g8FRHcTw1uulX98Rt/WTwTjesMeWaB7mOxgK03A
-rTOil11+/Wgboow3V93B5pdNMvVjkahYHvkjYkj/HJRuXUKidZANhBWEewpdHDkK
-+NXa8BlxcbkzcO2DvXGRu1g0emVInoIEN+/1fz4ab/mTWUGgs9QX+INChlSV3EBz
-5I6mXbc3fE4EW2W9KASIPKIpF1HBaF58B//W+XAy7mxhuSfg23/mkf4SI9ZVM82s
-rBmJaTmRgKWbZXNaf4yH+RhyGF1CsBN2uLrt667Swxv3AgMBAAE=
+const rsa2048PubKey2 = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwLv5GFn2IUXqSsFjSWsq
+N6xQlcMlxbvX2rfokKuNCnnUIbj1JlVI+yJOOKcVsHTXszEsrTl6BaD+Nv7I72XA
+gXDsP673gpiqiLao8VJzEHz9lQQ3MvsZet0RDuFDqPr3oi7E5ORXb5oWH3QjUTgw
+VNXFw+l6nzSCf+/PFzilFlYrswvOcKLzHucmsutt29H8dl9Utd5nbMTMcKs86JvF
+oBIENhw3yceT4sJvTSljghXlzWJJebf5KHPfSqcloUabjKWDiGUJiQLLTnxlpqrY
+E7UalcKnqe5uIeGWu2tBX7r9YndjqhqpgNcK3gYjx6rQ5mnGALKNCSD5E5w6x9P3
+/wIDAQAB
 -----END PUBLIC KEY-----`
 
 func TestPkixEndToEnd(t *testing.T) {
 	tcs := []struct {
 		name                string
-		privateKey          []byte
 		publicKey           []byte
-		signatureAlgorithm  attestlib.SignatureAlgorithm
 		payload             []byte
 		image               string
-		expectedCreateError bool
 		expectedVerifyError bool
 	}{
 		{
 			name:                "verify attestation success",
-			privateKey:          []byte(rsa2048PrivateKey),
-			publicKey:           []byte(rsa2048PubKey),
-			signatureAlgorithm:  attestlib.RsaSignPkcs12048Sha256,
+			publicKey:           []byte(rsa2048PubKey1),
 			payload:             []byte(e2eTestPayload),
 			image:               e2eTestImage,
-			expectedCreateError: false,
 			expectedVerifyError: false,
 		}, {
 			name:                "verify failed wrong public key",
-			privateKey:          []byte(rsa2048PrivateKey),
-			publicKey:           []byte(rsa3072PubKey),
-			signatureAlgorithm:  attestlib.RsaSignPkcs12048Sha256,
+			publicKey:           []byte(rsa2048PubKey2),
 			payload:             []byte(e2eTestPayload),
 			image:               e2eTestImage,
-			expectedCreateError: false,
 			expectedVerifyError: true,
 		}, {
 			name:                "verify failed image does not match payload",
-			privateKey:          []byte(rsa2048PrivateKey),
-			publicKey:           []byte(rsa2048PubKey),
-			signatureAlgorithm:  attestlib.RsaSignPkcs12048Sha256,
+			publicKey:           []byte(rsa2048PubKey1),
 			payload:             []byte(e2eTestPayload),
 			image:               wrongTestImage,
-			expectedCreateError: false,
 			expectedVerifyError: true,
 		},
 	}
 	for _, tc := range tcs {
-		signer, err := attestlib.NewPkixSigner(tc.privateKey, tc.signatureAlgorithm, "")
+		signer, err := attestlib.NewPkixSigner([]byte(unsecureRsa2048PrivateKey), attestlib.RsaSignPkcs12048Sha256, "")
 		if err != nil {
 			t.Fatalf("Error initializing signer: %v", err)
 		}
 		att, err := signer.CreateAttestation(tc.payload)
-		if tc.expectedCreateError {
-			if err == nil {
-				t.Fatalf("CreateAttestation(...)=nil, expected non-nil")
-			}
-		} else if err != nil {
-			t.Fatalf("CreateAttestation(...)=%v, expected nil", err)
+		if err != nil {
+			t.Fatalf("Error creating attestation: %v", err)
 		}
-		publicKey, err := attestlib.NewPublicKey(attestlib.Pkix, tc.signatureAlgorithm, tc.publicKey, "")
+		publicKey, err := attestlib.NewPublicKey(attestlib.Pkix, attestlib.RsaSignPkcs12048Sha256, tc.publicKey, "")
 		if err != nil {
 			t.Fatalf("Error creating public key: %v", err)
 		}
