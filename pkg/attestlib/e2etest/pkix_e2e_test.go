@@ -75,26 +75,22 @@ func TestPkixEndToEnd(t *testing.T) {
 	tcs := []struct {
 		name                string
 		publicKey           []byte
-		payload             []byte
 		image               string
 		expectedVerifyError bool
 	}{
 		{
 			name:                "verify attestation success",
 			publicKey:           []byte(rsa2048PubKey1),
-			payload:             []byte(e2eTestPayload),
 			image:               e2eTestImage,
 			expectedVerifyError: false,
 		}, {
 			name:                "verify failed wrong public key",
 			publicKey:           []byte(rsa2048PubKey2),
-			payload:             []byte(e2eTestPayload),
 			image:               e2eTestImage,
 			expectedVerifyError: true,
 		}, {
 			name:                "verify failed image does not match payload",
 			publicKey:           []byte(rsa2048PubKey1),
-			payload:             []byte(e2eTestPayload),
 			image:               wrongTestImage,
 			expectedVerifyError: true,
 		},
@@ -104,7 +100,7 @@ func TestPkixEndToEnd(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error initializing signer: %v", err)
 		}
-		att, err := signer.CreateAttestation(tc.payload)
+		att, err := signer.CreateAttestation([]byte(e2eTestPayload))
 		if err != nil {
 			t.Fatalf("Error creating attestation: %v", err)
 		}
