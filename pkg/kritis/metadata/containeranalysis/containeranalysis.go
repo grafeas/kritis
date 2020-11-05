@@ -296,7 +296,7 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 	// timeout := time.Duration(5) * time.Second
 
 	// Backoff time between tries, exponentially grows after each failure.
-	nextTryWait := 1
+	nextTryWait := time.Second
 	// Track time
 	start := time.Now()
 	// Timeout clock.
@@ -318,13 +318,10 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			// Only one occurrence should ever be returned by ListOccurrences
 			// and the given filter.
 			result, err := it.Next()
-			if err == iterator.Done {
-				continue
-			}
-			if err != nil {
+			if err != nil && err != iterator.Done {
 				return fmt.Errorf("it.Next: %v", err)
 			}
-			if result.GetDiscovered() != nil {
+			if err == nil && result.GetDiscovered() != nil {
 				discoveryOccurrence = result
 			}
 		}
@@ -349,14 +346,16 @@ func (c Client) WaitForVulnzAnalysis(containerImage string, timeout time.Duratio
 			}
 		}
 
+		glog.Infof("waiting %d seconds for container analysis of %s to complete", nextTryWait/time.Second, containerImage)
 		select {
 		case <-timeoutTimer.C:
 			return fmt.Errorf("timeout while retrieving discovery occurrence")
-		case <-time.Tick(time.Duration(nextTryWait)):
+		case <-time.Tick(nextTryWait):
 			// exponential backoff
 			nextTryWait = nextTryWait * 2
 		}
 	}
+
 }
 
 // Delete an attestation by image and attestation authority.
