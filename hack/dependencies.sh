@@ -16,19 +16,7 @@
 
 set -e -o pipefail
 
-DEP_VERSION=v0.4.1
-DEP_DIR="$GOPATH/src/github.com/golang/dep"
 KRITIS_DIR="$GOPATH/src/github.com/grafeas/kritis"
-
-install_dep() {
-    echo "Installing dep ${DEP_VERSION}"
-    if [ ! -d "$DEP_DIR" ]; then
-        go get -u -d github.com/golang/dep/cmd/dep
-    fi
-    cd $DEP_DIR
-    git checkout -q ${DEP_VERSION}
-    go build -o $GOPATH/bin/dep github.com/golang/dep/cmd/dep
-}
 
 if [ -z "$VALIDATE_UPSTREAM" ]; then
 	VALIDATE_REPO='https://github.com/grafeas/kritis.git'
@@ -49,14 +37,13 @@ if [ -z "$VALIDATE_UPSTREAM" ]; then
 fi
 # See if there have been upstream changes
 IFS=$'\n'
-files=( $(validate_diff --name-only -- 'Gopkg.toml' 'Gopkg.lock' 'vendor/' || true) )
+files=( $(validate_diff --name-only -- 'go.mod' 'go.sum' 'vendor/' || true) )
 unset IFS
 
 if [ ${#files[@]} -gt 0 ]; then
-        install_dep
 	cd $KRITIS_DIR
-	$GOPATH/bin/dep ensure
-	diffs="$(git status --porcelain -- vendor Gopkg.toml Gopkg.lock 2>/dev/null)"
+	go mod vendor
+	diffs="$(git status --porcelain -- vendor go.mod go.sum 2>/dev/null)"
 	if [ "$diffs" ]; then
 		{
 			echo 'Vendor not reproducible, please commit these changes to fix:'
@@ -66,5 +53,5 @@ if [ ${#files[@]} -gt 0 ]; then
 		false
 	fi
 else
-    echo 'No vendor changes from upstream. Skipping dep ensure, dep prune'
+    echo 'No vendor changes from upstream. Skipping go mod vendor, go mod tidy'
 fi
