@@ -18,11 +18,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CODEGEN_VERSION="kubernetes-1.10.0"
+CODEGEN_VERSION="0.18.8"
 
-wget "https://github.com/kubernetes/code-generator/archive/${CODEGEN_VERSION}.tar.gz"
-echo "67bfc9d104fac00a76bc9aec1fb3b1af1d731987d021f49c72d9fa2d5ed5748e ${CODEGEN_VERSION}.tar.gz" | sha256sum -c
-mkdir -p $GOPATH/src/k8s.io && tar xvzf "${CODEGEN_VERSION}.tar.gz" -C $GOPATH/src/k8s.io 
+wget "https://github.com/kubernetes/code-generator/archive/v${CODEGEN_VERSION}.tar.gz"
+echo "758493c2fd178cecf67ac6748c85dd1c269681be63fda6d44e046bf0f5d02ce6 v${CODEGEN_VERSION}.tar.gz" | sha256sum -c
+mkdir -p $GOPATH/src/k8s.io && tar xvzf "v${CODEGEN_VERSION}.tar.gz" -C $GOPATH/src/k8s.io 
 mv "${GOPATH}/src/k8s.io/code-generator-${CODEGEN_VERSION}" $GOPATH/src/k8s.io/code-generator
 cd "${GOPATH}/src/k8s.io/code-generator"
 go install ./cmd/{defaulter-gen,client-gen,lister-gen,informer-gen,deepcopy-gen}

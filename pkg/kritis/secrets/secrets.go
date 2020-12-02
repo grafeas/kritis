@@ -17,6 +17,7 @@ limitations under the License.
 package secrets
 
 import (
+	"context"
 	"fmt"
 
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -86,5 +87,5 @@ func getSecret(namespace string, name string) (*v1.Secret, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.CoreV1().Secrets(namespace).Get(name, meta_v1.GetOptions{})
+	return c.CoreV1().Secrets(namespace).Get(context.Background(), name, meta_v1.GetOptions{})
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package kritisconfig
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -36,7 +37,7 @@ func KritisConfigs() ([]v1beta1.KritisConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().KritisConfigs().List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().KritisConfigs().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all kritis configs: %v", err)
 	}
