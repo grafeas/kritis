@@ -19,9 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 
-	"github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/v1util"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
 // WithRawConfigFile defines the subset of v1.Image used by these helper methods
@@ -49,8 +50,6 @@ func ConfigName(i WithRawConfigFile) (v1.Hash, error) {
 	return h, err
 }
 
-// configLayer implements v1.Layer from the raw config bytes.
-// This is so that clients (e.g. remote) can access the config as a blob.
 type configLayer struct {
 	hash    v1.Hash
 	content []byte
@@ -68,12 +67,12 @@ func (cl *configLayer) DiffID() (v1.Hash, error) {
 
 // Uncompressed implements v1.Layer
 func (cl *configLayer) Uncompressed() (io.ReadCloser, error) {
-	return v1util.NopReadCloser(bytes.NewBuffer(cl.content)), nil
+	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Compressed implements v1.Layer
 func (cl *configLayer) Compressed() (io.ReadCloser, error) {
-	return v1util.NopReadCloser(bytes.NewBuffer(cl.content)), nil
+	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Size implements v1.Layer
@@ -81,8 +80,16 @@ func (cl *configLayer) Size() (int64, error) {
 	return int64(len(cl.content)), nil
 }
 
+func (cl *configLayer) MediaType() (types.MediaType, error) {
+	// Defaulting this to OCIConfigJSON as it should remain
+	// backwards compatible with DockerConfigJSON
+	return types.OCIConfigJSON, nil
+}
+
 var _ v1.Layer = (*configLayer)(nil)
 
+// ConfigLayer implements v1.Layer from the raw config bytes.
+// This is so that clients (e.g. remote) can access the config as a blob.
 func ConfigLayer(i WithRawConfigFile) (v1.Layer, error) {
 	h, err := ConfigName(i)
 	if err != nil {
@@ -120,21 +127,6 @@ func RawConfigFile(i WithConfigFile) ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(cfg)
-}
-
-// WithUncompressedLayer defines the subset of v1.Image used by these helper methods
-type WithUncompressedLayer interface {
-	// UncompressedLayer is like UncompressedBlob, but takes the "diff id".
-	UncompressedLayer(v1.Hash) (io.ReadCloser, error)
-}
-
-// Layer is the same as Blob, but takes the "diff id".
-func Layer(wul WithUncompressedLayer, h v1.Hash) (io.ReadCloser, error) {
-	rc, err := wul.UncompressedLayer(h)
-	if err != nil {
-		return nil, err
-	}
-	return v1util.GzipReadCloser(rc)
 }
 
 // WithRawManifest defines the subset of v1.Image used by these helper methods
@@ -177,6 +169,15 @@ func RawManifest(i WithManifest) ([]byte, error) {
 	return json.Marshal(m)
 }
 
+// Size is a helper for implementing v1.Image
+func Size(i WithRawManifest) (int64, error) {
+	b, err := i.RawManifest()
+	if err != nil {
+		return -1, err
+	}
+	return int64(len(b)), nil
+}
+
 // FSLayers is a helper for implementing v1.Image
 func FSLayers(i WithManifest) ([]v1.Hash, error) {
 	m, err := i.Manifest()
@@ -190,32 +191,32 @@ func FSLayers(i WithManifest) ([]v1.Hash, error) {
 	return fsl, nil
 }
 
-// BlobSet is a helper for implementing v1.Image
-func BlobSet(i WithManifest) (map[v1.Hash]struct{}, error) {
+// BlobSize is a helper for implementing v1.Image
+func BlobSize(i WithManifest, h v1.Hash) (int64, error) {
+	d, err := BlobDescriptor(i, h)
+	if err != nil {
+		return -1, err
+	}
+	return d.Size, nil
+}
+
+// BlobDescriptor is a helper for implementing v1.Image
+func BlobDescriptor(i WithManifest, h v1.Hash) (*v1.Descriptor, error) {
 	m, err := i.Manifest()
 	if err != nil {
 		return nil, err
 	}
-	bs := make(map[v1.Hash]struct{})
-	for _, l := range m.Layers {
-		bs[l.Digest] = struct{}{}
-	}
-	bs[m.Config.Digest] = struct{}{}
-	return bs, nil
-}
 
-// BlobSize is a helper for implementing v1.Image
-func BlobSize(i WithManifest, h v1.Hash) (int64, error) {
-	m, err := i.Manifest()
-	if err != nil {
-		return -1, err
+	if m.Config.Digest == h {
+		return &m.Config, nil
 	}
+
 	for _, l := range m.Layers {
 		if l.Digest == h {
-			return l.Size, nil
+			return &l, nil
 		}
 	}
-	return -1, fmt.Errorf("blob %v not found", h)
+	return nil, fmt.Errorf("blob %v not found", h)
 }
 
 // WithManifestAndConfigFile defines the subset of v1.Image used by these helper methods
@@ -268,25 +269,114 @@ func DiffIDToBlob(wm WithManifestAndConfigFile, h v1.Hash) (v1.Hash, error) {
 		}
 	}
 	return v1.Hash{}, fmt.Errorf("unknown diffID %v", h)
-
-}
-
-// WithBlob defines the subset of v1.Image used by these helper methods
-type WithBlob interface {
-	// Blob returns a ReadCloser for streaming the blob's content.
-	Blob(v1.Hash) (io.ReadCloser, error)
-}
-
-// UncompressedBlob returns a ReadCloser for streaming the blob's content uncompressed.
-func UncompressedBlob(b WithBlob, h v1.Hash) (io.ReadCloser, error) {
-	rc, err := b.Blob(h)
-	if err != nil {
-		return nil, err
-	}
-	return v1util.GunzipReadCloser(rc)
 }
 
 // WithDiffID defines the subset of v1.Layer for exposing the DiffID method.
 type WithDiffID interface {
 	DiffID() (v1.Hash, error)
+}
+
+// withDescriptor allows partial layer implementations to provide a layer
+// descriptor to the partial image manifest builder. This allows partial
+// uncompressed layers to provide foreign layer metadata like URLs to the
+// uncompressed image manifest.
+type withDescriptor interface {
+	Descriptor() (*v1.Descriptor, error)
+}
+
+// Describable represents something for which we can produce a v1.Descriptor.
+type Describable interface {
+	Digest() (v1.Hash, error)
+	MediaType() (types.MediaType, error)
+	Size() (int64, error)
+}
+
+// Descriptor returns a v1.Descriptor given a Describable. It also encodes
+// some logic for unwrapping things that have been wrapped by
+// CompressedToLayer, UncompressedToLayer, CompressedToImage, or
+// UncompressedToImage.
+func Descriptor(d Describable) (*v1.Descriptor, error) {
+	// If Describable implements Descriptor itself, return that.
+	if wd, ok := d.(withDescriptor); ok {
+		return wd.Descriptor()
+	}
+
+	// Otherwise, try to unwrap any partial implementations to see
+	// if the wrapped struct implements Descriptor.
+	if ule, ok := d.(*uncompressedLayerExtender); ok {
+		if wd, ok := ule.UncompressedLayer.(withDescriptor); ok {
+			return wd.Descriptor()
+		}
+	}
+	if cle, ok := d.(*compressedLayerExtender); ok {
+		if wd, ok := cle.CompressedLayer.(withDescriptor); ok {
+			return wd.Descriptor()
+		}
+	}
+	if uie, ok := d.(*uncompressedImageExtender); ok {
+		if wd, ok := uie.UncompressedImageCore.(withDescriptor); ok {
+			return wd.Descriptor()
+		}
+	}
+	if cie, ok := d.(*compressedImageExtender); ok {
+		if wd, ok := cie.CompressedImageCore.(withDescriptor); ok {
+			return wd.Descriptor()
+		}
+	}
+
+	// If all else fails, compute the descriptor from the individual methods.
+	var (
+		desc v1.Descriptor
+		err  error
+	)
+
+	if desc.Size, err = d.Size(); err != nil {
+		return nil, err
+	}
+	if desc.Digest, err = d.Digest(); err != nil {
+		return nil, err
+	}
+	if desc.MediaType, err = d.MediaType(); err != nil {
+		return nil, err
+	}
+
+	return &desc, nil
+}
+
+type withUncompressedSize interface {
+	UncompressedSize() (int64, error)
+}
+
+// UncompressedSize returns the size of the Uncompressed layer. If the
+// underlying implementation doesn't implement UncompressedSize directly,
+// this will compute the uncompressedSize by reading everything returned
+// by Compressed(). This is potentially expensive and may consume the contents
+// for streaming layers.
+func UncompressedSize(l v1.Layer) (int64, error) {
+	// If the layer implements UncompressedSize itself, return that.
+	if wus, ok := l.(withUncompressedSize); ok {
+		return wus.UncompressedSize()
+	}
+
+	// Otherwise, try to unwrap any partial implementations to see
+	// if the wrapped struct implements UncompressedSize.
+	if ule, ok := l.(*uncompressedLayerExtender); ok {
+		if wus, ok := ule.UncompressedLayer.(withUncompressedSize); ok {
+			return wus.UncompressedSize()
+		}
+	}
+	if cle, ok := l.(*compressedLayerExtender); ok {
+		if wus, ok := cle.CompressedLayer.(withUncompressedSize); ok {
+			return wus.UncompressedSize()
+		}
+	}
+
+	// The layer doesn't implement UncompressedSize, we need to compute it.
+	rc, err := l.Uncompressed()
+	if err != nil {
+		return -1, err
+	}
+	defer rc.Close()
+
+	return io.Copy(ioutil.Discard, rc)
 }
