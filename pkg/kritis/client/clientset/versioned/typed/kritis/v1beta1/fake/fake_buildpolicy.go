@@ -119,7 +119,7 @@ func (c *FakeBuildPolicies) DeleteCollection(options *v1.DeleteOptions, listOpti
 // Patch applies the patch and returns the patched buildPolicy.
 func (c *FakeBuildPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.BuildPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(buildpoliciesResource, c.ns, name, data, subresources...), &v1beta1.BuildPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(buildpoliciesResource, c.ns, name, types.JSONPatchType, data, subresources...), &v1beta1.BuildPolicy{})
 
 	if obj == nil {
 		return nil, err

@@ -19,6 +19,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	scheme "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +70,7 @@ func (c *attestationAuthorities) Get(name string, options v1.GetOptions) (result
 		Resource("attestationauthorities").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -80,7 +82,7 @@ func (c *attestationAuthorities) List(opts v1.ListOptions) (result *v1beta1.Atte
 		Namespace(c.ns).
 		Resource("attestationauthorities").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -92,7 +94,7 @@ func (c *attestationAuthorities) Watch(opts v1.ListOptions) (watch.Interface, er
 		Namespace(c.ns).
 		Resource("attestationauthorities").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
+		Watch(context.Background())
 }
 
 // Create takes the representation of a attestationAuthority and creates it.  Returns the server's representation of the attestationAuthority, and an error, if there is any.
@@ -102,7 +104,7 @@ func (c *attestationAuthorities) Create(attestationAuthority *v1beta1.Attestatio
 		Namespace(c.ns).
 		Resource("attestationauthorities").
 		Body(attestationAuthority).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -115,7 +117,7 @@ func (c *attestationAuthorities) Update(attestationAuthority *v1beta1.Attestatio
 		Resource("attestationauthorities").
 		Name(attestationAuthority.Name).
 		Body(attestationAuthority).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -127,7 +129,7 @@ func (c *attestationAuthorities) Delete(name string, options *v1.DeleteOptions) 
 		Resource("attestationauthorities").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.Background()).
 		Error()
 }
 
@@ -138,7 +140,7 @@ func (c *attestationAuthorities) DeleteCollection(options *v1.DeleteOptions, lis
 		Resource("attestationauthorities").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
-		Do().
+		Do(context.Background()).
 		Error()
 }
 
@@ -151,7 +153,7 @@ func (c *attestationAuthorities) Patch(name string, pt types.PatchType, data []b
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }

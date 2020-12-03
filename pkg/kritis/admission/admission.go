@@ -36,7 +36,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/review"
 	"github.com/grafeas/kritis/pkg/kritis/secrets"
 	"github.com/grafeas/kritis/pkg/kritis/violation"
-	"k8s.io/api/admission/v1"
+	admv1 "k8s.io/api/admission/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,8 +45,8 @@ import (
 )
 
 type config struct {
-	retrievePod                     func(r *http.Request) (*v1.Pod, v1.AdmissionReview, error)
-	retrieveDeployment              func(r *http.Request) (*appsv1.Deployment, v1.AdmissionReview, error)
+	retrievePod                     func(r *http.Request) (*v1.Pod, admv1.AdmissionReview, error)
+	retrieveDeployment              func(r *http.Request) (*appsv1.Deployment, admv1.AdmissionReview, error)
 	fetchMetadataClient             func(config *Config) (metadata.ReadWriteClient, error)
 	fetchMetadataReadOnlyClient     func(config *Config) (metadata.ReadOnlyClient, error)
 	fetchGenericAttestationPolicies func(namespace string) ([]kritis.GenericAttestationPolicy, error)
@@ -113,13 +113,13 @@ func MetadataReadOnlyClient(config *Config) (metadata.ReadOnlyClient, error) {
 	return nil, fmt.Errorf("unsupported backend %v", config.Metadata)
 }
 
-var handlers = map[string]func(*v1.AdmissionReview, *v1.AdmissionReview, *Config) error{
+var handlers = map[string]func(*admv1.AdmissionReview, *admv1.AdmissionReview, *Config) error{
 	"Deployment": handleDeployment,
 	"Pod":        handlePod,
 	"ReplicaSet": handleReplicaSet,
 }
 
-func handleDeployment(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview, config *Config) error {
+func handleDeployment(ar *admv1.AdmissionReview, admitResponse *admv1.AdmissionReview, config *Config) error {
 	deployment := appsv1.Deployment{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &deployment); err != nil {
 		return err
@@ -129,7 +129,7 @@ func handleDeployment(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview,
 	return nil
 }
 
-func handlePod(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview, config *Config) error {
+func handlePod(ar *admv1.AdmissionReview, admitResponse *admv1.AdmissionReview, config *Config) error {
 	pod := v1.Pod{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &pod); err != nil {
 		return err
@@ -139,7 +139,7 @@ func handlePod(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview, config
 	return nil
 }
 
-func handleReplicaSet(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview, config *Config) error {
+func handleReplicaSet(ar *admv1.AdmissionReview, admitResponse *admv1.AdmissionReview, config *Config) error {
 	replicaSet := appsv1.ReplicaSet{}
 	if err := json.Unmarshal(ar.Request.Object.Raw, &replicaSet); err != nil {
 		return err
@@ -149,7 +149,7 @@ func handleReplicaSet(ar *v1.AdmissionReview, admitResponse *v1.AdmissionReview,
 	return nil
 }
 
-func deserializeRequest(r *http.Request) (ar v1.AdmissionReview, err error) {
+func deserializeRequest(r *http.Request) (ar admv1.AdmissionReview, err error) {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 
@@ -177,7 +177,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		resp := &v1.AdmissionResponse{
+		resp := &admv1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  string(failureStatus),
@@ -197,8 +197,8 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 		return
 	}
 
-	admitResponse := &v1.AdmissionReview{
-		Response: &v1.AdmissionResponse{
+	admitResponse := &admv1.AdmissionReview{
+		Response: &admv1.AdmissionResponse{
 			UID:     ar.Request.UID,
 			Allowed: true,
 			Result: &metav1.Status{
@@ -230,7 +230,7 @@ func ReviewHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 	}
 }
 
-func reviewDeployment(deployment *appsv1.Deployment, ar *v1.AdmissionReview, config *Config) {
+func reviewDeployment(deployment *appsv1.Deployment, ar *admv1.AdmissionReview, config *Config) {
 	images := DeploymentImages(*deployment)
 	// check if the Deployments's owner has already been validated
 	if checkOwners(images, &deployment.ObjectMeta) {
@@ -245,7 +245,7 @@ func reviewDeployment(deployment *appsv1.Deployment, ar *v1.AdmissionReview, con
 	reviewImages(images, deployment.Namespace, nil, ar, config)
 }
 
-func createDeniedResponse(ar *v1.AdmissionReview, message string) {
+func createDeniedResponse(ar *admv1.AdmissionReview, message string) {
 	ar.Response.Allowed = false
 	ar.Response.Result = &metav1.Status{
 		Status:  string(failureStatus),
@@ -253,7 +253,7 @@ func createDeniedResponse(ar *v1.AdmissionReview, message string) {
 	}
 }
 
-func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1.AdmissionReview, config *Config) {
+func reviewImages(images []string, ns string, pod *v1.Pod, ar *admv1.AdmissionReview, config *Config) {
 	// NOTE: pod may be nil if we are reviewing images for a replica set.
 	glog.Infof("Reviewing images for %s in namespace %s: %s", getPodName(pod), ns, images)
 	gaps, err := admissionConfig.fetchGenericAttestationPolicies(ns)
@@ -285,7 +285,7 @@ func reviewImages(images []string, ns string, pod *v1.Pod, ar *v1.AdmissionRevie
 	}
 }
 
-func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1.AdmissionReview, isps []kritis.ImageSecurityPolicy, config *Config) {
+func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *admv1.AdmissionReview, isps []kritis.ImageSecurityPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataClient(config)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
@@ -302,7 +302,7 @@ func reviewImageSecurityPolicy(images []string, ns string, pod *v1.Pod, ar *v1.A
 	}
 }
 
-func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar *v1.AdmissionReview, gaps []kritis.GenericAttestationPolicy, config *Config) {
+func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar *admv1.AdmissionReview, gaps []kritis.GenericAttestationPolicy, config *Config) {
 	client, err := admissionConfig.fetchMetadataReadOnlyClient(config)
 	if err != nil {
 		errMsg := fmt.Sprintf("error getting metadata client: %v", err)
@@ -319,7 +319,7 @@ func reviewGenericAttestationPolicy(images []string, ns string, pod *v1.Pod, ar 
 	}
 }
 
-func reviewPod(pod *v1.Pod, ar *v1.AdmissionReview, config *Config) {
+func reviewPod(pod *v1.Pod, ar *admv1.AdmissionReview, config *Config) {
 	images := PodImages(*pod)
 	// check if the Pod's owner has already been validated
 	if checkOwners(images, &pod.ObjectMeta) {
@@ -334,7 +334,7 @@ func reviewPod(pod *v1.Pod, ar *v1.AdmissionReview, config *Config) {
 	reviewImages(images, pod.Namespace, pod, ar, config)
 }
 
-func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1.AdmissionReview, config *Config) {
+func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *admv1.AdmissionReview, config *Config) {
 	images := ReplicaSetImages(*replicaSet)
 	// check if the ReplicaSet's owner has already been validated
 	if checkOwners(images, &replicaSet.ObjectMeta) {
@@ -350,8 +350,8 @@ func reviewReplicaSet(replicaSet *appsv1.ReplicaSet, ar *v1.AdmissionReview, con
 }
 
 // TODO(aaron-prindle) remove these functions
-func unmarshalPod(r *http.Request) (*v1.Pod, v1.AdmissionReview, error) {
-	ar := v1.AdmissionReview{}
+func unmarshalPod(r *http.Request) (*v1.Pod, admv1.AdmissionReview, error) {
+	ar := admv1.AdmissionReview{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, ar, err
@@ -366,8 +366,8 @@ func unmarshalPod(r *http.Request) (*v1.Pod, v1.AdmissionReview, error) {
 	return &pod, ar, nil
 }
 
-func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, v1.AdmissionReview, error) {
-	ar := v1.AdmissionReview{}
+func unmarshalDeployment(r *http.Request) (*appsv1.Deployment, admv1.AdmissionReview, error) {
+	ar := admv1.AdmissionReview{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, ar, err

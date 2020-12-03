@@ -119,7 +119,7 @@ func (c *FakeVulnzSigningPolicies) DeleteCollection(options *v1.DeleteOptions, l
 // Patch applies the patch and returns the patched vulnzSigningPolicy.
 func (c *FakeVulnzSigningPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.VulnzSigningPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(vulnzsigningpoliciesResource, c.ns, name, data, subresources...), &v1beta1.VulnzSigningPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(vulnzsigningpoliciesResource, c.ns, name, types.JSONPatchType, data, subresources...), &v1beta1.VulnzSigningPolicy{})
 
 	if obj == nil {
 		return nil, err

@@ -30,7 +30,7 @@ import (
 	"github.com/grafeas/kritis/pkg/kritis/constants"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
 	"github.com/grafeas/kritis/pkg/kritis/testutil"
-	"k8s.io/api/admission/v1beta1"
+	admv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -45,12 +45,12 @@ type testConfig struct {
 }
 
 func Test_BreakglassAnnotation(t *testing.T) {
-	mockPod := func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
+	mockPod := func(r *http.Request) (*v1.Pod, admv1.AdmissionReview, error) {
 		return &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"kritis.grafeas.io/breakglass": "true"},
 			},
-		}, v1beta1.AdmissionReview{}, nil
+		}, admv1.AdmissionReview{}, nil
 	}
 	mockConfig := config{
 		retrievePod: mockPod,
@@ -70,8 +70,8 @@ func TestReviewHandler(t *testing.T) {
 	}))
 	defer s.Close()
 
-	ar := v1beta1.AdmissionReview{
-		Request: &v1beta1.AdmissionRequest{},
+	ar := admv1.AdmissionReview{
+		Request: &admv1.AdmissionRequest{},
 	}
 	blob, err := json.Marshal(ar)
 	if err != nil {
@@ -141,8 +141,8 @@ func Test_AdmissionResponse(t *testing.T) {
 	}
 }
 
-func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
-	return func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, error) {
+func mockValidPod() func(r *http.Request) (*v1.Pod, admv1.AdmissionReview, error) {
+	return func(r *http.Request) (*v1.Pod, admv1.AdmissionReview, error) {
 		return &v1.Pod{
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
@@ -151,7 +151,7 @@ func mockValidPod() func(r *http.Request) (*v1.Pod, v1beta1.AdmissionReview, err
 					},
 				},
 			},
-		}, v1beta1.AdmissionReview{}, nil
+		}, admv1.AdmissionReview{}, nil
 	}
 }
 
@@ -198,8 +198,8 @@ func PodTestReviewHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	admitResponse := &v1beta1.AdmissionReview{
-		Response: &v1beta1.AdmissionResponse{
+	admitResponse := &admv1.AdmissionReview{
+		Response: &admv1.AdmissionResponse{
 			UID:     types.UID(""),
 			Allowed: true,
 			Result: &metav1.Status{

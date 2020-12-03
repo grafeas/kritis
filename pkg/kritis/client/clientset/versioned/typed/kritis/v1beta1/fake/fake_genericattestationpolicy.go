@@ -119,7 +119,7 @@ func (c *FakeGenericAttestationPolicies) DeleteCollection(options *v1.DeleteOpti
 // Patch applies the patch and returns the patched genericAttestationPolicy.
 func (c *FakeGenericAttestationPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.GenericAttestationPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(genericattestationpoliciesResource, c.ns, name, data, subresources...), &v1beta1.GenericAttestationPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(genericattestationpoliciesResource, c.ns, name, types.JSONPatchType, data, subresources...), &v1beta1.GenericAttestationPolicy{})
 
 	if obj == nil {
 		return nil, err

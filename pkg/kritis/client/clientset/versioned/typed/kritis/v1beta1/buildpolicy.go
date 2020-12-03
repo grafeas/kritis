@@ -19,6 +19,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	scheme "github.com/grafeas/kritis/pkg/kritis/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +70,7 @@ func (c *buildPolicies) Get(name string, options v1.GetOptions) (result *v1beta1
 		Resource("buildpolicies").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -80,7 +82,7 @@ func (c *buildPolicies) List(opts v1.ListOptions) (result *v1beta1.BuildPolicyLi
 		Namespace(c.ns).
 		Resource("buildpolicies").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -92,7 +94,7 @@ func (c *buildPolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Namespace(c.ns).
 		Resource("buildpolicies").
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch()
+		Watch(context.Background())
 }
 
 // Create takes the representation of a buildPolicy and creates it.  Returns the server's representation of the buildPolicy, and an error, if there is any.
@@ -102,7 +104,7 @@ func (c *buildPolicies) Create(buildPolicy *v1beta1.BuildPolicy) (result *v1beta
 		Namespace(c.ns).
 		Resource("buildpolicies").
 		Body(buildPolicy).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -115,7 +117,7 @@ func (c *buildPolicies) Update(buildPolicy *v1beta1.BuildPolicy) (result *v1beta
 		Resource("buildpolicies").
 		Name(buildPolicy.Name).
 		Body(buildPolicy).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }
@@ -127,7 +129,7 @@ func (c *buildPolicies) Delete(name string, options *v1.DeleteOptions) error {
 		Resource("buildpolicies").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.Background()).
 		Error()
 }
 
@@ -138,7 +140,7 @@ func (c *buildPolicies) DeleteCollection(options *v1.DeleteOptions, listOptions 
 		Resource("buildpolicies").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
-		Do().
+		Do(context.Background()).
 		Error()
 }
 
@@ -151,7 +153,7 @@ func (c *buildPolicies) Patch(name string, pt types.PatchType, data []byte, subr
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.Background()).
 		Into(result)
 	return
 }

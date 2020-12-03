@@ -119,7 +119,7 @@ func (c *FakeAttestationAuthorities) DeleteCollection(options *v1.DeleteOptions,
 // Patch applies the patch and returns the patched attestationAuthority.
 func (c *FakeAttestationAuthorities) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.AttestationAuthority, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(attestationauthoritiesResource, c.ns, name, data, subresources...), &v1beta1.AttestationAuthority{})
+		Invokes(testing.NewPatchSubresourceAction(attestationauthoritiesResource, c.ns, name, types.JSONPatchType, data, subresources...), &v1beta1.AttestationAuthority{})
 
 	if obj == nil {
 		return nil, err

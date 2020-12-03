@@ -112,7 +112,7 @@ func (c *FakeKritisConfigs) DeleteCollection(options *v1.DeleteOptions, listOpti
 // Patch applies the patch and returns the patched kritisConfig.
 func (c *FakeKritisConfigs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.KritisConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(kritisconfigsResource, name, data, subresources...), &v1beta1.KritisConfig{})
+		Invokes(testing.NewRootPatchSubresourceAction(kritisconfigsResource, name, types.JSONPatchType, data, subresources...), &v1beta1.KritisConfig{})
 	if obj == nil {
 		return nil, err
 	}
