@@ -6,4 +6,5 @@ go:
 go_import_path: github.com/grafeas/kritis
 
 script:
+  - go get -d k8s.io/code-generator@kubernetes-1.10.0
   - make test
