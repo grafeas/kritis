@@ -49,7 +49,7 @@ func NewHash(s string) (Hash, error) {
 }
 
 // MarshalJSON implements json.Marshaler
-func (h *Hash) MarshalJSON() ([]byte, error) {
+func (h Hash) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.String())
 }
 
@@ -60,6 +60,18 @@ func (h *Hash) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return h.parse(s)
+}
+
+// MarshalText implements encoding.TextMarshaler. This is required to use
+// v1.Hash as a key in a map when marshalling JSON.
+func (h Hash) MarshalText() (text []byte, err error) {
+	return []byte(h.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler. This is required to use
+// v1.Hash as a key in a map when unmarshalling JSON.
+func (h *Hash) UnmarshalText(text []byte) error {
+	return h.parse(string(text))
 }
 
 // Hasher returns a hash.Hash for the named algorithm (e.g. "sha256")
