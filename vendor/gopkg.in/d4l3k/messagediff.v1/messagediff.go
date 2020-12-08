@@ -5,14 +5,12 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 	"unsafe"
 )
 
 // PrettyDiff does a deep comparison and returns the nicely formated results.
-// See DeepDiff for more details.
-func PrettyDiff(a, b interface{}, options ...Option) (string, bool) {
-	d, equal := DeepDiff(a, b, options...)
+func PrettyDiff(a, b interface{}) (string, bool) {
+	d, equal := DeepDiff(a, b)
 	var dstr []string
 	for path, added := range d.Added {
 		dstr = append(dstr, fmt.Sprintf("added: %s = %#v\n", path.String(), added))
@@ -28,14 +26,9 @@ func PrettyDiff(a, b interface{}, options ...Option) (string, bool) {
 }
 
 // DeepDiff does a deep comparison and returns the results.
-// If the field is time.Time, use Equal to compare
-func DeepDiff(a, b interface{}, options ...Option) (*Diff, bool) {
+func DeepDiff(a, b interface{}) (*Diff, bool) {
 	d := newDiff()
-	opts := &opts{}
-	for _, o := range options {
-		o.apply(opts)
-	}
-	return d, d.diff(reflect.ValueOf(a), reflect.ValueOf(b), nil, opts)
+	return d, d.diff(reflect.ValueOf(a), reflect.ValueOf(b), nil)
 }
 
 func newDiff() *Diff {
@@ -47,7 +40,7 @@ func newDiff() *Diff {
 	}
 }
 
-func (d *Diff) diff(aVal, bVal reflect.Value, path Path, opts *opts) bool {
+func (d *Diff) diff(aVal, bVal reflect.Value, path Path) bool {
 	// The array underlying `path` could be modified in subsequent
 	// calls. Make sure we have a local copy.
 	localPath := make(Path, len(path))
@@ -119,7 +112,7 @@ func (d *Diff) diff(aVal, bVal reflect.Value, path Path, opts *opts) bool {
 		bLen := bVal.Len()
 		for i := 0; i < min(aLen, bLen); i++ {
 			localPath := append(localPath, SliceIndex(i))
-			if eq := d.diff(aVal.Index(i), bVal.Index(i), localPath, opts); !eq {
+			if eq := d.diff(aVal.Index(i), bVal.Index(i), localPath); !eq {
 				equal = false
 			}
 		}
@@ -144,7 +137,7 @@ func (d *Diff) diff(aVal, bVal reflect.Value, path Path, opts *opts) bool {
 			if !bI.IsValid() {
 				d.Removed[&localPath] = aI.Interface()
 				equal = false
-			} else if eq := d.diff(aI, bI, localPath, opts); !eq {
+			} else if eq := d.diff(aI, bI, localPath); !eq {
 				equal = false
 			}
 		}
@@ -159,34 +152,21 @@ func (d *Diff) diff(aVal, bVal reflect.Value, path Path, opts *opts) bool {
 		}
 	case reflect.Struct:
 		typ := aVal.Type()
-		// If the field is time.Time, use Equal to compare
-		if typ.String() == "time.Time" {
-			aTime := aVal.Interface().(time.Time)
-			bTime := bVal.Interface().(time.Time)
-			if !aTime.Equal(bTime) {
-				d.Modified[&localPath] = bVal.Interface().(time.Time).String()
-				equal = false
+		for i := 0; i < typ.NumField(); i++ {
+			index := []int{i}
+			field := typ.FieldByIndex(index)
+			if field.Tag.Get("testdiff") == "ignore" { // skip fields marked to be ignored
+				continue
 			}
-		} else {
-			for i := 0; i < typ.NumField(); i++ {
-				index := []int{i}
-				field := typ.FieldByIndex(index)
-				if field.Tag.Get("testdiff") == "ignore" { // skip fields marked to be ignored
-					continue
-				}
-				if _, skip := opts.ignoreField[field.Name]; skip {
-					continue
-				}
-				localPath := append(localPath, StructField(field.Name))
-				aI := unsafeReflectValue(aVal.FieldByIndex(index))
-				bI := unsafeReflectValue(bVal.FieldByIndex(index))
-				if eq := d.diff(aI, bI, localPath, opts); !eq {
-					equal = false
-				}
+			localPath := append(localPath, StructField(field.Name))
+			aI := unsafeReflectValue(aVal.FieldByIndex(index))
+			bI := unsafeReflectValue(bVal.FieldByIndex(index))
+			if eq := d.diff(aI, bI, localPath); !eq {
+				equal = false
 			}
 		}
 	case reflect.Ptr:
-		equal = d.diff(aVal.Elem(), bVal.Elem(), localPath, opts)
+		equal = d.diff(aVal.Elem(), bVal.Elem(), localPath)
 	default:
 		if reflect.DeepEqual(aVal.Interface(), bVal.Interface()) {
 			equal = true
@@ -259,32 +239,4 @@ type SliceIndex int
 
 func (n SliceIndex) String() string {
 	return fmt.Sprintf("[%d]", n)
-}
-
-type opts struct {
-	ignoreField map[string]struct{}
-}
-
-// Option is an option to specify in diff
-type Option interface {
-	apply(*opts)
-}
-
-// IgnoreStructField return an option of IgnoreFieldOption
-func IgnoreStructField(field string) Option {
-	return IgnoreFieldOption{
-		Field: field,
-	}
-}
-
-// IgnoreFieldOption is an option for specifying a field that does not diff
-type IgnoreFieldOption struct {
-	Field string
-}
-
-func (i IgnoreFieldOption) apply(opts *opts) {
-	if opts.ignoreField == nil {
-		opts.ignoreField = map[string]struct{}{}
-	}
-	opts.ignoreField[i.Field] = struct{}{}
 }
