@@ -26,6 +26,7 @@ The tool can be run in three different modes:
 | check-and-sign  | ✓         | ✓        |
 | check-only      | ✓         |          |
 | bypass-and-sign |           | ✓        |
+| server          | ✓         | ✓        |
 
 Users can specify the mode with `-mode` flag.
 
@@ -95,6 +96,80 @@ The tool supports three types of keys:
 - PGP keys, using the `-pgp_private_key` flag, with the optional `-pgp_passphrase` flag if your key is passphrase protected.
 - PKIX keys, using the `-pkix_private_key` and `-pkix_alg` flags. Supported PKIX algorithms match those [supported by Binary Authorization](https://cloud.google.com/sdk/gcloud/reference/container/binauthz/attestors/public-keys/add#--pkix-public-key-algorithm).
 - Cloud KMS, using the `-kms_key_name` and `-kms_digest_alg` flags. 
+
+### Environment variables
+It is also possible to configure the Kritis signer using the following environment variables:
+
+| name                         | equivalent option  | description                                 | required |
+| ---------------------------- | ----------------  | ------------------------------------------- | -------- |
+| ATTESTATION\_NOTE\_NAME        | -note_name        | name of the note to attest                  | yes |
+| ATTESTATION\_KMS\_KEY          | -kms_key_name          | KMS key version to use to sign              | yes |
+| ATTESTATION\_DIGEST\_ALGORITHM | -kms_digest_alg | digest algorithm used                       | yes |
+| ATTESTATION\_PROJECT          | -attestation_project          | GCP project to store attestation            | no, default it uses the image project |
+| ATTESTATION\_OVERWRITE        | -overwrite        |overwrite existing attestations              | no, default false |
+| ATTESTATION\_POLICY           | NA               | vulnerability policy document   | yes, if -policy is missing |
+
+Note that PGP- and PKIX keys cannot be configured using an environment variable.
+
+### API specification
+When running the signer in server mode, the following operations are available:
+
+| path            | description               |
+| --------------- | --------------------------|
+| /check-only     | checks the specified image against the policy |
+| /check-and-sign | checks and signs if the image passes the policy |
+| /event          | if the event indicates the completion of a vulnerability scan, checks and signs the image |
+
+Checkout the complete [open API specification](../cmd/kritis/signer/api-specification.yaml):
+
+### sample check calls
+/check-only and /check-and-sign accept the following request message:
+
+```json
+{     
+   "image": "gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9",
+}
+```
+
+If the image passes the policy the response message will be: 
+```json
+{
+    "image": "gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9",
+    "status": "ok"
+}
+```
+If it does not pass the policy, the message will be. 
+```json
+{
+  "status": "failed",
+  "image": "gcr.io/speeltuin-mvanholsteijn/a27@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9",
+  "violations": [
+    "found unfixable CVE projects/goog-vulnz/notes/CVE-2018-18344 in gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9, which has severity MEDIUM exceeding max unfixable severity LOW",
+    "found unfixable CVE projects/goog-vulnz/notes/CVE-2020-1751 in gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9, which has severity MEDIUM exceeding max unfixable severity LOW",
+  ]
+}
+```
+### sample pub/sub event notification
+/event accepts a normal pubsub event message:
+
+```json
+{
+  "subscription": "vulnerability-attestor-container-analysis-occurrences",
+  "message": {
+    "data": "eyJuYW1lIjoicHJvamVjdHMvcHJvamVjdC9vY2N1cnJlbmNlcy9mNjJmMWU1MC1lMGUyLTQ3ZWYtOTI1ZC1iZDc5OTA1YWI4MmQiLCJraW5kIjoiRElTQ09WRVJZIiwibm90aWZpY2F0aW9uVGltZSI6IjIwMjAtMTEtMDZUMTU6MDM6NTAuNTMxMDgyWiJ9",
+    "id": "1681150847368976"
+  }
+}
+```
+
+where the data will be provided by the container analysis service:
+```json
+{
+  "name": "projects/project/occurrences/f62f1e50-e0e2-47ef-925d-bd79905ab82d",
+  "kind": "DISCOVERY",
+  "notificationTime": "2020-11-06T15:03:50.531082Z"
+}
+```
 
 ## Tutorial
 
@@ -347,3 +422,46 @@ First we need to pick a GCP project and enable those services within the project
 
         With `bypass-and-sign` mode, an attestation will also be created for the bad image.
 
+
+9. Run the kritis-signer as a service
+
+    1. Create the kritis-signer Cloud Run service:
+    
+        ```shell
+             gcloud services enable run.googleapis.com
+       
+             gcloud beta run deploy kritis-signer \
+              --image  gcr.io/kritis-project/kritis-signer:latest \
+              --service-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+              --set-env-vars "ATTESTATION_POLICY=$(cat samples/signer/policy.yaml)" \
+              --timeout 2m \
+              --allow-unauthenticated \
+              --args="-mode=server,-logtostderr,-vulnz_timeout=20s,-note_name=$NOTE_NAME,-kms_key_name=$KMS_KEY_NAME,-kms_digest_alg=$KMS_DIGEST_ALG"
+       ```
+          
+     2. subscribe to the container analysis occurrence notifications:
+     
+        ```shell
+            URL=$(gcloud run services describe kritis-signer --format 'value(status.url)')
+            gcloud pubsub subscriptions create kritis-signer \
+                --topic container-analysis-occurrences-v1 \
+                --push-endpoint $URL/event
+        ``` 
+        
+     Now, when a container images vulnerability scan completes, the attestation is created automatically.
+     
+     3. you can also request a manual check:
+     
+        ```shell
+        curl -d @- $URL/check-only <<! 
+        {"image": "$BAD_IMG_URL"}
+        !
+        ```
+        
+     4. you can also request a manual check-and-sign:
+
+        ```shell
+        curl -d @- $URL/check-and-sign <<! 
+        {"image": "$GOOD_IMG_URL"}
+        !
+        ```
