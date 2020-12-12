@@ -109,7 +109,6 @@ func containerAnalysisEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if event.Kind != "DISCOVERY" {
 		response := SignResponse{Status: Failed, Message: "ignoring non-DISCOVERY occurrence"}
 		WriteResponse(w, response, http.StatusOK)
