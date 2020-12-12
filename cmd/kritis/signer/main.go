@@ -231,12 +231,6 @@ func initialize(fs *flag.FlagSet, signerMode SignerMode) {
 	if err != nil {
 		glog.Fatalf("Could not initialize the grafeas client, %s", err)
 	}
-
-	noteSigner, err = signer.NewCloudKmsSigner(kmsKeyName, signer.DigestAlgorithm(kmsDigestAlg))
-	if err != nil {
-		glog.Fatalf("Creating kms signer failed, %s", err)
-	}
-
 }
 
 // parseSignerMode creates mode-specific flagset and analyze actions (check, sign) for given mode
