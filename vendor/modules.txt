@@ -474,4 +474,3 @@ k8s.io/client-go/util/retry
 # k8s.io/kube-openapi v0.0.0-20180629012420-d83b052f768a
 ## explicit
 k8s.io/kube-openapi/pkg/util/proto
-github.com/docker/distribution
