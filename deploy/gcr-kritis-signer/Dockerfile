@@ -20,4 +20,4 @@ ENV HOME /root
 ENV USER /root
 ENV PATH /usr/local/bin:/kritis
 EXPOSE 8080
-ENTRYPOINT ["/kritis/gcr-signer", "-logtostderr"]
+ENTRYPOINT ["/kritis/gcr-signer", "-logtostderr", "-stderrthreshold=ERROR"]
