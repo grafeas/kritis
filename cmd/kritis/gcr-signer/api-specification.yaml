@@ -1,0 +1,262 @@
+openapi: 3.0.1
+info:
+  title: kritis-signer
+  description: |
+    checks whether the container image vulnerabilities compliant with the policy and creates an attestation.
+  contact:
+    email: markvanholsteijn@binx.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.1.0
+externalDocs:
+  description: Checkout the source code
+  url: https://github.com/grafeas/kritis/cmd/kritis/signer
+servers:
+  - url: /
+security:
+  - google_id_token: []
+paths:
+  /check-only:
+    post:
+      summary: check if the image complies with the vulnerability policy
+      operationId: check
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageCheckRequest"
+            examples:
+              request:
+                $ref: "#/components/examples/request"
+
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                200:
+                  $ref: "#/components/examples/200"
+
+        422:
+          description: image does not comply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                422:
+                  $ref: "#/components/examples/422"
+
+        400:
+          description: incorrect input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                500:
+                  $ref: "#/components/examples/400"
+
+        500:
+          description: failed to check
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                500:
+                  $ref: "#/components/examples/500"
+
+  /check-and-sign:
+    post:
+      summary: check if the image complies and creates an attestation
+      operationId: check-and-sign
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageCheckRequest"
+            examples:
+              request:
+                $ref: "#/components/examples/request"
+
+
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                request:
+                  $ref: "#/components/examples/200"
+        422:
+          description: does not comply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                422:
+                  $ref: "#/components/examples/422"
+        400:
+          description: incorrect input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                500:
+                  $ref: "#/components/examples/400"
+
+        500:
+          description: failed to check or signing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                500:
+                  $ref: "#/components/examples/500"
+
+  /event:
+    post:
+      summary: checks the image and creates an attestation after a vulnerability scan completed
+      operationId: container-analysis-occurrence-event
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionEvent"
+            example:
+              subscription: vulnerability-attestor-container-analysis-occurrences
+              message:
+                data: eyJuYW1lIjoicHJvamVjdHMvcHJvamVjdC9vY2N1cnJlbmNlcy9mNjJmMWU1MC1lMGUyLTQ3ZWYtOTI1ZC1iZDc5OTA1YWI4MmQiLCJraW5kIjoiRElTQ09WRVJZIiwibm90aWZpY2F0aW9uVGltZSI6IjIwMjAtMTEtMDZUMTU6MDM6NTAuNTMxMDgyWiJ9
+                id: '1681150847368976'
+
+
+      responses:
+        200:
+          description: ok, even if the images fails against the policy
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                200:
+                  $ref: "#/components/examples/200"
+
+        500:
+          description: failed to check or sign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageCheckResponse"
+              examples:
+                500:
+                  $ref: "#/components/examples/500"
+
+components:
+  examples:
+    request:
+      summary: a simple request
+      value:
+        image: "gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9"
+    200:
+      summary: image passed policy
+      value:
+        image: "gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9"
+        status: ok
+    422:
+      summary: image did not pass policy
+      value:
+        image: "gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f45354f1553e372cc9"
+        status: failed
+        violations:
+          - found unfixable CVE projects/goog-vulnz/notes/CVE-2019-3843
+    400:
+      summary: invalid input
+      value:
+        image: 'gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f4535f1553e372cc9'
+        status: failed
+        message: 'failed to parse container image reference gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f4535f1553e372cc9, invalid checksum digest length'
+    500:
+      summary: a processing error occurred
+      value:
+        image: 'gcr.io/project/alpine@sha256:f86657a463e3de9e5176e4774640c76399b2480634af97f4535f1553e372cc9'
+        status: failed
+        message: 'deleting existing attestation failed: rpc error: code = PermissionDenied desc = permission "containeranalysis.notes.attachOccurrence" denied for project "project", entity ID "passed-vulnerability-policy"'
+
+  schemas:
+    SubscriptionEvent:
+      type: object
+      properties:
+        subscription:
+          type: string
+          description: name of the subscription
+        data:
+          $ref: "#/components/schemas/PubSubData"
+
+    PubSubData:
+      type: object
+      properties:
+        ID:
+          type: string
+          description: event id
+        data:
+          type: string
+          description: base64 encoded payload of "#/components/schemas/ContainerAnalysisOccurrenceEvent"
+
+    ContainerAnalysisOccurrenceEvent:
+      type: object
+      properties:
+        occurrence:
+          type: string
+        kind:
+          type: string
+        notificationTime:
+          type: string
+
+
+    ImageCheckRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          description: full container image reference with digest
+
+
+    ImageCheckResponse:
+      type: object
+
+      properties:
+        image:
+          type: string
+          description: full container image reference with digest
+        status:
+          type: string
+          enum: ["ok", "failed", "signed", "not-signed"]
+          description: outcome of the request.
+        message:
+          type: string
+          description: if an error occurred
+        violations:
+          type: array
+          description: reason of the policy violation
+          items:
+            type: string
+
+  securitySchemes:
+    google_id_token:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          scopes: {}
+      x-google-issuer: https://accounts.google.com
+      x-google-jwks_uri: https://www.googleapis.com/oauth2/v3/certs

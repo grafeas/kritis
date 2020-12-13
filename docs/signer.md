@@ -4,7 +4,7 @@ Kritis Signer is a command-line tool that creates attestations for a container i
 
 Kritis Signer can create attestations based on identified software vulnerabilities in your container images.  To scan for vulnerabilities, your container image is uploaded to [Google Container Registry](https://cloud.google.com/container-registry) where [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis) performs [vulnerability scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) and produces a vulnerability result for the image. Kritis Signer then checks the vulnerability result against your vulnerability policy.  If the vulnerability result complies with your policy, then Kritis Signer creates the attestation and stores it in the Container Analysis data store.
 
-The tool can be run either locally or as part of a continuous integration (CI) pipeline.
+The tool can be run either locally or as part of a continuous integration (CI) pipeline. If you want to deploy the signer as a service, use the [gcr-signer](./gcr-signer.md).
 
 Support for other type of checks (e.g., base-image check), other vulnerability sources and attestation storage are underway.
 
