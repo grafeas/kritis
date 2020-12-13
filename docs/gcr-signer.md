@@ -157,16 +157,15 @@ First we need to pick a GCP project and enable those services within the project
 
 3. Creating a signing key. 
 
-    A private signing key is required to create attestations for an image. In this example you use Cloud KMS with PKIX keys. Kritis Signer also supports PGP keys.
-
-    Run the following commands to create a key ring and an asymmetric signing key, and save the KMS key name.
+    To create attestations for an image, the signer requires a private signing key. Run the following commands 
+    to create a keyring and an asymmetric signing key, and save the KMS key name.
 
     ```shell
-    gcloud kms keyrings create my-key-ring-1 \
+    gcloud kms keyrings create vulnerability-policy-attestors \
         --location global
 
-    gcloud --project=$PROJECT_ID kms keys create my-signing-key-1 \
-        --keyring my-key-ring-1 \
+    gcloud --project=$PROJECT_ID kms keys create passed-vulnerability-policy \
+        --keyring vulnerability-policy-attestors \
         --location global \
         --purpose "asymmetric-signing" \
         --default-algorithm "rsa-sign-pkcs1-2048-sha256"
@@ -176,16 +175,31 @@ First we need to pick a GCP project and enable those services within the project
 
     ```shell
     export KMS_DIGEST_ALG=SHA256
-    export KMS_KEY_NAME=projects/$PROJECT_ID/locations/global/keyRings/my-key-ring-1/cryptoKeys/my-signing-key-1/cryptoKeyVersions/1
+    export KMS_KEY_NAME=projects/$PROJECT_ID/locations/global/keyRings/vulnerability-policy-attestors/cryptoKeys/passed-vulnerability-policy/cryptoKeyVersions/1
     ```
 
-5. Create a note name.
-
-    All attestations need to be attached to a note. The signer tool will automatically create a note for a given name. It can also reuse an existing note.
-
+5. Create the attestor
+    Create the attestor for the note by adding its public key.
+    
     ```shell
-    export NOTE_ID=my-signer-note
+    export NOTE_ID=passed-vulnerability-policy
     export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
+    gcloud container binauthz attestors \
+      create vulnerability-policy \
+           --attestation-authority-note passed-vulnerability-policy \
+           --attestation-authority-note-project $PROJECT_ID
+   
+   gcloud container binauthz attestors public-keys add \
+      --attestor vulnerability-policy \
+      --keyversion $KMS_KEY_NAME
+   
+    gcloud container binauthz attestors public-keys add \ 
+      --attestor vulnerability-policy \
+      --keyversion-location eur4 \
+      --keyversion-keyring vulnerability_policy_attestors \
+      --keyversion-key vulnerability-attestor-PE4
+      --keyversion 1 \
+      --project $PROJECT_ID
     ```
 
 6. Create vulnerability signing policy.
@@ -209,7 +223,7 @@ First we need to pick a GCP project and enable those services within the project
         - projects/goog-vulnz/notes/CVE-2020-14155
     ```
 
-9. Run the kritis gcr signer as a service
+7. Run the kritis gcr signer as a service
 
     1. Create the kritis-signer Cloud Run service:
     
@@ -239,7 +253,7 @@ Now the signer will automatically sign images after the vulnerability scan compl
 
 ## examples
        
-10. Run signer on a built image (pass example).
+1. Run signer on a built image (pass example).
 
     1. Build and push an example good image.
 
@@ -248,13 +262,22 @@ Now the signer will automatically sign images after the vulnerability scan compl
         docker push gcr.io/$PROJECT_ID/signer-test:good
         ```
 
+    
     2. Note down the image digest url.
 
         ```shell
         export GOOD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:good --format '{{index .RepoDigests 0}}')
         ```
+
+    3. wait until you see the attestation appear
+    
+         ```shell
+         gcloud container binauthz attestations list \
+             --artifact-url $GOOD_IMG_URL  \
+             --attestor vulnerability-policy
+         ```
             
-     3. you can also request a manual check:
+     3. you can also request a manual check by calling the service:
      
         ```shell
         curl -d @- $KRITIS_URL/check-only <<! 
@@ -262,7 +285,7 @@ Now the signer will automatically sign images after the vulnerability scan compl
         !
         ```
         
-     4. you can also request a manual check-and-sign:
+     4. or request a check-and-sign:
 
         ```shell
         curl -d @- $URL/check-and-sign <<! 
@@ -279,13 +302,21 @@ Now the signer will automatically sign images after the vulnerability scan compl
         docker push gcr.io/$PROJECT_ID/signer-test:bad
         ```
 
-    2. Note down the image digest url.
+    2. Get the image digest url.
 
         ```shell
         export BAD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:bad --format '{{index .RepoDigests 0}}')
         ```
 
-     3. you can also request a manual check:
+        in this case, no attestation will appear.
+
+         ```shell
+         gcloud container binauthz attestations list \
+             --artifact-url $BAD_IMG_URL  \
+             --attestor vulnerability-policy
+         ```
+        
+     3. you can request a manual check to see the errors:
      
         ```shell
         curl -d @- $KRITIS_URL/check-only <<! 
@@ -293,10 +324,10 @@ Now the signer will automatically sign images after the vulnerability scan compl
         !
         ```
         
-     4. you can also attempt to request a manual check-and-sign:
+     4. attempt to request a manual check-and-sign, will fail too:
 
         ```shell
         curl -d @- $KRITIS_URL/check-and-sign <<! 
-        {"image": "$GOOD_IMG_URL"}
+        {"image": "$BAD_IMG_URL"}
         !
         ```
