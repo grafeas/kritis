@@ -122,7 +122,7 @@ First we need to pick a GCP project and enable those services within the project
    gcloud submit --config deploy/gcr-kritis-signer/cloudbuild.yaml .
     ```
 
-3. Enable Google Cloud service accounts and Cloud IAM roles.
+1. Enable Google Cloud service accounts and Cloud IAM roles.
 
     1. Create a service account within the GCP project.
 
@@ -155,7 +155,7 @@ First we need to pick a GCP project and enable those services within the project
           --role roles/cloudkms.signer
         ```
 
-3. Creating a signing key.
+1. Creating a signing key.
 
     To create attestations for an image, the signer requires a private signing key. Run the following commands
     to create a keyring and an asymmetric signing key, and save the KMS key name.
@@ -178,7 +178,7 @@ First we need to pick a GCP project and enable those services within the project
     export KMS_KEY_NAME=projects/$PROJECT_ID/locations/global/keyRings/vulnerability-policy-attestors/cryptoKeys/passed-vulnerability-policy/cryptoKeyVersions/1
     ```
 
-5. Create the attestor
+1. Create the attestor
     Create the attestor for the note by adding its public key.
 
     ```shell
@@ -202,7 +202,7 @@ First we need to pick a GCP project and enable those services within the project
       --project $PROJECT_ID
     ```
 
-6. Create vulnerability signing policy.
+1. Create vulnerability signing policy.
 
     An example policy is in the samples.
 
@@ -223,7 +223,7 @@ First we need to pick a GCP project and enable those services within the project
         - projects/goog-vulnz/notes/CVE-2020-14155
     ```
 
-7. Run the kritis gcr signer as a service
+1. Run the kritis gcr signer as a service
 
     1. Create the kritis-signer Cloud Run service:
 
