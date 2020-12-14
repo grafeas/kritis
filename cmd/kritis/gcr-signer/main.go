@@ -172,9 +172,9 @@ func main() {
 	var policyPath string
 	var policyDocument string
 
-	flag.StringVar(&policyPath, "policy", "", "(required for check) vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
+	flag.StringVar(&policyPath, "policy", "", "vulnerability signing policy file path, e.g., /tmp/vulnz_signing_policy.yaml")
 	flag.StringVar(&timeout, "vulnz_timeout", "5m", "timeout for polling image vulnerability , e.g., 600s, 5m")
-	flag.StringVar(&noteName, "note_name", "", "(required for sign) note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
+	flag.StringVar(&noteName, "note_name", "", "note name that created attestations are attached to, in the form of projects/[PROVIDER_ID]/notes/[NOTE_ID]")
 	flag.StringVar(&attestationProject, "attestation_project", "", "project id for GCP project that stores attestation, use image project if set to empty")
 	flag.BoolVar(&overwrite, "overwrite", false, "overwrite attestation if already existed")
 	flag.StringVar(&kmsKeyName, "kms_key_name", "", "kms key name, in the format of in the format projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*")
