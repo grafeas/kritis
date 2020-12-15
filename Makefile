@@ -189,10 +189,14 @@ setup-integration-local:
 		--num-nodes=2 --zone=$(GCP_ZONE)
 	gcloud --project=$(GCP_PROJECT) container clusters get-credentials $(GCP_CLUSTER)
 	mkdir -p $(dir $(GAC_CREDENTIALS_PATH))
+	test -n "$$(gcloud --project=$(GCP_PROJECT)  iam service-accounts list --filter "email: kritis-ca-admin@" --format "value(email)")" || \
+	gcloud --project=$(GCP_PROJECT) iam service-accounts create kritis-ca-admin
 	test -s $(GAC_CREDENTIALS_PATH) \
 		|| gcloud --project=$(GCP_PROJECT) iam service-accounts keys \
 		create $(GAC_CREDENTIALS_PATH) --iam-account kritis-ca-admin@${GCP_PROJECT}.iam.gserviceaccount.com
-	kubectl create serviceaccount --namespace kube-system tiller
+	kubectl get serviceaccount --namespace kube-system tiller >/dev/null 2>&1 || \
+	    kubectl create serviceaccount --namespace kube-system tiller
+	kubectl get clusterrolebinding tiller-cluster-rule >/dev/null 2>&1 || \
 	kubectl create clusterrolebinding tiller-cluster-rule \
 		  --clusterrole=cluster-admin \
 		    --serviceaccount=kube-system:tiller
