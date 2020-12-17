@@ -17,6 +17,7 @@
 if [ ! -x "$(command -v gotestsum)" ] && [ ! -x $GOPATH/bin/gotestsum ]; then
     echo "gotestsum not found, try installing it..."
     go get -u gotest.tools/gotestsum
+    go mod vendor
 fi
 
 set -e
