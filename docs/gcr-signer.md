@@ -6,7 +6,7 @@ The signer will attest whether the image conforms to the [signer policy](signer.
 
 #### Supported key types
 
-The GCR signer only support the Google Cloud KMS key.
+The GCR signer only supports the Google Cloud KMS key.
 
 ### Environment variables
 The GCR Kritis signer follows the 12-factor application principles. It is configured
@@ -109,6 +109,7 @@ First we need to pick a GCP project and enable those services within the project
         ```shell
         gcloud services enable \
           run.googleapis.com \
+          binaryauthorization.googleapis.com \
           cloudbuild.googleapis.com \
           containerregistry.googleapis.com \
           containeranalysis.googleapis.com \
@@ -119,7 +120,7 @@ First we need to pick a GCP project and enable those services within the project
 1. Build the grc signer container image.
 
     ```shell
-   gcloud submit --config deploy/gcr-kritis-signer/cloudbuild.yaml .
+   gcloud builds submit --config deploy/gcr-kritis-signer/cloudbuild.yaml .
     ```
 
 1. Enable Google Cloud service accounts and Cloud IAM roles.
@@ -179,25 +180,23 @@ First we need to pick a GCP project and enable those services within the project
     ```
 
 1. Create the attestor
+
     Create the attestor for the note by adding its public key.
 
     ```shell
     export NOTE_ID=passed-vulnerability-policy
     export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
+
     gcloud container binauthz attestors \
       create vulnerability-policy \
            --attestation-authority-note passed-vulnerability-policy \
            --attestation-authority-note-project $PROJECT_ID
 
-   gcloud container binauthz attestors public-keys add \
-      --attestor vulnerability-policy \
-      --keyversion $KMS_KEY_NAME
-
     gcloud container binauthz attestors public-keys add \
       --attestor vulnerability-policy \
-      --keyversion-location eur4 \
-      --keyversion-keyring vulnerability_policy_attestors \
-      --keyversion-key vulnerability-attestor-PE4
+      --keyversion-location global \
+      --keyversion-keyring vulnerability-policy-attestors \
+      --keyversion-key passed-vulnerability-policy \
       --keyversion 1 \
       --project $PROJECT_ID
     ```
@@ -228,9 +227,7 @@ First we need to pick a GCP project and enable those services within the project
     1. Create the kritis-signer Cloud Run service:
 
         ```shell
-             gcloud services enable run.googleapis.com
-
-             gcloud beta run deploy gcr-kritis-signer \
+             gcloud run deploy gcr-kritis-signer \
               --image  gcr.io/${PROJECT_ID}/gcr-kritis-signer:latest \
               --service-account ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
               --set-env-vars "ATTESTATION_POLICY=$(cat samples/signer/policy.yaml)" \
@@ -240,6 +237,7 @@ First we need to pick a GCP project and enable those services within the project
 
             KRITIS_URL=$(gcloud run services describe gcr-kritis-signer --format 'value(status.url)')
        ```
+       Note that this service can now be invoked by unauthenticated users. We recommend to secure this for a production deployment.
 
      2. subscribe to the container analysis occurrence notifications:
 
@@ -288,7 +286,7 @@ Now the signer will automatically sign images after the vulnerability scan compl
      4. or request a check-and-sign:
 
         ```shell
-        curl -d @- $URL/check-and-sign <<!
+        curl -d @- $KRITIS_URL/check-and-sign <<!
         {"image": "$GOOD_IMG_URL"}
         !
         ```
