@@ -1,6 +1,6 @@
 # GCR Kritis Signer
 
-GCR Kritis Signer is a service which creates attestations based on software vulnerabilities identified by the [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis)  after [scanning]((https://cloud.google.com/container-registry/docs/vulnerability-scanning) of container images stored in [Google Container Registry](https://cloud.google.com/container-registry).
+GCR Kritis Signer is a service which creates attestations based on software vulnerabilities identified by the [Google Container Analysis](https://cloud.google.com/container-registry/docs/container-analysis)  after [scanning](https://cloud.google.com/container-registry/docs/vulnerability-scanning) of container images stored in [Google Container Registry](https://cloud.google.com/container-registry).
 
 The signer will attest whether the image conforms to the [signer policy](signer.md#vulnerability-signing-policy) you defined.
 
