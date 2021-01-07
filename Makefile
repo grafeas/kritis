@@ -90,6 +90,7 @@ REGISTRY?=gcr.io/kritis-project
 TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
 SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/signer
+GCR_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcr-signer
 
 
 out/kritis-server: $(GO_FILES)
@@ -97,6 +98,9 @@ out/kritis-server: $(GO_FILES)
 
 out/signer: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SIGNER_PACKAGE)
+
+out/gcr-signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCR_SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -111,9 +115,17 @@ build-test-image: out/kritis-server
 signer-image: out/signer
 	docker build -t $(REGISTRY)/kritis-signer:$(IMAGE_TAG) -f deploy/kritis-signer/Dockerfile .
 
+.PHONY: gcr-signer-image
+gcr-signer-image: out/gcr-signer
+	docker build -t $(REGISTRY)/gcr-kritis-signer:$(IMAGE_TAG) -f deploy/gcr-kritis-signer/Dockerfile .
+
 .PHONY: signer-push-image
 signer-push-image: signer-image
 	docker push $(REGISTRY)/kritis-signer:$(IMAGE_TAG)
+
+.PHONY: gcr-signer-push-image
+gcr-signer-push-image: gcr-signer-image
+	docker push $(REGISTRY)/gcr-kritis-signer:$(IMAGE_TAG)
 
 HELM_HOOKS = preinstall postinstall predelete
 
