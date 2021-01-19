@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var imagesecuritypoliciesResource = schema.GroupVersionResource{Group: "kritis",
 var imagesecuritypoliciesKind = schema.GroupVersionKind{Group: "kritis", Version: "v1beta1", Kind: "ImageSecurityPolicy"}
 
 // Get takes name of the imageSecurityPolicy, and returns the corresponding imageSecurityPolicy object, and an error if there is any.
-func (c *FakeImageSecurityPolicies) Get(name string, options v1.GetOptions) (result *v1beta1.ImageSecurityPolicy, err error) {
+func (c *FakeImageSecurityPolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.ImageSecurityPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(imagesecuritypoliciesResource, c.ns, name), &v1beta1.ImageSecurityPolicy{})
 
@@ -50,7 +52,7 @@ func (c *FakeImageSecurityPolicies) Get(name string, options v1.GetOptions) (res
 }
 
 // List takes label and field selectors, and returns the list of ImageSecurityPolicies that match those selectors.
-func (c *FakeImageSecurityPolicies) List(opts v1.ListOptions) (result *v1beta1.ImageSecurityPolicyList, err error) {
+func (c *FakeImageSecurityPolicies) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.ImageSecurityPolicyList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(imagesecuritypoliciesResource, imagesecuritypoliciesKind, c.ns, opts), &v1beta1.ImageSecurityPolicyList{})
 
@@ -62,7 +64,7 @@ func (c *FakeImageSecurityPolicies) List(opts v1.ListOptions) (result *v1beta1.I
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.ImageSecurityPolicyList{}
+	list := &v1beta1.ImageSecurityPolicyList{ListMeta: obj.(*v1beta1.ImageSecurityPolicyList).ListMeta}
 	for _, item := range obj.(*v1beta1.ImageSecurityPolicyList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -72,14 +74,14 @@ func (c *FakeImageSecurityPolicies) List(opts v1.ListOptions) (result *v1beta1.I
 }
 
 // Watch returns a watch.Interface that watches the requested imageSecurityPolicies.
-func (c *FakeImageSecurityPolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeImageSecurityPolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(imagesecuritypoliciesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a imageSecurityPolicy and creates it.  Returns the server's representation of the imageSecurityPolicy, and an error, if there is any.
-func (c *FakeImageSecurityPolicies) Create(imageSecurityPolicy *v1beta1.ImageSecurityPolicy) (result *v1beta1.ImageSecurityPolicy, err error) {
+func (c *FakeImageSecurityPolicies) Create(ctx context.Context, imageSecurityPolicy *v1beta1.ImageSecurityPolicy, opts v1.CreateOptions) (result *v1beta1.ImageSecurityPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(imagesecuritypoliciesResource, c.ns, imageSecurityPolicy), &v1beta1.ImageSecurityPolicy{})
 
@@ -90,7 +92,7 @@ func (c *FakeImageSecurityPolicies) Create(imageSecurityPolicy *v1beta1.ImageSec
 }
 
 // Update takes the representation of a imageSecurityPolicy and updates it. Returns the server's representation of the imageSecurityPolicy, and an error, if there is any.
-func (c *FakeImageSecurityPolicies) Update(imageSecurityPolicy *v1beta1.ImageSecurityPolicy) (result *v1beta1.ImageSecurityPolicy, err error) {
+func (c *FakeImageSecurityPolicies) Update(ctx context.Context, imageSecurityPolicy *v1beta1.ImageSecurityPolicy, opts v1.UpdateOptions) (result *v1beta1.ImageSecurityPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(imagesecuritypoliciesResource, c.ns, imageSecurityPolicy), &v1beta1.ImageSecurityPolicy{})
 
@@ -101,7 +103,7 @@ func (c *FakeImageSecurityPolicies) Update(imageSecurityPolicy *v1beta1.ImageSec
 }
 
 // Delete takes name of the imageSecurityPolicy and deletes it. Returns an error if one occurs.
-func (c *FakeImageSecurityPolicies) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeImageSecurityPolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(imagesecuritypoliciesResource, c.ns, name), &v1beta1.ImageSecurityPolicy{})
 
@@ -109,17 +111,17 @@ func (c *FakeImageSecurityPolicies) Delete(name string, options *v1.DeleteOption
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeImageSecurityPolicies) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(imagesecuritypoliciesResource, c.ns, listOptions)
+func (c *FakeImageSecurityPolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(imagesecuritypoliciesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.ImageSecurityPolicyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched imageSecurityPolicy.
-func (c *FakeImageSecurityPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.ImageSecurityPolicy, err error) {
+func (c *FakeImageSecurityPolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.ImageSecurityPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(imagesecuritypoliciesResource, c.ns, name, data, subresources...), &v1beta1.ImageSecurityPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(imagesecuritypoliciesResource, c.ns, name, pt, data, subresources...), &v1beta1.ImageSecurityPolicy{})
 
 	if obj == nil {
 		return nil, err

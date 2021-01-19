@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var genericattestationpoliciesResource = schema.GroupVersionResource{Group: "kri
 var genericattestationpoliciesKind = schema.GroupVersionKind{Group: "kritis", Version: "v1beta1", Kind: "GenericAttestationPolicy"}
 
 // Get takes name of the genericAttestationPolicy, and returns the corresponding genericAttestationPolicy object, and an error if there is any.
-func (c *FakeGenericAttestationPolicies) Get(name string, options v1.GetOptions) (result *v1beta1.GenericAttestationPolicy, err error) {
+func (c *FakeGenericAttestationPolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.GenericAttestationPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(genericattestationpoliciesResource, c.ns, name), &v1beta1.GenericAttestationPolicy{})
 
@@ -50,7 +52,7 @@ func (c *FakeGenericAttestationPolicies) Get(name string, options v1.GetOptions)
 }
 
 // List takes label and field selectors, and returns the list of GenericAttestationPolicies that match those selectors.
-func (c *FakeGenericAttestationPolicies) List(opts v1.ListOptions) (result *v1beta1.GenericAttestationPolicyList, err error) {
+func (c *FakeGenericAttestationPolicies) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.GenericAttestationPolicyList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(genericattestationpoliciesResource, genericattestationpoliciesKind, c.ns, opts), &v1beta1.GenericAttestationPolicyList{})
 
@@ -62,7 +64,7 @@ func (c *FakeGenericAttestationPolicies) List(opts v1.ListOptions) (result *v1be
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.GenericAttestationPolicyList{}
+	list := &v1beta1.GenericAttestationPolicyList{ListMeta: obj.(*v1beta1.GenericAttestationPolicyList).ListMeta}
 	for _, item := range obj.(*v1beta1.GenericAttestationPolicyList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -72,14 +74,14 @@ func (c *FakeGenericAttestationPolicies) List(opts v1.ListOptions) (result *v1be
 }
 
 // Watch returns a watch.Interface that watches the requested genericAttestationPolicies.
-func (c *FakeGenericAttestationPolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeGenericAttestationPolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(genericattestationpoliciesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a genericAttestationPolicy and creates it.  Returns the server's representation of the genericAttestationPolicy, and an error, if there is any.
-func (c *FakeGenericAttestationPolicies) Create(genericAttestationPolicy *v1beta1.GenericAttestationPolicy) (result *v1beta1.GenericAttestationPolicy, err error) {
+func (c *FakeGenericAttestationPolicies) Create(ctx context.Context, genericAttestationPolicy *v1beta1.GenericAttestationPolicy, opts v1.CreateOptions) (result *v1beta1.GenericAttestationPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(genericattestationpoliciesResource, c.ns, genericAttestationPolicy), &v1beta1.GenericAttestationPolicy{})
 
@@ -90,7 +92,7 @@ func (c *FakeGenericAttestationPolicies) Create(genericAttestationPolicy *v1beta
 }
 
 // Update takes the representation of a genericAttestationPolicy and updates it. Returns the server's representation of the genericAttestationPolicy, and an error, if there is any.
-func (c *FakeGenericAttestationPolicies) Update(genericAttestationPolicy *v1beta1.GenericAttestationPolicy) (result *v1beta1.GenericAttestationPolicy, err error) {
+func (c *FakeGenericAttestationPolicies) Update(ctx context.Context, genericAttestationPolicy *v1beta1.GenericAttestationPolicy, opts v1.UpdateOptions) (result *v1beta1.GenericAttestationPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(genericattestationpoliciesResource, c.ns, genericAttestationPolicy), &v1beta1.GenericAttestationPolicy{})
 
@@ -101,7 +103,7 @@ func (c *FakeGenericAttestationPolicies) Update(genericAttestationPolicy *v1beta
 }
 
 // Delete takes name of the genericAttestationPolicy and deletes it. Returns an error if one occurs.
-func (c *FakeGenericAttestationPolicies) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeGenericAttestationPolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(genericattestationpoliciesResource, c.ns, name), &v1beta1.GenericAttestationPolicy{})
 
@@ -109,17 +111,17 @@ func (c *FakeGenericAttestationPolicies) Delete(name string, options *v1.DeleteO
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeGenericAttestationPolicies) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(genericattestationpoliciesResource, c.ns, listOptions)
+func (c *FakeGenericAttestationPolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(genericattestationpoliciesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.GenericAttestationPolicyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched genericAttestationPolicy.
-func (c *FakeGenericAttestationPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.GenericAttestationPolicy, err error) {
+func (c *FakeGenericAttestationPolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.GenericAttestationPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(genericattestationpoliciesResource, c.ns, name, data, subresources...), &v1beta1.GenericAttestationPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(genericattestationpoliciesResource, c.ns, name, pt, data, subresources...), &v1beta1.GenericAttestationPolicy{})
 
 	if obj == nil {
 		return nil, err

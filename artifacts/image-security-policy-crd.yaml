@@ -4,7 +4,35 @@ metadata:
   name: imagesecuritypolicies.kritis.grafeas.io
 spec:
   group: kritis.grafeas.io
-  version: v1beta1
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              imageAllowList:
+                type: array
+                items:
+                  type: string
+              packageVulnerabilityRequirements:
+                type: object
+                properties:
+                  maximumSeverity:
+                    type: string
+                  maximumFixNotAvailableSeverity:
+                    type: string
+                  allowlistCVEs:
+                    type: array
+                    items:
+                      type: string
+              attestationAuthorityNames:
+                type: array
+                items:
+                  type: string
   names:
     kind: ImageSecurityPolicy
     plural: imagesecuritypolicies

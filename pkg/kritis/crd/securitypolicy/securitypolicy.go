@@ -17,6 +17,7 @@ limitations under the License.
 package securitypolicy
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -45,7 +46,7 @@ func ImageSecurityPolicies(namespace string) ([]v1beta1.ImageSecurityPolicy, err
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().ImageSecurityPolicies(namespace).List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().ImageSecurityPolicies(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all image policy requirements: %v", err)
 	}

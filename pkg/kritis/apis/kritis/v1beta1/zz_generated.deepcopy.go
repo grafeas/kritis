@@ -71,7 +71,7 @@ func (in *AttestationAuthority) DeepCopyObject() runtime.Object {
 func (in *AttestationAuthorityList) DeepCopyInto(out *AttestationAuthorityList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]AttestationAuthority, len(*in))
@@ -152,7 +152,7 @@ func (in *BuildPolicy) DeepCopyObject() runtime.Object {
 func (in *BuildPolicyList) DeepCopyInto(out *BuildPolicyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]BuildPolicy, len(*in))
@@ -245,7 +245,7 @@ func (in *GenericAttestationPolicy) DeepCopyObject() runtime.Object {
 func (in *GenericAttestationPolicyList) DeepCopyInto(out *GenericAttestationPolicyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]GenericAttestationPolicy, len(*in))
@@ -347,7 +347,7 @@ func (in *ImageSecurityPolicy) DeepCopyObject() runtime.Object {
 func (in *ImageSecurityPolicyList) DeepCopyInto(out *ImageSecurityPolicyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ImageSecurityPolicy, len(*in))
@@ -450,7 +450,7 @@ func (in *KritisConfig) DeepCopyObject() runtime.Object {
 func (in *KritisConfigList) DeepCopyInto(out *KritisConfigList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]KritisConfig, len(*in))
@@ -581,7 +581,7 @@ func (in *VulnzSigningPolicy) DeepCopyObject() runtime.Object {
 func (in *VulnzSigningPolicyList) DeepCopyInto(out *VulnzSigningPolicyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]VulnzSigningPolicy, len(*in))

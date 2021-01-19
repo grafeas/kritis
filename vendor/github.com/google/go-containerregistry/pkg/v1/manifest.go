@@ -23,10 +23,18 @@ import (
 
 // Manifest represents the OCI image manifest in a structured way.
 type Manifest struct {
-	SchemaVersion int64             `json:"schemaVersion"`
+	SchemaVersion int64             `json:"schemaVersion,omitempty"`
 	MediaType     types.MediaType   `json:"mediaType"`
 	Config        Descriptor        `json:"config"`
 	Layers        []Descriptor      `json:"layers"`
+	Annotations   map[string]string `json:"annotations,omitempty"`
+}
+
+// IndexManifest represents an OCI image index in a structured way.
+type IndexManifest struct {
+	SchemaVersion int64             `json:"schemaVersion"`
+	MediaType     types.MediaType   `json:"mediaType,omitempty"`
+	Manifests     []Descriptor      `json:"manifests"`
 	Annotations   map[string]string `json:"annotations,omitempty"`
 }
 
@@ -37,6 +45,7 @@ type Descriptor struct {
 	Digest      Hash              `json:"digest"`
 	URLs        []string          `json:"urls,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+	Platform    *Platform         `json:"platform,omitempty"`
 }
 
 // ParseManifest parses the io.Reader's contents into a Manifest.
@@ -46,4 +55,13 @@ func ParseManifest(r io.Reader) (*Manifest, error) {
 		return nil, err
 	}
 	return &m, nil
+}
+
+// ParseIndexManifest parses the io.Reader's contents into an IndexManifest.
+func ParseIndexManifest(r io.Reader) (*IndexManifest, error) {
+	im := IndexManifest{}
+	if err := json.NewDecoder(r).Decode(&im); err != nil {
+		return nil, err
+	}
+	return &im, nil
 }

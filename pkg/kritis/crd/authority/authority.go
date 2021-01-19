@@ -17,6 +17,7 @@ limitations under the License.
 package authority
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -40,7 +41,7 @@ func Authorities(namespace string) ([]v1beta1.AttestationAuthority, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().AttestationAuthorities(namespace).List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().AttestationAuthorities(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all attestation authorities: %v", err)
 	}
@@ -59,5 +60,5 @@ func Authority(namespace string, name string) (*v1beta1.AttestationAuthority, er
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	return client.KritisV1beta1().AttestationAuthorities(namespace).Get(name, metav1.GetOptions{})
+	return client.KritisV1beta1().AttestationAuthorities(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }

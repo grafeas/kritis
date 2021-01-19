@@ -37,21 +37,22 @@ if [ -z "$VALIDATE_UPSTREAM" ]; then
 fi
 # See if there have been upstream changes
 IFS=$'\n'
-files=( $(validate_diff --name-only -- 'go.mod' 'go.sum' 'vendor/' || true) )
+files=( $(validate_diff --name-only -- 'go.mod' 'go.sum' || true) )
 unset IFS
 
 if [ ${#files[@]} -gt 0 ]; then
 	cd $KRITIS_DIR
-	go mod vendor
-	diffs="$(git status --porcelain -- vendor go.mod go.sum 2>/dev/null)"
+	go mod tidy
+	go mod download
+	diffs="$(git status --porcelain -- go.mod go.sum 2>/dev/null)"
 	if [ "$diffs" ]; then
 		{
-			echo 'Vendor not reproducible, please commit these changes to fix:'
+			echo 'go.sum is not reproducible, please commit these changes to fix:'
 			echo
 			echo "$diffs"
 		} >&2
 		false
 	fi
 else
-    echo 'No vendor changes from upstream. Skipping go mod vendor, go mod tidy'
+    echo 'No go.mod or go.sum changes from upstream. Skipping go mod tidy, go mod download'
 fi

@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var vulnzsigningpoliciesResource = schema.GroupVersionResource{Group: "kritis", 
 var vulnzsigningpoliciesKind = schema.GroupVersionKind{Group: "kritis", Version: "v1beta1", Kind: "VulnzSigningPolicy"}
 
 // Get takes name of the vulnzSigningPolicy, and returns the corresponding vulnzSigningPolicy object, and an error if there is any.
-func (c *FakeVulnzSigningPolicies) Get(name string, options v1.GetOptions) (result *v1beta1.VulnzSigningPolicy, err error) {
+func (c *FakeVulnzSigningPolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.VulnzSigningPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(vulnzsigningpoliciesResource, c.ns, name), &v1beta1.VulnzSigningPolicy{})
 
@@ -50,7 +52,7 @@ func (c *FakeVulnzSigningPolicies) Get(name string, options v1.GetOptions) (resu
 }
 
 // List takes label and field selectors, and returns the list of VulnzSigningPolicies that match those selectors.
-func (c *FakeVulnzSigningPolicies) List(opts v1.ListOptions) (result *v1beta1.VulnzSigningPolicyList, err error) {
+func (c *FakeVulnzSigningPolicies) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.VulnzSigningPolicyList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(vulnzsigningpoliciesResource, vulnzsigningpoliciesKind, c.ns, opts), &v1beta1.VulnzSigningPolicyList{})
 
@@ -62,7 +64,7 @@ func (c *FakeVulnzSigningPolicies) List(opts v1.ListOptions) (result *v1beta1.Vu
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.VulnzSigningPolicyList{}
+	list := &v1beta1.VulnzSigningPolicyList{ListMeta: obj.(*v1beta1.VulnzSigningPolicyList).ListMeta}
 	for _, item := range obj.(*v1beta1.VulnzSigningPolicyList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -72,14 +74,14 @@ func (c *FakeVulnzSigningPolicies) List(opts v1.ListOptions) (result *v1beta1.Vu
 }
 
 // Watch returns a watch.Interface that watches the requested vulnzSigningPolicies.
-func (c *FakeVulnzSigningPolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeVulnzSigningPolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(vulnzsigningpoliciesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a vulnzSigningPolicy and creates it.  Returns the server's representation of the vulnzSigningPolicy, and an error, if there is any.
-func (c *FakeVulnzSigningPolicies) Create(vulnzSigningPolicy *v1beta1.VulnzSigningPolicy) (result *v1beta1.VulnzSigningPolicy, err error) {
+func (c *FakeVulnzSigningPolicies) Create(ctx context.Context, vulnzSigningPolicy *v1beta1.VulnzSigningPolicy, opts v1.CreateOptions) (result *v1beta1.VulnzSigningPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(vulnzsigningpoliciesResource, c.ns, vulnzSigningPolicy), &v1beta1.VulnzSigningPolicy{})
 
@@ -90,7 +92,7 @@ func (c *FakeVulnzSigningPolicies) Create(vulnzSigningPolicy *v1beta1.VulnzSigni
 }
 
 // Update takes the representation of a vulnzSigningPolicy and updates it. Returns the server's representation of the vulnzSigningPolicy, and an error, if there is any.
-func (c *FakeVulnzSigningPolicies) Update(vulnzSigningPolicy *v1beta1.VulnzSigningPolicy) (result *v1beta1.VulnzSigningPolicy, err error) {
+func (c *FakeVulnzSigningPolicies) Update(ctx context.Context, vulnzSigningPolicy *v1beta1.VulnzSigningPolicy, opts v1.UpdateOptions) (result *v1beta1.VulnzSigningPolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(vulnzsigningpoliciesResource, c.ns, vulnzSigningPolicy), &v1beta1.VulnzSigningPolicy{})
 
@@ -101,7 +103,7 @@ func (c *FakeVulnzSigningPolicies) Update(vulnzSigningPolicy *v1beta1.VulnzSigni
 }
 
 // Delete takes name of the vulnzSigningPolicy and deletes it. Returns an error if one occurs.
-func (c *FakeVulnzSigningPolicies) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeVulnzSigningPolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(vulnzsigningpoliciesResource, c.ns, name), &v1beta1.VulnzSigningPolicy{})
 
@@ -109,17 +111,17 @@ func (c *FakeVulnzSigningPolicies) Delete(name string, options *v1.DeleteOptions
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeVulnzSigningPolicies) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(vulnzsigningpoliciesResource, c.ns, listOptions)
+func (c *FakeVulnzSigningPolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(vulnzsigningpoliciesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.VulnzSigningPolicyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched vulnzSigningPolicy.
-func (c *FakeVulnzSigningPolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.VulnzSigningPolicy, err error) {
+func (c *FakeVulnzSigningPolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.VulnzSigningPolicy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(vulnzsigningpoliciesResource, c.ns, name, data, subresources...), &v1beta1.VulnzSigningPolicy{})
+		Invokes(testing.NewPatchSubresourceAction(vulnzsigningpoliciesResource, c.ns, name, pt, data, subresources...), &v1beta1.VulnzSigningPolicy{})
 
 	if obj == nil {
 		return nil, err

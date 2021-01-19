@@ -15,10 +15,14 @@
 package transport
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
+	authchallenge "github.com/docker/distribution/registry/client/auth/challenge"
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
@@ -36,6 +40,9 @@ type pingResp struct {
 	// Following the challenge there are often key/value pairs
 	// e.g. Bearer service="gcr.io",realm="https://auth.gcr.io/v36/tokenz"
 	parameters map[string]string
+
+	// The registry's scheme to use. Communicates whether we fell back to http.
+	scheme string
 }
 
 func (c challenge) Canonical() challenge {
@@ -60,34 +67,62 @@ func parseChallenge(suffix string) map[string]string {
 	return kv
 }
 
-func ping(reg name.Registry, t http.RoundTripper) (*pingResp, error) {
+func ping(ctx context.Context, reg name.Registry, t http.RoundTripper) (*pingResp, error) {
 	client := http.Client{Transport: t}
 
-	url := fmt.Sprintf("%s://%s/v2/", Scheme(reg), reg.Name())
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, err
+	// This first attempts to use "https" for every request, falling back to http
+	// if the registry matches our localhost heuristic or if it is intentionally
+	// set to insecure via name.NewInsecureRegistry.
+	schemes := []string{"https"}
+	if reg.Scheme() == "http" {
+		schemes = append(schemes, "http")
 	}
-	defer resp.Body.Close()
 
-	switch resp.StatusCode {
-	case http.StatusOK:
-		// If we get a 200, then no authentication is needed.
-		return &pingResp{challenge: anonymous}, nil
-	case http.StatusUnauthorized:
-		wac := resp.Header.Get(http.CanonicalHeaderKey("WWW-Authenticate"))
-		if parts := strings.SplitN(wac, " ", 2); len(parts) == 2 {
-			// If there are two parts, then parse the challenge parameters.
-			return &pingResp{
-				challenge:  challenge(parts[0]).Canonical(),
-				parameters: parseChallenge(parts[1]),
-			}, nil
+	var connErr error
+	for _, scheme := range schemes {
+		url := fmt.Sprintf("%s://%s/v2/", scheme, reg.Name())
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
 		}
-		// Otherwise, just return the challenge without parameters.
-		return &pingResp{
-			challenge: challenge(wac).Canonical(),
-		}, nil
-	default:
-		return nil, fmt.Errorf("unrecognized HTTP status: %v", resp.Status)
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			connErr = err
+			// Potentially retry with http.
+			continue
+		}
+		defer func() {
+			// By draining the body, make sure to reuse the connection made by
+			// the ping for the following access to the registry
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}()
+
+		switch resp.StatusCode {
+		case http.StatusOK:
+			// If we get a 200, then no authentication is needed.
+			return &pingResp{
+				challenge: anonymous,
+				scheme:    scheme,
+			}, nil
+		case http.StatusUnauthorized:
+			if challenges := authchallenge.ResponseChallenges(resp); len(challenges) != 0 {
+				// If we hit more than one, I'm not even sure what to do.
+				wac := challenges[0]
+				return &pingResp{
+					challenge:  challenge(wac.Scheme).Canonical(),
+					parameters: wac.Parameters,
+					scheme:     scheme,
+				}, nil
+			}
+			// Otherwise, just return the challenge without parameters.
+			return &pingResp{
+				challenge: challenge(resp.Header.Get("WWW-Authenticate")).Canonical(),
+				scheme:    scheme,
+			}, nil
+		default:
+			return nil, CheckError(resp, http.StatusOK, http.StatusUnauthorized)
+		}
 	}
+	return nil, connErr
 }

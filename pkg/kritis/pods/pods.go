@@ -17,6 +17,7 @@ limitations under the License.
 package pods
 
 import (
+	"context"
 	"encoding/json"
 
 	kubernetesutil "github.com/grafeas/kritis/pkg/kritis/kubernetes"
@@ -37,7 +38,7 @@ func Pods(namespace string) ([]corev1.Pod, error) {
 	if err != nil {
 		return nil, err
 	}
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	return pods.Items, err
 }
 
@@ -59,7 +60,7 @@ func applyPatch(modifiedPod *corev1.Pod, originalJSON []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = clientset.CoreV1().Pods(modifiedPod.Namespace).Patch(modifiedPod.GetName(), types.StrategicMergePatchType, p)
+	_, err = clientset.CoreV1().Pods(modifiedPod.Namespace).Patch(context.Background(), modifiedPod.GetName(), types.StrategicMergePatchType, p, metav1.PatchOptions{})
 	return err
 }
 

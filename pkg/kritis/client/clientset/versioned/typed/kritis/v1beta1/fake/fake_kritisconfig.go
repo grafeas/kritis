@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var kritisconfigsResource = schema.GroupVersionResource{Group: "kritis", Version
 var kritisconfigsKind = schema.GroupVersionKind{Group: "kritis", Version: "v1beta1", Kind: "KritisConfig"}
 
 // Get takes name of the kritisConfig, and returns the corresponding kritisConfig object, and an error if there is any.
-func (c *FakeKritisConfigs) Get(name string, options v1.GetOptions) (result *v1beta1.KritisConfig, err error) {
+func (c *FakeKritisConfigs) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.KritisConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootGetAction(kritisconfigsResource, name), &v1beta1.KritisConfig{})
 	if obj == nil {
@@ -48,7 +50,7 @@ func (c *FakeKritisConfigs) Get(name string, options v1.GetOptions) (result *v1b
 }
 
 // List takes label and field selectors, and returns the list of KritisConfigs that match those selectors.
-func (c *FakeKritisConfigs) List(opts v1.ListOptions) (result *v1beta1.KritisConfigList, err error) {
+func (c *FakeKritisConfigs) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.KritisConfigList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootListAction(kritisconfigsResource, kritisconfigsKind, opts), &v1beta1.KritisConfigList{})
 	if obj == nil {
@@ -59,7 +61,7 @@ func (c *FakeKritisConfigs) List(opts v1.ListOptions) (result *v1beta1.KritisCon
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.KritisConfigList{}
+	list := &v1beta1.KritisConfigList{ListMeta: obj.(*v1beta1.KritisConfigList).ListMeta}
 	for _, item := range obj.(*v1beta1.KritisConfigList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -69,13 +71,13 @@ func (c *FakeKritisConfigs) List(opts v1.ListOptions) (result *v1beta1.KritisCon
 }
 
 // Watch returns a watch.Interface that watches the requested kritisConfigs.
-func (c *FakeKritisConfigs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeKritisConfigs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewRootWatchAction(kritisconfigsResource, opts))
 }
 
 // Create takes the representation of a kritisConfig and creates it.  Returns the server's representation of the kritisConfig, and an error, if there is any.
-func (c *FakeKritisConfigs) Create(kritisConfig *v1beta1.KritisConfig) (result *v1beta1.KritisConfig, err error) {
+func (c *FakeKritisConfigs) Create(ctx context.Context, kritisConfig *v1beta1.KritisConfig, opts v1.CreateOptions) (result *v1beta1.KritisConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootCreateAction(kritisconfigsResource, kritisConfig), &v1beta1.KritisConfig{})
 	if obj == nil {
@@ -85,7 +87,7 @@ func (c *FakeKritisConfigs) Create(kritisConfig *v1beta1.KritisConfig) (result *
 }
 
 // Update takes the representation of a kritisConfig and updates it. Returns the server's representation of the kritisConfig, and an error, if there is any.
-func (c *FakeKritisConfigs) Update(kritisConfig *v1beta1.KritisConfig) (result *v1beta1.KritisConfig, err error) {
+func (c *FakeKritisConfigs) Update(ctx context.Context, kritisConfig *v1beta1.KritisConfig, opts v1.UpdateOptions) (result *v1beta1.KritisConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(kritisconfigsResource, kritisConfig), &v1beta1.KritisConfig{})
 	if obj == nil {
@@ -95,24 +97,24 @@ func (c *FakeKritisConfigs) Update(kritisConfig *v1beta1.KritisConfig) (result *
 }
 
 // Delete takes name of the kritisConfig and deletes it. Returns an error if one occurs.
-func (c *FakeKritisConfigs) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeKritisConfigs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewRootDeleteAction(kritisconfigsResource, name), &v1beta1.KritisConfig{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeKritisConfigs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(kritisconfigsResource, listOptions)
+func (c *FakeKritisConfigs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewRootDeleteCollectionAction(kritisconfigsResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.KritisConfigList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched kritisConfig.
-func (c *FakeKritisConfigs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.KritisConfig, err error) {
+func (c *FakeKritisConfigs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.KritisConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(kritisconfigsResource, name, data, subresources...), &v1beta1.KritisConfig{})
+		Invokes(testing.NewRootPatchSubresourceAction(kritisconfigsResource, name, pt, data, subresources...), &v1beta1.KritisConfig{})
 	if obj == nil {
 		return nil, err
 	}

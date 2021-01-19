@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var attestationauthoritiesResource = schema.GroupVersionResource{Group: "kritis"
 var attestationauthoritiesKind = schema.GroupVersionKind{Group: "kritis", Version: "v1beta1", Kind: "AttestationAuthority"}
 
 // Get takes name of the attestationAuthority, and returns the corresponding attestationAuthority object, and an error if there is any.
-func (c *FakeAttestationAuthorities) Get(name string, options v1.GetOptions) (result *v1beta1.AttestationAuthority, err error) {
+func (c *FakeAttestationAuthorities) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.AttestationAuthority, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(attestationauthoritiesResource, c.ns, name), &v1beta1.AttestationAuthority{})
 
@@ -50,7 +52,7 @@ func (c *FakeAttestationAuthorities) Get(name string, options v1.GetOptions) (re
 }
 
 // List takes label and field selectors, and returns the list of AttestationAuthorities that match those selectors.
-func (c *FakeAttestationAuthorities) List(opts v1.ListOptions) (result *v1beta1.AttestationAuthorityList, err error) {
+func (c *FakeAttestationAuthorities) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.AttestationAuthorityList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(attestationauthoritiesResource, attestationauthoritiesKind, c.ns, opts), &v1beta1.AttestationAuthorityList{})
 
@@ -62,7 +64,7 @@ func (c *FakeAttestationAuthorities) List(opts v1.ListOptions) (result *v1beta1.
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.AttestationAuthorityList{}
+	list := &v1beta1.AttestationAuthorityList{ListMeta: obj.(*v1beta1.AttestationAuthorityList).ListMeta}
 	for _, item := range obj.(*v1beta1.AttestationAuthorityList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -72,14 +74,14 @@ func (c *FakeAttestationAuthorities) List(opts v1.ListOptions) (result *v1beta1.
 }
 
 // Watch returns a watch.Interface that watches the requested attestationAuthorities.
-func (c *FakeAttestationAuthorities) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAttestationAuthorities) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(attestationauthoritiesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a attestationAuthority and creates it.  Returns the server's representation of the attestationAuthority, and an error, if there is any.
-func (c *FakeAttestationAuthorities) Create(attestationAuthority *v1beta1.AttestationAuthority) (result *v1beta1.AttestationAuthority, err error) {
+func (c *FakeAttestationAuthorities) Create(ctx context.Context, attestationAuthority *v1beta1.AttestationAuthority, opts v1.CreateOptions) (result *v1beta1.AttestationAuthority, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(attestationauthoritiesResource, c.ns, attestationAuthority), &v1beta1.AttestationAuthority{})
 
@@ -90,7 +92,7 @@ func (c *FakeAttestationAuthorities) Create(attestationAuthority *v1beta1.Attest
 }
 
 // Update takes the representation of a attestationAuthority and updates it. Returns the server's representation of the attestationAuthority, and an error, if there is any.
-func (c *FakeAttestationAuthorities) Update(attestationAuthority *v1beta1.AttestationAuthority) (result *v1beta1.AttestationAuthority, err error) {
+func (c *FakeAttestationAuthorities) Update(ctx context.Context, attestationAuthority *v1beta1.AttestationAuthority, opts v1.UpdateOptions) (result *v1beta1.AttestationAuthority, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(attestationauthoritiesResource, c.ns, attestationAuthority), &v1beta1.AttestationAuthority{})
 
@@ -101,7 +103,7 @@ func (c *FakeAttestationAuthorities) Update(attestationAuthority *v1beta1.Attest
 }
 
 // Delete takes name of the attestationAuthority and deletes it. Returns an error if one occurs.
-func (c *FakeAttestationAuthorities) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeAttestationAuthorities) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(attestationauthoritiesResource, c.ns, name), &v1beta1.AttestationAuthority{})
 
@@ -109,17 +111,17 @@ func (c *FakeAttestationAuthorities) Delete(name string, options *v1.DeleteOptio
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAttestationAuthorities) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(attestationauthoritiesResource, c.ns, listOptions)
+func (c *FakeAttestationAuthorities) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(attestationauthoritiesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.AttestationAuthorityList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched attestationAuthority.
-func (c *FakeAttestationAuthorities) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.AttestationAuthority, err error) {
+func (c *FakeAttestationAuthorities) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.AttestationAuthority, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(attestationauthoritiesResource, c.ns, name, data, subresources...), &v1beta1.AttestationAuthority{})
+		Invokes(testing.NewPatchSubresourceAction(attestationauthoritiesResource, c.ns, name, pt, data, subresources...), &v1beta1.AttestationAuthority{})
 
 	if obj == nil {
 		return nil, err
