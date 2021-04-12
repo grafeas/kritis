@@ -28,7 +28,14 @@ steps:
       -alsologtostderr \
       -image=$(/bin/cat image-digest.txt) \
       -policy=policy.yaml \
+      -kms_key_name=${_KMS_KEY_NAME} \
+      -kms_digest_alg=${_KMS_DIGEST_ALG} \
+      -note_name=${_NOTE_NAME} \
       -mode=check-only
     waitFor: push
     id: vulnsign
+substitutions:
+    _KMS_KEY_NAME: MISSING_KMS_KEY_NAME # Use `gcloud builds submit --substitutions ` to set this value
+    _KMS_DIGEST_ALG: MISSING_KMS_DIGEST_ALG  # Use `gcloud builds submit --substitutions ` to set this value
+    _NOTE_NAME: MISSING_NOTE_NAME  # Use `gcloud builds submit --substitutions ` to set this value
 images: ['gcr.io/$PROJECT_ID/binauthz-test:latest']
