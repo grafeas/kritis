@@ -20,7 +20,6 @@ package v2beta1
 
 import (
 	v2beta1 "k8s.io/api/autoscaling/v2beta1"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -28,7 +27,6 @@ import (
 type AutoscalingV2beta1Interface interface {
 	RESTClient() rest.Interface
 	HorizontalPodAutoscalersGetter
-	VerticalPodAutoscalersGetter
 }
 
 // AutoscalingV2beta1Client is used to interact with features provided by the autoscaling group.
@@ -38,10 +36,6 @@ type AutoscalingV2beta1Client struct {
 
 func (c *AutoscalingV2beta1Client) HorizontalPodAutoscalers(namespace string) HorizontalPodAutoscalerInterface {
 	return newHorizontalPodAutoscalers(c, namespace)
-}
-
-func (c *AutoscalingV2beta1Client) VerticalPodAutoscalers(namespace string) VerticalPodAutoscalerInterface {
-	return newVerticalPodAutoscalers(c, namespace)
 }
 
 // NewForConfig creates a new AutoscalingV2beta1Client for the given config.
@@ -76,7 +70,7 @@ func setConfigDefaults(config *rest.Config) error {
 	gv := v2beta1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

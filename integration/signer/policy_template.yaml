@@ -7,6 +7,8 @@ spec:
     maximumFixableSeverity: MEDIUM
     maximumUnfixableSeverity: MEDIUM
     allowlistCVEs:
+      - projects/goog-vulnz/notes/CVE-2021-20305
       - projects/goog-vulnz/notes/CVE-2020-10543
       - projects/goog-vulnz/notes/CVE-2020-10878
       - projects/goog-vulnz/notes/CVE-2020-14155
+      - projects/goog-vulnz/notes/CVE-2019-25013

@@ -50,7 +50,7 @@ test: cross
 	./hack/check-fmt.sh
 	./hack/boilerplate.sh
 	./hack/verify-codegen.sh
-	./hack/dep.sh
+	./hack/dependencies.sh
 	./hack/test.sh
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
@@ -89,18 +89,18 @@ REGISTRY?=gcr.io/kritis-project
 # TODO(tstromberg): Determine if it is possible to combine these two variables.
 TEST_REGISTRY?=gcr.io/$(GCP_PROJECT)
 SERVICE_PACKAGE = $(REPOPATH)/cmd/kritis/admission
-GCB_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcbsigner
 SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/signer
+GCR_SIGNER_PACKAGE = $(REPOPATH)/cmd/kritis/gcr-signer
 
 
 out/kritis-server: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SERVICE_PACKAGE)
 
-out/gcb-signer: $(GO_FILES)
-	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCB_SIGNER_PACKAGE)
-
 out/signer: $(GO_FILES)
 	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(SIGNER_PACKAGE)
+
+out/gcr-signer: $(GO_FILES)
+	GOARCH=$(GOARCH) GOOS=linux CGO_ENABLED=0 go build -ldflags "$(GO_LDFLAGS)" -o $@ $(GCR_SIGNER_PACKAGE)
 
 .PHONY: build-image
 build-image: out/kritis-server
@@ -115,9 +115,17 @@ build-test-image: out/kritis-server
 signer-image: out/signer
 	docker build -t $(REGISTRY)/kritis-signer:$(IMAGE_TAG) -f deploy/kritis-signer/Dockerfile .
 
+.PHONY: gcr-signer-image
+gcr-signer-image: out/gcr-signer
+	docker build -t $(REGISTRY)/gcr-kritis-signer:$(IMAGE_TAG) -f deploy/gcr-kritis-signer/Dockerfile .
+
 .PHONY: signer-push-image
 signer-push-image: signer-image
 	docker push $(REGISTRY)/kritis-signer:$(IMAGE_TAG)
+
+.PHONY: gcr-signer-push-image
+gcr-signer-push-image: gcr-signer-image
+	docker push $(REGISTRY)/gcr-kritis-signer:$(IMAGE_TAG)
 
 HELM_HOOKS = preinstall postinstall predelete
 
@@ -182,13 +190,6 @@ integration-in-docker: build-push-image
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		$(REGISTRY)/kritis-integration:$(IMAGE_TAG)
 
-.PHONY: gcb-signer-image
-gcb-signer-image: out/gcb-signer-image
-	docker build -t $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG) -f deploy/kritis-gcb-signer/Dockerfile .
-
-.PHONY: gcb-signer-push-image
-gcb-signer-push-image: gcb-signer-image
-	docker push $(REGISTRY)/kritis-gcb-signer:$(IMAGE_TAG)
 
 # Fully setup local integration testing: only needs to run just once
 # TODO: move entire setup into bash script

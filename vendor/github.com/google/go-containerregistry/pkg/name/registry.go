@@ -14,24 +14,31 @@
 
 package name
 
-import "net/url"
-
-const (
-	DefaultRegistry      = "index.docker.io"
-	defaultRegistryAlias = "docker.io"
+import (
+	"net"
+	"net/url"
+	"regexp"
+	"strings"
 )
+
+// Detect more complex forms of local references.
+var reLocal = regexp.MustCompile(`.*\.local(?:host)?(?::\d{1,5})?$`)
+
+// Detect the loopback IP (127.0.0.1)
+var reLoopback = regexp.MustCompile(regexp.QuoteMeta("127.0.0.1"))
+
+// Detect the loopback IPV6 (::1)
+var reipv6Loopback = regexp.MustCompile(regexp.QuoteMeta("::1"))
 
 // Registry stores a docker registry name in a structured form.
 type Registry struct {
+	insecure bool
 	registry string
 }
 
 // RegistryStr returns the registry component of the Registry.
 func (r Registry) RegistryStr() string {
-	if r.registry != "" {
-		return r.registry
-	}
-	return DefaultRegistry
+	return r.registry
 }
 
 // Name returns the name from which the Registry was derived.
@@ -49,6 +56,44 @@ func (r Registry) Scope(string) string {
 	return "registry:catalog:*"
 }
 
+func (r Registry) isRFC1918() bool {
+	ipStr := strings.Split(r.Name(), ":")[0]
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	for _, cidr := range []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"} {
+		_, block, _ := net.ParseCIDR(cidr)
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// Scheme returns https scheme for all the endpoints except localhost or when explicitly defined.
+func (r Registry) Scheme() string {
+	if r.insecure {
+		return "http"
+	}
+	if r.isRFC1918() {
+		return "http"
+	}
+	if strings.HasPrefix(r.Name(), "localhost:") {
+		return "http"
+	}
+	if reLocal.MatchString(r.Name()) {
+		return "http"
+	}
+	if reLoopback.MatchString(r.Name()) {
+		return "http"
+	}
+	if reipv6Loopback.MatchString(r.Name()) {
+		return "http"
+	}
+	return "https"
+}
+
 func checkRegistry(name string) error {
 	// Per RFC 3986, registries (authorities) are required to be prefixed with "//"
 	// url.Host == hostname[:port] == authority
@@ -60,8 +105,9 @@ func checkRegistry(name string) error {
 
 // NewRegistry returns a Registry based on the given name.
 // Strict validation requires explicit, valid RFC 3986 URI authorities to be given.
-func NewRegistry(name string, strict Strictness) (Registry, error) {
-	if strict == StrictValidation && len(name) == 0 {
+func NewRegistry(name string, opts ...Option) (Registry, error) {
+	opt := makeOptions(opts...)
+	if opt.strict && len(name) == 0 {
 		return Registry{}, NewErrBadName("strict validation requires the registry to be explicitly defined")
 	}
 
@@ -69,11 +115,22 @@ func NewRegistry(name string, strict Strictness) (Registry, error) {
 		return Registry{}, err
 	}
 
+	if name == "" {
+		name = opt.defaultRegistry
+	}
 	// Rewrite "docker.io" to "index.docker.io".
 	// See: https://github.com/google/go-containerregistry/issues/68
 	if name == defaultRegistryAlias {
 		name = DefaultRegistry
 	}
 
-	return Registry{registry: name}, nil
+	return Registry{registry: name, insecure: opt.insecure}, nil
+}
+
+// NewInsecureRegistry returns an Insecure Registry based on the given name.
+//
+// Deprecated: Use the Insecure Option with NewRegistry instead.
+func NewInsecureRegistry(name string, opts ...Option) (Registry, error) {
+	opts = append(opts, Insecure)
+	return NewRegistry(name, opts...)
 }

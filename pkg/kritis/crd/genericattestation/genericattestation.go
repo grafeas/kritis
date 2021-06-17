@@ -17,6 +17,7 @@ limitations under the License.
 package genericattestation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
@@ -37,7 +38,7 @@ func Policies(namespace string) ([]v1beta1.GenericAttestationPolicy, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().GenericAttestationPolicies(namespace).List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().GenericAttestationPolicies(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all generic attestation policy requirements: %v", err)
 	}

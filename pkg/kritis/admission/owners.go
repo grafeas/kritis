@@ -17,6 +17,7 @@ limitations under the License.
 package admission
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -60,19 +61,19 @@ func retrieveOwnersImages(ns string, or metav1.OwnerReference) ([]string, error)
 
 	switch or.Kind {
 	case Pod:
-		pod, err := clientset.CoreV1().Pods(ns).Get(or.Name, metav1.GetOptions{})
+		pod, err := clientset.CoreV1().Pods(ns).Get(context.Background(), or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		return PodImages(*pod), nil
 	case Deployment:
-		d, err := clientset.AppsV1().Deployments(ns).Get(or.Name, metav1.GetOptions{})
+		d, err := clientset.AppsV1().Deployments(ns).Get(context.Background(), or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		return DeploymentImages(*d), nil
 	case ReplicaSet:
-		rs, err := clientset.AppsV1().ReplicaSets(ns).Get(or.Name, metav1.GetOptions{})
+		rs, err := clientset.AppsV1().ReplicaSets(ns).Get(context.Background(), or.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}

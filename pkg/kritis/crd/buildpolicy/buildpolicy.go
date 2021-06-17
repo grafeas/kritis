@@ -17,6 +17,7 @@ limitations under the License.
 package buildpolicy
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -41,7 +42,7 @@ func BuildPolicies(namespace string) ([]v1beta1.BuildPolicy, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building clientset: %v", err)
 	}
-	list, err := client.KritisV1beta1().BuildPolicies(namespace).List(metav1.ListOptions{})
+	list, err := client.KritisV1beta1().BuildPolicies(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing all image policy requirements: %v", err)
 	}

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/grafeas/kritis/pkg/kritis/cryptolib"
+	"github.com/grafeas/kritis/pkg/attestlib"
 
 	kritisv1beta1 "github.com/grafeas/kritis/pkg/kritis/apis/kritis/v1beta1"
 	"github.com/grafeas/kritis/pkg/kritis/metadata"
@@ -31,7 +31,7 @@ import (
 // Implements ReadWriteClient and ReadOnlyClient interfaces.
 type MockMetadataClient struct {
 	Vulnz []metadata.Vulnerability
-	Atts  []cryptolib.Attestation
+	Atts  []attestlib.Attestation
 	AAs   []kritisv1beta1.AttestationAuthority
 	Occ   map[string]string
 	Err   error
@@ -64,6 +64,17 @@ func (m *MockMetadataClient) CreateAttestationOccurrence(noteName string, image 
 	return nil, nil
 }
 
+func (m *MockMetadataClient) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	if m.Occ == nil {
+		m.Occ = map[string]string{}
+	}
+	m.Occ[fmt.Sprintf("%s-%s", containerImage, noteName)] = att.PublicKeyID
+	return nil, nil
+}
+
 func (m *MockMetadataClient) AttestationNote(aa *kritisv1beta1.AttestationAuthority) (*grafeas.Note, error) {
 	if m.Err != nil {
 		return nil, m.Err
@@ -85,7 +96,7 @@ func (m *MockMetadataClient) CreateAttestationNote(aa *kritisv1beta1.Attestation
 	}, nil
 }
 
-func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]cryptolib.Attestation, error) {
+func (m *MockMetadataClient) Attestations(containerImage string, aa *kritisv1beta1.AttestationAuthority) ([]attestlib.Attestation, error) {
 	if m.Err != nil {
 		return nil, m.Err
 	}
@@ -99,11 +110,18 @@ func (m *MockMetadataClient) WaitForVulnzAnalysis(containerImage string, timeout
 	return nil
 }
 
+func (m *MockMetadataClient) DeleteAttestationOccurrence(containerImage string, aa *kritisv1beta1.AttestationAuthority) error {
+	if m.Err != nil {
+		return m.Err
+	}
+	return nil
+}
+
 func NilReadWriteClient() func() (metadata.ReadWriteClient, error) {
 	return func() (metadata.ReadWriteClient, error) {
 		return &MockMetadataClient{
 			Vulnz: []metadata.Vulnerability{},
-			Atts:  []cryptolib.Attestation{},
+			Atts:  []attestlib.Attestation{},
 			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
@@ -113,7 +131,7 @@ func NilReadOnlyClient() func() (metadata.ReadOnlyClient, error) {
 	return func() (metadata.ReadOnlyClient, error) {
 		return &MockMetadataClient{
 			Vulnz: []metadata.Vulnerability{},
-			Atts:  []cryptolib.Attestation{},
+			Atts:  []attestlib.Attestation{},
 			AAs:   []kritisv1beta1.AttestationAuthority{},
 		}, nil
 	}
