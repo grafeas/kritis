@@ -23,7 +23,7 @@ spec:
                 properties:
                   maximumSeverity:
                     type: string
-                  maximumFixNotAvailableSeverity:
+                  maximumFixUnavailableSeverity:
                     type: string
                   allowlistCVEs:
                     type: array
