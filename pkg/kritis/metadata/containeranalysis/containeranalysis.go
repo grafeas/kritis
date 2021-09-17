@@ -125,7 +125,7 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
 	if !isValidImageOnGCP(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR or GAR", containerImage)
 	}
 
 	req := createListOccurrencesRequest(containerImage, kind)
@@ -257,7 +257,7 @@ func (c Client) CreateAttestationOccurrence(noteName string, containerImage stri
 // UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
 func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
 	if !isValidImageOnGCP(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR or GAR", containerImage)
 	}
 
 	// Create occurrence from attestation
