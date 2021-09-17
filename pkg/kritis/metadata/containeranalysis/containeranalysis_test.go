@@ -58,6 +58,46 @@ func Test_isRegistryGCR(t *testing.T) {
 	}
 }
 
+func Test_isRegistryGAR(t *testing.T) {
+	tests := []struct {
+		name     string
+		registry string
+		expected bool
+	}{
+		{
+			name:     "europe gar image",
+			registry: "europe-docker.pkg.dev",
+			expected: true,
+		},
+		{
+			name:     "us-central1 gar image",
+			registry: "us-central1-docker.pkg.dev",
+			expected: true,
+		},
+		{
+			name:     "invalid gar image",
+			registry: "pkg.dev",
+			expected: false,
+		},
+		{
+			name:     "non gar image",
+			registry: "index.docker.io",
+			expected: false,
+		},
+		{
+			name:     "invalid gar image",
+			registry: "europe-python.pkg.dev",
+			expected: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := isRegistryGAR(test.registry)
+			testutil.DeepEqual(t, test.expected, actual)
+		})
+	}
+}
+
 func Test_getProjectFromContainerImage(t *testing.T) {
 	tests := []struct {
 		image   string
