@@ -124,8 +124,8 @@ func (c Client) Attestations(containerImage string, aa *kritisv1beta1.Attestatio
 
 func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string) ([]*grafeas.Occurrence, error) {
 	// Make sure container image valid and is a GCR image
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	if !isValidImageOnGCP(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR or GAR", containerImage)
 	}
 
 	req := createListOccurrencesRequest(containerImage, kind)
@@ -146,9 +146,9 @@ func (c Client) fetchVulnerabilityOccurrence(containerImage string, kind string)
 }
 
 func (c Client) fetchAttestationOccurrence(containerImage string, kind string, auth *kritisv1beta1.AttestationAuthority) ([]*grafeas.Occurrence, error) {
-	// Make sure container image valid and is a GCR image
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	// Make sure container image valid and is a GCR or GAR image
+	if !isValidImageOnGCP(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR or GAR", containerImage)
 	}
 
 	req := &grafeas.ListNoteOccurrencesRequest{
@@ -173,13 +173,13 @@ func (c Client) fetchAttestationOccurrence(containerImage string, kind string, a
 	return occs, nil
 }
 
-func isValidImageOnGCR(containerImage string) bool {
+func isValidImageOnGCP(containerImage string) bool {
 	ref, err := name.ParseReference(containerImage, name.WeakValidation)
 	if err != nil {
 		glog.Warning(err)
 		return false
 	}
-	return isRegistryGCR(ref.Context().RegistryStr())
+	return isRegistryGCR(ref.Context().RegistryStr()) || isRegistryGAR(ref.Context().RegistryStr())
 }
 
 func isRegistryGCR(r string) bool {
@@ -188,6 +188,20 @@ func isRegistryGCR(r string) bool {
 		return false
 	}
 	if registry[len(registry)-2] != "gcr" || registry[len(registry)-1] != "io" {
+		return false
+	}
+	return true
+}
+
+func isRegistryGAR(r string) bool {
+	registry := strings.Split(r, ".")
+	if len(registry) < 3 {
+		return false
+	}
+	if registry[len(registry)-2] != "pkg" || registry[len(registry)-1] != "dev" {
+		return false
+	}
+	if !strings.HasSuffix(registry[len(registry)-3], "-docker") {
 		return false
 	}
 	return true
@@ -242,8 +256,8 @@ func (c Client) CreateAttestationOccurrence(noteName string, containerImage stri
 
 // UploadAttestationOccurrence uploads an Attestation occurrence for a given note, image and project.
 func (c Client) UploadAttestationOccurrence(noteName string, containerImage string, att *attestlib.Attestation, proj string, sType metadata.SignatureType) (*grafeas.Occurrence, error) {
-	if !isValidImageOnGCR(containerImage) {
-		return nil, fmt.Errorf("%s is not a valid image hosted in GCR", containerImage)
+	if !isValidImageOnGCP(containerImage) {
+		return nil, fmt.Errorf("%s is not a valid image hosted in GCR or GAR", containerImage)
 	}
 
 	// Create occurrence from attestation
