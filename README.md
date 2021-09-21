@@ -7,8 +7,7 @@
 [GoDoc]: https://godoc.org/github.com/grafeas/kritis
 [GoDoc Widget]: https://godoc.org/github.com/grafeas/kritis?status.svg
 
-[BuildStatus Result]: https://travis-ci.org/grafeas/kritis
-[BuildStatus Widget]: https://travis-ci.org/grafeas/kritis.svg?branch=master
+[BuildStatus Widget]: https://app.travis-ci.com/github/grafeas/kritis
 
 [GoReport Status]: https://goreportcard.com/report/github.com/grafeas/kritis
 [GoReport Widget]: https://goreportcard.com/badge/github.com/grafeas/kritis

@@ -1,6 +1,6 @@
 ### Debugging Travis Build
 
-Kritis uses Travis to run CI unit tests [here](https://travis-ci.org/grafeas/kritis).
+Kritis uses Travis to run CI unit tests [here](https://app.travis-ci.com/github/grafeas/kritis).
 
 You can use `Docker` to create similar container environment for local testing.
 
