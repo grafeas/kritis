@@ -4,8 +4,8 @@ metadata:
   name: my-vsp
 spec:
   imageVulnerabilityRequirements:
-    maximumFixableSeverity: MEDIUM
-    maximumUnfixableSeverity: MEDIUM
+    maximumFixableSeverity: HIGH
+    maximumUnfixableSeverity: HIGH
     allowlistCVEs:
     - projects/goog-vulnz/notes/CVE-2021-20305
     - projects/goog-vulnz/notes/CVE-2020-10543
