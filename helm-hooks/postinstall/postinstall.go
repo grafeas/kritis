@@ -66,7 +66,7 @@ func getCaBundle() {
 }
 
 func createValidationWebhook() {
-	webhookSpec := `apiVersion: admissionregistration.k8s.io/v1beta1
+	webhookSpec := `apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: %s
@@ -92,7 +92,9 @@ webhooks:
       caBundle: %s
       service:
         name: %s
-        namespace: %s`
+        namespace: %s
+    sideEffects: None
+    admissionReviewVersions: ["v1beta1"]`
 
 	webhookSpec = fmt.Sprintf(webhookSpec, webhookName, kritisInstallLabel, certificate, serviceName, namespace)
 	fmt.Println(webhookSpec)
@@ -102,7 +104,7 @@ webhooks:
 }
 
 func createValidationDeploymentWebhook() {
-	webhookSpec := `apiVersion: admissionregistration.k8s.io/v1beta1
+	webhookSpec := `apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: %s
@@ -129,7 +131,9 @@ webhooks:
       caBundle: %s
       service:
         name: %s
-        namespace: %s`
+        namespace: %s
+    sideEffects: None
+    admissionReviewVersions: ["v1beta1"]`
 	webhookSpec = fmt.Sprintf(webhookSpec, deploymentWebhookName, kritisInstallLabel, certificate, serviceName, namespace)
 	fmt.Println(webhookSpec)
 	webhookCmd := exec.Command("kubectl", "apply", "-f", "-")

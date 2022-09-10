@@ -65,6 +65,7 @@ func createCertificates() {
 	certTmpl := Cert{Namespace: namespace, ServiceName: serviceName, ServiceNameDeployments: serviceNameDeployments}
 	tmpl := template.New("cert")
 	tmpl, err := tmpl.Parse(`{
+"CN": "system:node:{{ .ServiceName }}",
 "hosts": [
     "{{ .ServiceName }}",
     "{{ .ServiceName }}.kube-system",
@@ -79,7 +80,14 @@ func createCertificates() {
 "key": {
 	"algo": "ecdsa",
 	"size": 256
-}
+},
+"names": [{
+                    "C": "US",
+                    "L": "Fort Lauderdale",
+                    "O": "system:nodes",
+                    "OU": "system:nodes",
+                    "ST": "Florida"
+             }]
 }`)
 	if err != nil {
 		logrus.Fatalf("error creating template for cert: %v", err)
@@ -106,7 +114,7 @@ func createCertificateSigningRequest() {
 		KritisInstallLabel: kritisInstallLabel,
 	}
 	tmpl := template.New("csr")
-	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1beta1
+	tmpl, err := tmpl.Parse(`apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
     name: {{ .Name }}
@@ -116,6 +124,7 @@ spec:
     groups:
     - system:authenticated
     request: {{ .Certificate }}
+    signerName: kubernetes.io/kubelet-serving
     usages:
     - digital signature
     - key encipherment
