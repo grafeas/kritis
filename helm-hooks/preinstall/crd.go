@@ -17,58 +17,135 @@ limitations under the License.
 package main
 
 const (
-	attestationAuthorityCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+	attestationAuthorityCRD = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-    name: attestationauthorities.kritis.grafeas.io
-    labels:
-        %s: ""
+  name: attestationauthorities.kritis.grafeas.io
+  labels:
+    %s: ""
 spec:
-    group: kritis.grafeas.io
-    version: v1beta1
-    scope: Namespaced
-    names:
-        plural: attestationauthorities
-        singular: attestationauthority
-        kind: AttestationAuthority`
+  group: kritis.grafeas.io
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                attestationAuthorityNames:
+                  type: array
+                  items:
+                    type: string
+  scope: Namespaced
+  names:
+    kind: GenericAttestationPolicy
+    plural: genericattestationpolicies`
 
-	genericAttestationPolicyCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+	genericAttestationPolicyCRD = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-    name: genericattestationpolicies.kritis.grafeas.io
-    labels:
-        %s: ""
+  name: genericattestationpolicies.kritis.grafeas.io
+  labels:
+    %s: ""
 spec:
-    group: kritis.grafeas.io
-    version: v1beta1
-    scope: Namespaced
-    names:
-        kind: GenericAttestationPolicy
-        plural: genericattestationpolicies`
+  group: kritis.grafeas.io
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                attestationAuthorityNames:
+                  type: array
+                  items:
+                    type: string
+  scope: Namespaced
+  names:
+    kind: GenericAttestationPolicy
+    plural: genericattestationpolicies`
 
-	imageSecurityPolicyCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+	imageSecurityPolicyCRD = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-    name: imagesecuritypolicies.kritis.grafeas.io
-    labels:
-        %s: ""
+  name: imagesecuritypolicies.kritis.grafeas.io
+  labels:
+    %s: ""
 spec:
-    group: kritis.grafeas.io
-    version: v1beta1
-    scope: Namespaced
-    names:
-        kind: ImageSecurityPolicy
-        plural: imagesecuritypolicies`
+  group: kritis.grafeas.io
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                imageAllowList:
+                  type: array
+                  items:
+                    type: string
+                packageVulnerabilityRequirements:
+                  type: object
+                  properties:
+                    maximumSeverity:
+                      type: string
+                    maximumFixUnavailableSeverity:
+                      type: string
+                    allowlistCVEs:
+                      type: array
+                      items:
+                        type: string
+                attestationAuthorityNames:
+                  type: array
+                  items:
+                    type: string
+  scope: Namespaced
+  names:
+    kind: ImageSecurityPolicy
+    plural: imagesecuritypolicies`
 
-	kritisConfigCRD = `apiVersion: apiextensions.k8s.io/v1beta1
+	kritisConfigCRD = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: kritisconfigs.kritis.grafeas.io
   labels:
-      %s: ""
+    %s: ""
 spec:
   group: kritis.grafeas.io
-  version: v1beta1
+  versions:
+    - name: v1beta1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                metadataBackend:
+                  type: string
+                cronInterval:
+                  type: string
+                serverAddr:
+                  type: string
+                grafeas:
+                  type: object
+                  properties:
+                    addr:
+                      type: string
   scope: Cluster
   names:
     kind: KritisConfig
