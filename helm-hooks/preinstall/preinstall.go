@@ -82,11 +82,8 @@ func createCertificates() {
 	"size": 256
 },
 "names": [{
-                    "C": "US",
-                    "L": "Fort Lauderdale",
                     "O": "system:nodes",
-                    "OU": "system:nodes",
-                    "ST": "Florida"
+                    "OU": "system:nodes"
              }]
 }`)
 	if err != nil {
