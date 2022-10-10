@@ -1,0 +1,10 @@
+apiVersion: kritis.grafeas.io/v1beta1
+kind: VulnzSigningPolicy
+metadata:
+  name: my-vsp
+spec:
+  imageVulnerabilityRequirements:
+    maximumFixableSeverity: CRITICAL
+    maximumUnfixableSeverity: CRITICAL
+    allowlistCVEs:
+      - projects/goog-vulnz/notes/CVE-2021-20305
