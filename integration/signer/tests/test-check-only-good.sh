@@ -21,7 +21,7 @@ set -eux
 
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
-docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
+docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile .
 
 trap 'delete_image $GOOD_IMAGE_URL'  EXIT
 
@@ -34,7 +34,7 @@ GOOD_IMG_DIGEST_URL=$(docker image inspect $GOOD_IMAGE_URL --format '{{index .Re
 ./signer -v 10 \
 -alsologtostderr \
 -image=${GOOD_IMG_DIGEST_URL} \
--policy=policy.yaml \
+-policy=policy_loose.yaml \
 -mode=check-only
 
 echo ""

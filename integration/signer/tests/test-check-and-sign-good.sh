@@ -21,7 +21,7 @@ set -eux
 
 # build a "good" example image
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
-docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
+docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile .
 
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
 trap 'clean_up'  EXIT
@@ -39,7 +39,7 @@ trap 'clean_up'  EXIT
 -alsologtostderr \
 -image=${GOOD_IMG_DIGEST_URL} \
 -pgp_private_key=private.key \
--policy=policy.yaml \
+-policy=policy_loose.yaml \
 -note_name=${NOTE_NAME}
 
 # deploy to a binauthz-enabled cluster signer-int-test

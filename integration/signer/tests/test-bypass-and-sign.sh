@@ -20,7 +20,7 @@ echo ""
 set -eux
 
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
-docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
+docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile .
 
 clean_up() { ARG=$?; delete_image $GOOD_IMAGE_URL; exit $ARG;}
 trap 'clean_up'  EXIT
