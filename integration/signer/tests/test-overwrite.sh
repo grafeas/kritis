@@ -20,7 +20,7 @@ echo ""
 set -eux
 
 GOOD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-good-image:$BUILD_ID
-docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile.good .
+docker build --no-cache -t $GOOD_IMAGE_URL -f ./Dockerfile .
 
 trap 'delete_image $GOOD_IMAGE_URL'  EXIT
 
@@ -37,7 +37,7 @@ trap 'delete_occ $GOOD_IMG_DIGEST_URL'  EXIT
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
 -pgp_private_key=private.key \
--policy=policy.yaml \
+-policy=policy_loose.yaml \
 -note_name=${NOTE_NAME}
 
 sleep 10
@@ -51,7 +51,7 @@ OLD_OCC_ID="$(get_occ $GOOD_IMG_DIGEST_URL)"
 -mode=bypass-and-sign \
 -image=${GOOD_IMG_DIGEST_URL} \
 -pgp_private_key=private.key \
--policy=policy.yaml \
+-policy=policy_loose.yaml \
 -note_name=${NOTE_NAME} \
 -overwrite
 

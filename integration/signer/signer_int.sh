@@ -28,9 +28,6 @@ export KMS_PROJECT=$PROJECT_ID
 export KMS_DIGESTALG=SHA512
 export NOTE_NAME=projects/${PROJECT_ID}/notes/${NOTE_ID}
 
-# create policy.yaml
-cp policy_template.yaml policy.yaml
-
 # install jq
 # TODO: bake jq into a custom image
 apt-get install -y -q jq

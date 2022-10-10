@@ -21,7 +21,7 @@ set -eux
 
 # build a "bad" example image
 BAD_IMAGE_URL=gcr.io/$PROJECT_ID/signer-int-bad-image:$BUILD_ID
-docker build --no-cache -t $BAD_IMAGE_URL -f ./Dockerfile.bad .
+docker build --no-cache -t $BAD_IMAGE_URL -f ./Dockerfile .
 
 trap 'delete_image $BAD_IMAGE_URL'  EXIT
 
@@ -34,7 +34,7 @@ signing_bad_image_failed=false
 ./signer -v 10 \
 -alsologtostderr \
 -image=${BAD_IMG_DIGEST_URL} \
--policy=policy.yaml \
+-policy=policy_strict.yaml \
 -mode=check-only || checking_bad_image_failed=true
 
 if [ "$checking_bad_image_failed" = true ] ; then
