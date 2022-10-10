@@ -1,13 +1,13 @@
 # Cloudbuild pipeline for a build with an image
-# that passes the vuln policy
+# that does not pass the vuln policy
 steps:
-  # Build a 'bad' image
+  # Build a test image
   - name: gcr.io/cloud-builders/docker
     entrypoint: /bin/bash
     args:
       - -c
       - |
-        docker build -t gcr.io/$PROJECT_ID/binauthz-test:latest -f ./Dockerfile.bad .
+        docker build -t gcr.io/$PROJECT_ID/binauthz-test:latest -f ./Dockerfile .
     id: build
   - name: gcr.io/cloud-builders/docker
     entrypoint: /bin/bash
@@ -27,7 +27,7 @@ steps:
       -v=10 \
       -alsologtostderr \
       -image=$(/bin/cat image-digest.txt) \
-      -policy=policy.yaml \
+      -policy=policy-strict.yaml \
       -mode=check-only
     waitFor: push
     id: vulnsign
