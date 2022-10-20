@@ -218,10 +218,10 @@ First we need to pick a GCP project and enable those services within the project
 
 6. Create vulnerability signing policy.
 
-    An example policy is in the samples.
+    We have two example policies, `policy-strict.yaml` and `policy-loose.yaml`. They differ in that `policy-loose.yaml` has higher severity thresholds.
 
     ```shell
-    cat samples/signer/policy.yaml
+    cat samples/signer/policy-strict.yaml
 
     apiVersion: kritis.grafeas.io/v1beta1
     kind: VulnzSigningPolicy
@@ -233,33 +233,44 @@ First we need to pick a GCP project and enable those services within the project
         maximumUnfixableSeverity: MEDIUM
         allowlistCVEs:
         - projects/goog-vulnz/notes/CVE-2020-10543
-        - projects/goog-vulnz/notes/CVE-2020-10878
-        - projects/goog-vulnz/notes/CVE-2020-14155
+
+    cat samples/signer/policy-loose.yaml
+
+    apiVersion: kritis.grafeas.io/v1beta1
+    kind: VulnzSigningPolicy
+    metadata:
+      name: my-vsp
+    spec:
+      imageVulnerabilityRequirements:
+        maximumFixableSeverity: CRITICAL
+        maximumUnfixableSeverity: CRITICAL
+        allowlistCVEs:
+        - projects/goog-vulnz/notes/CVE-2020-10543
     ```
 
 7. Run signer on a built image (pass example).
 
-    1. Build and push an example good image.
+    1. Build and push an example image.
 
         ```shell
-        docker build -t gcr.io/$PROJECT_ID/signer-test:good -f samples/signer/Dockerfile.good .
-        docker push gcr.io/$PROJECT_ID/signer-test:good
+        docker build -t gcr.io/$PROJECT_ID/signer-test:example -f samples/signer/Dockerfile .
+        docker push gcr.io/$PROJECT_ID/signer-test:example
         ```
 
     2. Note down the image digest url.
 
         ```shell
-        export GOOD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:good --format '{{index .RepoDigests 0}}')
+        export EXAMPLE_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:example --format '{{index .RepoDigests 0}}')
         ```
 
-    3. Run the signer.
+    3. Run the signer with a loose policy.
 
         ```shell
         ./signer \
           -v=10 \
           -alsologtostderr \
-          -image=$GOOD_IMG_URL \
-          -policy=samples/signer/policy.yaml \
+          -image=$EXAMPLE_IMG_URL \
+          -policy=samples/signer/policy-loose.yaml \
           -kms_key_name=$KMS_KEY_NAME \
           -kms_digest_alg=$KMS_DIGEST_ALG \
           -note_name=$NOTE_NAME
@@ -276,8 +287,8 @@ First we need to pick a GCP project and enable those services within the project
           -mode=check-only \
           -v=10 \
           -alsologtostderr \
-          -image=$GOOD_IMG_URL \
-          -policy=samples/signer/policy.yaml \
+          -image=$EXAMPLE_IMG_URL \
+          -policy=samples/signer/policy-loose.yaml \
         ```
 
         ```shell
@@ -285,7 +296,7 @@ First we need to pick a GCP project and enable those services within the project
           -mode=bypass-and-sign \
           -v=10 \
           -alsologtostderr \
-          -image=$GOOD_IMG_URL \
+          -image=$EXAMPLE_IMG_URL \
           -kms_key_name=$KMS_KEY_NAME \
           -kms_digest_alg=$KMS_DIGEST_ALG \
           -note_name=$NOTE_NAME
@@ -293,27 +304,27 @@ First we need to pick a GCP project and enable those services within the project
 
 8. Run signer on a built image (fail example).
 
-    1. Build and push an example good image.
+    1. Build and push an example image (skippable if image from Step.7 is not deleted).
 
         ```shell
-        docker build -t gcr.io/$PROJECT_ID/signer-test:bad -f samples/signer/Dockerfile.bad .
-        docker push gcr.io/$PROJECT_ID/signer-test:bad
+        docker build -t gcr.io/$PROJECT_ID/signer-test:example -f samples/signer/Dockerfile .
+        docker push gcr.io/$PROJECT_ID/signer-test:example
         ```
 
     2. Note down the image digest url.
 
         ```shell
-        export BAD_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:bad --format '{{index .RepoDigests 0}}')
+        export EXAMPLE_IMG_URL=$(docker image inspect gcr.io/$PROJECT_ID/signer-test:example --format '{{index .RepoDigests 0}}')
         ```
 
-    3. Run the signer.
+    3. Run the signer with a strict policy.
 
         ```shell
         ./signer \
           -v=10 \
           -alsologtostderr \
-          -image=$BAD_IMG_URL \
-          -policy=samples/signer/policy.yaml \
+          -image=$EXAMPLE_IMG_URL \
+          -policy=samples/signer/policy-strict.yaml \
           -kms_key_name=$KMS_KEY_NAME \
           -kms_digest_alg=$KMS_DIGEST_ALG \
           -note_name=$NOTE_NAME
@@ -330,8 +341,8 @@ First we need to pick a GCP project and enable those services within the project
           -mode=check-only \
           -v=10 \
           -alsologtostderr \
-          -image=$BAD_IMG_URL \
-          -policy=samples/signer/policy.yaml \
+          -image=$EXAMPLE_IMG_URL \
+          -policy=samples/signer/policy-strict.yaml \
         ```
 
         ```shell
@@ -339,11 +350,11 @@ First we need to pick a GCP project and enable those services within the project
           -mode=bypass-and-sign \
           -v=10 \
           -alsologtostderr \
-          -image=$BAD_IMG_URL \
+          -image=$EXAMPLE_IMG_URL \
           -kms_key_name=$KMS_KEY_NAME \
           -kms_digest_alg=$KMS_DIGEST_ALG \
           -note_name=$NOTE_NAME
         ```
 
-        With `bypass-and-sign` mode, an attestation will also be created for the bad image.
+        With `bypass-and-sign` mode, an attestation will still be created for the image.
 
