@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go v0.57.0
 	github.com/d4l3k/messagediff v1.2.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.2
@@ -29,8 +28,8 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/d4l3k/messagediff.v1 v1.2.1
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.8
-	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v0.18.8
+	k8s.io/api v0.18.14
+	k8s.io/apimachinery v0.18.14
+	k8s.io/client-go v0.18.14
 	k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31 // indirect
 )
