@@ -1,19 +1,29 @@
+substitutions:
+  _GAR_REPOSITORY: "europe-docker.pkg.dev/${PROJECT_ID}/billhop-tools-eu"
+  _IMAGE_NAME: "kritis-signer"
+
+options:
+  automapSubstitutions: true
+
 steps:
-- id: "build signer binary"
-  name: 'gcr.io/cloud-builders/go:debian'
-  args: ['build', '-o', 'out/signer', './cmd/kritis/signer']
-  env: ['PROJECT_ROOT=github.com/grafeas/kritis']
-- id: 'build signer image'
-  name: 'gcr.io/cloud-builders/docker'
-  args:
-  - 'build'
-  - '-f'
-  - 'deploy/kritis-signer/Dockerfile'
-  - '-t'
-  - 'gcr.io/$PROJECT_ID/kritis-signer:latest'
-  - '.'
-- id: 'publish'
-  name: 'gcr.io/cloud-builders/docker'
-  args:
-  - 'push'
-  - 'gcr.io/$PROJECT_ID/kritis-signer:latest'
+  - name: "gcr.io/cloud-builders/docker"
+    id: "build-image"
+    script: |
+      #!/bin/sh -e
+      docker build \
+        -f ./deploy/kritis-signer/Dockerfile
+        -t "${_GAR_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA}" \
+        .
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: "publish-image"
+    script: |
+      #!/bin/sh -e
+      docker push "${_GAR_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA}"
+
+      if [ "$BRANCH_NAME" = "master" ]; then
+        docker tag \
+          "${_GAR_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA}" \
+          "${_GAR_REPOSITORY}/${_IMAGE_NAME}:latest"
+        docker push "${_GAR_REPOSITORY}/${_IMAGE_NAME}:latest"
+      fi
