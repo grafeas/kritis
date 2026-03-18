@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/internal/encoding/messageset"
 	"google.golang.org/protobuf/internal/errors"
-	"google.golang.org/protobuf/internal/flags"
+	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/pragma"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -18,7 +18,8 @@ import (
 // UnmarshalOptions configures the unmarshaler.
 //
 // Example usage:
-//   err := UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, m)
+//
+//	err := UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, m)
 type UnmarshalOptions struct {
 	pragma.NoUnkeyedLiterals
 
@@ -41,16 +42,33 @@ type UnmarshalOptions struct {
 		FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error)
 		FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error)
 	}
+
+	// RecursionLimit limits how deeply messages may be nested.
+	// If zero, a default limit is applied.
+	RecursionLimit int
+
+	//
+	// NoLazyDecoding turns off lazy decoding, which otherwise is enabled by
+	// default. Lazy decoding only affects submessages (annotated with [lazy =
+	// true] in the .proto file) within messages that use the Opaque API.
+	NoLazyDecoding bool
 }
 
 // Unmarshal parses the wire-format message in b and places the result in m.
+// The provided message must be mutable (e.g., a non-nil pointer to a message).
+//
+// See the [UnmarshalOptions] type if you need more control.
 func Unmarshal(b []byte, m Message) error {
-	_, err := UnmarshalOptions{}.unmarshal(b, m.ProtoReflect())
+	_, err := UnmarshalOptions{RecursionLimit: protowire.DefaultRecursionLimit}.unmarshal(b, m.ProtoReflect())
 	return err
 }
 
 // Unmarshal parses the wire-format message in b and places the result in m.
+// The provided message must be mutable (e.g., a non-nil pointer to a message).
 func (o UnmarshalOptions) Unmarshal(b []byte, m Message) error {
+	if o.RecursionLimit == 0 {
+		o.RecursionLimit = protowire.DefaultRecursionLimit
+	}
 	_, err := o.unmarshal(b, m.ProtoReflect())
 	return err
 }
@@ -58,8 +76,11 @@ func (o UnmarshalOptions) Unmarshal(b []byte, m Message) error {
 // UnmarshalState parses a wire-format message and places the result in m.
 //
 // This method permits fine-grained control over the unmarshaler.
-// Most users should use Unmarshal instead.
+// Most users should use [Unmarshal] instead.
 func (o UnmarshalOptions) UnmarshalState(in protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+	if o.RecursionLimit == 0 {
+		o.RecursionLimit = protowire.DefaultRecursionLimit
+	}
 	return o.unmarshal(in.Buf, in.Message)
 }
 
@@ -83,12 +104,27 @@ func (o UnmarshalOptions) unmarshal(b []byte, m protoreflect.Message) (out proto
 			Message:  m,
 			Buf:      b,
 			Resolver: o.Resolver,
+			Depth:    o.RecursionLimit,
 		}
 		if o.DiscardUnknown {
 			in.Flags |= protoiface.UnmarshalDiscardUnknown
 		}
+
+		if !allowPartial {
+			// This does not affect how current unmarshal functions work, it just allows them
+			// to record this for lazy the decoding case.
+			in.Flags |= protoiface.UnmarshalCheckRequired
+		}
+		if o.NoLazyDecoding {
+			in.Flags |= protoiface.UnmarshalNoLazyDecoding
+		}
+
 		out, err = methods.Unmarshal(in)
 	} else {
+		o.RecursionLimit--
+		if o.RecursionLimit < 0 {
+			return out, errors.New("exceeded max recursion depth")
+		}
 		err = o.unmarshalMessageSlow(b, m)
 	}
 	if err != nil {
@@ -115,10 +151,10 @@ func (o UnmarshalOptions) unmarshalMessageSlow(b []byte, m protoreflect.Message)
 		// Parse the tag (field number and wire type).
 		num, wtyp, tagLen := protowire.ConsumeTag(b)
 		if tagLen < 0 {
-			return protowire.ParseError(tagLen)
+			return errDecode
 		}
 		if num > protowire.MaxValidNumber {
-			return errors.New("invalid field number")
+			return errDecode
 		}
 
 		// Find the field descriptor for this field number.
@@ -135,10 +171,6 @@ func (o UnmarshalOptions) unmarshalMessageSlow(b []byte, m protoreflect.Message)
 		var err error
 		if fd == nil {
 			err = errUnknown
-		} else if flags.ProtoLegacy {
-			if fd.IsWeak() && fd.Message().IsPlaceholder() {
-				err = errUnknown // weak referent is not linked in
-			}
 		}
 
 		// Parse the field value.
@@ -158,7 +190,7 @@ func (o UnmarshalOptions) unmarshalMessageSlow(b []byte, m protoreflect.Message)
 			}
 			valLen = protowire.ConsumeFieldValue(num, wtyp, b[tagLen:])
 			if valLen < 0 {
-				return protowire.ParseError(valLen)
+				return errDecode
 			}
 			if !o.DiscardUnknown {
 				m.SetUnknown(append(m.GetUnknown(), b[:tagLen+valLen]...))
@@ -193,7 +225,7 @@ func (o UnmarshalOptions) unmarshalMap(b []byte, wtyp protowire.Type, mapv proto
 	}
 	b, n = protowire.ConsumeBytes(b)
 	if n < 0 {
-		return 0, protowire.ParseError(n)
+		return 0, errDecode
 	}
 	var (
 		keyField = fd.MapKey()
@@ -212,21 +244,21 @@ func (o UnmarshalOptions) unmarshalMap(b []byte, wtyp protowire.Type, mapv proto
 	for len(b) > 0 {
 		num, wtyp, n := protowire.ConsumeTag(b)
 		if n < 0 {
-			return 0, protowire.ParseError(n)
+			return 0, errDecode
 		}
 		if num > protowire.MaxValidNumber {
-			return 0, errors.New("invalid field number")
+			return 0, errDecode
 		}
 		b = b[n:]
 		err = errUnknown
 		switch num {
-		case 1:
+		case genid.MapEntry_Key_field_number:
 			key, n, err = o.unmarshalScalar(b, wtyp, keyField)
 			if err != nil {
 				break
 			}
 			haveKey = true
-		case 2:
+		case genid.MapEntry_Value_field_number:
 			var v protoreflect.Value
 			v, n, err = o.unmarshalScalar(b, wtyp, valField)
 			if err != nil {
@@ -245,7 +277,7 @@ func (o UnmarshalOptions) unmarshalMap(b []byte, wtyp protowire.Type, mapv proto
 		if err == errUnknown {
 			n = protowire.ConsumeFieldValue(num, wtyp, b)
 			if n < 0 {
-				return 0, protowire.ParseError(n)
+				return 0, errDecode
 			}
 		} else if err != nil {
 			return 0, err
@@ -271,3 +303,5 @@ func (o UnmarshalOptions) unmarshalMap(b []byte, wtyp protowire.Type, mapv proto
 // to the unknown field set of a message. It is never returned from an exported
 // function.
 var errUnknown = errors.New("BUG: internal error (unknown)")
+
+var errDecode = errors.New("cannot parse invalid wire-format data")

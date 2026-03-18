@@ -5,12 +5,13 @@
 package impl
 
 import (
-	"errors"
 	"reflect"
 	"sort"
 
 	"google.golang.org/protobuf/encoding/protowire"
-	pref "google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/internal/errors"
+	"google.golang.org/protobuf/internal/genid"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type mapInfo struct {
@@ -19,12 +20,12 @@ type mapInfo struct {
 	valWiretag uint64
 	keyFuncs   valueCoderFuncs
 	valFuncs   valueCoderFuncs
-	keyZero    pref.Value
-	keyKind    pref.Kind
+	keyZero    protoreflect.Value
+	keyKind    protoreflect.Kind
 	conv       *mapConverter
 }
 
-func encoderFuncsForMap(fd pref.FieldDescriptor, ft reflect.Type) (valueMessage *MessageInfo, funcs pointerCoderFuncs) {
+func encoderFuncsForMap(fd protoreflect.FieldDescriptor, ft reflect.Type) (valueMessage *MessageInfo, funcs pointerCoderFuncs) {
 	// TODO: Consider generating specialized map coders.
 	keyField := fd.MapKey()
 	valField := fd.MapValue()
@@ -44,7 +45,7 @@ func encoderFuncsForMap(fd pref.FieldDescriptor, ft reflect.Type) (valueMessage 
 		keyKind:    keyField.Kind(),
 		conv:       conv,
 	}
-	if valField.Kind() == pref.MessageKind {
+	if valField.Kind() == protoreflect.MessageKind {
 		valueMessage = getMessageInfo(ft.Elem())
 	}
 
@@ -68,9 +69,9 @@ func encoderFuncsForMap(fd pref.FieldDescriptor, ft reflect.Type) (valueMessage 
 		},
 	}
 	switch valField.Kind() {
-	case pref.MessageKind:
+	case protoreflect.MessageKind:
 		funcs.merge = mergeMapOfMessage
-	case pref.BytesKind:
+	case protoreflect.BytesKind:
 		funcs.merge = mergeMapOfBytes
 	default:
 		funcs.merge = mergeMap
@@ -93,7 +94,7 @@ func sizeMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, opts marshalO
 		return 0
 	}
 	n := 0
-	iter := mapRange(mapv)
+	iter := mapv.MapRange()
 	for iter.Next() {
 		key := mapi.conv.keyConv.PBValueOf(iter.Key()).MapKey()
 		keySize := mapi.keyFuncs.size(key.Value(), mapKeyTagSize, opts)
@@ -117,7 +118,7 @@ func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo
 	}
 	b, n := protowire.ConsumeBytes(b)
 	if n < 0 {
-		return out, protowire.ParseError(n)
+		return out, errDecode
 	}
 	var (
 		key = mapi.keyZero
@@ -126,16 +127,16 @@ func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo
 	for len(b) > 0 {
 		num, wtyp, n := protowire.ConsumeTag(b)
 		if n < 0 {
-			return out, protowire.ParseError(n)
+			return out, errDecode
 		}
 		if num > protowire.MaxValidNumber {
-			return out, errors.New("invalid field number")
+			return out, errDecode
 		}
 		b = b[n:]
 		err := errUnknown
 		switch num {
-		case 1:
-			var v pref.Value
+		case genid.MapEntry_Key_field_number:
+			var v protoreflect.Value
 			var o unmarshalOutput
 			v, o, err = mapi.keyFuncs.unmarshal(b, key, num, wtyp, opts)
 			if err != nil {
@@ -143,8 +144,8 @@ func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo
 			}
 			key = v
 			n = o.n
-		case 2:
-			var v pref.Value
+		case genid.MapEntry_Value_field_number:
+			var v protoreflect.Value
 			var o unmarshalOutput
 			v, o, err = mapi.valFuncs.unmarshal(b, val, num, wtyp, opts)
 			if err != nil {
@@ -156,7 +157,7 @@ func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo
 		if err == errUnknown {
 			n = protowire.ConsumeFieldValue(num, wtyp, b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 		} else if err != nil {
 			return out, err
@@ -174,7 +175,7 @@ func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi
 	}
 	b, n := protowire.ConsumeBytes(b)
 	if n < 0 {
-		return out, protowire.ParseError(n)
+		return out, errDecode
 	}
 	var (
 		key = mapi.keyZero
@@ -183,16 +184,16 @@ func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi
 	for len(b) > 0 {
 		num, wtyp, n := protowire.ConsumeTag(b)
 		if n < 0 {
-			return out, protowire.ParseError(n)
+			return out, errDecode
 		}
 		if num > protowire.MaxValidNumber {
-			return out, errors.New("invalid field number")
+			return out, errDecode
 		}
 		b = b[n:]
 		err := errUnknown
 		switch num {
 		case 1:
-			var v pref.Value
+			var v protoreflect.Value
 			var o unmarshalOutput
 			v, o, err = mapi.keyFuncs.unmarshal(b, key, num, wtyp, opts)
 			if err != nil {
@@ -207,7 +208,7 @@ func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi
 			var v []byte
 			v, n = protowire.ConsumeBytes(b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 			var o unmarshalOutput
 			o, err = f.mi.unmarshalPointer(v, pointerOfValue(val), 0, opts)
@@ -220,7 +221,7 @@ func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi
 		if err == errUnknown {
 			n = protowire.ConsumeFieldValue(num, wtyp, b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 		} else if err != nil {
 			return out, err
@@ -240,11 +241,16 @@ func appendMapItem(b []byte, keyrv, valrv reflect.Value, mapi *mapInfo, f *coder
 		size += mapi.keyFuncs.size(key.Value(), mapKeyTagSize, opts)
 		size += mapi.valFuncs.size(val, mapValTagSize, opts)
 		b = protowire.AppendVarint(b, uint64(size))
+		before := len(b)
 		b, err := mapi.keyFuncs.marshal(b, key.Value(), mapi.keyWiretag, opts)
 		if err != nil {
 			return nil, err
 		}
-		return mapi.valFuncs.marshal(b, val, mapi.valWiretag, opts)
+		b, err = mapi.valFuncs.marshal(b, val, mapi.valWiretag, opts)
+		if measuredSize := len(b) - before; size != measuredSize && err == nil {
+			return nil, errors.MismatchedSizeCalculation(size, measuredSize)
+		}
+		return b, err
 	} else {
 		key := mapi.conv.keyConv.PBValueOf(keyrv).MapKey()
 		val := pointerOfValue(valrv)
@@ -259,7 +265,12 @@ func appendMapItem(b []byte, keyrv, valrv reflect.Value, mapi *mapInfo, f *coder
 		}
 		b = protowire.AppendVarint(b, mapi.valWiretag)
 		b = protowire.AppendVarint(b, uint64(valSize))
-		return f.mi.marshalAppendPointer(b, val, opts)
+		before := len(b)
+		b, err = f.mi.marshalAppendPointer(b, val, opts)
+		if measuredSize := len(b) - before; valSize != measuredSize && err == nil {
+			return nil, errors.MismatchedSizeCalculation(valSize, measuredSize)
+		}
+		return b, err
 	}
 }
 
@@ -270,7 +281,7 @@ func appendMap(b []byte, mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, o
 	if opts.Deterministic() {
 		return appendMapDeterministic(b, mapv, mapi, f, opts)
 	}
-	iter := mapRange(mapv)
+	iter := mapv.MapRange()
 	for iter.Next() {
 		var err error
 		b = protowire.AppendVarint(b, f.wiretag)
@@ -317,7 +328,7 @@ func isInitMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo) error {
 		if !mi.needsInitCheck {
 			return nil
 		}
-		iter := mapRange(mapv)
+		iter := mapv.MapRange()
 		for iter.Next() {
 			val := pointerOfValue(iter.Value())
 			if err := mi.checkInitializedPointer(val); err != nil {
@@ -325,7 +336,7 @@ func isInitMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo) error {
 			}
 		}
 	} else {
-		iter := mapRange(mapv)
+		iter := mapv.MapRange()
 		for iter.Next() {
 			val := mapi.conv.valConv.PBValueOf(iter.Value())
 			if err := mapi.valFuncs.isInit(val); err != nil {
@@ -345,7 +356,7 @@ func mergeMap(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := mapRange(srcm)
+	iter := srcm.MapRange()
 	for iter.Next() {
 		dstm.SetMapIndex(iter.Key(), iter.Value())
 	}
@@ -360,7 +371,7 @@ func mergeMapOfBytes(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := mapRange(srcm)
+	iter := srcm.MapRange()
 	for iter.Next() {
 		dstm.SetMapIndex(iter.Key(), reflect.ValueOf(append(emptyBuf[:], iter.Value().Bytes()...)))
 	}
@@ -375,7 +386,7 @@ func mergeMapOfMessage(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := mapRange(srcm)
+	iter := srcm.MapRange()
 	for iter.Next() {
 		val := reflect.New(f.ft.Elem().Elem())
 		if f.mi != nil {
