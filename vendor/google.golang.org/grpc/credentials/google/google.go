@@ -22,7 +22,6 @@ package google
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/alts"
@@ -31,29 +30,54 @@ import (
 	"google.golang.org/grpc/internal"
 )
 
-const tokenRequestTimeout = 30 * time.Second
+const defaultCloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
+
+var logger = grpclog.Component("credentials")
+
+// DefaultCredentialsOptions constructs options to build DefaultCredentials.
+type DefaultCredentialsOptions struct {
+	// PerRPCCreds is a per RPC credentials that is passed to a bundle.
+	PerRPCCreds credentials.PerRPCCredentials
+	// ALTSPerRPCCreds is a per RPC credentials that, if specified, will
+	// supercede PerRPCCreds above for and only for ALTS connections.
+	ALTSPerRPCCreds credentials.PerRPCCredentials
+}
+
+// NewDefaultCredentialsWithOptions returns a credentials bundle that is
+// configured to work with google services.
+//
+// This API is experimental.
+func NewDefaultCredentialsWithOptions(opts DefaultCredentialsOptions) credentials.Bundle {
+	if opts.PerRPCCreds == nil {
+		var err error
+		// If the ADC ends up being Compute Engine Credentials, this context
+		// won't be used. Otherwise, the context dictates all the subsequent
+		// token requests via HTTP. So we cannot have any deadline or timeout.
+		opts.PerRPCCreds, err = newADC(context.TODO())
+		if err != nil {
+			logger.Warningf("NewDefaultCredentialsWithOptions: failed to create application oauth: %v", err)
+		}
+	}
+	if opts.ALTSPerRPCCreds != nil {
+		opts.PerRPCCreds = &dualPerRPCCreds{
+			perRPCCreds:     opts.PerRPCCreds,
+			altsPerRPCCreds: opts.ALTSPerRPCCreds,
+		}
+	}
+	c := &creds{opts: opts}
+	bundle, err := c.NewWithMode(internal.CredsBundleModeFallback)
+	if err != nil {
+		logger.Warningf("NewDefaultCredentialsWithOptions: failed to create new creds: %v", err)
+	}
+	return bundle
+}
 
 // NewDefaultCredentials returns a credentials bundle that is configured to work
 // with google services.
 //
 // This API is experimental.
 func NewDefaultCredentials() credentials.Bundle {
-	c := &creds{
-		newPerRPCCreds: func() credentials.PerRPCCredentials {
-			ctx, cancel := context.WithTimeout(context.Background(), tokenRequestTimeout)
-			defer cancel()
-			perRPCCreds, err := oauth.NewApplicationDefault(ctx)
-			if err != nil {
-				grpclog.Warningf("google default creds: failed to create application oauth: %v", err)
-			}
-			return perRPCCreds
-		},
-	}
-	bundle, err := c.NewWithMode(internal.CredsBundleModeFallback)
-	if err != nil {
-		grpclog.Warningf("google default creds: failed to create new creds: %v", err)
-	}
-	return bundle
+	return NewDefaultCredentialsWithOptions(DefaultCredentialsOptions{})
 }
 
 // NewComputeEngineCredentials returns a credentials bundle that is configured to work
@@ -62,28 +86,21 @@ func NewDefaultCredentials() credentials.Bundle {
 //
 // This API is experimental.
 func NewComputeEngineCredentials() credentials.Bundle {
-	c := &creds{
-		newPerRPCCreds: func() credentials.PerRPCCredentials {
-			return oauth.NewComputeEngine()
-		},
-	}
-	bundle, err := c.NewWithMode(internal.CredsBundleModeFallback)
-	if err != nil {
-		grpclog.Warningf("compute engine creds: failed to create new creds: %v", err)
-	}
-	return bundle
+	return NewDefaultCredentialsWithOptions(DefaultCredentialsOptions{
+		PerRPCCreds: oauth.NewComputeEngine(),
+	})
 }
 
 // creds implements credentials.Bundle.
 type creds struct {
+	opts DefaultCredentialsOptions
+
 	// Supported modes are defined in internal/internal.go.
 	mode string
-	// The transport credentials associated with this bundle.
+	// The active transport credentials associated with this bundle.
 	transportCreds credentials.TransportCredentials
-	// The per RPC credentials associated with this bundle.
+	// The active per RPC credentials associated with this bundle.
 	perRPCCreds credentials.PerRPCCredentials
-	// Creates new per RPC credentials
-	newPerRPCCreds func() credentials.PerRPCCredentials
 }
 
 func (c *creds) TransportCredentials() credentials.TransportCredentials {
@@ -97,29 +114,65 @@ func (c *creds) PerRPCCredentials() credentials.PerRPCCredentials {
 	return c.perRPCCreds
 }
 
+var (
+	newTLS = func() credentials.TransportCredentials {
+		return credentials.NewTLS(nil)
+	}
+	newALTS = func() credentials.TransportCredentials {
+		return alts.NewClientCreds(alts.DefaultClientOptions())
+	}
+	newADC = func(ctx context.Context) (credentials.PerRPCCredentials, error) {
+		return oauth.NewApplicationDefault(ctx, defaultCloudPlatformScope)
+	}
+)
+
 // NewWithMode should make a copy of Bundle, and switch mode. Modifying the
 // existing Bundle may cause races.
 func (c *creds) NewWithMode(mode string) (credentials.Bundle, error) {
 	newCreds := &creds{
-		mode:           mode,
-		newPerRPCCreds: c.newPerRPCCreds,
+		opts: c.opts,
+		mode: mode,
 	}
 
 	// Create transport credentials.
 	switch mode {
 	case internal.CredsBundleModeFallback:
-		newCreds.transportCreds = credentials.NewTLS(nil)
+		newCreds.transportCreds = newClusterTransportCreds(newTLS(), newALTS())
 	case internal.CredsBundleModeBackendFromBalancer, internal.CredsBundleModeBalancer:
 		// Only the clients can use google default credentials, so we only need
 		// to create new ALTS client creds here.
-		newCreds.transportCreds = alts.NewClientCreds(alts.DefaultClientOptions())
+		newCreds.transportCreds = newALTS()
 	default:
 		return nil, fmt.Errorf("unsupported mode: %v", mode)
 	}
 
 	if mode == internal.CredsBundleModeFallback || mode == internal.CredsBundleModeBackendFromBalancer {
-		newCreds.perRPCCreds = newCreds.newPerRPCCreds()
+		newCreds.perRPCCreds = newCreds.opts.PerRPCCreds
 	}
 
 	return newCreds, nil
+}
+
+// dualPerRPCCreds implements credentials.PerRPCCredentials by embedding the
+// fallback PerRPCCredentials and the ALTS one. It pickes one of them based on
+// the channel type.
+type dualPerRPCCreds struct {
+	perRPCCreds     credentials.PerRPCCredentials
+	altsPerRPCCreds credentials.PerRPCCredentials
+}
+
+func (d *dualPerRPCCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	ri, ok := credentials.RequestInfoFromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("request info not found from context")
+	}
+	if authType := ri.AuthInfo.AuthType(); authType == "alts" {
+		return d.altsPerRPCCreds.GetRequestMetadata(ctx, uri...)
+	}
+	// This ensures backward compatibility even if authType is not "tls".
+	return d.perRPCCreds.GetRequestMetadata(ctx, uri...)
+}
+
+func (d *dualPerRPCCreds) RequireTransportSecurity() bool {
+	return d.altsPerRPCCreds.RequireTransportSecurity() || d.perRPCCreds.RequireTransportSecurity()
 }

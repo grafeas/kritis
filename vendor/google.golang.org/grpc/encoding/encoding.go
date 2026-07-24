@@ -19,17 +19,42 @@
 // Package encoding defines the interface for the compressor and codec, and
 // functions to register and retrieve compressors and codecs.
 //
-// This package is EXPERIMENTAL.
+// # Experimental
+//
+// Notice: This package is EXPERIMENTAL and may be changed or removed in a
+// later release.
 package encoding
 
 import (
 	"io"
+	"slices"
 	"strings"
+
+	"google.golang.org/grpc/encoding/internal"
+	"google.golang.org/grpc/internal/grpcutil"
 )
 
 // Identity specifies the optional encoding for uncompressed streams.
 // It is intended for grpc internal use only.
 const Identity = "identity"
+
+func init() {
+	internal.RegisterCompressorForTesting = func(c Compressor) func() {
+		name := c.Name()
+		curCompressor, found := registeredCompressor[name]
+		RegisterCompressor(c)
+		return func() {
+			if found {
+				registeredCompressor[name] = curCompressor
+				return
+			}
+			delete(registeredCompressor, name)
+			grpcutil.RegisteredCompressorNames = slices.DeleteFunc(grpcutil.RegisteredCompressorNames, func(s string) bool {
+				return s == name
+			})
+		}
+	}
+}
 
 // Compressor is used for compressing and decompressing when sending or
 // receiving messages.
@@ -41,15 +66,14 @@ type Compressor interface {
 	// Decompress reads data from r, decompresses it, and provides the
 	// uncompressed data via the returned io.Reader.  If an error occurs while
 	// initializing the decompressor, that error is returned instead.
+	//
+	// The returned io.Reader may optionally implement io.ReadCloser, and if it
+	// does, gRPC will call Close() exactly once.
 	Decompress(r io.Reader) (io.Reader, error)
 	// Name is the name of the compression codec and is used to set the content
 	// coding header.  The result must be static; the result cannot change
 	// between calls.
 	Name() string
-	// EXPERIMENTAL: if a Compressor implements
-	// DecompressedSize(compressedBytes []byte) int, gRPC will call it
-	// to determine the size of the buffer allocated for the result of decompression.
-	// Return -1 to indicate unknown size.
 }
 
 var registeredCompressor = make(map[string]Compressor)
@@ -65,6 +89,9 @@ var registeredCompressor = make(map[string]Compressor)
 // registered with the same name, the one registered last will take effect.
 func RegisterCompressor(c Compressor) {
 	registeredCompressor[c.Name()] = c
+	if !grpcutil.IsCompressorNameRegistered(c.Name()) {
+		grpcutil.RegisteredCompressorNames = append(grpcutil.RegisteredCompressorNames, c.Name())
+	}
 }
 
 // GetCompressor returns Compressor for the given compressor name.
@@ -77,16 +104,16 @@ func GetCompressor(name string) Compressor {
 // methods can be called from concurrent goroutines.
 type Codec interface {
 	// Marshal returns the wire format of v.
-	Marshal(v interface{}) ([]byte, error)
+	Marshal(v any) ([]byte, error)
 	// Unmarshal parses the wire format into v.
-	Unmarshal(data []byte, v interface{}) error
+	Unmarshal(data []byte, v any) error
 	// Name returns the name of the Codec implementation. The returned string
 	// will be used as part of content type in transmission.  The result must be
 	// static; the result cannot change between calls.
 	Name() string
 }
 
-var registeredCodecs = make(map[string]Codec)
+var registeredCodecs = make(map[string]any)
 
 // RegisterCodec registers the provided Codec for use with all gRPC clients and
 // servers.
@@ -100,7 +127,7 @@ var registeredCodecs = make(map[string]Codec)
 // more details.
 //
 // NOTE: this function must only be called during initialization time (i.e. in
-// an init() function), and is not thread-safe.  If multiple Compressors are
+// an init() function), and is not thread-safe.  If multiple Codecs are
 // registered with the same name, the one registered last will take effect.
 func RegisterCodec(codec Codec) {
 	if codec == nil {
@@ -118,5 +145,6 @@ func RegisterCodec(codec Codec) {
 //
 // The content-subtype is expected to be lowercase.
 func GetCodec(contentSubtype string) Codec {
-	return registeredCodecs[contentSubtype]
+	c, _ := registeredCodecs[contentSubtype].(Codec)
+	return c
 }
