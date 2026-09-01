@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"cloud.google.com/go/auth/grpctransport"
 	"google.golang.org/api/internal"
 	"google.golang.org/grpc"
 )
@@ -63,7 +64,7 @@ func (p *roundRobinConnPool) NewStream(ctx context.Context, desc *grpc.StreamDes
 	return p.Conn().NewStream(ctx, desc, method, opts...)
 }
 
-// multiError represents errors from mulitple conns in the group.
+// multiError represents errors from multiple conns in the group.
 //
 // TODO: figure out how and whether this is useful to export. End users should
 // not be depending on the transport/grpc package directly, so there might need
@@ -89,4 +90,28 @@ func (m multiError) Error() string {
 		return s + " (and 1 other error)"
 	}
 	return fmt.Sprintf("%s (and %d other errors)", s, n-1)
+}
+
+type poolAdapter struct {
+	pool grpctransport.GRPCClientConnPool
+}
+
+func (p *poolAdapter) Conn() *grpc.ClientConn {
+	return p.pool.Connection()
+}
+
+func (p *poolAdapter) Num() int {
+	return p.pool.Len()
+}
+
+func (p *poolAdapter) Close() error {
+	return p.pool.Close()
+}
+
+func (p *poolAdapter) Invoke(ctx context.Context, method string, args interface{}, reply interface{}, opts ...grpc.CallOption) error {
+	return p.pool.Invoke(ctx, method, args, reply, opts...)
+}
+
+func (p *poolAdapter) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	return p.pool.NewStream(ctx, desc, method, opts...)
 }
